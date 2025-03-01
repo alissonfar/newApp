@@ -1,0 +1,172 @@
+/* src/components/Tag/TagManagement.css */
+.tag-management-page-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tag-management-page-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--cor-primaria);
+}
+
+.tag-management-container {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Seção de Categorias */
+.category-section {
+  width: 40%;
+  border-right: 1px solid #ddd;
+  padding-right: 10px;
+}
+
+.category-section h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--cor-primaria);
+}
+
+.category-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.category-list li {
+  padding: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.category-list li:hover,
+.category-list li.selected {
+  background-color: var(--cor-secundaria);
+  color: var(--cor-branca);
+}
+
+.acoes-categoria button {
+  margin-left: 5px;
+  padding: 5px 10px;
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.acoes-categoria button:hover {
+  background-color: var(--cor-secundaria);
+}
+
+.nova-categoria, .edit-categoria {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nova-categoria input, .edit-categoria input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.nova-categoria button, .edit-categoria button {
+  padding: 8px 12px;
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Seção de Tags */
+.tag-section {
+  width: 60%;
+}
+
+.tag-section h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--cor-primaria);
+}
+
+.tag-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tag-list li {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.view-tag {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.acoes-tag button {
+  margin-left: 5px;
+  padding: 5px 10px;
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.acoes-tag button:hover {
+  background-color: var(--cor-secundaria);
+}
+
+.edit-tag input {
+  margin-right: 5px;
+  padding: 5px;
+}
+
+.edit-tag button {
+  margin-right: 5px;
+  padding: 5px 10px;
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.nova-tag {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nova-tag input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.nova-tag button {
+  padding: 8px 12px;
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

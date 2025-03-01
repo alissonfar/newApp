@@ -1,0 +1,107 @@
+/* src/App.css */
+
+/* Variáveis de cores e configurações globais */
+:root {
+  --cor-primaria: #005fa3;       /* Azul sóbrio */
+  --cor-secundaria: #007ACC;
+  --cor-fundo: #f8f9fa;          /* Fundo claro */
+  --cor-branca: #ffffff;
+  --cor-texto: #333333;
+  --sombra: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --fonte-principal: 'Roboto', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fonte-principal);
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+/* Barra Superior */
+.app-header {
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
+  padding: 15px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--sombra);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-left .logo {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+/* Botão Gerenciar Tags */
+.btn-gerenciar-tags {
+  background-color: var(--cor-secundaria);
+  border: none;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 4px;
+  color: var(--cor-branca);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-gerenciar-tags:hover {
+  background-color: var(--cor-primaria);
+}
+
+/* Links de navegação */
+.nav-link {
+  margin-right: 15px;
+  text-decoration: none;
+  color: var(--cor-branca);
+  font-weight: bold;
+}
+
+/* Responsividade Global */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-gerenciar-tags {
+    margin-top: 10px;
+  }
+}
+
+
+/* CustomSelect.css */
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  color: #333;
+  width: 100%;
+  outline: none;
+  cursor: pointer;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg%20viewBox="0%200%20292.357%20292.357"%20xmlns="http://www.w3.org/2000/svg"><path%20fill="%23666"%20d="M287%2069.4l-14.3-14.3c-3.9-3.9-10.2-3.9-14.1%200L146.2%20171.5%2033.7%2059.1c-3.9-3.9-10.2-3.9-14.1%200L5.3%2073.4c-3.9%203.9-3.9%2010.2%200%2014.1l130.9%20130.9c3.9%203.9%2010.2%203.9%2014.1%200L287%2083.5c3.9-3.9%203.9-10.2%200-14.1z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
+}
+
+/* Remover a seta nativa no IE/Edge */
+.custom-select::-ms-expand {
+  display: none;
+}

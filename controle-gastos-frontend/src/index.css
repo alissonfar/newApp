@@ -1,0 +1,12 @@
+/* src/index.css */
+/* Pode manter o básico do create-react-app ou adicionar resets */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fonte-principal);
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
