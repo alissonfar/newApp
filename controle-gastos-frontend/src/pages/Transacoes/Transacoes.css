@@ -24,14 +24,16 @@
 }
 
 .transacoes-filters select {
-  width: 150px;
+  width: 180px; /* Aumentado para comportar o novo seletor */
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
 
 .transacoes-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
+

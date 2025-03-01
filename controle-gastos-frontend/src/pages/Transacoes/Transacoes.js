@@ -13,6 +13,9 @@ const Transacoes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('todos');
   
+  // Ordenação
+  const [orderOption, setOrderOption] = useState('mais-recentes'); // Opções: mais-recentes, mais-antigos, valor-crescente, valor-decrescente
+  
   // Edição/Criação
   const [editingTransacao, setEditingTransacao] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -21,7 +24,7 @@ const Transacoes = () => {
   const carregarTransacoes = async () => {
     try {
       const dados = await obterTransacoes();
-      // Ordena por data desc
+      // Ordena por data desc inicialmente (padrão)
       const lista = (dados.transacoes || []).sort(
         (a, b) => new Date(b.data) - new Date(a.data)
       );
@@ -36,7 +39,7 @@ const Transacoes = () => {
     carregarTransacoes();
   }, []);
 
-  // Filtro: considera apenas tags nos pagamentos
+  // Filtro e Ordenação: busca por descrição, pessoa, tags e ordena conforme orderOption
   useEffect(() => {
     let resultado = [...transacoes];
 
@@ -44,7 +47,7 @@ const Transacoes = () => {
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       resultado = resultado.filter(tr => {
-        // Verifica se descrição do pai bate
+        // Verifica se a descrição bate
         const matchDescricao = tr.descricao.toLowerCase().includes(search);
 
         // Verifica se o searchTerm aparece em "pessoa" ou "tags" de algum pagamento
@@ -53,7 +56,6 @@ const Transacoes = () => {
           const matchPessoa = pg.pessoa && pg.pessoa.toLowerCase().includes(search);
           
           // Tags (array de strings) em cada categoria
-          // pg.paymentTags: { [nomeCategoria]: [array de tags] }
           const matchTags = Object.keys(pg.paymentTags || {}).some(cat => 
             pg.paymentTags[cat].some(tag => tag.toLowerCase().includes(search))
           );
@@ -70,8 +72,29 @@ const Transacoes = () => {
       resultado = resultado.filter(tr => tr.tipo === filterType);
     }
 
-    setFilteredTransacoes(resultado);
-  }, [searchTerm, filterType, transacoes]);
+    // 3) Ordenação
+    let sortedResultado = [...resultado];
+    switch(orderOption) {
+      case 'mais-recentes':
+        sortedResultado.sort((a, b) => new Date(b.data) - new Date(a.data));
+        break;
+      case 'mais-antigos':
+        sortedResultado.sort((a, b) => new Date(a.data) - new Date(b.data));
+        break;
+      case 'valor-crescente':
+        // Supondo que cada transação possua a propriedade "valor"
+        sortedResultado.sort((a, b) => a.valor - b.valor);
+        break;
+      case 'valor-decrescente':
+        sortedResultado.sort((a, b) => b.valor - a.valor);
+        break;
+      default:
+        sortedResultado.sort((a, b) => new Date(b.data) - new Date(a.data));
+        break;
+    }
+
+    setFilteredTransacoes(sortedResultado);
+  }, [searchTerm, filterType, transacoes, orderOption]);
 
   // Editar transação
   const handleEdit = (transacao) => {
@@ -128,6 +151,15 @@ const Transacoes = () => {
           <option value="todos">Todos</option>
           <option value="gasto">Gasto</option>
           <option value="recebivel">Recebível</option>
+        </select>
+        <select
+          value={orderOption}
+          onChange={e => setOrderOption(e.target.value)}
+        >
+          <option value="mais-recentes">Lançamentos mais recentes</option>
+          <option value="mais-antigos">Lançamentos mais antigos</option>
+          <option value="valor-crescente">Valor total crescente</option>
+          <option value="valor-decrescente">Valor total decrescente</option>
         </select>
         <button onClick={handleCreate}>+ Nova Transação</button>
       </div>
