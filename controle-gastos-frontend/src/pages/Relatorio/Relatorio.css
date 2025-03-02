@@ -1,11 +1,13 @@
 /* src/pages/Relatorio/Relatorio.css */
 
+/* Container principal do relatório */
 .relatorio-container {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
+/* Título principal */
 .relatorio-title {
   font-size: 2rem;
   color: var(--cor-primaria);
@@ -13,7 +15,7 @@
   margin-bottom: 20px;
 }
 
-/* Seção superior dividida em duas colunas */
+/* Seção superior dividida em duas colunas (Filtros e Resumo) */
 .top-section {
   display: flex;
   gap: 20px;
@@ -38,6 +40,7 @@
   border: 1px solid #ddd;
 }
 
+/* Título do painel de resumo */
 .summary-panel h3 {
   margin-top: 0;
   margin-bottom: 10px;
@@ -45,10 +48,12 @@
   color: var(--cor-primaria);
 }
 
+/* Texto dentro do painel de resumo */
 .summary-panel p {
   margin: 5px 0;
 }
 
+/* Grupo de filtros */
 .filter-group {
   display: flex;
   flex-direction: column;
@@ -83,6 +88,7 @@
   background-color: var(--cor-secundaria);
 }
 
+/* Seção de resultados (tabela) */
 .relatorio-results {
   margin-top: 20px;
 }
@@ -93,7 +99,7 @@
   font-size: 0.95rem;
 }
 
-/* Zebra stripes e hover */
+/* Zebra stripes e hover na tabela */
 .relatorio-table tbody tr:nth-child(even) {
   background-color: #f8f8f8;
 }
@@ -113,7 +119,7 @@
   color: var(--cor-branca);
 }
 
-/* Tag chip */
+/* Chips de tags */
 .relatorio-tag-chip {
   background-color: #007ACC;
   color: #fff;
@@ -128,4 +134,43 @@
 /* Diferenciar chips do pagamento */
 .pag-tag-chip {
   background-color: #28a745; /* Ex: verde */
+}
+
+/* 
+   ----------------------------------------------------------
+   NOVAS CLASSES PARA ORGANIZAR MELHOR O SUMÁRIO EM "PARTES"
+   ----------------------------------------------------------
+*/
+
+/* Contêiner que organiza as seções do sumário em cards */
+.summary-sections {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Cada "card" ou "bloco" de informações dentro do sumário */
+.summary-section {
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+/* Título dentro de cada seção do sumário */
+.summary-section h4 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+  color: var(--cor-primaria);
+}
+
+/* Caso queira exibir linhas de informação dentro de cada seção */
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.summary-item span:first-child {
+  font-weight: bold;
 }

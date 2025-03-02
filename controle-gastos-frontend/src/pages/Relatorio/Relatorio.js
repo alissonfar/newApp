@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { obterTransacoes, obterCategorias, obterTags } from '../../api.js';
+import { exportDataToCSV } from '../../utils/export/exportData';
+import { exportDataToPDF } from '../../utils/export/exportDataPdf';
 import './Relatorio.css';
 
 const Relatorio = () => {
   // Array achatado com base em pai + pagamentos
-  const [allPayments, setAllPayments] = useState([]); 
+  const [allPayments, setAllPayments] = useState([]);
   // Resultado final após filtros
   const [filteredRows, setFilteredRows] = useState([]);
 
@@ -17,8 +19,14 @@ const Relatorio = () => {
   const [tags, setTags] = useState([]);
   const [tagFilters, setTagFilters] = useState({});
 
-  // Sumário
+  // Sumário aprimorado
   const [summaryInfo, setSummaryInfo] = useState({});
+
+  // Formato de exportação
+  const [exportFormat, setExportFormat] = useState('csv');
+
+  // Estado para seleção rápida de datas
+  const [quickRange, setQuickRange] = useState('');
 
   // Carregamento inicial
   useEffect(() => {
@@ -62,7 +70,6 @@ const Relatorio = () => {
           }
         });
 
-        // 2) Armazenamos no estado
         setAllPayments(flattened);
 
         // Carrega categorias e tags
@@ -106,6 +113,59 @@ const Relatorio = () => {
     return acc;
   }, {});
 
+  // Seleção rápida de datas
+  const handleQuickDateRange = (option) => {
+    const now = new Date();
+    let start, end;
+
+    switch (option) {
+      case 'MES_ATUAL':
+        // Primeiro dia e último dia do mês atual
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'MES_ANTERIOR':
+        // Primeiro dia e último dia do mês anterior
+        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        start = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1);
+        end = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0);
+        break;
+      case 'ULTIMOS_60_DIAS':
+        end = now;
+        start = new Date();
+        start.setDate(start.getDate() - 60);
+        break;
+      case 'ULTIMOS_30_DIAS':
+        end = now;
+        start = new Date();
+        start.setDate(start.getDate() - 30);
+        break;
+      case 'ULTIMOS_15_DIAS':
+        end = now;
+        start = new Date();
+        start.setDate(start.getDate() - 15);
+        break;
+      case 'ULTIMOS_7_DIAS':
+        end = now;
+        start = new Date();
+        start.setDate(start.getDate() - 7);
+        break;
+      default:
+        return;
+    }
+
+    // Converter para string no formato YYYY-MM-DD
+    const toStringDate = (date) => {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    setDataInicio(toStringDate(start));
+    setDataFim(toStringDate(end));
+  };
+
   // Filtro principal
   const applyFilters = () => {
     let result = [...allPayments]; // Cópia do array achatado
@@ -133,18 +193,14 @@ const Relatorio = () => {
       const selectedTags = tagFilters[cat];
       if (selectedTags && selectedTags.length > 0) {
         result = result.filter(row => {
-          // Tags do pai
           const paiTags = row.tagsPai[cat] || [];
           const paiMatch = paiTags.some(tag =>
             selectedTags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
           );
-
-          // Tags do pagamento
           const pagTags = row.tagsPagamento[cat] || [];
           const pagMatch = pagTags.some(tag =>
             selectedTags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
           );
-
           return (paiMatch || pagMatch);
         });
       }
@@ -153,33 +209,59 @@ const Relatorio = () => {
     setFilteredRows(result);
   };
 
-  // Recalcula sumário toda vez que filteredRows muda
+  // Recalcula o sumário toda vez que filteredRows muda
   useEffect(() => {
-    // 1) total de "transações" = quantos pagamentos (linhas) foram filtrados
     const totalTransactions = filteredRows.length;
-
-    // 2) soma dos valores = soma de row.valorPagamento
     const totalValueNumber = filteredRows.reduce(
       (acc, row) => acc + parseFloat(row.valorPagamento || 0),
       0
     );
     const totalValue = totalValueNumber.toFixed(2);
 
-    // 3) pessoas distintas
     const people = distinctPessoas(filteredRows);
-
-    // 4) média por pessoa
     const averagePerPerson = people.length > 0
       ? (totalValueNumber / people.length).toFixed(2)
       : '0.00';
+
+    // Cálculo diferenciado para Gastos e Recebíveis
+    const totalGastosNumber = filteredRows
+      .filter(row => row.tipoPai?.toLowerCase() === 'gasto')
+      .reduce((acc, row) => acc + parseFloat(row.valorPagamento || 0), 0);
+    const totalRecebiveisNumber = filteredRows
+      .filter(row => row.tipoPai?.toLowerCase() === 'recebivel')
+      .reduce((acc, row) => acc + parseFloat(row.valorPagamento || 0), 0);
+
+    const totalGastos = totalGastosNumber.toFixed(2);
+    const totalRecebiveis = totalRecebiveisNumber.toFixed(2);
+    const netValue = (totalRecebiveisNumber - totalGastosNumber).toFixed(2);
 
     setSummaryInfo({
       totalTransactions,
       totalValue,
       totalPeople: people.length,
-      averagePerPerson
+      averagePerPerson,
+      totalGastos,
+      totalRecebiveis,
+      netValue
     });
   }, [filteredRows]);
+
+  // Exportação
+  const handleExport = () => {
+    const filterDetails = {
+      dataInicio,
+      dataFim,
+      selectedTipo,
+      selectedPessoas,
+      tagFilters
+    };
+
+    if (exportFormat === 'csv') {
+      exportDataToCSV(filteredRows, 'relatorio.csv');
+    } else if (exportFormat === 'pdf') {
+      exportDataToPDF(filteredRows, filterDetails, summaryInfo, 'relatorio.pdf');
+    }
+  };
 
   return (
     <div className="relatorio-container">
@@ -188,6 +270,27 @@ const Relatorio = () => {
       <div className="top-section">
         {/* Painel de Filtros */}
         <div className="filter-panel">
+          {/* Seleção rápida de datas */}
+          <div className="filter-group">
+            <label>Seleção Rápida de Datas:</label>
+            <select
+              value={quickRange}
+              onChange={e => {
+                const option = e.target.value;
+                setQuickRange(option);
+                handleQuickDateRange(option);
+              }}
+            >
+              <option value="">-- Selecione --</option>
+              <option value="MES_ATUAL">Mês Atual</option>
+              <option value="MES_ANTERIOR">Mês Anterior</option>
+              <option value="ULTIMOS_60_DIAS">Últimos 60 Dias</option>
+              <option value="ULTIMOS_30_DIAS">Últimos 30 Dias</option>
+              <option value="ULTIMOS_15_DIAS">Últimos 15 Dias</option>
+              <option value="ULTIMOS_7_DIAS">Últimos 7 Dias</option>
+            </select>
+          </div>
+
           <div className="filter-group">
             <label>Data Início (Pai):</label>
             <input
@@ -247,15 +350,62 @@ const Relatorio = () => {
           <div className="filter-group">
             <button onClick={applyFilters}>Filtrar</button>
           </div>
+          <div className="filter-group">
+            <label>Formato:</label>
+            <select value={exportFormat} onChange={e => setExportFormat(e.target.value)}>
+              <option value="csv">CSV</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <button onClick={handleExport}>Exportar</button>
+          </div>
         </div>
 
         {/* Painel de Resumo */}
         <div className="summary-panel">
           <h3>Resumo dos Resultados</h3>
-          <p><strong>Total de “Transações” (Pagamentos):</strong> {summaryInfo.totalTransactions}</p>
-          <p><strong>Total em Valor:</strong> R${summaryInfo.totalValue}</p>
-          <p><strong>Número de Pessoas:</strong> {summaryInfo.totalPeople}</p>
-          <p><strong>Média por Pessoa:</strong> R${summaryInfo.averagePerPerson}</p>
+
+          {/* Nova estrutura dividida em blocos */}
+          <div className="summary-sections">
+
+            {/* Bloco 1: informações gerais */}
+            <div className="summary-section">
+              <h4>Informações Gerais</h4>
+              <div className="summary-item">
+                <span>Total de “Transações” (Pagamentos):</span>
+                <span>{summaryInfo.totalTransactions}</span>
+              </div>
+              <div className="summary-item">
+                <span>Total em Valor:</span>
+                <span>R${summaryInfo.totalValue}</span>
+              </div>
+              <div className="summary-item">
+                <span>Número de Pessoas:</span>
+                <span>{summaryInfo.totalPeople}</span>
+              </div>
+              <div className="summary-item">
+                <span>Média por Pessoa:</span>
+                <span>R${summaryInfo.averagePerPerson}</span>
+              </div>
+            </div>
+
+            {/* Bloco 2: detalhes financeiros */}
+            <div className="summary-section">
+              <h4>Detalhes Financeiros</h4>
+              <div className="summary-item">
+                <span>Total de Gastos:</span>
+                <span>R${summaryInfo.totalGastos}</span>
+              </div>
+              <div className="summary-item">
+                <span>Total de Recebíveis:</span>
+                <span>R${summaryInfo.totalRecebiveis}</span>
+              </div>
+              <div className="summary-item">
+                <span>Saldo (Recebíveis - Gastos):</span>
+                <span>R${summaryInfo.netValue}</span>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 
@@ -275,9 +425,7 @@ const Relatorio = () => {
             </thead>
             <tbody>
               {filteredRows.map((row, idx) => {
-                // Tags do pai
                 const paiTags = row.tagsPai || {};
-                // Tags do pagamento
                 const pagTags = row.tagsPagamento || {};
 
                 return (
@@ -290,7 +438,6 @@ const Relatorio = () => {
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
                     <td>{row.tipoPai}</td>
                     <td>
-                      {/* Exibe tags do pai */}
                       {Object.keys(paiTags).map((catName, i) =>
                         paiTags[catName].map((tagName, j) => (
                           <span key={`pai-${i}-${j}`} className="tag-chip relatorio-tag-chip">
@@ -298,7 +445,6 @@ const Relatorio = () => {
                           </span>
                         ))
                       )}
-                      {/* Exibe tags do pagamento */}
                       {Object.keys(pagTags).map((catName, i) =>
                         pagTags[catName].map((tagName, j) => (
                           <span key={`pag-${i}-${j}`} className="tag-chip relatorio-tag-chip pag-tag-chip">
