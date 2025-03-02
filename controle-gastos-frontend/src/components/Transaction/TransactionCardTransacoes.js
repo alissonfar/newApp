@@ -11,13 +11,21 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
       <FaArrowUp className="tipo-icon recebivel" />
     );
 
+  // Função que extrai a parte "YYYY-MM-DD" da string ISO e formata como "dd/mm/yyyy"
+  const formatDateDDMMYYYY = (isoString) => {
+    if (!isoString) return '';
+    const datePart = isoString.split('T')[0]; // extrai "YYYY-MM-DD"
+    const [year, month, day] = datePart.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <div className="transaction-card-transacoes">
       <div className="card-header">
         <div className="card-header-left">
           <h3 className="card-title">{transacao.descricao}</h3>
           <span className="card-date">
-            {new Date(transacao.data).toLocaleDateString('pt-BR')}
+            {formatDateDDMMYYYY(transacao.data)}
           </span>
         </div>
         <div className="card-header-right">
@@ -46,10 +54,7 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
         <button className="action-btn edit-btn" onClick={() => onEdit(transacao)}>
           <FaEdit /> Editar
         </button>
-        <button
-          className="action-btn delete-btn"
-          onClick={() => onDelete(transacao.id)}
-        >
+        <button className="action-btn delete-btn" onClick={() => onDelete(transacao.id)}>
           <FaTrash /> Excluir
         </button>
       </div>

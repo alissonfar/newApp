@@ -35,20 +35,20 @@ const Relatorio = () => {
         const transData = await obterTransacoes();
         const transArray = transData.transacoes || [];
 
-        // 1) Achatar cada transacao pai em vários registros
+        // 1) Achatar cada transacao pai em vários registros (mas não usar tags do pai)
         const flattened = [];
         transArray.forEach((tr) => {
-          const paiTags = tr.tags || {};
-          // Se não houver pagamentos, criamos um "pagamento" vazio
+          // Ignoramos as tags do Pai (tr.tags) e não armazenamos
+          // no estado, pois não serão consideradas no relatório
           if (!tr.pagamentos || tr.pagamentos.length === 0) {
+            // Criar registro de pagamento "vazio"
             flattened.push({
               parentId: tr.id,
               dataPai: tr.data,
               tipoPai: tr.tipo,
               descricaoPai: tr.descricao,
-              tagsPai: paiTags,
               valorPai: tr.valor,
-              // pagamento "vazio"
+              // Somente tags do pagamento (inexistentes nesse caso)
               pessoa: null,
               valorPagamento: 0,
               tagsPagamento: {}
@@ -60,10 +60,10 @@ const Relatorio = () => {
                 dataPai: tr.data,
                 tipoPai: tr.tipo,
                 descricaoPai: tr.descricao,
-                tagsPai: paiTags,
                 valorPai: tr.valor,
                 pessoa: p.pessoa,
                 valorPagamento: p.valor,
+                // Somente tags do pagamento
                 tagsPagamento: p.tags || {}
               });
             });
@@ -103,6 +103,7 @@ const Relatorio = () => {
   };
 
   // Agrupa as tags por categoria (para exibir nos filtros)
+  // (Somente exibimos categorias e tags, mas ao filtrar consideramos só tags de pagamento)
   const tagsPorCategoria = tags.reduce((acc, tag) => {
     if (tag.categoria) {
       if (!acc[tag.categoria]) {
@@ -188,20 +189,16 @@ const Relatorio = () => {
       result = result.filter(row => row.pessoa && selectedPessoas.includes(row.pessoa));
     }
 
-    // 4) Filtro por tags: considerar tags do pai e do pagamento
+    // 4) Filtro por tags (SOMENTE DO PAGAMENTO)
     Object.keys(tagFilters).forEach(cat => {
       const selectedTags = tagFilters[cat];
       if (selectedTags && selectedTags.length > 0) {
         result = result.filter(row => {
-          const paiTags = row.tagsPai[cat] || [];
-          const paiMatch = paiTags.some(tag =>
-            selectedTags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
-          );
           const pagTags = row.tagsPagamento[cat] || [];
           const pagMatch = pagTags.some(tag =>
             selectedTags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
           );
-          return (paiMatch || pagMatch);
+          return pagMatch;
         });
       }
     });
@@ -332,7 +329,7 @@ const Relatorio = () => {
           </div>
           {categorias.map(cat => (
             <div key={cat.id} className="filter-group">
-              <label>{cat.nome} (Tags):</label>
+              <label>{cat.nome} (Tags Pagamento):</label>
               <select
                 multiple
                 value={tagFilters[cat.nome] || []}
@@ -420,12 +417,13 @@ const Relatorio = () => {
                 <th>Pessoa (Pagamento)</th>
                 <th>Valor (Pagamento)</th>
                 <th>Tipo (Pai)</th>
-                <th>Tags</th>
+                <th>Tags (Pagamento)</th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.map((row, idx) => {
-                const paiTags = row.tagsPai || {};
+                // Agora, ignoramos completamente as tags do Pai.
+                // Exibimos apenas as tags do pagamento (pagTags).
                 const pagTags = row.tagsPagamento || {};
 
                 return (
@@ -438,17 +436,10 @@ const Relatorio = () => {
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
                     <td>{row.tipoPai}</td>
                     <td>
-                      {Object.keys(paiTags).map((catName, i) =>
-                        paiTags[catName].map((tagName, j) => (
-                          <span key={`pai-${i}-${j}`} className="tag-chip relatorio-tag-chip">
-                            [Pai] {catName}: {tagName}
-                          </span>
-                        ))
-                      )}
                       {Object.keys(pagTags).map((catName, i) =>
                         pagTags[catName].map((tagName, j) => (
                           <span key={`pag-${i}-${j}`} className="tag-chip relatorio-tag-chip pag-tag-chip">
-                            [Pag] {catName}: {tagName}
+                            {catName}: {tagName}
                           </span>
                         ))
                       )}

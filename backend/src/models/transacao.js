@@ -1,4 +1,4 @@
-// src/models/transacao.js
+// backendsrc/models/transacao.js 
 const mongoose = require('mongoose');
 
 const PagamentoSchema = new mongoose.Schema({
@@ -13,8 +13,8 @@ const TransacaoSchema = new mongoose.Schema({
   descricao: { type: String, required: true },
   valor: { type: Number, required: true },
   data: { type: Date, required: true },
-  // Agora as tags globais são armazenadas como um objeto (agrupadas por categoria)
-  tags: { type: Object, required: true },
+  // Ajuste: torna o campo tags opcional e define valor padrão como um objeto vazio
+  tags: { type: Object, required: false, default: {} },
   pagamentos: { type: [PagamentoSchema], required: true },
   status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' }
 });

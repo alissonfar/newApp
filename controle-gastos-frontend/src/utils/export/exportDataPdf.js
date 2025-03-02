@@ -3,33 +3,22 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 /**
- * Exporta os dados para um arquivo PDF estruturado como um extrato bancário,
- * exibindo os detalhes dos filtros aplicados e um resumo analítico completo.
+ * Exporta os dados para um arquivo PDF estruturado, exibindo:
+ * - Filtros aplicados em uma tabela
+ * - Resumo analítico em outra tabela
+ * - Seções de Gastos e Recebíveis em tabelas separadas
  *
  * @param {Array} data - Array de objetos (linhas filtradas) a serem exportados.
  * @param {Object} filterDetails - Detalhes dos filtros aplicados.
- *   Exemplo:
- *     {
- *       dataInicio: '2025-01-01',
- *       dataFim: '2025-02-01',
- *       selectedTipo: 'gasto',
- *       selectedPessoas: ['João', 'Maria'],
- *       tagFilters: { "Categoria A": ["Tag1", "Tag2"], "Categoria B": ["Tag3"] }
- *     }
  * @param {Object} summaryInfo - Informações analíticas calculadas.
- *   Exemplo:
- *     {
- *       totalTransactions,
- *       totalValue,
- *       totalPeople,
- *       averagePerPerson,
- *       totalGastos,
- *       totalRecebiveis,
- *       netValue
- *     }
  * @param {string} filename - Nome do arquivo PDF (padrão: 'relatorio.pdf').
  */
-export function exportDataToPDF(data, filterDetails = {}, summaryInfo = {}, filename = 'relatorio.pdf') {
+export function exportDataToPDF(
+  data,
+  filterDetails = {},
+  summaryInfo = {},
+  filename = 'relatorio.pdf'
+) {
   if (!data || data.length === 0) {
     console.warn("Nenhum dado para exportar");
     return;
@@ -37,7 +26,7 @@ export function exportDataToPDF(data, filterDetails = {}, summaryInfo = {}, file
 
   const doc = new jsPDF();
 
-  // Título do documento
+  // 1) Título do documento
   doc.setFontSize(16);
   doc.text("Relatório de Transações", 14, 20);
 
@@ -47,57 +36,95 @@ export function exportDataToPDF(data, filterDetails = {}, summaryInfo = {}, file
 
   let startY = 36;
 
-  // Detalhes dos Filtros
+  // ---------------------------------------------------
+  // 2) Tabela de Filtros Aplicados
+  // ---------------------------------------------------
+  doc.setFontSize(14);
+  doc.text("Filtros Aplicados", 14, startY);
+  startY += 6;
   doc.setFontSize(10);
-  // Período
-  const periodoLine = `Período: ${filterDetails.dataInicio || '-'} até ${filterDetails.dataFim || '-'}`;
-  doc.text(periodoLine, 14, startY);
-  startY += 6;
-  // Tipo de Transação
-  const tipoLine = `Tipo: ${filterDetails.selectedTipo || 'both'}`;
-  doc.text(tipoLine, 14, startY);
-  startY += 6;
-  // Pessoas
-  const pessoasLine = filterDetails.selectedPessoas && filterDetails.selectedPessoas.length > 0
-    ? `Pessoas: ${filterDetails.selectedPessoas.join(', ')}`
-    : "Pessoas: Nenhuma";
-  doc.text(pessoasLine, 14, startY);
-  startY += 6;
-  // Tags
-  let tagLine = "Tags: Nenhuma";
+
+  // Monta o corpo da tabela de filtros (campo/valor)
+  const periodoLine = `${filterDetails.dataInicio || '-'} até ${filterDetails.dataFim || '-'}`;
+  const tipoLine = filterDetails.selectedTipo || 'both';
+  const pessoasLine = (filterDetails.selectedPessoas && filterDetails.selectedPessoas.length > 0)
+    ? filterDetails.selectedPessoas.join(', ')
+    : 'Nenhuma';
+
+  let tagLine = "Nenhuma";
   if (filterDetails.tagFilters) {
     const tagEntries = Object.entries(filterDetails.tagFilters)
       .filter(([cat, tags]) => tags && tags.length > 0)
       .map(([cat, tags]) => `${cat}: ${tags.join(', ')}`);
     if (tagEntries.length > 0) {
-      tagLine = `Tags: ${tagEntries.join(' | ')}`;
+      tagLine = tagEntries.join(' | ');
     }
   }
-  doc.text(tagLine, 14, startY);
-  startY += 10;
 
-  // Resumo Analítico
+  const filterTableData = [
+    ["Período", periodoLine],
+    ["Tipo (Pagamento)", tipoLine],
+    ["Pessoas (Pagamento)", pessoasLine],
+    ["Tags (Pagamento)", tagLine]
+  ];
+
+  autoTable(doc, {
+    startY,
+    head: [["Campo", "Valor"]],
+    body: filterTableData,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [41, 128, 185], // cor de fundo do cabeçalho
+      textColor: 255,           // cor do texto do cabeçalho (branco)
+      fontSize: 10
+    },
+    bodyStyles: { fontSize: 10 },
+    styles: { cellPadding: 3 }
+  });
+
+  startY = doc.lastAutoTable.finalY + 10;
+
+  // ---------------------------------------------------
+  // 3) Tabela de Resumo Analítico
+  // ---------------------------------------------------
   doc.setFontSize(14);
   doc.text("Resumo Analítico", 14, startY);
   startY += 6;
   doc.setFontSize(10);
-  const summaryLines = [
-    `Total de Transações (Pagamentos): ${summaryInfo.totalTransactions || 0}`,
-    `Total em Valor: R$${summaryInfo.totalValue || '0.00'}`,
-    `Número de Pessoas: ${summaryInfo.totalPeople || 0}`,
-    `Média por Pessoa: R$${summaryInfo.averagePerPerson || '0.00'}`,
-    `Total de Gastos: R$${summaryInfo.totalGastos || '0.00'}`,
-    `Total de Recebíveis: R$${summaryInfo.totalRecebiveis || '0.00'}`,
-    `Saldo (Recebíveis - Gastos): R$${summaryInfo.netValue || '0.00'}`
-  ];
-  doc.text(summaryLines, 14, startY);
-  startY += summaryLines.length * 6 + 10;
 
-  // Separa os dados em Gastos e Recebíveis
+  const summaryTableData = [
+    ["Total de Transações (Pagamentos)", summaryInfo.totalTransactions || 0],
+    ["Total em Valor", `R$${summaryInfo.totalValue || '0.00'}`],
+    ["Número de Pessoas", summaryInfo.totalPeople || 0],
+    ["Média por Pessoa", `R$${summaryInfo.averagePerPerson || '0.00'}`],
+    ["Total de Gastos", `R$${summaryInfo.totalGastos || '0.00'}`],
+    ["Total de Recebíveis", `R$${summaryInfo.totalRecebiveis || '0.00'}`],
+    ["Saldo (Recebíveis - Gastos)", `R$${summaryInfo.netValue || '0.00'}`]
+  ];
+
+  autoTable(doc, {
+    startY,
+    head: [["Indicador", "Valor"]],
+    body: summaryTableData,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      fontSize: 10
+    },
+    bodyStyles: { fontSize: 10 },
+    styles: { cellPadding: 3 }
+  });
+
+  startY = doc.lastAutoTable.finalY + 10;
+
+  // ---------------------------------------------------
+  // 4) Separa os dados em Gastos e Recebíveis
+  // ---------------------------------------------------
   const gastos = data.filter(row => row.tipoPai?.toLowerCase() === 'gasto');
   const recebiveis = data.filter(row => row.tipoPai?.toLowerCase() === 'recebivel');
 
-  // Função auxiliar para adicionar uma seção com tabela
+  // Função auxiliar para adicionar cada seção
   const addSection = (titulo, rows) => {
     if (rows.length === 0) return;
     doc.setFontSize(14);
@@ -115,17 +142,24 @@ export function exportDataToPDF(data, filterDetails = {}, summaryInfo = {}, file
     autoTable(doc, {
       head: [colunas],
       body: linhas,
-      startY: startY,
+      startY,
       theme: 'grid',
-      headStyles: { fillColor: [41, 128, 185] },
-      styles: { fontSize: 10 }
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontSize: 10
+      },
+      bodyStyles: { fontSize: 10 },
+      styles: { cellPadding: 3 }
     });
 
     startY = doc.lastAutoTable.finalY + 10;
   };
 
+  // 5) Adiciona as seções de Gastos e Recebíveis
   addSection("Gastos", gastos);
   addSection("Recebíveis", recebiveis);
 
+  // 6) Salva o PDF
   doc.save(filename);
 }
