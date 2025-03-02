@@ -3,6 +3,21 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 /**
+ * Converte a string de data (no formato ISO ou YYYY-MM-DD) para DD/MM/YYYY.
+ * Exemplo de input: "2025-02-02T00:00:00.000Z" ou "2025-02-02".
+ */
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  // Se for um ISO com "T", pegamos apenas a parte antes do "T"
+  const [fullDate] = dateStr.split('T'); // ex.: "2025-02-02T00:00:00.000Z" -> "2025-02-02"
+  // Agora fullDate deve ser algo como "2025-02-02"
+  const [year, month, day] = fullDate.split('-');
+  if (!year || !month || !day) return dateStr; // fallback, se algo estiver estranho
+  return `${day}/${month}/${year}`;
+}
+
+
+/**
  * Exporta os dados para um arquivo PDF estruturado, exibindo:
  * - Filtros aplicados em uma tabela
  * - Resumo analítico em outra tabela
@@ -132,8 +147,9 @@ export function exportDataToPDF(
     startY += 6;
 
     const colunas = ["Data", "Descrição", "Pessoa", "Valor"];
+    // Aqui usamos formatDate em row.dataPai para manter a data exata
     const linhas = rows.map(row => [
-      new Date(row.dataPai).toLocaleDateString('pt-BR'),
+      formatDate(row.dataPai),
       row.descricaoPai,
       row.pessoa || '',
       parseFloat(row.valorPagamento).toFixed(2)

@@ -7,7 +7,7 @@ import './Relatorio.css';
 const Relatorio = () => {
   // Array achatado com base em pai + pagamentos
   const [allPayments, setAllPayments] = useState([]);
-  // Resultado final após filtros
+  // Resultado final após filtros/busca/ordenação
   const [filteredRows, setFilteredRows] = useState([]);
 
   // Filtros
@@ -19,36 +19,37 @@ const Relatorio = () => {
   const [tags, setTags] = useState([]);
   const [tagFilters, setTagFilters] = useState({});
 
-  // Sumário aprimorado
+  // Sumário
   const [summaryInfo, setSummaryInfo] = useState({});
 
-  // Formato de exportação
-  const [exportFormat, setExportFormat] = useState('csv');
+  // Exportação (AGORA POR PADRÃO PDF)
+  const [exportFormat, setExportFormat] = useState('pdf');
 
-  // Estado para seleção rápida de datas
+  // Seleção rápida de datas
   const [quickRange, setQuickRange] = useState('');
 
-  // Carregamento inicial
+  // Busca e Ordenação
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  // 1) Carregamento inicial
   useEffect(() => {
     async function fetchData() {
       try {
         const transData = await obterTransacoes();
         const transArray = transData.transacoes || [];
 
-        // 1) Achatar cada transacao pai em vários registros (mas não usar tags do pai)
+        // Achatar cada transacao pai em vários registros
         const flattened = [];
         transArray.forEach((tr) => {
-          // Ignoramos as tags do Pai (tr.tags) e não armazenamos
-          // no estado, pois não serão consideradas no relatório
           if (!tr.pagamentos || tr.pagamentos.length === 0) {
-            // Criar registro de pagamento "vazio"
             flattened.push({
               parentId: tr.id,
-              dataPai: tr.data,
+              dataPai: tr.data, // formato YYYY-MM-DD ou ISO
               tipoPai: tr.tipo,
               descricaoPai: tr.descricao,
               valorPai: tr.valor,
-              // Somente tags do pagamento (inexistentes nesse caso)
               pessoa: null,
               valorPagamento: 0,
               tagsPagamento: {}
@@ -63,7 +64,6 @@ const Relatorio = () => {
                 valorPai: tr.valor,
                 pessoa: p.pessoa,
                 valorPagamento: p.valor,
-                // Somente tags do pagamento
                 tagsPagamento: p.tags || {}
               });
             });
@@ -91,19 +91,16 @@ const Relatorio = () => {
     fetchData();
   }, []);
 
-  // Função que extrai pessoas únicas de um array achatado
+  // Função para extrair pessoas únicas
   const distinctPessoas = (rows) => {
-    const pessoasSet = new Set();
+    const setP = new Set();
     rows.forEach(row => {
-      if (row.pessoa) {
-        pessoasSet.add(row.pessoa);
-      }
+      if (row.pessoa) setP.add(row.pessoa);
     });
-    return Array.from(pessoasSet);
+    return Array.from(setP);
   };
 
   // Agrupa as tags por categoria (para exibir nos filtros)
-  // (Somente exibimos categorias e tags, mas ao filtrar consideramos só tags de pagamento)
   const tagsPorCategoria = tags.reduce((acc, tag) => {
     if (tag.categoria) {
       if (!acc[tag.categoria]) {
@@ -121,12 +118,10 @@ const Relatorio = () => {
 
     switch (option) {
       case 'MES_ATUAL':
-        // Primeiro dia e último dia do mês atual
         start = new Date(now.getFullYear(), now.getMonth(), 1);
         end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         break;
       case 'MES_ANTERIOR':
-        // Primeiro dia e último dia do mês anterior
         const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         start = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1);
         end = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0);
@@ -155,7 +150,6 @@ const Relatorio = () => {
         return;
     }
 
-    // Converter para string no formato YYYY-MM-DD
     const toStringDate = (date) => {
       const yyyy = date.getFullYear();
       const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -167,29 +161,35 @@ const Relatorio = () => {
     setDataFim(toStringDate(end));
   };
 
-  // Filtro principal
+  // 2) Função principal de FILTRO + BUSCA + ORDENAÇÃO
   const applyFilters = () => {
-    let result = [...allPayments]; // Cópia do array achatado
+    let result = [...allPayments];
 
-    // 1) Filtro por data (pai)
+    // Filtro por data (pai)
     if (dataInicio) {
-      result = result.filter(row => new Date(row.dataPai) >= new Date(dataInicio));
+      result = result.filter(row => {
+        const [fullDate] = row.dataPai.split('T');
+        return fullDate >= dataInicio;
+      });
     }
     if (dataFim) {
-      result = result.filter(row => new Date(row.dataPai) <= new Date(dataFim));
+      result = result.filter(row => {
+        const [fullDate] = row.dataPai.split('T');
+        return fullDate <= dataFim;
+      });
     }
 
-    // 2) Filtro por tipo (pai)
+    // Filtro por tipo
     if (selectedTipo !== 'both') {
       result = result.filter(row => row.tipoPai.toLowerCase() === selectedTipo);
     }
 
-    // 3) Filtro por pessoas (pagamento)
+    // Filtro por pessoas
     if (selectedPessoas.length > 0) {
       result = result.filter(row => row.pessoa && selectedPessoas.includes(row.pessoa));
     }
 
-    // 4) Filtro por tags (SOMENTE DO PAGAMENTO)
+    // Filtro por tags (pagamento)
     Object.keys(tagFilters).forEach(cat => {
       const selectedTags = tagFilters[cat];
       if (selectedTags && selectedTags.length > 0) {
@@ -203,10 +203,51 @@ const Relatorio = () => {
       }
     });
 
+    // Busca
+    if (searchTerm.trim() !== '') {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(row => {
+        const descMatch = row.descricaoPai?.toLowerCase().includes(lower);
+        const pessoaMatch = row.pessoa?.toLowerCase().includes(lower);
+        return descMatch || pessoaMatch;
+      });
+    }
+
+    // Ordenação
+    if (sortColumn) {
+      result.sort((a, b) => {
+        let valA = a[sortColumn];
+        let valB = b[sortColumn];
+
+        // Comparar datas
+        if (sortColumn === 'dataPai') {
+          const [fullA] = (valA || '').split('T');
+          const [fullB] = (valB || '').split('T');
+          return sortDirection === 'asc'
+            ? fullA.localeCompare(fullB)
+            : fullB.localeCompare(fullA);
+        }
+        // Comparar números
+        else if (sortColumn === 'valorPagamento') {
+          const numA = parseFloat(valA) || 0;
+          const numB = parseFloat(valB) || 0;
+          return sortDirection === 'asc' ? numA - numB : numB - numA;
+        }
+        // Comparar strings
+        else {
+          valA = (valA || '').toString().toLowerCase();
+          valB = (valB || '').toString().toLowerCase();
+          if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+          if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+          return 0;
+        }
+      });
+    }
+
     setFilteredRows(result);
   };
 
-  // Recalcula o sumário toda vez que filteredRows muda
+  // 3) Recalcula o sumário quando filteredRows muda
   useEffect(() => {
     const totalTransactions = filteredRows.length;
     const totalValueNumber = filteredRows.reduce(
@@ -220,7 +261,7 @@ const Relatorio = () => {
       ? (totalValueNumber / people.length).toFixed(2)
       : '0.00';
 
-    // Cálculo diferenciado para Gastos e Recebíveis
+    // Gastos x Recebíveis
     const totalGastosNumber = filteredRows
       .filter(row => row.tipoPai?.toLowerCase() === 'gasto')
       .reduce((acc, row) => acc + parseFloat(row.valorPagamento || 0), 0);
@@ -243,7 +284,7 @@ const Relatorio = () => {
     });
   }, [filteredRows]);
 
-  // Exportação
+  // 4) Exportação
   const handleExport = () => {
     const filterDetails = {
       dataInicio,
@@ -255,9 +296,32 @@ const Relatorio = () => {
 
     if (exportFormat === 'csv') {
       exportDataToCSV(filteredRows, 'relatorio.csv');
-    } else if (exportFormat === 'pdf') {
+    } else {
+      // Padrão PDF
       exportDataToPDF(filteredRows, filterDetails, summaryInfo, 'relatorio.pdf');
     }
+  };
+
+  // 5) Limpar Filtros
+  const handleClearFilters = () => {
+    setDataInicio('');
+    setDataFim('');
+    setSelectedTipo('both');
+    setSelectedPessoas([]);
+    // Resetar tags
+    const resetTagFilters = {};
+    categorias.forEach(cat => {
+      resetTagFilters[cat.nome] = [];
+    });
+    setTagFilters(resetTagFilters);
+
+    setQuickRange('');
+    setSearchTerm('');
+    setSortColumn('');
+    setSortDirection('asc');
+
+    // Se quiser já aplicar e mostrar tudo:
+    setFilteredRows(allPayments);
   };
 
   return (
@@ -265,105 +329,172 @@ const Relatorio = () => {
       <h2 className="relatorio-title">Relatórios</h2>
 
       <div className="top-section">
-        {/* Painel de Filtros */}
+        {/* Painel de Filtros (organizado em seções) */}
         <div className="filter-panel">
-          {/* Seleção rápida de datas */}
-          <div className="filter-group">
-            <label>Seleção Rápida de Datas:</label>
-            <select
-              value={quickRange}
-              onChange={e => {
-                const option = e.target.value;
-                setQuickRange(option);
-                handleQuickDateRange(option);
-              }}
-            >
-              <option value="">-- Selecione --</option>
-              <option value="MES_ATUAL">Mês Atual</option>
-              <option value="MES_ANTERIOR">Mês Anterior</option>
-              <option value="ULTIMOS_60_DIAS">Últimos 60 Dias</option>
-              <option value="ULTIMOS_30_DIAS">Últimos 30 Dias</option>
-              <option value="ULTIMOS_15_DIAS">Últimos 15 Dias</option>
-              <option value="ULTIMOS_7_DIAS">Últimos 7 Dias</option>
-            </select>
+
+          {/* Seção 1: Datas */}
+          <div className="filter-section">
+            <h4>Datas</h4>
+            <div className="filter-row">
+              <div className="filter-group">
+                <label>Seleção de Datas:</label>
+                <select
+                  value={quickRange}
+                  onChange={e => {
+                    setQuickRange(e.target.value);
+                    handleQuickDateRange(e.target.value);
+                  }}
+                >
+                  <option value="">-- Selecione --</option>
+                  <option value="MES_ATUAL">Mês Atual</option>
+                  <option value="MES_ANTERIOR">Mês Anterior</option>
+                  <option value="ULTIMOS_60_DIAS">Últimos 60 Dias</option>
+                  <option value="ULTIMOS_30_DIAS">Últimos 30 Dias</option>
+                  <option value="ULTIMOS_15_DIAS">Últimos 15 Dias</option>
+                  <option value="ULTIMOS_7_DIAS">Últimos 7 Dias</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Data Início (Pai):</label>
+                <input
+                  type="date"
+                  value={dataInicio}
+                  onChange={e => setDataInicio(e.target.value)}
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>Data Fim (Pai):</label>
+                <input
+                  type="date"
+                  value={dataFim}
+                  onChange={e => setDataFim(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="filter-group">
-            <label>Data Início (Pai):</label>
-            <input
-              type="date"
-              value={dataInicio}
-              onChange={e => setDataInicio(e.target.value)}
-            />
-          </div>
-          <div className="filter-group">
-            <label>Data Fim (Pai):</label>
-            <input
-              type="date"
-              value={dataFim}
-              onChange={e => setDataFim(e.target.value)}
-            />
-          </div>
-          <div className="filter-group">
-            <label>Pessoas (Pagamento):</label>
-            <select
-              multiple
-              value={selectedPessoas}
-              onChange={e => {
-                const values = Array.from(e.target.selectedOptions, option => option.value);
-                setSelectedPessoas(values);
-              }}
-            >
-              {distinctPessoas(allPayments).map((p, idx) => (
-                <option key={idx} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Tipo de Transação (Pai):</label>
-            <select value={selectedTipo} onChange={e => setSelectedTipo(e.target.value)}>
-              <option value="both">Ambos</option>
-              <option value="gasto">Gasto</option>
-              <option value="recebivel">Recebível</option>
-            </select>
-          </div>
-          {categorias.map(cat => (
-            <div key={cat.id} className="filter-group">
-              <label>{cat.nome} (Tags Pagamento):</label>
-              <select
-                multiple
-                value={tagFilters[cat.nome] || []}
-                onChange={e => {
-                  const selected = Array.from(e.target.selectedOptions, option => option.value);
-                  setTagFilters(prev => ({ ...prev, [cat.nome]: selected }));
-                }}
-              >
-                {(tagsPorCategoria[cat.nome] || []).map(tag => (
-                  <option key={tag.id} value={tag.nome}>{tag.nome}</option>
-                ))}
-              </select>
+          {/* Seção 2: Transação */}
+          <div className="filter-section">
+            <h4>Transação</h4>
+            <div className="filter-row">
+              <div className="filter-group">
+                <label>Pessoas (Pagamento):</label>
+                <select
+                  multiple
+                  value={selectedPessoas}
+                  onChange={e => {
+                    const values = Array.from(e.target.selectedOptions, opt => opt.value);
+                    setSelectedPessoas(values);
+                  }}
+                >
+                  {distinctPessoas(allPayments).map((p, idx) => (
+                    <option key={idx} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Tipo de Transação (Pai):</label>
+                <select
+                  value={selectedTipo}
+                  onChange={e => setSelectedTipo(e.target.value)}
+                >
+                  <option value="both">Ambos</option>
+                  <option value="gasto">Gasto</option>
+                  <option value="recebivel">Recebível</option>
+                </select>
+              </div>
             </div>
-          ))}
-          <div className="filter-group">
-            <button onClick={applyFilters}>Filtrar</button>
           </div>
-          <div className="filter-group">
-            <label>Formato:</label>
-            <select value={exportFormat} onChange={e => setExportFormat(e.target.value)}>
-              <option value="csv">CSV</option>
-              <option value="pdf">PDF</option>
-            </select>
-            <button onClick={handleExport}>Exportar</button>
+
+          {/* Seção 3: Tags de Pagamento */}
+          <div className="filter-section">
+            <h4>Tags de Pagamento</h4>
+            <div className="filter-row">
+              {categorias.map(cat => (
+                <div key={cat.id} className="filter-group">
+                  <label>{cat.nome}:</label>
+                  <select
+                    multiple
+                    value={tagFilters[cat.nome] || []}
+                    onChange={e => {
+                      const selected = Array.from(e.target.selectedOptions, opt => opt.value);
+                      setTagFilters(prev => ({ ...prev, [cat.nome]: selected }));
+                    }}
+                  >
+                    {(tagsPorCategoria[cat.nome] || []).map(tag => (
+                      <option key={tag.id} value={tag.nome}>{tag.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+
+          {/* Seção 4: Pesquisa & Ordenação */}
+          <div className="filter-section">
+            <h4>Pesquisa & Ordenação</h4>
+            <div className="filter-row">
+              <div className="filter-group">
+                <label>Pesquisar:</label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Buscar descrição ou pessoa..."
+                />
+              </div>
+              <div className="filter-group">
+                <label>Ordenar por:</label>
+                <select
+                  value={sortColumn}
+                  onChange={e => setSortColumn(e.target.value)}
+                >
+                  <option value="">--Nenhum--</option>
+                  <option value="dataPai">Data</option>
+                  <option value="descricaoPai">Descrição</option>
+                  <option value="pessoa">Pessoa</option>
+                  <option value="valorPagamento">Valor (Pagamento)</option>
+                </select>
+                <select
+                  value={sortDirection}
+                  onChange={e => setSortDirection(e.target.value)}
+                >
+                  <option value="asc">Ascendente</option>
+                  <option value="desc">Descendente</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Seção 5: Botões (Filtrar, Limpar e Exportar) */}
+          <div className="filter-section filter-actions">
+            <button onClick={applyFilters}>Filtrar/Buscar/Ordenar</button>
+            <button onClick={handleClearFilters} style={{ marginLeft: '10px' }}>
+              Limpar Filtros
+            </button>
+
+            <div className="export-group">
+              <label>Formato:</label>
+              <select
+                value={exportFormat}
+                onChange={e => setExportFormat(e.target.value)}
+              >
+                <option value="csv">CSV</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <button onClick={handleExport}>Exportar</button>
+            </div>
+          </div>
+
+        </div> {/* Fim do filter-panel */}
 
         {/* Painel de Resumo */}
         <div className="summary-panel">
           <h3>Resumo dos Resultados</h3>
-
-          {/* Nova estrutura dividida em blocos */}
           <div className="summary-sections">
-
             {/* Bloco 1: informações gerais */}
             <div className="summary-section">
               <h4>Informações Gerais</h4>
@@ -401,10 +532,9 @@ const Relatorio = () => {
                 <span>R${summaryInfo.netValue}</span>
               </div>
             </div>
-
           </div>
         </div>
-      </div>
+      </div> {/* fim da top-section */}
 
       <div className="relatorio-results">
         <h3>Resultados ({filteredRows.length})</h3>
@@ -422,22 +552,23 @@ const Relatorio = () => {
             </thead>
             <tbody>
               {filteredRows.map((row, idx) => {
-                // Agora, ignoramos completamente as tags do Pai.
-                // Exibimos apenas as tags do pagamento (pagTags).
-                const pagTags = row.tagsPagamento || {};
+                // Formatando data manualmente (YYYY-MM-DD -> DD/MM/YYYY)
+                const [fullDate] = row.dataPai.split('T');
+                const [year, month, day] = fullDate.split('-');
+                const displayDate = (year && month && day)
+                  ? `${day}/${month}/${year}`
+                  : row.dataPai; // fallback
 
                 return (
                   <tr key={idx}>
                     <td>{row.descricaoPai}</td>
-                    <td>
-                      {new Date(row.dataPai).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                    </td>
+                    <td>{displayDate}</td>
                     <td>{row.pessoa || '—'}</td>
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
                     <td>{row.tipoPai}</td>
                     <td>
-                      {Object.keys(pagTags).map((catName, i) =>
-                        pagTags[catName].map((tagName, j) => (
+                      {Object.keys(row.tagsPagamento || {}).map((catName, i) =>
+                        row.tagsPagamento[catName].map((tagName, j) => (
                           <span key={`pag-${i}-${j}`} className="tag-chip relatorio-tag-chip pag-tag-chip">
                             {catName}: {tagName}
                           </span>

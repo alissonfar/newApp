@@ -1,5 +1,3 @@
-/* src/pages/Relatorio/Relatorio.css */
-
 /* Container principal do relatório */
 .relatorio-container {
   padding: 20px;
@@ -15,7 +13,7 @@
   margin-bottom: 20px;
 }
 
-/* Seção superior dividida em duas colunas (Filtros e Resumo) */
+/* Seção superior dividida em duas colunas (Painel de Filtros e Resumo) */
 .top-section {
   display: flex;
   gap: 20px;
@@ -23,41 +21,47 @@
   margin-bottom: 20px;
 }
 
-/* Painel de Filtros */
+/* Painel de Filtros (agora em layout de grid) */
 .filter-panel {
   flex: 1;
+  display: grid;
+  grid-template-columns: 1fr; /* Se quiser 2 colunas horizontais, use: repeat(2, 1fr) */
+  gap: 15px;
   background-color: #f2f2f2;
   padding: 15px;
   border-radius: 8px;
 }
 
-/* Painel de Resumo */
-.summary-panel {
-  flex: 1;
-  background-color: #e8f4fd;
-  padding: 15px;
-  border-radius: 8px;
+/* Cada seção de filtro vira um "card" */
+.filter-section {
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 10px;
   border: 1px solid #ddd;
 }
 
-/* Título do painel de resumo */
-.summary-panel h3 {
+/* Título de cada seção */
+.filter-section h4 {
   margin-top: 0;
   margin-bottom: 10px;
-  font-size: 1.3rem;
+  font-size: 1rem;
   color: var(--cor-primaria);
 }
 
-/* Texto dentro do painel de resumo */
-.summary-panel p {
-  margin: 5px 0;
+/* Linha interna para organizar grupos de filtros lado a lado */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-/* Grupo de filtros */
+/* Grupo de cada filtro */
 .filter-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 15px;
+  min-width: 150px; /* Tamanho mínimo */
+  flex: 1;          /* Se quiser que ocupem o espaço igualmente */
 }
 
 .filter-group label {
@@ -73,7 +77,21 @@
   border-radius: 4px;
 }
 
-.filter-group button {
+/* Seção especial para botões (Filtrar e Exportar) */
+.filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Grupo de exportação (Formato + Botão) */
+.export-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-actions button {
   padding: 10px 15px;
   background-color: var(--cor-primaria);
   color: var(--cor-branca);
@@ -84,8 +102,59 @@
   transition: background-color 0.3s;
 }
 
-.filter-group button:hover {
+.filter-actions button:hover {
   background-color: var(--cor-secundaria);
+}
+
+/* Painel de Resumo */
+.summary-panel {
+  flex: 1;
+  background-color: #e8f4fd;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.summary-panel h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+  color: var(--cor-primaria);
+}
+
+.summary-panel p {
+  margin: 5px 0;
+}
+
+/* Layout dos "cards" dentro do sumário */
+.summary-sections {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.summary-section {
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+.summary-section h4 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+  color: var(--cor-primaria);
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.summary-item span:first-child {
+  font-weight: bold;
 }
 
 /* Seção de resultados (tabela) */
@@ -131,46 +200,6 @@
   white-space: nowrap;
 }
 
-/* Diferenciar chips do pagamento */
 .pag-tag-chip {
   background-color: #28a745; /* Ex: verde */
-}
-
-/* 
-   ----------------------------------------------------------
-   NOVAS CLASSES PARA ORGANIZAR MELHOR O SUMÁRIO EM "PARTES"
-   ----------------------------------------------------------
-*/
-
-/* Contêiner que organiza as seções do sumário em cards */
-.summary-sections {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-/* Cada "card" ou "bloco" de informações dentro do sumário */
-.summary-section {
-  background-color: #fff;
-  border-radius: 6px;
-  padding: 10px;
-  border: 1px solid #ddd;
-}
-
-/* Título dentro de cada seção do sumário */
-.summary-section h4 {
-  margin: 0 0 5px;
-  font-size: 1rem;
-  color: var(--cor-primaria);
-}
-
-/* Caso queira exibir linhas de informação dentro de cada seção */
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
-}
-.summary-item span:first-child {
-  font-weight: bold;
 }
