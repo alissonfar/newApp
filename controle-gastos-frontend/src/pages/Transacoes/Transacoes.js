@@ -1,3 +1,4 @@
+// src/pages/Transacoes/Transacoes.js
 import React, { useEffect, useState } from 'react';
 import { obterTransacoes, excluirTransacao } from '../../api';
 import TransactionCardTransacoes from '../../components/Transaction/TransactionCardTransacoes';
@@ -8,14 +9,14 @@ import './Transacoes.css';
 const Transacoes = () => {
   const [transacoes, setTransacoes] = useState([]);
   const [filteredTransacoes, setFilteredTransacoes] = useState([]);
-  
+
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('todos');
-  
+
   // Ordenação
-  const [orderOption, setOrderOption] = useState('mais-recentes'); // Opções: mais-recentes, mais-antigos, valor-crescente, valor-decrescente
-  
+  const [orderOption, setOrderOption] = useState('mais-recentes');
+
   // Edição/Criação
   const [editingTransacao, setEditingTransacao] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,10 +25,39 @@ const Transacoes = () => {
   const carregarTransacoes = async () => {
     try {
       const dados = await obterTransacoes();
-      // Ordena por data desc inicialmente (padrão)
-      const lista = (dados.transacoes || []).sort(
-        (a, b) => new Date(b.data) - new Date(a.data)
-      );
+      console.log('Retorno do backend:', dados.transacoes);
+
+      // 1) Para cada transação, unificamos as tags de todos os pagamentos em transacao.tags
+      let lista = (dados.transacoes || []).map((tr) => {
+        const combinedTags = {};
+
+        if (tr.pagamentos && Array.isArray(tr.pagamentos)) {
+          tr.pagamentos.forEach((pg) => {
+            // ATENÇÃO: aqui usamos "pg.tags" e não "pg.paymentTags"
+            const payTags = pg.tags || {}; 
+            /*
+              Exemplo de payTags:
+              {
+                "Status da transação": ["Pago"],
+                "Método de Pagamento": ["Pix"]
+              }
+            */
+            Object.keys(payTags).forEach((cat) => {
+              if (!combinedTags[cat]) {
+                combinedTags[cat] = [];
+              }
+              combinedTags[cat] = [...combinedTags[cat], ...payTags[cat]];
+            });
+          });
+        }
+
+        // Retorna a transação com a nova propriedade "tags"
+        return { ...tr, tags: combinedTags };
+      });
+
+      // 2) Ordena por data desc inicialmente (padrão)
+      lista.sort((a, b) => new Date(b.data) - new Date(a.data));
+
       setTransacoes(lista);
       setFilteredTransacoes(lista);
     } catch (error) {
@@ -39,61 +69,58 @@ const Transacoes = () => {
     carregarTransacoes();
   }, []);
 
-  // Filtro e Ordenação: busca por descrição, pessoa, tags e ordena conforme orderOption
+  // Filtro e Ordenação: busca por descrição, pessoa e tags
   useEffect(() => {
     let resultado = [...transacoes];
 
     // 1) Filtro de busca
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      resultado = resultado.filter(tr => {
+      resultado = resultado.filter((tr) => {
         // Verifica se a descrição bate
         const matchDescricao = tr.descricao.toLowerCase().includes(search);
 
-        // Verifica se o searchTerm aparece em "pessoa" ou "tags" de algum pagamento
-        const matchPagamentos = tr.pagamentos && tr.pagamentos.some(pg => {
-          // Pessoa
-          const matchPessoa = pg.pessoa && pg.pessoa.toLowerCase().includes(search);
-          
-          // Tags (array de strings) em cada categoria
-          const matchTags = Object.keys(pg.paymentTags || {}).some(cat => 
-            pg.paymentTags[cat].some(tag => tag.toLowerCase().includes(search))
+        // Verifica se o searchTerm aparece em "pessoa" (nos pagamentos)
+        const matchPessoa =
+          tr.pagamentos &&
+          tr.pagamentos.some(
+            (pg) => pg.pessoa && pg.pessoa.toLowerCase().includes(search)
           );
 
-          return matchPessoa || matchTags;
-        });
+        // Verifica se o searchTerm aparece nas tags unificadas
+        const matchTags = Object.keys(tr.tags || {}).some((cat) =>
+          tr.tags[cat].some((tag) => tag.toLowerCase().includes(search))
+        );
 
-        return matchDescricao || matchPagamentos;
+        return matchDescricao || matchPessoa || matchTags;
       });
     }
 
     // 2) Filtro de tipo
     if (filterType !== 'todos') {
-      resultado = resultado.filter(tr => tr.tipo === filterType);
+      resultado = resultado.filter((tr) => tr.tipo === filterType);
     }
 
     // 3) Ordenação
-    let sortedResultado = [...resultado];
-    switch(orderOption) {
+    switch (orderOption) {
       case 'mais-recentes':
-        sortedResultado.sort((a, b) => new Date(b.data) - new Date(a.data));
+        resultado.sort((a, b) => new Date(b.data) - new Date(a.data));
         break;
       case 'mais-antigos':
-        sortedResultado.sort((a, b) => new Date(a.data) - new Date(b.data));
+        resultado.sort((a, b) => new Date(a.data) - new Date(b.data));
         break;
       case 'valor-crescente':
-        // Supondo que cada transação possua a propriedade "valor"
-        sortedResultado.sort((a, b) => a.valor - b.valor);
+        resultado.sort((a, b) => a.valor - b.valor);
         break;
       case 'valor-decrescente':
-        sortedResultado.sort((a, b) => b.valor - a.valor);
+        resultado.sort((a, b) => b.valor - a.valor);
         break;
       default:
-        sortedResultado.sort((a, b) => new Date(b.data) - new Date(a.data));
+        resultado.sort((a, b) => new Date(b.data) - new Date(a.data));
         break;
     }
 
-    setFilteredTransacoes(sortedResultado);
+    setFilteredTransacoes(resultado);
   }, [searchTerm, filterType, transacoes, orderOption]);
 
   // Editar transação
@@ -142,11 +169,11 @@ const Transacoes = () => {
           type="text"
           placeholder="Buscar por descrição, pessoa ou tags..."
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
         <select
           value={filterType}
-          onChange={e => setFilterType(e.target.value)}
+          onChange={(e) => setFilterType(e.target.value)}
         >
           <option value="todos">Todos</option>
           <option value="gasto">Gasto</option>
@@ -154,7 +181,7 @@ const Transacoes = () => {
         </select>
         <select
           value={orderOption}
-          onChange={e => setOrderOption(e.target.value)}
+          onChange={(e) => setOrderOption(e.target.value)}
         >
           <option value="mais-recentes">Lançamentos mais recentes</option>
           <option value="mais-antigos">Lançamentos mais antigos</option>
@@ -167,7 +194,7 @@ const Transacoes = () => {
       {/* Lista de Transações */}
       <div className="transacoes-list">
         {filteredTransacoes.length > 0 ? (
-          filteredTransacoes.map(tr => (
+          filteredTransacoes.map((tr) => (
             <TransactionCardTransacoes
               key={tr.id}
               transacao={tr}

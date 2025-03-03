@@ -38,6 +38,7 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
           </span>
         </div>
       </div>
+
       <div className="card-details">
         <div className="tag-info">
           {transacao.tags &&
@@ -50,11 +51,15 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
             )}
         </div>
       </div>
+
       <div className="card-actions">
         <button className="action-btn edit-btn" onClick={() => onEdit(transacao)}>
           <FaEdit /> Editar
         </button>
-        <button className="action-btn delete-btn" onClick={() => onDelete(transacao.id)}>
+        <button
+          className="action-btn delete-btn"
+          onClick={() => onDelete(transacao.id)}
+        >
           <FaTrash /> Excluir
         </button>
       </div>
