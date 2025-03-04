@@ -4,8 +4,8 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "cross-env NODE_ENV=development nodemon src/app.js",
+    "start": "cross-env NODE_ENV=production node src/app.js"
   },
   "keywords": [],
   "author": "",
