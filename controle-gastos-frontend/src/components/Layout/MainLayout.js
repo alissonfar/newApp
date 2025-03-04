@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags } from 'react-icons/fa';
-import myLogo from '../assets/logo';
+import myLogo from '../../assets/logo.png';
 import './MainLayout.css';
 
 const MainLayout = ({ children }) => {
