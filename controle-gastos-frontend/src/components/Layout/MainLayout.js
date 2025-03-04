@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags } from 'react-icons/fa';
+import myLogo from '../assets/logo.png';
 import './MainLayout.css';
 
 const MainLayout = ({ children }) => {
@@ -21,7 +22,7 @@ const MainLayout = ({ children }) => {
           <div className="logo">
             {/* Logo Genérico (Placeholder) */}
             <img
-              src="https://via.placeholder.com/40/007ACC/fff?text=LOGO"
+              src={myLogo}
               alt="Logo"
             />
             <span className="system-name">Controle de Gastos</span>
@@ -47,7 +48,7 @@ const MainLayout = ({ children }) => {
         <div className="menu-footer">
           <div className="user-info">
             <img
-              src="https://via.placeholder.com/40"
+              src="Logo-Dal"
               alt="Avatar do usuário"
               className="avatar"
             />
