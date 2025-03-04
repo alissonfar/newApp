@@ -1,6 +1,6 @@
 // src/api.js
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = 'https://newapp-ridz.onrender.com/api';
 
 export async function obterTransacoes(params = {}) {
   const query = new URLSearchParams(params).toString();
