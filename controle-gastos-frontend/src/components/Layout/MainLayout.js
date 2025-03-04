@@ -48,7 +48,7 @@ const MainLayout = ({ children }) => {
         <div className="menu-footer">
           <div className="user-info">
             <img
-              src="Logo-Dal"
+              src={myLogo}
               alt="Avatar do usuário"
               className="avatar"
             />
