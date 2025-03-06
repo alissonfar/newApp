@@ -80,7 +80,6 @@ body {
   }
 }
 
-
 /* CustomSelect.css */
 .custom-select {
   appearance: none;
@@ -104,4 +103,63 @@ body {
 /* Remover a seta nativa no IE/Edge */
 .custom-select::-ms-expand {
   display: none;
+}
+
+/* Global custom styles for React-Select using classNamePrefix="mySelect" */
+.mySelect__control {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 40px;
+  box-shadow: none;
+  transition: border-color 0.2s;
+}
+
+.mySelect__control:hover {
+  border-color: #aaa;
+}
+
+.mySelect__control--is-focused {
+  border-color: #007acc !important;
+  outline: none;
+  box-shadow: 0 0 0 1px #007acc;
+}
+
+.mySelect__menu {
+  z-index: 9999;
+}
+
+.mySelect__option {
+  cursor: pointer;
+}
+
+.mySelect__option--is-focused {
+  background-color: #e6f7ff;
+  color: #007acc;
+}
+
+.mySelect__option--is-selected {
+  background-color: #007acc;
+  color: #fff;
+}
+
+.mySelect__multi-value {
+  background-color: #e6f7ff;
+  border-radius: 4px;
+  margin: 2px;
+}
+
+.mySelect__multi-value__label {
+  color: #007acc;
+  font-weight: 600;
+}
+
+.mySelect__multi-value__remove {
+  color: #007acc;
+  cursor: pointer;
+}
+
+.mySelect__multi-value__remove:hover {
+  background-color: #007acc;
+  color: #fff;
 }

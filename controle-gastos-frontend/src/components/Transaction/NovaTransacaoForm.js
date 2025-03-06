@@ -1,5 +1,7 @@
 // src/components/Transaction/NovaTransacaoForm.js
+
 import React, { useEffect, useState, useRef } from 'react';
+import Select from 'react-select'; // Import do React-Select
 import { criarTransacao, atualizarTransacao, obterCategorias, obterTags } from '../../api';
 import './NovaTransacaoForm.css';
 
@@ -12,30 +14,27 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
   
   const descricaoSuggestions = ['Compra de pizza', 'Pagamento de conta', 'Arbitragem'];
   
-  // Pagamentos: no estado, usamos "paymentTags" para manipular tags,
-  // mas no backend a propriedade salva em cada pagamento costuma ser "tags".
+  // Pagamentos: usamos paymentTags para manipulação (mapeando p.tags do backend)
   const [pagamentos, setPagamentos] = useState(
     transacao && transacao.pagamentos && transacao.pagamentos.length > 0
       ? transacao.pagamentos.map(p => ({
           ...p,
-          // Mapeamos p.tags para paymentTags
           paymentTags: p.tags || {}
         }))
       : [{ pessoa: '', valor: '', paymentTags: {} }]
   );
-
   const pessoaSuggestions = ['Eu', 'Alisson', 'Emerson'];
-
-  // Categorias e tags do backend (usadas para popular os selects de pagamento)
+  
+  // Categorias e tags (usadas para os dropdowns dos pagamentos)
   const [categorias, setCategorias] = useState([]);
   const [allTags, setAllTags] = useState([]);
-
-  // Refs para dar foco e scroll
+  
+  // Refs para focar e rolagem
   const descricaoRef = useRef(null);
   const dataRef = useRef(null);
   const valorRef = useRef(null);
-
-  // Centraliza o campo em foco ao clicar
+  
+  // Centraliza o campo em foco
   const handleFocus = (e) => {
     e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
@@ -46,7 +45,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       try {
         const cats = await obterCategorias();
         setCategorias(cats);
-
         const tgs = await obterTags();
         setAllTags(tgs);
       } catch (error) {
@@ -54,23 +52,19 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       }
     }
     fetchData();
-
-    // Se for nova transação (sem "transacao"), define a data de hoje por padrão
     if (!transacao) {
       const hoje = new Date().toISOString().split('T')[0];
       setData(hoje);
     }
   }, [transacao]);
-
-  // Sempre que "transacao" mudar (edição), pré-carregamos tudo:
+  
+  // Sempre que "transacao" mudar (modo edição), preenche os estados
   useEffect(() => {
     if (transacao) {
       setTipo(transacao.tipo);
       setDescricao(transacao.descricao);
       setData(transacao.data.split('T')[0]);
       setValorTotal(String(transacao.valor));
-
-      // Mapeamos pag.tags -> pag.paymentTags
       if (transacao.pagamentos && transacao.pagamentos.length > 0) {
         setPagamentos(
           transacao.pagamentos.map(p => ({
@@ -84,7 +78,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     }
   }, [transacao]);
 
-  // Agrupa as tags do backend por categoria (para popular o <select multiple> de pagamento)
+  // Agrupa as tags do backend por categoria para popular o React-Select
   const tagsPorCategoria = allTags.reduce((acc, tag) => {
     if (tag.categoria) {
       if (!acc[tag.categoria]) {
@@ -94,7 +88,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     }
     return acc;
   }, {});
-
+  
   // Manipulação dos pagamentos
   const handlePagamentoChange = (index, field, value) => {
     const novosPagamentos = [...pagamentos];
@@ -102,15 +96,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     setPagamentos(novosPagamentos);
   };
   
-  const handlePagamentoTagChange = (index, categoria, selectedOptions) => {
-    const novosPagamentos = [...pagamentos];
-    if (!novosPagamentos[index].paymentTags) {
-      novosPagamentos[index].paymentTags = {};
-    }
-    novosPagamentos[index].paymentTags[categoria] = selectedOptions;
-    setPagamentos(novosPagamentos);
-  };
-
   const addPagamento = () => {
     setPagamentos([...pagamentos, { pessoa: '', valor: '', paymentTags: {} }]);
   };
@@ -120,7 +105,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     setPagamentos(novosPagamentos);
   };
   
-  // Se houver apenas 1 pagamento, replicar o valor total automaticamente
+  // Se houver apenas 1 pagamento, replica o valor total
   const handleValorTotalChange = (e) => {
     const raw = e.target.value;
     setValorTotal(raw);
@@ -138,7 +123,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     return parseFloat(valorTotal || 0) === soma;
   };
   
-  // Atalho Ctrl+S para salvar
+  // Atalho: Ctrl+S para salvar
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey && e.key === 's') {
@@ -150,7 +135,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
   
-  // Atalho Esc para fechar
+  // Atalho: Esc para fechar o modal
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
@@ -173,43 +158,35 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
 
   const handleSubmit = async (e, closeModal = true) => {
     e.preventDefault();
-
     if (!validatePagamentos()) {
       alert('A soma dos pagamentos deve ser igual ao valor total.');
       return;
     }
-
     // Monta o objeto para envio ao backend
     const transacaoData = {
       tipo,
       descricao,
-      data: new Date(data).toISOString(), // Formato ISO
+      data: new Date(data).toISOString(),
       valor: Number(parseFloat(valorTotal).toFixed(2)),
-      // Não enviamos tags "pai" (removidas)
       pagamentos: pagamentos.map((pag) => ({
         pessoa: pag.pessoa,
         valor: Number(parseFloat(pag.valor).toFixed(2)),
-        // "paymentTags" => "tags" no backend
-        tags: pag.paymentTags || {}
+        tags: pag.paymentTags || {} // Converte paymentTags para tags
       }))
     };
-
     try {
       if (transacao && transacao.id) {
-        // Atualizar
         await atualizarTransacao(transacao.id, transacaoData);
         alert('Transação atualizada com sucesso!');
       } else {
-        // Criar
         await criarTransacao(transacaoData);
         alert('Transação criada com sucesso!');
       }
-
       if (onSuccess) onSuccess();
       if (closeModal) {
         onClose();
       } else {
-        // Se for "Salvar e Continuar", limpa o formulário
+        // Se for "Salvar e Continuar", limpa os campos
         setTipo('gasto');
         setDescricao('');
         const hoje = new Date().toISOString().split('T')[0];
@@ -285,7 +262,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
               />
             </div>
           </div>
-
           <div className="right-column">
             <div className="form-section pagamentos-section">
               <h3>Pagamentos</h3>
@@ -318,35 +294,45 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
                       onFocus={handleFocus}
                     />
                   </div>
+
+                  {/* Substituição do <select multiple> por React-Select para tags */}
                   <div className="form-section payment-tags">
                     <h4>Tags para Pagamento</h4>
-                    {categorias.map(cat => (
-                      <div key={cat._id} className="tag-dropdown-group">
-                        <label>{cat.nome}:</label>
-                        <select
-                          multiple
-                          // Se paymentTags[cat.nome] existir, já vem selecionado
-                          value={(pag.paymentTags && pag.paymentTags[cat.nome]) || []}
-                          onChange={e => {
-                            const selected = Array.from(e.target.selectedOptions, opt => opt.value);
-                            const novos = [...pagamentos];
-                            if (!novos[index].paymentTags) {
-                              novos[index].paymentTags = {};
-                            }
-                            novos[index].paymentTags[cat.nome] = selected;
-                            setPagamentos(novos);
-                          }}
-                          onFocus={handleFocus}
-                        >
-                          {(tagsPorCategoria[cat.nome] || []).map((tagName, idx) => (
-                            <option key={idx} value={tagName}>
-                              {tagName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
+                    {categorias.map((cat) => {
+                      // Cria as opções no formato { value, label }
+                      const options = (tagsPorCategoria[cat.nome] || []).map(tagName => ({
+                        value: tagName,
+                        label: tagName
+                      }));
+                      // Prepara os valores já selecionados
+                      const selectedValues = ((pag.paymentTags && pag.paymentTags[cat.nome]) || [])
+                        .map(tag => ({ value: tag, label: tag }));
+                      return (
+                        <div key={cat._id} className="tag-dropdown-group">
+                          <label>{cat.nome}:</label>
+                          <Select
+                            isMulti
+                            options={options}
+                            value={selectedValues}
+                            onChange={(selectedOptions) => {
+                              const selectedTags = selectedOptions
+                                ? selectedOptions.map(opt => opt.value)
+                                : [];
+                              const novos = [...pagamentos];
+                              if (!novos[index].paymentTags) {
+                                novos[index].paymentTags = {};
+                              }
+                              novos[index].paymentTags[cat.nome] = selectedTags;
+                              setPagamentos(novos);
+                            }}
+                            classNamePrefix="mySelect"
+                            onFocus={handleFocus}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
+
                   <button type="button" onClick={() => removePagamento(index)}>
                     Remover Pagamento
                   </button>
@@ -359,7 +345,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
             </div>
           </div>
         </div>
-
         <div className="form-buttons">
           <button
             type="submit"

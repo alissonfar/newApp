@@ -23,7 +23,8 @@
 
 /* Painel de Filtros (agora em layout de grid) */
 .filter-panel {
-  flex: 1;
+  /* Atribui mais espaço ao painel de filtros que ao de resumo (2:1) */
+  flex: 2;
   display: grid;
   grid-template-columns: 1fr; /* Se quiser 2 colunas horizontais, use: repeat(2, 1fr) */
   gap: 15px;
@@ -60,8 +61,9 @@
 .filter-group {
   display: flex;
   flex-direction: column;
-  min-width: 150px; /* Tamanho mínimo */
-  flex: 1;          /* Se quiser que ocupem o espaço igualmente */
+  /* Aumentamos o min-width para que o texto não seja cortado tão cedo */
+  min-width: 220px;
+  flex: 1;
 }
 
 .filter-group label {
@@ -75,6 +77,13 @@
   font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+  width: 100%;
+}
+
+/* Garante que o React-Select ocupe 100% da largura do .filter-group */
+.filter-group .mySelect__control {
+  width: 100% !important; /* Força a largura total */
+  min-height: 38px;       /* Ajuste mínimo para caber texto */
 }
 
 /* Seção especial para botões (Filtrar e Exportar) */
@@ -108,7 +117,7 @@
 
 /* Painel de Resumo */
 .summary-panel {
-  flex: 1;
+  flex: 1; /* Ocupa menos espaço que o painel de filtros, equilibrando o layout */
   background-color: #e8f4fd;
   padding: 15px;
   border-radius: 8px;

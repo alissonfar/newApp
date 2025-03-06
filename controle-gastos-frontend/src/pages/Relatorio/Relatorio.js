@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Select from 'react-select';
 import { obterTransacoes, obterCategorias, obterTags } from '../../api.js';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF } from '../../utils/export/exportDataPdf';
@@ -381,18 +382,18 @@ const Relatorio = () => {
             <div className="filter-row">
               <div className="filter-group">
                 <label>Pessoas (Pagamento):</label>
-                <select
-                  multiple
-                  value={selectedPessoas}
-                  onChange={e => {
-                    const values = Array.from(e.target.selectedOptions, opt => opt.value);
+                {/* Substituído o <select multiple> pelo React-Select */}
+                <Select
+                  isMulti
+                  options={distinctPessoas(allPayments).map(p => ({ value: p, label: p }))}
+                  value={selectedPessoas.map(p => ({ value: p, label: p }))}
+                  onChange={(selectedOptions) => {
+                    const values = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
                     setSelectedPessoas(values);
                   }}
-                >
-                  {distinctPessoas(allPayments).map((p, idx) => (
-                    <option key={idx} value={p}>{p}</option>
-                  ))}
-                </select>
+                  classNamePrefix="mySelect"
+                  placeholder="Selecione pessoas..."
+                />
               </div>
 
               <div className="filter-group">
@@ -416,18 +417,21 @@ const Relatorio = () => {
               {categorias.map(cat => (
                 <div key={cat.id} className="filter-group">
                   <label>{cat.nome}:</label>
-                  <select
-                    multiple
-                    value={tagFilters[cat.nome] || []}
-                    onChange={e => {
-                      const selected = Array.from(e.target.selectedOptions, opt => opt.value);
+                  {/* Substituído o <select multiple> pelo React-Select */}
+                  <Select
+                    isMulti
+                    options={(tagsPorCategoria[cat.nome] || []).map(tag => ({
+                      value: tag.nome,
+                      label: tag.nome
+                    }))}
+                    value={(tagFilters[cat.nome] || []).map(tag => ({ value: tag, label: tag }))}
+                    onChange={(selectedOptions) => {
+                      const selected = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
                       setTagFilters(prev => ({ ...prev, [cat.nome]: selected }));
                     }}
-                  >
-                    {(tagsPorCategoria[cat.nome] || []).map(tag => (
-                      <option key={tag.id} value={tag.nome}>{tag.nome}</option>
-                    ))}
-                  </select>
+                    classNamePrefix="mySelect"
+                    placeholder="Selecione tags..."
+                  />
                 </div>
               ))}
             </div>
