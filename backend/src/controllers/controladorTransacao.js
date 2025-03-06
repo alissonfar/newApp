@@ -3,7 +3,8 @@ const Transacao = require('../models/transacao');
 
 exports.obterTodasTransacoes = async (req, res) => {
   try {
-    const transacoes = await Transacao.find({ status: 'ativo' });
+    // Retorna apenas transações ativas do usuário autenticado
+    const transacoes = await Transacao.find({ status: 'ativo', usuario: req.userId });
     res.json({ transacoes });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao obter transações.' });
@@ -12,7 +13,7 @@ exports.obterTodasTransacoes = async (req, res) => {
 
 exports.obterTransacaoPorId = async (req, res) => {
   try {
-    const transacao = await Transacao.findById(req.params.id);
+    const transacao = await Transacao.findOne({ _id: req.params.id, usuario: req.userId });
     if (!transacao) return res.status(404).json({ erro: 'Transação não encontrada.' });
     res.json(transacao);
   } catch (error) {
@@ -26,7 +27,16 @@ exports.criarTransacao = async (req, res) => {
     return res.status(400).json({ erro: 'Os campos obrigatórios são: tipo, descricao, valor, data, tags e pagamentos.' });
   }
   try {
-    const novaTransacao = new Transacao({ tipo, descricao, valor, data, tags, pagamentos });
+    // Cria transação vinculada ao usuário autenticado
+    const novaTransacao = new Transacao({
+      tipo,
+      descricao,
+      valor,
+      data,
+      tags,
+      pagamentos,
+      usuario: req.userId
+    });
     await novaTransacao.save();
     res.status(201).json(novaTransacao);
   } catch (error) {
@@ -36,9 +46,9 @@ exports.criarTransacao = async (req, res) => {
 
 exports.atualizarTransacao = async (req, res) => {
   try {
-    const transacao = await Transacao.findById(req.params.id);
+    const transacao = await Transacao.findOne({ _id: req.params.id, usuario: req.userId });
     if (!transacao) return res.status(404).json({ erro: 'Transação não encontrada.' });
-    // Atualiza os campos, inclusive o tipo se for enviado
+    // Atualiza os campos
     transacao.tipo = req.body.tipo || transacao.tipo;
     transacao.descricao = req.body.descricao || transacao.descricao;
     transacao.valor = req.body.valor || transacao.valor;
@@ -54,7 +64,7 @@ exports.atualizarTransacao = async (req, res) => {
 
 exports.excluirTransacao = async (req, res) => {
   try {
-    const transacao = await Transacao.findById(req.params.id);
+    const transacao = await Transacao.findOne({ _id: req.params.id, usuario: req.userId });
     if (!transacao) return res.status(404).json({ erro: 'Transação não encontrada.' });
     transacao.status = 'estornado';
     await transacao.save();

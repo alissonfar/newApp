@@ -1,10 +1,9 @@
-// backendsrc/models/transacao.js 
+// src/models/transacao.js
 const mongoose = require('mongoose');
 
 const PagamentoSchema = new mongoose.Schema({
   pessoa: { type: String, required: true },
   valor: { type: Number, required: true },
-  // Armazena as tags do pagamento como um objeto, agrupadas por categoria
   tags: { type: Object }
 });
 
@@ -13,19 +12,11 @@ const TransacaoSchema = new mongoose.Schema({
   descricao: { type: String, required: true },
   valor: { type: Number, required: true },
   data: { type: Date, required: true },
-  // Ajuste: torna o campo tags opcional e define valor padrão como um objeto vazio
   tags: { type: Object, required: false, default: {} },
   pagamentos: { type: [PagamentoSchema], required: true },
-  status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' }
+  status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' },
+  // [NOVO] relaciona transacao a um Usuario
+  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true }
 });
-
-// Removemos o hook pré-save para teste:
-// TransacaoSchema.pre('save', function(next) {
-//   const somaPagamentos = this.pagamentos.reduce((acc, pagamento) => acc + pagamento.valor, 0);
-//   if (Math.abs(somaPagamentos - this.valor) > 0.01) {
-//     return next(new Error(`A soma dos pagamentos (${somaPagamentos}) não é igual ao valor total da transação (${this.valor}).`));
-//   }
-//   next();
-// });
 
 module.exports = mongoose.model('Transacao', TransacaoSchema);

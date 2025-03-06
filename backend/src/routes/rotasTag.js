@@ -1,8 +1,11 @@
 // src/routes/rotasTag.js
-
 const express = require('express');
 const router = express.Router();
 const controladorTag = require('../controllers/controladorTag');
+const autenticacao = require('../middlewares/autenticacao'); // Se você deseja proteger as rotas
+
+// Aplica o middleware de autenticação em todas as rotas (se necessário)
+router.use(autenticacao);
 
 // Listar todas as tags
 router.get('/', controladorTag.obterTodasTags);

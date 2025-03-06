@@ -3,7 +3,8 @@ const Tag = require('../models/tag');
 
 exports.obterTodasTags = async (req, res) => {
   try {
-    const tags = await Tag.find();
+    // Filtra tags do usuário
+    const tags = await Tag.find({ usuario: req.userId });
     res.json(tags);
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao obter tags.' });
@@ -12,7 +13,7 @@ exports.obterTodasTags = async (req, res) => {
 
 exports.obterTagPorId = async (req, res) => {
   try {
-    const tag = await Tag.findById(req.params.id);
+    const tag = await Tag.findOne({ _id: req.params.id, usuario: req.userId });
     if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
     res.json(tag);
   } catch (error) {
@@ -26,7 +27,7 @@ exports.criarTag = async (req, res) => {
     return res.status(400).json({ erro: 'Os campos obrigatórios são: nome e categoria.' });
   }
   try {
-    const novaTag = new Tag({ nome, descricao, categoria });
+    const novaTag = new Tag({ nome, descricao, categoria, usuario: req.userId });
     await novaTag.save();
     res.status(201).json(novaTag);
   } catch (error) {
@@ -36,7 +37,7 @@ exports.criarTag = async (req, res) => {
 
 exports.atualizarTag = async (req, res) => {
   try {
-    const tag = await Tag.findById(req.params.id);
+    const tag = await Tag.findOne({ _id: req.params.id, usuario: req.userId });
     if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
     tag.nome = req.body.nome || tag.nome;
     tag.descricao = req.body.descricao || tag.descricao;
@@ -50,7 +51,7 @@ exports.atualizarTag = async (req, res) => {
 
 exports.excluirTag = async (req, res) => {
   try {
-    const tag = await Tag.findByIdAndDelete(req.params.id);
+    const tag = await Tag.findOneAndDelete({ _id: req.params.id, usuario: req.userId });
     if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
     res.json({ mensagem: 'Tag removida com sucesso.' });
   } catch (error) {
