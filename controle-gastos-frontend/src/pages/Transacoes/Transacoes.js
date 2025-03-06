@@ -1,5 +1,7 @@
 // src/pages/Transacoes/Transacoes.js
 import React, { useEffect, useState } from 'react';
+import Swal from 'sweetalert2';                     // Import SweetAlert2 para confirmações
+import { toast } from 'react-toastify';             // Import Toastify para mensagens
 import { obterTransacoes, excluirTransacao } from '../../api';
 import TransactionCardTransacoes from '../../components/Transaction/TransactionCardTransacoes';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
@@ -33,8 +35,8 @@ const Transacoes = () => {
 
         if (tr.pagamentos && Array.isArray(tr.pagamentos)) {
           tr.pagamentos.forEach((pg) => {
-            // ATENÇÃO: aqui usamos "pg.tags" e não "pg.paymentTags"
-            const payTags = pg.tags || {}; 
+            // Aqui usamos "pg.tags" e não "pg.paymentTags"
+            const payTags = pg.tags || {};
             /*
               Exemplo de payTags:
               {
@@ -62,6 +64,7 @@ const Transacoes = () => {
       setFilteredTransacoes(lista);
     } catch (error) {
       console.error('Erro ao carregar transações:', error);
+      toast.error('Erro ao carregar transações.');
     }
   };
 
@@ -146,18 +149,29 @@ const Transacoes = () => {
     carregarTransacoes();
   };
 
-  // Excluir
+  // Excluir transação utilizando SweetAlert2 para confirmação e Toastify para feedback
   const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
-      try {
-        await excluirTransacao(id);
-        alert('Transação excluída com sucesso!');
-        carregarTransacoes();
-      } catch (error) {
-        console.error('Erro ao excluir transação:', error);
-        alert('Erro ao excluir transação.');
+    Swal.fire({
+      title: 'Tem certeza que deseja excluir esta transação?',
+      text: 'Esta ação não poderá ser desfeita.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, excluir!',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await excluirTransacao(id);
+          toast.success('Transação excluída com sucesso!');
+          carregarTransacoes();
+        } catch (error) {
+          console.error('Erro ao excluir transação:', error);
+          toast.error('Erro ao excluir transação.');
+        }
       }
-    }
+    });
   };
 
   return (

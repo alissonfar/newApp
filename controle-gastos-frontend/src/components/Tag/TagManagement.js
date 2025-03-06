@@ -1,6 +1,17 @@
 // src/components/Tag/TagManagement.js
 import React, { useEffect, useState } from 'react';
-import { obterCategorias, obterTags, criarTag, atualizarTag, excluirTag, criarCategoria, atualizarCategoria, excluirCategoria } from '../../api.js';
+import { toast } from 'react-toastify';     // Para mensagens de sucesso/erro
+import Swal from 'sweetalert2';            // Para confirmações de exclusão
+import {
+  obterCategorias,
+  obterTags,
+  criarTag,
+  atualizarTag,
+  excluirTag,
+  criarCategoria,
+  atualizarCategoria,
+  excluirCategoria
+} from '../../api.js';
 import './TagManagement.css';
 
 const TagManagement = () => {
@@ -35,7 +46,7 @@ const TagManagement = () => {
       }
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
-      alert('Erro ao carregar categorias.');
+      toast.error('Erro ao carregar categorias.');
     }
   };
 
@@ -45,7 +56,7 @@ const TagManagement = () => {
       setTags(tgs);
     } catch (error) {
       console.error('Erro ao carregar tags:', error);
-      alert('Erro ao carregar tags.');
+      toast.error('Erro ao carregar tags.');
     }
   };
 
@@ -72,15 +83,15 @@ const TagManagement = () => {
 
   const handleAdicionarTag = async () => {
     if (!selectedCategory) {
-      alert('Selecione uma categoria primeiro.');
+      toast.warn('Selecione uma categoria primeiro.');
       return;
     }
     if (!novoTagNome.trim()) {
-      alert('O nome da tag é obrigatório.');
+      toast.warn('O nome da tag é obrigatório.');
       return;
     }
     if (nomeTagDuplicado(novoTagNome)) {
-      alert('Essa tag já existe.');
+      toast.warn('Essa tag já existe.');
       return;
     }
     try {
@@ -92,10 +103,10 @@ const TagManagement = () => {
       setNovoTagNome('');
       setNovoTagDescricao('');
       carregarTags();
-      alert('Tag criada com sucesso!');
+      toast.success('Tag criada com sucesso!');
     } catch (error) {
       console.error('Erro ao criar tag:', error);
-      alert('Erro ao criar tag.');
+      toast.error('Erro ao criar tag.');
     }
   };
 
@@ -107,7 +118,7 @@ const TagManagement = () => {
 
   const handleSalvarEdicaoTag = async () => {
     if (!editTagNome.trim()) {
-      alert('O nome da tag é obrigatório.');
+      toast.warn('O nome da tag é obrigatório.');
       return;
     }
     try {
@@ -120,24 +131,36 @@ const TagManagement = () => {
       setEditTagNome('');
       setEditTagDescricao('');
       carregarTags();
-      alert('Tag atualizada com sucesso!');
+      toast.success('Tag atualizada com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar tag:', error);
-      alert('Erro ao atualizar tag.');
+      toast.error('Erro ao atualizar tag.');
     }
   };
 
   const handleExcluirTag = async (tagId) => {
-    if (window.confirm('Tem certeza que deseja excluir essa tag?')) {
-      try {
-        await excluirTag(tagId);
-        carregarTags();
-        alert('Tag excluída com sucesso!');
-      } catch (error) {
-        console.error('Erro ao excluir tag:', error);
-        alert('Erro ao excluir tag.');
+    // Substituímos window.confirm por SweetAlert2
+    Swal.fire({
+      title: 'Tem certeza que deseja excluir esta tag?',
+      text: 'Essa ação não pode ser desfeita.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, excluir!',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await excluirTag(tagId);
+          carregarTags();
+          toast.success('Tag excluída com sucesso!');
+        } catch (error) {
+          console.error('Erro ao excluir tag:', error);
+          toast.error('Erro ao excluir tag.');
+        }
       }
-    }
+    });
   };
 
   // Funções para gerenciamento de categorias
@@ -150,25 +173,25 @@ const TagManagement = () => {
 
   const handleAdicionarCategoria = async () => {
     if (!novoCatNome.trim()) {
-      alert('O nome da categoria é obrigatório.');
+      toast.warn('O nome da categoria é obrigatório.');
       return;
     }
     if (nomeCategoriaDuplicado(novoCatNome)) {
-      alert('Essa categoria já existe.');
+      toast.warn('Essa categoria já existe.');
       return;
     }
     try {
-      await criarCategoria({ 
-        nome: novoCatNome.trim(), 
-        descricao: novoCatDescricao.trim() 
+      await criarCategoria({
+        nome: novoCatNome.trim(),
+        descricao: novoCatDescricao.trim()
       });
       setNovoCatNome('');
       setNovoCatDescricao('');
       carregarCategorias();
-      alert('Categoria criada com sucesso!');
+      toast.success('Categoria criada com sucesso!');
     } catch (error) {
       console.error('Erro ao criar categoria:', error);
-      alert('Erro ao criar categoria.');
+      toast.error('Erro ao criar categoria.');
     }
   };
 
@@ -181,7 +204,7 @@ const TagManagement = () => {
 
   const handleSalvarEdicaoCategoria = async () => {
     if (!editCatNome.trim()) {
-      alert('O nome da categoria é obrigatório.');
+      toast.warn('O nome da categoria é obrigatório.');
       return;
     }
     try {
@@ -193,27 +216,39 @@ const TagManagement = () => {
       setEditCatNome('');
       setEditCatDescricao('');
       carregarCategorias();
-      alert('Categoria atualizada com sucesso!');
+      toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar categoria:', error);
-      alert('Erro ao atualizar categoria.');
+      toast.error('Erro ao atualizar categoria.');
     }
   };
 
   const handleExcluirCategoria = async (catId) => {
-    if (window.confirm('Tem certeza que deseja excluir essa categoria?')) {
-      try {
-        await excluirCategoria(catId);
-        if (selectedCategory && selectedCategory.id === catId) {
-          setSelectedCategory(null);
+    // Substituímos window.confirm por SweetAlert2
+    Swal.fire({
+      title: 'Tem certeza que deseja excluir esta categoria?',
+      text: 'Essa ação não pode ser desfeita.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, excluir!',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await excluirCategoria(catId);
+          if (selectedCategory && selectedCategory.id === catId) {
+            setSelectedCategory(null);
+          }
+          carregarCategorias();
+          toast.success('Categoria excluída com sucesso!');
+        } catch (error) {
+          console.error('Erro ao excluir categoria:', error);
+          toast.error('Erro ao excluir categoria.');
         }
-        carregarCategorias();
-        alert('Categoria excluída com sucesso!');
-      } catch (error) {
-        console.error('Erro ao excluir categoria:', error);
-        alert('Erro ao excluir categoria.');
       }
-    }
+    });
   };
 
   return (

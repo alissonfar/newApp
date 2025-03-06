@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Select from 'react-select'; // Import do React-Select
+import { toast } from 'react-toastify'; // Import do toast do React Toastify
 import { criarTransacao, atualizarTransacao, obterCategorias, obterTags } from '../../api';
 import './NovaTransacaoForm.css';
 
@@ -49,6 +50,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
         setAllTags(tgs);
       } catch (error) {
         console.error('Erro ao carregar categorias ou tags:', error);
+        toast.error('Erro ao carregar categorias ou tags.');
       }
     }
     fetchData();
@@ -159,7 +161,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
   const handleSubmit = async (e, closeModal = true) => {
     e.preventDefault();
     if (!validatePagamentos()) {
-      alert('A soma dos pagamentos deve ser igual ao valor total.');
+      toast.warn('A soma dos pagamentos deve ser igual ao valor total.');
       return;
     }
     // Monta o objeto para envio ao backend
@@ -171,16 +173,16 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       pagamentos: pagamentos.map((pag) => ({
         pessoa: pag.pessoa,
         valor: Number(parseFloat(pag.valor).toFixed(2)),
-        tags: pag.paymentTags || {} // Converte paymentTags para tags
+        tags: pag.paymentTags || {}
       }))
     };
     try {
       if (transacao && transacao.id) {
         await atualizarTransacao(transacao.id, transacaoData);
-        alert('Transação atualizada com sucesso!');
+        toast.success('Transação atualizada com sucesso!');
       } else {
         await criarTransacao(transacaoData);
-        alert('Transação criada com sucesso!');
+        toast.success('Transação criada com sucesso!');
       }
       if (onSuccess) onSuccess();
       if (closeModal) {
@@ -196,7 +198,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       }
     } catch (error) {
       console.error('Erro ao salvar transação:', error);
-      alert('Erro ao salvar transação.');
+      toast.error('Erro ao salvar transação.');
     }
   };
 

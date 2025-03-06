@@ -1,5 +1,7 @@
+// src/pages/Relatorio/Relatorio.js
 import React, { useEffect, useState } from 'react';
 import Select from 'react-select';
+import { toast } from 'react-toastify';  // [NOVO] para exibir mensagens de erro/aviso/sucesso
 import { obterTransacoes, obterCategorias, obterTags } from '../../api.js';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF } from '../../utils/export/exportDataPdf';
@@ -87,6 +89,7 @@ const Relatorio = () => {
 
       } catch (error) {
         console.error('Erro ao carregar dados para relatório:', error);
+        toast.error('Erro ao carregar dados para relatório.');
       }
     }
     fetchData();
@@ -297,9 +300,13 @@ const Relatorio = () => {
 
     if (exportFormat === 'csv') {
       exportDataToCSV(filteredRows, 'relatorio.csv');
+      // Se quiser exibir uma mensagem de sucesso ao exportar:
+      // toast.success('Relatório exportado como CSV!');
     } else {
       // Padrão PDF
       exportDataToPDF(filteredRows, filterDetails, summaryInfo, 'relatorio.pdf');
+      // Se quiser exibir uma mensagem de sucesso ao exportar:
+      // toast.success('Relatório exportado como PDF!');
     }
   };
 
@@ -332,7 +339,6 @@ const Relatorio = () => {
       <div className="top-section">
         {/* Painel de Filtros (organizado em seções) */}
         <div className="filter-panel">
-
           {/* Seção 1: Datas */}
           <div className="filter-section">
             <h4>Datas</h4>
@@ -492,7 +498,6 @@ const Relatorio = () => {
               <button onClick={handleExport}>Exportar</button>
             </div>
           </div>
-
         </div> {/* Fim do filter-panel */}
 
         {/* Painel de Resumo */}
