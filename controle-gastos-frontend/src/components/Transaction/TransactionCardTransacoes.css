@@ -1,9 +1,8 @@
-/* src/components/Transaction/TransactionCardTransacoes.css */
-
 /* Container principal do cartão */
 .transaction-card-transacoes {
-  background-color: #fff;
-  border-radius: 8px;
+  /* Fundo com leve gradiente para dar um toque moderno */
+  background: linear-gradient(to bottom right, #ffffff, #f8f8f8);
+  border-radius: 10px;
   border: 1px solid #e7e7e7;
   padding: 16px;
   margin-bottom: 10px;
@@ -11,8 +10,9 @@
 }
 
 .transaction-card-transacoes:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-4px);
+  /* Sombra um pouco maior ao pairar */
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
 
 /* Cabeçalho (título + data + valor + badge) */
@@ -83,9 +83,34 @@
   background-color: #5cb85c;
 }
 
-/* Detalhes (onde ficam as tags, etc.) */
+/* Detalhes (onde ficam pagamentos e tags) */
 .card-details {
   margin-bottom: 12px;
+}
+
+/* Seção de pagamentos (Pessoas) */
+.payments-info {
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border: 1px solid #ececec;
+  border-radius: 6px;
+}
+
+.payments-info h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.payment-item {
+  margin-bottom: 4px;
+}
+
+.payment-person {
+  font-size: 0.9rem;
+  color: #555;
 }
 
 /* Container das tags */
@@ -110,16 +135,6 @@
 .tag-chip:hover {
   background-color: #005a99; /* cor um pouco mais escura no hover */
 }
-
-/* Se desejar cores diferentes por categoria, use data-cat e seletores [data-cat="..."]
-   Exemplo:
-   .tag-chip[data-cat="Status da transação"] {
-     background-color: #17a2b8; 
-   }
-   .tag-chip[data-cat="Método de Pagamento"] {
-     background-color: #28a745; 
-   }
-*/
 
 /* Ações (Editar / Excluir) */
 .card-actions {

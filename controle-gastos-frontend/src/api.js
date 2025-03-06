@@ -1,6 +1,6 @@
 // src/api.js
 
-const API_BASE = 'https://newapp-ridz.onrender.com/api';
+const API_BASE = process.env.REACT_APP_API_BASE;
 
 export async function obterTransacoes(params = {}) {
   const query = new URLSearchParams(params).toString();

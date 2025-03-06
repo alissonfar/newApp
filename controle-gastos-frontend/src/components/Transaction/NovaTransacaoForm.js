@@ -12,23 +12,30 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
   
   const descricaoSuggestions = ['Compra de pizza', 'Pagamento de conta', 'Arbitragem'];
   
-  // Pagamentos (cada pagamento terá tags)
+  // Pagamentos: no estado, usamos "paymentTags" para manipular tags,
+  // mas no backend a propriedade salva em cada pagamento costuma ser "tags".
   const [pagamentos, setPagamentos] = useState(
     transacao && transacao.pagamentos && transacao.pagamentos.length > 0
-      ? transacao.pagamentos
+      ? transacao.pagamentos.map(p => ({
+          ...p,
+          // Mapeamos p.tags para paymentTags
+          paymentTags: p.tags || {}
+        }))
       : [{ pessoa: '', valor: '', paymentTags: {} }]
   );
+
   const pessoaSuggestions = ['Eu', 'Alisson', 'Emerson'];
-  
-  // Categorias e tags (usadas para dropdowns dos pagamentos)
+
+  // Categorias e tags do backend (usadas para popular os selects de pagamento)
   const [categorias, setCategorias] = useState([]);
   const [allTags, setAllTags] = useState([]);
-  
+
+  // Refs para dar foco e scroll
   const descricaoRef = useRef(null);
   const dataRef = useRef(null);
   const valorRef = useRef(null);
-  
-  // Centraliza o campo em foco
+
+  // Centraliza o campo em foco ao clicar
   const handleFocus = (e) => {
     e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
@@ -39,6 +46,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       try {
         const cats = await obterCategorias();
         setCategorias(cats);
+
         const tgs = await obterTags();
         setAllTags(tgs);
       } catch (error) {
@@ -46,13 +54,37 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       }
     }
     fetchData();
+
+    // Se for nova transação (sem "transacao"), define a data de hoje por padrão
     if (!transacao) {
       const hoje = new Date().toISOString().split('T')[0];
       setData(hoje);
     }
   }, [transacao]);
-  
-  // Agrupa as tags por categoria para os dropdowns
+
+  // Sempre que "transacao" mudar (edição), pré-carregamos tudo:
+  useEffect(() => {
+    if (transacao) {
+      setTipo(transacao.tipo);
+      setDescricao(transacao.descricao);
+      setData(transacao.data.split('T')[0]);
+      setValorTotal(String(transacao.valor));
+
+      // Mapeamos pag.tags -> pag.paymentTags
+      if (transacao.pagamentos && transacao.pagamentos.length > 0) {
+        setPagamentos(
+          transacao.pagamentos.map(p => ({
+            ...p,
+            paymentTags: p.tags || {}
+          }))
+        );
+      } else {
+        setPagamentos([{ pessoa: '', valor: '', paymentTags: {} }]);
+      }
+    }
+  }, [transacao]);
+
+  // Agrupa as tags do backend por categoria (para popular o <select multiple> de pagamento)
   const tagsPorCategoria = allTags.reduce((acc, tag) => {
     if (tag.categoria) {
       if (!acc[tag.categoria]) {
@@ -62,7 +94,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     }
     return acc;
   }, {});
-  
+
   // Manipulação dos pagamentos
   const handlePagamentoChange = (index, field, value) => {
     const novosPagamentos = [...pagamentos];
@@ -71,7 +103,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
   };
   
   const handlePagamentoTagChange = (index, categoria, selectedOptions) => {
-    // selectedOptions já é um array de strings (vindo do <select>)
     const novosPagamentos = [...pagamentos];
     if (!novosPagamentos[index].paymentTags) {
       novosPagamentos[index].paymentTags = {};
@@ -79,7 +110,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     novosPagamentos[index].paymentTags[categoria] = selectedOptions;
     setPagamentos(novosPagamentos);
   };
-  
+
   const addPagamento = () => {
     setPagamentos([...pagamentos, { pessoa: '', valor: '', paymentTags: {} }]);
   };
@@ -89,7 +120,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     setPagamentos(novosPagamentos);
   };
   
-  // Replica o valor total para o único pagamento, se houver somente um
+  // Se houver apenas 1 pagamento, replicar o valor total automaticamente
   const handleValorTotalChange = (e) => {
     const raw = e.target.value;
     setValorTotal(raw);
@@ -107,7 +138,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     return parseFloat(valorTotal || 0) === soma;
   };
   
-  // Atalho: Ctrl+S para salvar
+  // Atalho Ctrl+S para salvar
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey && e.key === 's') {
@@ -117,9 +148,9 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, []);
   
-  // Atalho: Esc para fechar o modal
+  // Atalho Esc para fechar
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
@@ -142,35 +173,43 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
 
   const handleSubmit = async (e, closeModal = true) => {
     e.preventDefault();
+
     if (!validatePagamentos()) {
       alert('A soma dos pagamentos deve ser igual ao valor total.');
       return;
     }
+
+    // Monta o objeto para envio ao backend
     const transacaoData = {
       tipo,
       descricao,
-      data: new Date(data).toISOString(), // Envia data no formato ISO
+      data: new Date(data).toISOString(), // Formato ISO
       valor: Number(parseFloat(valorTotal).toFixed(2)),
-      tags: {}, // Não enviamos tags para o pai
-      pagamentos: pagamentos.map(pag => ({
+      // Não enviamos tags "pai" (removidas)
+      pagamentos: pagamentos.map((pag) => ({
         pessoa: pag.pessoa,
         valor: Number(parseFloat(pag.valor).toFixed(2)),
-        tags: pag.paymentTags
+        // "paymentTags" => "tags" no backend
+        tags: pag.paymentTags || {}
       }))
     };
+
     try {
       if (transacao && transacao.id) {
+        // Atualizar
         await atualizarTransacao(transacao.id, transacaoData);
         alert('Transação atualizada com sucesso!');
       } else {
+        // Criar
         await criarTransacao(transacaoData);
         alert('Transação criada com sucesso!');
       }
+
       if (onSuccess) onSuccess();
       if (closeModal) {
         onClose();
       } else {
-        // Reseta os campos para nova inserção
+        // Se for "Salvar e Continuar", limpa o formulário
         setTipo('gasto');
         setDescricao('');
         const hoje = new Date().toISOString().split('T')[0];
@@ -192,7 +231,12 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
           <div className="left-column">
             <div className="form-section">
               <label>Tipo:</label>
-              <select value={tipo} onChange={e => setTipo(e.target.value)} required onFocus={handleFocus}>
+              <select
+                value={tipo}
+                onChange={e => setTipo(e.target.value)}
+                required
+                onFocus={handleFocus}
+              >
                 <option value="gasto">Gasto</option>
                 <option value="recebivel">Recebível</option>
               </select>
@@ -216,7 +260,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
             </div>
             <div className="form-section">
               <label>Data:</label>
-              <input type="date" value={data} onChange={e => setData(e.target.value)} required onFocus={handleFocus} />
+              <input
+                type="date"
+                value={data}
+                onChange={e => setData(e.target.value)}
+                required
+                onFocus={handleFocus}
+              />
               <div className="date-shortcuts">
                 <button type="button" onClick={setHoje}>Hoje</button>
                 <button type="button" onClick={setOntem}>Ontem</button>
@@ -235,8 +285,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
               />
             </div>
           </div>
+
           <div className="right-column">
-            {/* Removemos a seção de tags do pai */}
             <div className="form-section pagamentos-section">
               <h3>Pagamentos</h3>
               {pagamentos.map((pag, index) => (
@@ -275,6 +325,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
                         <label>{cat.nome}:</label>
                         <select
                           multiple
+                          // Se paymentTags[cat.nome] existir, já vem selecionado
                           value={(pag.paymentTags && pag.paymentTags[cat.nome]) || []}
                           onChange={e => {
                             const selected = Array.from(e.target.selectedOptions, opt => opt.value);
@@ -308,11 +359,20 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
             </div>
           </div>
         </div>
+
         <div className="form-buttons">
-          <button type="submit" className="submit-btn" onClick={(e) => handleSubmit(e, true)}>
+          <button
+            type="submit"
+            className="submit-btn"
+            onClick={(e) => handleSubmit(e, true)}
+          >
             {transacao ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
           </button>
-          <button type="button" className="submit-btn" onClick={(e) => handleSubmit(e, false)}>
+          <button
+            type="button"
+            className="submit-btn"
+            onClick={(e) => handleSubmit(e, false)}
+          >
             {transacao ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
           </button>
         </div>

@@ -40,6 +40,20 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
       </div>
 
       <div className="card-details">
+        {/* Se houver pagamentos, exibimos cada pagante em uma mini-seção */}
+        {transacao.pagamentos && transacao.pagamentos.length > 0 && (
+          <div className="payments-info">
+            <h4>Pagamentos</h4>
+            {transacao.pagamentos.map((pg, idx) => (
+              <div key={idx} className="payment-item">
+                <span className="payment-person">
+                  <strong>Pessoa:</strong> {pg.pessoa}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="tag-info">
           {transacao.tags &&
             Object.keys(transacao.tags).map((cat, idx) =>
