@@ -1,12 +1,17 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+// src/components/Layout/MainLayout.js
+import React, { useContext, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
+import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
 
 const MainLayout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { token, usuario, setToken, setUsuario } = useContext(AuthContext);
 
+  // Menu lateral
   const menuItems = [
     { name: 'Home', path: '/', icon: <FaHome /> },
     { name: 'Relatórios', path: '/relatorio', icon: <FaChartLine /> },
@@ -15,16 +20,38 @@ const MainLayout = ({ children }) => {
     { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },
   ];
 
+  // Controle de exibição do menu de perfil
+  const [profileOpen, setProfileOpen] = useState(false);
+  const handleProfileToggle = () => {
+    setProfileOpen(!profileOpen);
+  };
+
+  // Função de logout
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken('');
+    setUsuario(null);
+    navigate('/login');
+  };
+
+  // Verifica se está em /login ou /registro ou não há token
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/registro';
+  if (!token || isAuthPage) {
+    // Se estiver em /login ou /registro (ou sem token), não exibe o menu lateral
+    return (
+      <main className="main-content">
+        {children}
+      </main>
+    );
+  }
+
+  // Se o usuário estiver autenticado e não estiver em /login ou /registro, exibe o layout completo
   return (
     <div className="main-layout">
       <aside className="side-menu">
         <div className="menu-top">
           <div className="logo">
-            {/* Logo Genérico (Placeholder) */}
-            <img
-              src={myLogo}
-              alt="Logo"
-            />
+            <img src={myLogo} alt="Logo" />
             <span className="system-name">Controle de Gastos</span>
           </div>
 
@@ -46,18 +73,21 @@ const MainLayout = ({ children }) => {
         </div>
 
         <div className="menu-footer">
-          <div className="user-info">
-            <img
-              src={myLogo}
-              alt="Avatar do usuário"
-              className="avatar"
-            />
-            <span className="user-name">Alisson</span>
+          <div className="user-info" onClick={handleProfileToggle}>
+            <img src={myLogo} alt="Avatar do usuário" className="avatar" />
+            <span className="user-name">
+              {usuario ? usuario.nome : 'Usuário'}
+            </span>
           </div>
-          <div className="user-actions">
-            <Link to="/profile">Configurações</Link>
-            <Link to="/logout">Sair</Link>
-          </div>
+
+          {/* Se profileOpen for true, exibe o submenu */}
+          {profileOpen && (
+            <div className="profile-dropdown">
+              <Link to="/profile" className="profile-link">Meu Perfil</Link>
+              <Link to="/settings" className="profile-link">Configurações</Link>
+              <button onClick={handleLogout} className="profile-link logout-btn">Sair</button>
+            </div>
+          )}
         </div>
       </aside>
 

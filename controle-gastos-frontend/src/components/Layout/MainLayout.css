@@ -1,9 +1,12 @@
 /* src/components/Layout/MainLayout.css */
+
+/* Layout principal: side-menu + main-content */
 .main-layout {
   display: flex;
   height: 100vh;
 }
 
+/* Menu lateral */
 .side-menu {
   width: 250px;
   background-color: #f8f9fa;
@@ -12,16 +15,19 @@
   justify-content: space-between; /* Empurra o footer para baixo */
   padding: 20px;
   border-right: 1px solid #ddd;
+  transition: all 0.3s ease;
 }
 
-/* Topo do menu (logo + menu-items) */
-
 /* Logo e nome do sistema */
+.menu-top {
+  margin-bottom: auto; /* Garante que o conteúdo fique no topo */
+}
+
 .logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px; /* Pequeno espaço abaixo do logo */
+  margin-bottom: 20px; /* Espaço abaixo do logo */
 }
 
 .logo img {
@@ -55,7 +61,7 @@
   gap: 10px;
   padding: 8px 12px;
   border-radius: 4px;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .menu-items li a:hover {
@@ -67,7 +73,6 @@
   color: #fff;
 }
 
-/* Ícones do menu */
 .menu-icon {
   font-size: 1.2rem;
 }
@@ -80,13 +85,16 @@
 .menu-footer {
   border-top: 1px solid #ddd;
   padding-top: 16px;
+  position: relative; /* Para posicionar o dropdown */
 }
 
+/* Informações do usuário (avatar + nome) */
 .user-info {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
+  cursor: pointer; /* Indica que é clicável (para abrir o dropdown) */
 }
 
 .user-info .avatar {
@@ -100,17 +108,47 @@
   color: #333;
 }
 
-/* Links de configurações e logout */
-.user-actions a {
-  text-decoration: none;
-  font-size: 0.9rem;
-  color: var(--cor-primaria);
-  margin-right: 10px;
-  transition: color 0.3s;
+/* Dropdown de perfil (submenu) */
+.profile-dropdown {
+  position: absolute;
+  bottom: 60px; /* Ajuste conforme necessário */
+  left: 20px;   /* Para ficar dentro do menu */
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 999;
+  min-width: 150px;
 }
 
-.user-actions a:hover {
-  color: var(--cor-secundaria);
+.profile-dropdown .profile-link {
+  display: block;
+  padding: 6px 10px;
+  color: #333;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.profile-dropdown .profile-link:hover {
+  background-color: #f2f2f2;
+}
+
+/* Botão de logout */
+.profile-dropdown .logout-btn {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  color: #c9302c;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.profile-dropdown .logout-btn:hover {
+  background-color: #f2f2f2;
 }
 
 /* Conteúdo principal */
@@ -118,4 +156,37 @@
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  .main-layout {
+    flex-direction: column; /* Menu em cima, conteúdo embaixo */
+    height: auto;
+  }
+
+  .side-menu {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .menu-footer {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 16px;
+    position: static; /* O dropdown pode precisar ajuste se você quiser usá-lo no mobile */
+  }
+
+  .profile-dropdown {
+    position: static;
+    box-shadow: none;
+    border: none;
+    margin-top: 8px;
+  }
+
+  .main-content {
+    padding: 10px;
+  }
 }

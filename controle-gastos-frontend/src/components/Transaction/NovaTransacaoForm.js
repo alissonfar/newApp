@@ -164,12 +164,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       toast.warn('A soma dos pagamentos deve ser igual ao valor total.');
       return;
     }
-    // Monta o objeto para envio ao backend
+    // Monta o objeto para envio ao backend, incluindo "tags" (pai) mesmo que vazio
     const transacaoData = {
       tipo,
       descricao,
       data: new Date(data).toISOString(),
       valor: Number(parseFloat(valorTotal).toFixed(2)),
+      tags: {}, // Adicionado: campo de tags do pai, pode ser ajustado se necessário
       pagamentos: pagamentos.map((pag) => ({
         pessoa: pag.pessoa,
         valor: Number(parseFloat(pag.valor).toFixed(2)),
@@ -201,6 +202,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       toast.error('Erro ao salvar transação.');
     }
   };
+  
 
   return (
     <div className="nova-transacao-form-container">

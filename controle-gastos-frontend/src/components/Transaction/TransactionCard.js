@@ -1,3 +1,4 @@
+// src/components/Transaction/TransactionCardTransacoes.js
 import React from 'react';
 import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCardTransacoes.css';
@@ -15,9 +16,7 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
     <div className="transaction-card-transacoes">
       <div className="card-header">
         <h3 className="card-title">{transacao.descricao}</h3>
-        <div className="card-header-icon">
-          {tipoIcon}
-        </div>
+        <div className="card-header-icon">{tipoIcon}</div>
       </div>
       <hr className="divider" />
       <div className="card-info">
@@ -32,24 +31,25 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
         </div>
       </div>
 
-      {/* Exibe cada pagamento, incluindo tags do pagamento */}
+      {/* Exibe cada pagamento, incluindo as tags associadas */}
       {transacao.pagamentos && transacao.pagamentos.length > 0 && (
         <div className="card-payments">
           {transacao.pagamentos.map((pg, idx) => (
             <div key={idx} className="payment-line">
-              {/* Exemplo: mostra pessoa e valor do pagamento */}
               <div className="payment-info">
                 <strong>{pg.pessoa}:</strong> R${parseFloat(pg.valor).toFixed(2)}
               </div>
-              
-              {/* Exibe tags do pagamento */}
               <div className="payment-tags">
-                {Object.keys(pg.paymentTags || {}).map((cat, i) =>
-                  pg.paymentTags[cat].map((tag, j) => (
-                    <span key={`${cat}-${tag}-${j}`} className="tag-chip">
-                      {cat}: {tag}
-                    </span>
-                  ))
+                {(pg.paymentTags && Object.keys(pg.paymentTags).length > 0) ? (
+                  Object.keys(pg.paymentTags).map((cat, i) =>
+                    pg.paymentTags[cat].map((tag, j) => (
+                      <span key={`${cat}-${tag}-${j}`} className="tag-chip">
+                        {cat}: {tag}
+                      </span>
+                    ))
+                  )
+                ) : (
+                  <span className="no-tags">Sem tags</span>
                 )}
               </div>
             </div>

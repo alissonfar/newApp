@@ -1,15 +1,16 @@
 // src/pages/Home/Home.js
-import React, { useEffect, useState } from 'react';
-import { obterTransacoes, obterRelatorio } from '../../api';
+import React, { useContext, useEffect, useState } from 'react';
+import { obterTransacoes } from '../../api';
 import TransactionCard from '../../components/Transaction/TransactionCard';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
+import { AuthContext } from '../../context/AuthContext';
 import './Home.css';
 
 const Home = () => {
   const [transacoes, setTransacoes] = useState([]);
-  const [relatorio, setRelatorio] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const { usuario } = useContext(AuthContext);
 
   const carregarTransacoes = async () => {
     try {
@@ -23,18 +24,8 @@ const Home = () => {
     }
   };
 
-  const carregarRelatorio = async () => {
-    try {
-      const dados = await obterRelatorio();
-      setRelatorio(dados);
-    } catch (error) {
-      console.error('Erro ao carregar relatório:', error);
-    }
-  };
-
   useEffect(() => {
     carregarTransacoes();
-    carregarRelatorio();
   }, []);
 
   return (
@@ -51,35 +42,12 @@ const Home = () => {
               alt="Avatar do usuário"
               className="user-avatar"
             />
-            <span className="user-name">Olá, Alisson</span>
+            <span className="user-name">
+              Olá, {usuario ? usuario.nome : 'Usuário'}
+            </span>
           </div>
         </div>
       </header>
-
-      {/* Cartões de Resumo */}
-      <section className="dashboard-cards">
-        <div className="card">
-          <h3>Gastos</h3>
-          <p className="card-value">
-            R${relatorio ? Number(relatorio.totalGastos).toFixed(2) : '0.00'}
-          </p>
-          <p className="card-detail">Variação: +10%</p>
-        </div>
-        <div className="card">
-          <h3>Recebimentos</h3>
-          <p className="card-value">
-            R${relatorio ? Number(relatorio.totalRecebimentos).toFixed(2) : '0.00'}
-          </p>
-          <p className="card-detail">Variação: +5%</p>
-        </div>
-        <div className="card">
-          <h3>Saldo</h3>
-          <p className="card-value">
-            R${relatorio ? Number(relatorio.saldoGeral).toFixed(2) : '0.00'}
-          </p>
-          <p className="card-detail">Atualizado</p>
-        </div>
-      </section>
 
       {/* Transações Recentes */}
       <section className="recent-transactions">
