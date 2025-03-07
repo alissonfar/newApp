@@ -3,7 +3,7 @@ const Tag = require('../models/tag');
 
 exports.obterTodasTags = async (req, res) => {
   try {
-    // Filtra tags do usuário
+    // Filtra tags do usuário autenticado
     const tags = await Tag.find({ usuario: req.userId });
     res.json(tags);
   } catch (error) {

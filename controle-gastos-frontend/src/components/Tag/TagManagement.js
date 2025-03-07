@@ -1,7 +1,7 @@
 // src/components/Tag/TagManagement.js
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';     // Para mensagens de sucesso/erro
-import Swal from 'sweetalert2';            // Para confirmações de exclusão
+import { toast } from 'react-toastify';     
+import Swal from 'sweetalert2';            
 import {
   obterCategorias,
   obterTags,
@@ -40,9 +40,10 @@ const TagManagement = () => {
   const carregarCategorias = async () => {
     try {
       const cats = await obterCategorias();
+      console.log('carregarCategorias => cats:', cats); // [LOG]
       setCategorias(cats);
       if (!selectedCategory && cats.length > 0) {
-        setSelectedCategory(cats[0]); // Seleciona a primeira categoria por padrão
+        setSelectedCategory(cats[0]); // Seleciona a primeira categoria
       }
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
@@ -53,6 +54,7 @@ const TagManagement = () => {
   const carregarTags = async () => {
     try {
       const tgs = await obterTags();
+      console.log('carregarTags => tgs:', tgs); // [LOG]
       setTags(tgs);
     } catch (error) {
       console.error('Erro ao carregar tags:', error);
@@ -65,6 +67,7 @@ const TagManagement = () => {
     carregarTags();
   }, []);
 
+  // Filtra as tags com base na categoria selecionada
   const filteredTags = selectedCategory
     ? tags.filter(
         (tag) =>
@@ -73,7 +76,13 @@ const TagManagement = () => {
       )
     : [];
 
-  // Funções para gerenciamento de tags
+  // [LOGS] Adicionais para entender o que está acontecendo
+  useEffect(() => {
+    console.log('selectedCategory =>', selectedCategory);
+    console.log('filteredTags =>', filteredTags);
+  }, [selectedCategory, filteredTags]);
+
+  // Função para verificar se o nome da tag já existe
   const nomeTagDuplicado = (nome, id = null) => {
     return tags.some(
       (tag) =>
@@ -139,7 +148,6 @@ const TagManagement = () => {
   };
 
   const handleExcluirTag = async (tagId) => {
-    // Substituímos window.confirm por SweetAlert2
     Swal.fire({
       title: 'Tem certeza que deseja excluir esta tag?',
       text: 'Essa ação não pode ser desfeita.',
@@ -224,7 +232,6 @@ const TagManagement = () => {
   };
 
   const handleExcluirCategoria = async (catId) => {
-    // Substituímos window.confirm por SweetAlert2
     Swal.fire({
       title: 'Tem certeza que deseja excluir esta categoria?',
       text: 'Essa ação não pode ser desfeita.',

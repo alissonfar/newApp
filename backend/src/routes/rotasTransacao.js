@@ -1,9 +1,8 @@
 // src/routes/rotasTransacao.js
-
 const express = require('express');
 const router = express.Router();
 const controladorTransacao = require('../controllers/controladorTransacao');
-const autenticacao = require('../middlewares/autenticacao');// [NOVO] Import do middleware
+const autenticacao = require('../middlewares/autenticacao'); // Middleware de autenticação
 
 // Aplica o middleware de autenticação em todas as rotas
 router.use(autenticacao);

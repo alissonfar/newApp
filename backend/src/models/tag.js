@@ -4,7 +4,9 @@ const mongoose = require('mongoose');
 const TagSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   descricao: { type: String, default: '' },
-  categoria: { type: String, required: true }
+  categoria: { type: String, required: true },
+  // [NOVO] Vincula a tag a um usuário
+  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true }
 });
 
 // Adiciona virtual para que o JSON inclua o campo "id" (baseado em _id)

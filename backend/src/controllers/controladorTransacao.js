@@ -48,7 +48,7 @@ exports.atualizarTransacao = async (req, res) => {
   try {
     const transacao = await Transacao.findOne({ _id: req.params.id, usuario: req.userId });
     if (!transacao) return res.status(404).json({ erro: 'Transação não encontrada.' });
-    // Atualiza os campos
+    // Atualiza os campos conforme enviados
     transacao.tipo = req.body.tipo || transacao.tipo;
     transacao.descricao = req.body.descricao || transacao.descricao;
     transacao.valor = req.body.valor || transacao.valor;

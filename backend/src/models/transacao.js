@@ -15,7 +15,7 @@ const TransacaoSchema = new mongoose.Schema({
   tags: { type: Object, required: false, default: {} },
   pagamentos: { type: [PagamentoSchema], required: true },
   status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' },
-  // [NOVO] relaciona transacao a um Usuario
+  // [NOVO] Vincula a transação a um usuário
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true }
 });
 

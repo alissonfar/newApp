@@ -19,6 +19,7 @@ exports.gerarRelatorio = async (req, res) => {
     transacoes.forEach(transacao => {
       if (transacao.tipo === 'gasto') {
         totalGastos += transacao.valor;
+        // Para cada pagamento, acumula o valor para a pessoa
         transacao.pagamentos.forEach(pag => {
           inicializarPessoa(pag.pessoa);
           relatorioPorPessoa[pag.pessoa].gasto += pag.valor;
@@ -32,7 +33,7 @@ exports.gerarRelatorio = async (req, res) => {
       }
     });
 
-    // Calcula saldo por pessoa
+    // Calcula saldo por pessoa: (recebido - gasto)
     let relatorioFinal = {};
     Object.keys(relatorioPorPessoa).forEach(nome => {
       const dados = relatorioPorPessoa[nome];

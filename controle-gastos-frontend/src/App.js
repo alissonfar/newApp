@@ -10,38 +10,81 @@ import Relatorio from './pages/Relatorio/Relatorio';
 import Transacoes from './pages/Transacoes/Transacoes';
 import Insights from './pages/Insights/Insights';
 import Tags from './pages/Tags/Tags';
+import Login from './pages/Login/Login';         // Página de Login
+import PrivateRoute from './components/Rotas/PrivateRoute'; // Rota privada
+import Registro from './pages/Registro/Registro';
+
+import { AuthProvider } from './context/AuthContext'; // Contexto de Autenticação
+
 import './App.css';
 
 function App() {
   return (
-    <>
-      {/* Router para navegação */}
+    <AuthProvider>
       <Router>
         <MainLayout>
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/relatorio" element={<Relatorio />} />
-            <Route path="/transacoes" element={<Transacoes />} />
-            <Route path="/insights" element={<Insights />} />
-            <Route path="/tags" element={<Tags />} />
+            {/* Rota pública */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/registro" element={<Registro />} />
+            
+            {/* Rotas protegidas */}
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <Home />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/relatorio"
+              element={
+                <PrivateRoute>
+                  <Relatorio />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/transacoes"
+              element={
+                <PrivateRoute>
+                  <Transacoes />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/insights"
+              element={
+                <PrivateRoute>
+                  <Insights />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tags"
+              element={
+                <PrivateRoute>
+                  <Tags />
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </MainLayout>
       </Router>
-
-      {/* ToastContainer para exibir os toasts globalmente */}
       <ToastContainer
-        position="top-right"   // Posição na tela (top-right, top-center, etc.)
-        autoClose={3000}       // Tempo em ms para fechar automaticamente (3s)
+        position="top-right"
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
-        rtl={false}            // Se precisar de suporte para idiomas RTL, defina como true
+        rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="light"          // "light" ou "dark" (ou personalizado)
+        theme="light"
       />
-    </>
+    </AuthProvider>
   );
 }
 

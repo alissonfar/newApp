@@ -1,5 +1,5 @@
 // src/controllers/controladorUsuario.js
-const Usuario = require('../models/usuarios');
+const Usuario = require('../models/usuarios'); // Atualizado para o nome correto do modelo
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { jwtSecret, jwtExpires } = require('../config/config');
@@ -12,7 +12,7 @@ module.exports = {
         return res.status(400).json({ erro: 'Campos obrigatórios faltando.' });
       }
 
-      // Verifica se email já existe
+      // Verifica se o email já está em uso
       const usuarioExistente = await Usuario.findOne({ email });
       if (usuarioExistente) {
         return res.status(400).json({ erro: 'Email já está em uso.' });
@@ -39,13 +39,13 @@ module.exports = {
         return res.status(401).json({ erro: 'Credenciais inválidas.' });
       }
 
-      // Compara senhas
+      // Compara as senhas
       const match = await bcrypt.compare(senha, usuario.senha);
       if (!match) {
         return res.status(401).json({ erro: 'Credenciais inválidas.' });
       }
 
-      // Gera token JWT
+      // Gera o token JWT
       const token = jwt.sign({ userId: usuario._id }, jwtSecret, {
         expiresIn: jwtExpires
       });
