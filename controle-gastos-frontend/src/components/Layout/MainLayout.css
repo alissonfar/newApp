@@ -3,43 +3,96 @@
 /* Layout principal: side-menu + main-content */
 .main-layout {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow-x: hidden;
 }
 
 /* Menu lateral */
 .side-menu {
   width: 250px;
+  min-width: 250px;
   background-color: #f8f9fa;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Empurra o footer para baixo */
+  justify-content: space-between;
   padding: 20px;
   border-right: 1px solid #ddd;
   transition: all 0.3s ease;
+  position: relative;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Menu colapsado */
+.side-menu.collapsed {
+  width: 70px;
+  min-width: 70px;
+  padding: 20px 10px;
+}
+
+/* Botão de toggle do menu */
+.menu-toggle {
+  position: absolute;
+  right: -10px;
+  top: 20px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.3s ease;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.menu-toggle svg {
+  width: 14px;
+  height: 14px;
+  color: #333333;
+  transition: transform 0.3s ease;
+}
+
+.side-menu.collapsed .menu-toggle svg {
+  transform: rotate(180deg);
+}
+
+.menu-toggle:hover svg {
+  color: var(--cor-primaria);
 }
 
 /* Logo e nome do sistema */
 .menu-top {
-  margin-bottom: auto; /* Garante que o conteúdo fique no topo */
+  margin-bottom: auto;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px; /* Espaço abaixo do logo */
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
 .logo img {
   width: 40px;
   height: 40px;
   object-fit: contain;
+  min-width: 40px;
 }
 
 .system-name {
   font-size: 1.2rem;
   font-weight: bold;
   color: var(--cor-primaria);
+  white-space: nowrap;
 }
 
 /* Itens do menu */
@@ -62,6 +115,7 @@
   padding: 8px 12px;
   border-radius: 4px;
   transition: background-color 0.3s, color 0.3s;
+  white-space: nowrap;
 }
 
 .menu-items li a:hover {
@@ -75,6 +129,10 @@
 
 .menu-icon {
   font-size: 1.2rem;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .menu-text {
@@ -85,7 +143,8 @@
 .menu-footer {
   border-top: 1px solid #ddd;
   padding-top: 16px;
-  position: relative; /* Para posicionar o dropdown */
+  position: relative;
+  margin-top: auto;
 }
 
 /* Informações do usuário (avatar + nome) */
@@ -94,99 +153,184 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
-  cursor: pointer; /* Indica que é clicável (para abrir o dropdown) */
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+  overflow: hidden;
+}
+
+.user-info:hover {
+  background-color: #e0e0e0;
 }
 
 .user-info .avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  min-width: 40px;
+  object-fit: cover;
+  border: 2px solid var(--cor-primaria);
 }
 
 .user-name {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #333;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 /* Dropdown de perfil (submenu) */
 .profile-dropdown {
   position: absolute;
-  bottom: 60px; /* Ajuste conforme necessário */
-  left: 20px;   /* Para ficar dentro do menu */
+  bottom: 100%;
+  left: 0;
+  right: 0;
   background-color: #fff;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
   z-index: 999;
-  min-width: 150px;
+  margin-bottom: 8px;
+}
+
+.side-menu.collapsed .profile-dropdown {
+  left: 60px;
+  min-width: 200px;
 }
 
 .profile-dropdown .profile-link {
-  display: block;
-  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
   color: #333;
   text-decoration: none;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
 .profile-dropdown .profile-link:hover {
-  background-color: #f2f2f2;
+  background-color: #f0f0f0;
+  color: var(--cor-primaria);
 }
 
 /* Botão de logout */
 .profile-dropdown .logout-btn {
   width: 100%;
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px 10px;
-  color: #c9302c;
-  font-weight: bold;
+  padding: 8px 12px;
+  color: #e74c3c;
+  font-weight: 500;
   font-size: 0.9rem;
+  border-radius: 6px;
+  margin-top: 4px;
+  border-top: 1px solid #eee;
 }
 
 .profile-dropdown .logout-btn:hover {
-  background-color: #f2f2f2;
+  background-color: #fee7e7;
 }
 
 /* Conteúdo principal */
 .main-content {
   flex: 1;
   padding: 20px;
-  overflow-y: auto;
+  margin-left: 250px;
   transition: all 0.3s ease;
+  width: calc(100% - 250px);
+  box-sizing: border-box;
 }
 
-/* Responsividade para telas menores */
-@media (max-width: 768px) {
-  .main-layout {
-    flex-direction: column; /* Menu em cima, conteúdo embaixo */
-    height: auto;
-  }
+.main-content.expanded {
+  margin-left: 70px;
+  width: calc(100% - 70px);
+}
 
+/* Responsividade */
+@media (max-width: 1024px) {
   .side-menu {
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .side-menu.collapsed {
+    width: 60px;
+    min-width: 60px;
+  }
+
+  .main-content {
+    margin-left: 200px;
+    width: calc(100% - 200px);
+  }
+
+  .main-content.expanded {
+    margin-left: 60px;
+    width: calc(100% - 60px);
+  }
+}
+
+@media (max-width: 768px) {
+  .side-menu {
+    transform: translateX(0);
+  }
+
+  .side-menu.collapsed {
+    transform: translateX(-100%);
+  }
+
+  .main-content {
+    margin-left: 0;
     width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #ddd;
+    padding: 15px;
   }
 
-  .menu-footer {
-    border-top: none;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 16px;
-    position: static; /* O dropdown pode precisar ajuste se você quiser usá-lo no mobile */
+  .main-content.expanded {
+    margin-left: 0;
+    width: 100%;
   }
 
-  .profile-dropdown {
-    position: static;
-    box-shadow: none;
-    border: none;
-    margin-top: 8px;
+  .menu-toggle {
+    width: 20px;
+    height: 20px;
+    right: -10px;
+    font-size: 0.7rem;
+  }
+
+  .side-menu.collapsed .menu-toggle {
+    right: -10px;
+  }
+
+  .side-menu.collapsed .profile-dropdown {
+    left: 0;
+    min-width: auto;
+    width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .side-menu {
+    width: 280px;
+    min-width: 280px;
   }
 
   .main-content {
     padding: 10px;
+  }
+
+  .profile-dropdown {
+    width: calc(100% - 16px);
+    left: 8px;
+  }
+
+  .side-menu.collapsed .profile-dropdown {
+    width: 280px;
   }
 }

@@ -1,32 +1,205 @@
 /* src/App.css */
 
+/* Importação das fontes */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+
 /* Variáveis de cores e configurações globais */
 :root {
-  --cor-primaria: #005fa3;       /* Azul sóbrio */
-  --cor-secundaria: #007ACC;
-  --cor-fundo: #f8f9fa;          /* Fundo claro */
-  --cor-branca: #ffffff;
-  --cor-texto: #333333;
-  --sombra: 0 2px 10px rgba(0, 0, 0, 0.1);
-  --fonte-principal: 'Roboto', sans-serif;
+  /* Cores principais */
+  --cor-primaria: #2196F3; /* Azul Material */
+  --cor-secundaria: #1976D2; /* Azul Escuro */
+  --cor-terciaria: #64B5F6; /* Azul Claro */
+  --cor-destaque: #42A5F5; /* Azul Médio */
+  
+  /* Cores de fundo */
+  --cor-fundo: #F5F7FA; /* Cinza Azulado Claro */
+  --cor-fundo-card: #FFFFFF; /* Branco */
+  --cor-fundo-hover: #E3F2FD; /* Azul Muito Claro */
+  
+  /* Cores de texto */
+  --cor-texto: #2C3E50; /* Azul Escuro Acinzentado */
+  --cor-texto-suave: #607D8B; /* Azul Acinzentado */
+  --cor-texto-destaque: #1976D2; /* Azul Escuro */
+  
+  /* Cores de status */
+  --cor-sucesso: #4CAF50; /* Verde */
+  --cor-erro: #F44336; /* Vermelho */
+  --cor-alerta: #FFC107; /* Amarelo */
+  
+  /* Efeitos */
+  --sombra-card: 0 2px 4px rgba(0, 0, 0, 0.1),
+                 0 4px 8px rgba(0, 0, 0, 0.05);
+  --sombra-hover: 0 4px 8px rgba(33, 150, 243, 0.15),
+                  0 8px 16px rgba(33, 150, 243, 0.1);
+  --transicao-padrao: all 0.3s ease;
+  
+  /* Bordas e espaçamentos */
+  --borda-radius: 8px;
+  --espacamento-padrao: 20px;
+  
+  /* Gradientes */
+  --gradiente-primario: linear-gradient(135deg, #2196F3, #1976D2);
+  --gradiente-secundario: linear-gradient(135deg, #42A5F5, #2196F3);
+  --gradiente-destaque: linear-gradient(45deg, 
+    #2196F3 0%,
+    #42A5F5 50%,
+    #2196F3 100%
+  );
+
+  /* Fontes */
+  --fonte-titulos: 'Poppins', sans-serif;
+  --fonte-corpo: 'DM Sans', sans-serif;
 }
 
+/* Estilos de título globais */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--fonte-titulos);
+  color: var(--cor-texto);
+  margin-bottom: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+h1, h2 {
+  color: var(--cor-texto-destaque);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+h1::after, h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: var(--gradiente-primario);
+  border-radius: 3px;
+}
+
+/* Estilos globais */
 body {
   margin: 0;
-  font-family: var(--fonte-principal);
-  background-color: var(--cor-fundo);
+  font-family: var(--fonte-corpo);
+  background: var(--cor-fundo);
   color: var(--cor-texto);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Estilização de inputs globais */
+input, select, textarea {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+  padding: 10px 12px;
+  border: 1px solid #E0E7FF;
+  border-radius: var(--borda-radius);
+  color: var(--cor-texto);
+  background-color: #FFFFFF;
+  transition: var(--transicao-padrao);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+/* Estilização de botões globais */
+button {
+  font-family: var(--fonte-titulos);
+  font-size: 0.95rem;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--borda-radius);
+  background: var(--gradiente-primario);
+  color: white;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: var(--transicao-padrao);
+}
+
+button:hover {
+  background: var(--gradiente-secundario);
+  transform: translateY(-1px);
+  box-shadow: var(--sombra-hover);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Cards e containers */
+.card {
+  background: var(--cor-fundo-card);
+  border-radius: var(--borda-radius);
+  padding: 20px;
+  box-shadow: var(--sombra-card);
+  transition: var(--transicao-padrao);
+}
+
+.card:hover {
+  box-shadow: var(--sombra-hover);
+}
+
+/* Classes de utilidade */
+.text-primary {
+  color: var(--cor-primaria);
+}
+
+.bg-primary {
+  background-color: var(--cor-primaria);
+  color: white;
+}
+
+.border-primary {
+  border: 1px solid var(--cor-primaria);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  :root {
+    --espacamento-padrao: 16px;
+  }
+  
+  button {
+    padding: 8px 16px;
+  }
+}
+
+/* Customização do scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cor-fundo);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cor-primaria);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cor-secundaria);
 }
 
 /* Barra Superior */
 .app-header {
   background-color: var(--cor-primaria);
-  color: var(--cor-branca);
+  color: white;
   padding: 15px 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--sombra);
+  box-shadow: var(--sombra-card);
 }
 
 .header-left {
@@ -41,125 +214,290 @@ body {
 
 .app-header h1 {
   margin: 0;
+  font-family: var(--fonte-titulos);
   font-size: 1.8rem;
-  font-weight: bold;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 /* Botão Gerenciar Tags */
 .btn-gerenciar-tags {
+  font-family: var(--fonte-titulos);
   background-color: var(--cor-secundaria);
   border: none;
   padding: 10px 15px;
-  font-size: 1rem;
-  border-radius: 4px;
-  color: var(--cor-branca);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: var(--borda-radius);
+  color: white;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: var(--transicao-padrao);
+  letter-spacing: 0.02em;
 }
 
 .btn-gerenciar-tags:hover {
   background-color: var(--cor-primaria);
+  transform: translateY(-1px);
+  box-shadow: var(--sombra-hover);
 }
 
 /* Links de navegação */
 .nav-link {
+  font-family: var(--fonte-titulos);
   margin-right: 15px;
   text-decoration: none;
-  color: var(--cor-branca);
-  font-weight: bold;
+  color: white;
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  transition: var(--transicao-padrao);
 }
 
-/* Responsividade Global */
-@media (max-width: 768px) {
-  .app-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .btn-gerenciar-tags {
-    margin-top: 10px;
-  }
+.nav-link:hover {
+  color: var(--cor-fundo-hover);
 }
 
 /* CustomSelect.css */
 .custom-select {
+  font-family: var(--fonte-corpo);
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
   background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 1rem;
-  color: #333;
+  border: 1px solid #E0E7FF;
+  border-radius: var(--borda-radius);
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  color: var(--cor-texto);
   width: 100%;
   outline: none;
   cursor: pointer;
-  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg%20viewBox="0%200%20292.357%20292.357"%20xmlns="http://www.w3.org/2000/svg"><path%20fill="%23666"%20d="M287%2069.4l-14.3-14.3c-3.9-3.9-10.2-3.9-14.1%200L146.2%20171.5%2033.7%2059.1c-3.9-3.9-10.2-3.9-14.1%200L5.3%2073.4c-3.9%203.9-3.9%2010.2%200%2014.1l130.9%20130.9c3.9%203.9%2010.2%203.9%2014.1%200L287%2083.5c3.9-3.9%203.9-10.2%200-14.1z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 16px 16px;
+  transition: var(--transicao-padrao);
 }
 
-/* Remover a seta nativa no IE/Edge */
-.custom-select::-ms-expand {
-  display: none;
+.custom-select:hover {
+  border-color: var(--cor-primaria);
 }
 
-/* Global custom styles for React-Select using classNamePrefix="mySelect" */
+.custom-select:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+/* Global custom styles for React-Select */
 .mySelect__control {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  min-height: 40px;
-  box-shadow: none;
-  transition: border-color 0.2s;
+  font-family: var(--fonte-corpo) !important;
+  background-color: #fff !important;
+  border: 1px solid #E0E7FF !important;
+  border-radius: var(--borda-radius) !important;
+  min-height: 42px !important;
+  box-shadow: none !important;
+  transition: var(--transicao-padrao) !important;
 }
 
 .mySelect__control:hover {
-  border-color: #aaa;
+  border-color: var(--cor-primaria) !important;
 }
 
 .mySelect__control--is-focused {
-  border-color: #007acc !important;
-  outline: none;
-  box-shadow: 0 0 0 1px #007acc;
+  border-color: var(--cor-primaria) !important;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1) !important;
 }
 
 .mySelect__menu {
+  font-family: var(--fonte-corpo) !important;
+  border-radius: var(--borda-radius) !important;
+  border: 1px solid #E0E7FF !important;
+  box-shadow: var(--sombra-card) !important;
   z-index: 9999;
 }
 
 .mySelect__option {
+  font-size: 0.95rem !important;
+  color: var(--cor-texto) !important;
   cursor: pointer;
+  transition: var(--transicao-padrao) !important;
 }
 
 .mySelect__option--is-focused {
-  background-color: #e6f7ff;
-  color: #007acc;
+  background-color: var(--cor-fundo-hover) !important;
+  color: var(--cor-primaria) !important;
 }
 
 .mySelect__option--is-selected {
-  background-color: #007acc;
-  color: #fff;
+  background-color: var(--cor-primaria) !important;
+  color: white !important;
+  font-weight: 500 !important;
 }
 
 .mySelect__multi-value {
-  background-color: #e6f7ff;
-  border-radius: 4px;
+  background-color: var(--cor-fundo-hover) !important;
+  border-radius: var(--borda-radius) !important;
   margin: 2px;
 }
 
 .mySelect__multi-value__label {
-  color: #007acc;
-  font-weight: 600;
+  font-family: var(--fonte-corpo) !important;
+  color: var(--cor-texto-destaque) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
 }
 
 .mySelect__multi-value__remove {
-  color: #007acc;
+  color: var(--cor-texto-destaque) !important;
   cursor: pointer;
+  transition: var(--transicao-padrao) !important;
 }
 
 .mySelect__multi-value__remove:hover {
-  background-color: #007acc;
-  color: #fff;
+  background-color: var(--cor-primaria) !important;
+  color: white !important;
 }
+
+.mySelect__placeholder {
+  color: var(--cor-texto-suave) !important;
+  font-size: 0.95rem !important;
+}
+
+.mySelect__input {
+  font-family: var(--fonte-corpo) !important;
+  color: var(--cor-texto) !important;
+}
+
+/* Menu lateral */
+.side-menu {
+  font-family: var(--fonte-titulos);
+}
+
+.side-menu .menu-item {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.side-menu .menu-header {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Tabelas */
+table {
+  font-family: var(--fonte-corpo);
+}
+
+th {
+  font-family: var(--fonte-titulos);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+td {
+  font-size: 0.95rem;
+}
+
+/* Modais e Diálogos */
+.modal-title {
+  font-family: var(--fonte-titulos);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.modal-content {
+  font-family: var(--fonte-corpo);
+}
+
+/* Mensagens e Alertas */
+.alert, .toast {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+}
+
+.alert-heading {
+  font-family: var(--fonte-titulos);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+  font-family: var(--fonte-corpo);
+  font-size: 0.9rem;
+}
+
+.breadcrumb-item.active {
+  font-weight: 500;
+}
+
+/* Badges e Tags */
+.badge, .tag {
+  font-family: var(--fonte-titulos);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* Tooltips */
+.tooltip {
+  font-family: var(--fonte-corpo);
+  font-size: 0.9rem;
+}
+
+/* Paginação */
+.pagination {
+  font-family: var(--fonte-corpo);
+}
+
+.page-link {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* Cards e Containers */
+.card-title {
+  font-family: var(--fonte-titulos);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.card-text {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+}
+
+/* Formulários adicionais */
+legend {
+  font-family: var(--fonte-titulos);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.form-text {
+  font-family: var(--fonte-corpo);
+  font-size: 0.85rem;
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+  font-family: var(--fonte-corpo);
+}
+
+.dropdown-item {
+  font-size: 0.95rem;
+}
+
+.dropdown-header {
+  font-family: var(--fonte-titulos);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Utilitários */
+.text-gradient {
+  background: var(--gradiente-primario);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+

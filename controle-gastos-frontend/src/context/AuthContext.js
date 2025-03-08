@@ -14,8 +14,19 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
+  const atualizarAutenticacao = (novoToken, novoUsuario) => {
+    setToken(novoToken);
+    setUsuario(novoUsuario);
+  };
+
   return (
-    <AuthContext.Provider value={{ token, setToken, usuario, setUsuario }}>
+    <AuthContext.Provider value={{ 
+      token, 
+      setToken, 
+      usuario, 
+      setUsuario,
+      atualizarAutenticacao 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -10,6 +10,7 @@ const MainLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { token, usuario, setToken, setUsuario } = useContext(AuthContext);
+  const [isMenuCollapsed, setIsMenuCollapsed] = useState(false);
 
   // Menu lateral
   const menuItems = [
@@ -34,6 +35,11 @@ const MainLayout = ({ children }) => {
     navigate('/login');
   };
 
+  // Toggle menu
+  const toggleMenu = () => {
+    setIsMenuCollapsed(!isMenuCollapsed);
+  };
+
   // Verifica se está em /login ou /registro ou não há token
   const isAuthPage = location.pathname === '/login' || location.pathname === '/registro';
   if (!token || isAuthPage) {
@@ -48,11 +54,15 @@ const MainLayout = ({ children }) => {
   // Se o usuário estiver autenticado e não estiver em /login ou /registro, exibe o layout completo
   return (
     <div className="main-layout">
-      <aside className="side-menu">
+      <aside className={`side-menu ${isMenuCollapsed ? 'collapsed' : ''}`}>
+        <button className="menu-toggle" onClick={toggleMenu} title={isMenuCollapsed ? 'Expandir menu' : 'Recolher menu'}>
+          <FaChevronLeft />
+        </button>
+
         <div className="menu-top">
           <div className="logo">
             <img src={myLogo} alt="Logo" />
-            <span className="system-name">Controle de Gastos</span>
+            {!isMenuCollapsed && <span className="system-name">Controle de Gastos</span>}
           </div>
 
           <nav className="menu-items">
@@ -64,7 +74,7 @@ const MainLayout = ({ children }) => {
                 >
                   <Link to={item.path}>
                     <span className="menu-icon">{item.icon}</span>
-                    <span className="menu-text">{item.name}</span>
+                    {!isMenuCollapsed && <span className="menu-text">{item.name}</span>}
                   </Link>
                 </li>
               ))}
@@ -75,9 +85,11 @@ const MainLayout = ({ children }) => {
         <div className="menu-footer">
           <div className="user-info" onClick={handleProfileToggle}>
             <img src={myLogo} alt="Avatar do usuário" className="avatar" />
-            <span className="user-name">
-              {usuario ? usuario.nome : 'Usuário'}
-            </span>
+            {!isMenuCollapsed && (
+              <span className="user-name">
+                {usuario ? usuario.nome : 'Usuário'}
+              </span>
+            )}
           </div>
 
           {/* Se profileOpen for true, exibe o submenu */}
@@ -91,7 +103,7 @@ const MainLayout = ({ children }) => {
         </div>
       </aside>
 
-      <main className="main-content">
+      <main className={`main-content ${isMenuCollapsed ? 'expanded' : ''}`}>
         {children}
       </main>
     </div>

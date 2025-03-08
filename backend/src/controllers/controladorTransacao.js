@@ -22,9 +22,9 @@ exports.obterTransacaoPorId = async (req, res) => {
 };
 
 exports.criarTransacao = async (req, res) => {
-  const { tipo, descricao, valor, data, tags, pagamentos } = req.body;
-  if (!tipo || !descricao || !valor || !data || !tags || !pagamentos) {
-    return res.status(400).json({ erro: 'Os campos obrigatórios são: tipo, descricao, valor, data, tags e pagamentos.' });
+  const { tipo, descricao, valor, data, pagamentos, observacao } = req.body;
+  if (!tipo || !descricao || !valor || !data || !pagamentos) {
+    return res.status(400).json({ erro: 'Os campos obrigatórios são: tipo, descricao, valor, data e pagamentos.' });
   }
   try {
     // Cria transação vinculada ao usuário autenticado
@@ -33,8 +33,8 @@ exports.criarTransacao = async (req, res) => {
       descricao,
       valor,
       data,
-      tags,
       pagamentos,
+      observacao,
       usuario: req.userId
     });
     await novaTransacao.save();
@@ -53,8 +53,8 @@ exports.atualizarTransacao = async (req, res) => {
     transacao.descricao = req.body.descricao || transacao.descricao;
     transacao.valor = req.body.valor || transacao.valor;
     transacao.data = req.body.data || transacao.data;
-    transacao.tags = req.body.tags || transacao.tags;
     transacao.pagamentos = req.body.pagamentos || transacao.pagamentos;
+    transacao.observacao = req.body.observacao !== undefined ? req.body.observacao : transacao.observacao;
     await transacao.save();
     res.json(transacao);
   } catch (error) {

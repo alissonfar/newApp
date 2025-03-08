@@ -21,6 +21,9 @@ const TransactionDetailsModal = ({ transacao, onClose }) => {
           <p><strong>Data:</strong> {formattedDate}</p>
           <p><strong>Tipo:</strong> {transacao.tipo}</p>
           <p><strong>Valor Total:</strong> R${formattedValue}</p>
+          {transacao.observacao && (
+            <p><strong>Observação:</strong> {transacao.observacao}</p>
+          )}
           
           {transacao.tags && Object.keys(transacao.tags).length > 0 && (
             <div className="tags-section">

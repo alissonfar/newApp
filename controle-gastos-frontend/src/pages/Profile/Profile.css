@@ -1,0 +1,338 @@
+.profile-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.profile-header {
+  margin-bottom: 30px;
+}
+
+.profile-header h1 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.profile-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  color: #007bff;
+}
+
+.tab-button.active {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #007bff;
+}
+
+.profile-content {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 30px;
+}
+
+.foto-perfil-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.foto-perfil {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.foto-perfil img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.foto-placeholder {
+  font-size: 4rem;
+  color: #adb5bd;
+}
+
+.foto-upload-label {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #007bff;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.foto-upload-label:hover {
+  background-color: #0056b3;
+  transform: scale(1.1);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group label svg {
+  color: #6c757d;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+  background-color: #fff;
+}
+
+.form-group input:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.redes-sociais {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.redes-sociais h3 {
+  font-size: 1.2rem;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 30px;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .profile-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 15px;
+  }
+
+  .profile-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .profile-content {
+    padding: 20px;
+  }
+
+  .profile-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    flex-wrap: nowrap;
+  }
+
+  .tab-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+
+  .foto-perfil {
+    width: 120px;
+    height: 120px;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .btn-submit {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .redes-sociais {
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 10px;
+  }
+
+  .profile-header h1 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .profile-content {
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .foto-perfil {
+    width: 100px;
+    height: 100px;
+  }
+
+  .foto-upload-label {
+    width: 30px;
+    height: 30px;
+  }
+
+  .form-group label {
+    font-size: 14px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .redes-sociais h3 {
+    font-size: 1.1rem;
+  }
+
+  .btn-submit {
+    padding: 10px;
+    font-size: 14px;
+  }
+} 

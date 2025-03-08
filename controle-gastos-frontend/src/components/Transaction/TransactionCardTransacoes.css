@@ -31,15 +31,18 @@
 }
 
 .card-title {
+  font-family: var(--fonte-titulos);
   font-size: 1.1rem;
-  font-weight: bold;
-  color: #333;
+  font-weight: 600;
+  color: var(--cor-texto);
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .card-date {
+  font-family: var(--fonte-corpo);
   font-size: 0.9rem;
-  color: #777;
+  color: var(--cor-texto-secundario);
 }
 
 /* Parte direita do cabeçalho (ícone + valor + badge) */
@@ -62,13 +65,15 @@
 }
 
 .card-value {
+  font-family: var(--fonte-titulos);
   font-size: 1.1rem;
-  font-weight: bold;
-  color: #333;
+  font-weight: 600;
+  color: var(--cor-texto);
 }
 
 /* Badge indicando tipo (Gasto/Recebível) */
 .badge {
+  font-family: var(--fonte-corpo);
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.8rem;
@@ -98,10 +103,12 @@
 }
 
 .payments-info h4 {
+  font-family: var(--fonte-titulos);
   margin: 0 0 6px;
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--cor-texto);
+  letter-spacing: -0.02em;
 }
 
 .payment-item {
@@ -109,8 +116,9 @@
 }
 
 .payment-person {
+  font-family: var(--fonte-corpo);
   font-size: 0.9rem;
-  color: #555;
+  color: var(--cor-texto);
 }
 
 /* Container das tags */
@@ -122,14 +130,15 @@
 
 /* Estilização das tags em formato "pill" */
 .tag-chip {
+  font-family: var(--fonte-corpo);
   display: inline-block;
-  margin: 0 8px 8px 0; /* espaçamento à direita e embaixo */
+  margin: 0 8px 8px 0;
   padding: 4px 10px;
   border-radius: 16px;
-  background-color: #007acc;
-  color: #fff;
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
   font-size: 0.85rem;
-  transition: background-color 0.3s ease;
+  transition: var(--transicao-padrao);
 }
 
 .tag-chip:hover {
@@ -143,15 +152,17 @@
 }
 
 .action-btn {
+  font-family: var(--fonte-titulos);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--borda-radius);
   padding: 6px 10px;
   cursor: pointer;
   font-size: 0.9rem;
   display: flex;
   align-items: center;
   gap: 5px;
-  transition: background-color 0.3s;
+  transition: var(--transicao-padrao);
+  font-weight: 500;
 }
 
 .edit-btn {

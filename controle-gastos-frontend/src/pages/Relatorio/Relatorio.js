@@ -43,16 +43,16 @@ const Relatorio = () => {
         const transData = await obterTransacoes();
         const transArray = transData.transacoes || [];
 
-        // Achatar cada transacao pai em vários registros
+        // Criar registros para cada pagamento
         const flattened = [];
         transArray.forEach((tr) => {
           if (!tr.pagamentos || tr.pagamentos.length === 0) {
             flattened.push({
-              parentId: tr.id,
-              dataPai: tr.data, // formato YYYY-MM-DD ou ISO
-              tipoPai: tr.tipo,
-              descricaoPai: tr.descricao,
-              valorPai: tr.valor,
+              id: tr.id,
+              data: tr.data,
+              tipo: tr.tipo,
+              descricao: tr.descricao,
+              valor: tr.valor,
               pessoa: null,
               valorPagamento: 0,
               tagsPagamento: {}
@@ -60,11 +60,11 @@ const Relatorio = () => {
           } else {
             tr.pagamentos.forEach((p) => {
               flattened.push({
-                parentId: tr.id,
-                dataPai: tr.data,
-                tipoPai: tr.tipo,
-                descricaoPai: tr.descricao,
-                valorPai: tr.valor,
+                id: tr.id,
+                data: tr.data,
+                tipo: tr.tipo,
+                descricao: tr.descricao,
+                valor: tr.valor,
                 pessoa: p.pessoa,
                 valorPagamento: p.valor,
                 tagsPagamento: p.tags || {}
@@ -172,20 +172,20 @@ const Relatorio = () => {
     // Filtro por data (pai)
     if (dataInicio) {
       result = result.filter(row => {
-        const [fullDate] = row.dataPai.split('T');
+        const [fullDate] = row.data.split('T');
         return fullDate >= dataInicio;
       });
     }
     if (dataFim) {
       result = result.filter(row => {
-        const [fullDate] = row.dataPai.split('T');
+        const [fullDate] = row.data.split('T');
         return fullDate <= dataFim;
       });
     }
 
     // Filtro por tipo
     if (selectedTipo !== 'both') {
-      result = result.filter(row => row.tipoPai.toLowerCase() === selectedTipo);
+      result = result.filter(row => row.tipo.toLowerCase() === selectedTipo);
     }
 
     // Filtro por pessoas
@@ -211,7 +211,7 @@ const Relatorio = () => {
     if (searchTerm.trim() !== '') {
       const lower = searchTerm.toLowerCase();
       result = result.filter(row => {
-        const descMatch = row.descricaoPai?.toLowerCase().includes(lower);
+        const descMatch = row.descricao?.toLowerCase().includes(lower);
         const pessoaMatch = row.pessoa?.toLowerCase().includes(lower);
         return descMatch || pessoaMatch;
       });
@@ -224,7 +224,7 @@ const Relatorio = () => {
         let valB = b[sortColumn];
 
         // Comparar datas
-        if (sortColumn === 'dataPai') {
+        if (sortColumn === 'data') {
           const [fullA] = (valA || '').split('T');
           const [fullB] = (valB || '').split('T');
           return sortDirection === 'asc'
@@ -267,10 +267,10 @@ const Relatorio = () => {
 
     // Gastos x Recebíveis
     const totalGastosNumber = filteredRows
-      .filter(row => row.tipoPai?.toLowerCase() === 'gasto')
+      .filter(row => row.tipo.toLowerCase() === 'gasto')
       .reduce((acc, row) => acc + parseFloat(row.valorPagamento || 0), 0);
     const totalRecebiveisNumber = filteredRows
-      .filter(row => row.tipoPai?.toLowerCase() === 'recebivel')
+      .filter(row => row.tipo.toLowerCase() === 'recebivel')
       .reduce((acc, row) => acc + parseFloat(row.valorPagamento || 0), 0);
 
     const totalGastos = totalGastosNumber.toFixed(2);
@@ -363,7 +363,7 @@ const Relatorio = () => {
               </div>
 
               <div className="filter-group">
-                <label>Data Início (Pai):</label>
+                <label>Data Início:</label>
                 <input
                   type="date"
                   value={dataInicio}
@@ -372,7 +372,7 @@ const Relatorio = () => {
               </div>
 
               <div className="filter-group">
-                <label>Data Fim (Pai):</label>
+                <label>Data Fim:</label>
                 <input
                   type="date"
                   value={dataFim}
@@ -463,8 +463,8 @@ const Relatorio = () => {
                   onChange={e => setSortColumn(e.target.value)}
                 >
                   <option value="">--Nenhum--</option>
-                  <option value="dataPai">Data</option>
-                  <option value="descricaoPai">Descrição</option>
+                  <option value="data">Data</option>
+                  <option value="descricao">Descrição</option>
                   <option value="pessoa">Pessoa</option>
                   <option value="valorPagamento">Valor (Pagamento)</option>
                 </select>
@@ -508,7 +508,7 @@ const Relatorio = () => {
             <div className="summary-section">
               <h4>Informações Gerais</h4>
               <div className="summary-item">
-                <span>Total de “Transações” (Pagamentos):</span>
+                <span>Total de "Transações" (Pagamentos):</span>
                 <span>{summaryInfo.totalTransactions}</span>
               </div>
               <div className="summary-item">
@@ -562,19 +562,19 @@ const Relatorio = () => {
             <tbody>
               {filteredRows.map((row, idx) => {
                 // Formatando data manualmente (YYYY-MM-DD -> DD/MM/YYYY)
-                const [fullDate] = row.dataPai.split('T');
+                const [fullDate] = row.data.split('T');
                 const [year, month, day] = fullDate.split('-');
                 const displayDate = (year && month && day)
                   ? `${day}/${month}/${year}`
-                  : row.dataPai; // fallback
+                  : row.data; // fallback
 
                 return (
                   <tr key={idx}>
-                    <td>{row.descricaoPai}</td>
+                    <td>{row.descricao}</td>
                     <td>{displayDate}</td>
                     <td>{row.pessoa || '—'}</td>
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
-                    <td>{row.tipoPai}</td>
+                    <td>{row.tipo}</td>
                     <td>
                       {Object.keys(row.tagsPagamento || {}).map((catName, i) =>
                         row.tagsPagamento[catName].map((tagName, j) => (

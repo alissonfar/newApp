@@ -7,10 +7,13 @@
 
 /* Título principal */
 .relatorio-title {
+  font-family: var(--fonte-titulos);
   font-size: 2rem;
   color: var(--cor-primaria);
   text-align: center;
   margin-bottom: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* Seção superior dividida em duas colunas (Painel de Filtros e Resumo) */
@@ -28,9 +31,10 @@
   display: grid;
   grid-template-columns: 1fr; /* Se quiser 2 colunas horizontais, use: repeat(2, 1fr) */
   gap: 15px;
-  background-color: #f2f2f2;
+  background-color: var(--cor-fundo);
   padding: 15px;
-  border-radius: 8px;
+  border-radius: var(--borda-radius);
+  box-shadow: var(--sombra-card);
 }
 
 /* Cada seção de filtro vira um "card" */
@@ -43,10 +47,13 @@
 
 /* Título de cada seção */
 .filter-section h4 {
+  font-family: var(--fonte-titulos);
   margin-top: 0;
   margin-bottom: 10px;
   font-size: 1rem;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* Linha interna para organizar grupos de filtros lado a lado */
@@ -67,17 +74,30 @@
 }
 
 .filter-group label {
-  font-weight: bold;
+  font-family: var(--fonte-corpo);
+  font-weight: 500;
   margin-bottom: 5px;
+  color: var(--cor-texto);
 }
 
 .filter-group input,
 .filter-group select {
+  font-family: var(--fonte-corpo);
   padding: 8px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  font-size: 0.95rem;
+  border: 1px solid rgba(224, 231, 255, 0.4);
+  border-radius: var(--borda-radius);
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
   width: 100%;
+  transition: var(--transicao-padrao);
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px rgba(var(--cor-primaria-rgb), 0.1);
+  outline: none;
 }
 
 /* Garante que o React-Select ocupe 100% da largura do .filter-group */
@@ -101,18 +121,22 @@
 }
 
 .filter-actions button {
+  font-family: var(--fonte-titulos);
   padding: 10px 15px;
-  background-color: var(--cor-primaria);
+  background: var(--gradiente-primario);
   color: var(--cor-branca);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--borda-radius);
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: var(--transicao-padrao);
 }
 
 .filter-actions button:hover {
-  background-color: var(--cor-secundaria);
+  background: var(--gradiente-secundario);
+  transform: translateY(-1px);
 }
 
 /* Painel de Resumo */
@@ -125,10 +149,13 @@
 }
 
 .summary-panel h3 {
+  font-family: var(--fonte-titulos);
   margin-top: 0;
   margin-bottom: 10px;
   font-size: 1.3rem;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .summary-panel p {
@@ -151,19 +178,24 @@
 }
 
 .summary-section h4 {
+  font-family: var(--fonte-titulos);
   margin: 0 0 5px;
   font-size: 1rem;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .summary-item {
+  font-family: var(--fonte-corpo);
   display: flex;
   justify-content: space-between;
   margin-bottom: 5px;
+  color: var(--cor-texto);
 }
 
 .summary-item span:first-child {
-  font-weight: bold;
+  font-weight: 500;
 }
 
 /* Seção de resultados (tabela) */
@@ -172,6 +204,7 @@
 }
 
 .relatorio-table {
+  font-family: var(--fonte-corpo);
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
@@ -193,20 +226,25 @@
 }
 
 .relatorio-table th {
+  font-family: var(--fonte-titulos);
   background-color: var(--cor-primaria);
   color: var(--cor-branca);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* Chips de tags */
 .relatorio-tag-chip {
-  background-color: #007ACC;
-  color: #fff;
+  font-family: var(--fonte-corpo);
+  background-color: var(--cor-primaria);
+  color: var(--cor-branca);
   padding: 3px 8px;
   border-radius: 12px;
   margin: 3px 5px 3px 0;
   font-size: 0.8rem;
   display: inline-block;
   white-space: nowrap;
+  transition: var(--transicao-padrao);
 }
 
 .pag-tag-chip {

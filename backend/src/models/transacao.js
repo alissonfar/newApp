@@ -12,10 +12,9 @@ const TransacaoSchema = new mongoose.Schema({
   descricao: { type: String, required: true },
   valor: { type: Number, required: true },
   data: { type: Date, required: true },
-  tags: { type: Object, required: false, default: {} },
+  observacao: { type: String, required: false },
   pagamentos: { type: [PagamentoSchema], required: true },
   status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' },
-  // [NOVO] Vincula a transação a um usuário
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true }
 });
 

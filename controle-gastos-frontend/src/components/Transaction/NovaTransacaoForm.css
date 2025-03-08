@@ -1,132 +1,246 @@
 /* src/components/Transaction/NovaTransacaoForm.css */
 .nova-transacao-form-container {
   padding: 20px;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  overflow-y: auto;
+  font-family: var(--fonte-corpo);
 }
 
 .nova-transacao-form-container h2 {
+  font-family: var(--fonte-titulos);
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   color: var(--cor-primaria);
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .form-grid {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.left-column, .right-column {
-  flex: 1 1 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+  margin-bottom: 30px;
 }
 
 .form-section {
-  display: flex;
-  flex-direction: column;
+  background: var(--cor-fundo);
+  padding: 25px;
+  border-radius: var(--borda-radius);
+  box-shadow: var(--sombra-card);
+  transition: var(--transicao-padrao);
+  border: 1px solid rgba(224, 231, 255, 0.4);
+}
+
+.form-section:hover {
+  box-shadow: var(--sombra-hover);
+  border-color: var(--cor-primaria-hover);
+}
+
+.pagamentos-section {
+  grid-column: 1 / -1;
+  margin-top: 20px;
 }
 
 .form-section label {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.form-section input, 
-.form-section select, 
-.form-section textarea {
-  padding: 8px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.date-shortcuts {
-  margin-top: 5px;
-  display: flex;
-  gap: 10px;
-}
-
-.date-shortcuts button {
-  padding: 5px 10px;
-  font-size: 0.9rem;
-  border: none;
-  border-radius: 4px;
-  background-color: var(--cor-secundaria);
-  color: var(--cor-branca);
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.date-shortcuts button:hover {
-  background-color: var(--cor-primaria);
-}
-
-.global-tags, .pagamentos-section {
-  margin-top: 20px;
-  border-top: 1px solid #ddd;
-  padding-top: 15px;
-}
-
-.tag-dropdown-group {
-  margin-bottom: 10px;
-}
-
-.tag-dropdown-group label {
-  font-size: 0.95rem;
-  margin-bottom: 3px;
   display: block;
+  font-family: var(--fonte-titulos);
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--cor-texto);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
 }
 
-.tag-dropdown-group select {
-  padding: 5px;
+.form-section input,
+.form-section select,
+.form-section textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(44, 62, 80, 0.2);
+  border-radius: var(--borda-radius);
+  background-color: var(--cor-fundo-card);
+  color: var(--cor-texto);
   font-size: 0.95rem;
+  transition: var(--transicao-padrao);
+  margin-bottom: 15px;
+  font-family: var(--fonte-corpo);
+}
+
+.form-section input:focus,
+.form-section select:focus,
+.form-section textarea:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px rgba(var(--cor-primaria-rgb), 0.1);
+  outline: none;
 }
 
 .pagamento-item {
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  background: var(--cor-fundo-card);
+  border: 1px solid rgba(44, 62, 80, 0.15);
+  padding: 20px;
+  border-radius: var(--borda-radius);
+  margin-bottom: 20px;
+  box-shadow: var(--sombra-card);
 }
 
-.pagamento-item hr {
-  margin: 10px 0;
+.pagamento-item:hover {
+  border-color: var(--cor-primaria);
+  box-shadow: var(--sombra-hover);
 }
 
 .payment-tags {
-  margin-top: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(44, 62, 80, 0.1);
 }
 
 .payment-tags h4 {
+  font-family: var(--fonte-titulos);
   font-size: 1rem;
-  margin-bottom: 5px;
-  color: var(--cor-secundaria);
+  margin-bottom: 10px;
+  color: var(--cor-texto);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .form-buttons {
   display: flex;
   gap: 15px;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 30px;
 }
 
 .submit-btn {
-  padding: 12px 20px;
-  background-color: var(--cor-primaria);
+  font-family: var(--fonte-titulos);
+  padding: 12px 30px;
+  background: var(--gradiente-primario);
   color: var(--cor-branca);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--borda-radius);
+  font-weight: 500;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
+  transition: var(--transicao-padrao);
+  min-width: 180px;
+  letter-spacing: 0.02em;
 }
 
 .submit-btn:hover {
-  background-color: var(--cor-secundaria);
+  background: var(--gradiente-secundario);
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-hover);
+}
+
+.date-shortcuts {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.date-shortcuts button {
+  font-family: var(--fonte-titulos);
+  padding: 8px 15px;
+  background: var(--cor-fundo-card);
+  border: 1px solid var(--cor-primaria);
+  border-radius: var(--borda-radius);
+  color: var(--cor-primaria);
+  cursor: pointer;
+  transition: var(--transicao-padrao);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.date-shortcuts button:hover {
+  background: var(--cor-primaria);
+  color: var(--cor-branca);
+  transform: translateY(-1px);
+  box-shadow: var(--sombra-hover);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pagamentos-section {
+    grid-column: 1;
+  }
+  
+  .form-buttons {
+    flex-direction: column;
+  }
+  
+  .submit-btn {
+    width: 100%;
+  }
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-section textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: var(--fonte-corpo);
+}
+
+.form-section h3 {
+  font-family: var(--fonte-titulos);
+  font-size: 1.2rem;
+  color: var(--cor-primaria);
+  margin-bottom: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Estilização do React-Select */
+.mySelect__control {
+  border: 1px solid rgba(44, 62, 80, 0.2) !important;
+  border-radius: var(--borda-radius) !important;
+  background-color: var(--cor-fundo-card) !important;
+  transition: var(--transicao-padrao) !important;
+}
+
+.mySelect__control:hover {
+  border-color: var(--cor-primaria) !important;
+}
+
+.mySelect__control--is-focused {
+  border-color: var(--cor-primaria) !important;
+  box-shadow: 0 0 0 2px rgba(var(--cor-primaria-rgb), 0.1) !important;
+}
+
+.mySelect__menu {
+  background-color: var(--cor-fundo-card) !important;
+  border: 1px solid rgba(44, 62, 80, 0.1) !important;
+  border-radius: var(--borda-radius) !important;
+  box-shadow: var(--sombra-card) !important;
+}
+
+.mySelect__option {
+  font-family: var(--fonte-corpo) !important;
+  color: var(--cor-texto) !important;
+  background-color: transparent !important;
+  transition: var(--transicao-padrao) !important;
+}
+
+.mySelect__option:hover {
+  background-color: var(--cor-fundo-hover) !important;
+}
+
+.mySelect__option--is-selected {
+  background-color: var(--cor-primaria) !important;
+  color: var(--cor-branca) !important;
+}
+
+.mySelect__value-container {
+  font-family: var(--fonte-corpo) !important;
 }
 
 

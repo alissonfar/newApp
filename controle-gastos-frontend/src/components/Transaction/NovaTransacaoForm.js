@@ -12,6 +12,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
   const [descricao, setDescricao] = useState(transacao ? transacao.descricao : '');
   const [data, setData] = useState(transacao ? transacao.data.split('T')[0] : '');
   const [valorTotal, setValorTotal] = useState(transacao ? String(transacao.valor) : '');
+  const [observacao, setObservacao] = useState(transacao ? transacao.observacao : '');
   
   const descricaoSuggestions = ['Compra de pizza', 'Pagamento de conta', 'Arbitragem'];
   
@@ -164,13 +165,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
       toast.warn('A soma dos pagamentos deve ser igual ao valor total.');
       return;
     }
-    // Monta o objeto para envio ao backend, incluindo "tags" (pai) mesmo que vazio
+    // Monta o objeto para envio ao backend
     const transacaoData = {
       tipo,
       descricao,
       data: new Date(data).toISOString(),
       valor: Number(parseFloat(valorTotal).toFixed(2)),
-      tags: {}, // Adicionado: campo de tags do pai, pode ser ajustado se necessário
+      observacao,
       pagamentos: pagamentos.map((pag) => ({
         pessoa: pag.pessoa,
         valor: Number(parseFloat(pag.valor).toFixed(2)),
@@ -263,6 +264,15 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
                 required
                 onFocus={handleFocus}
                 ref={valorRef}
+              />
+            </div>
+            <div className="form-section">
+              <label>Observação:</label>
+              <textarea
+                value={observacao}
+                onChange={e => setObservacao(e.target.value)}
+                rows="3"
+                placeholder="Adicione uma observação (opcional)"
               />
             </div>
           </div>

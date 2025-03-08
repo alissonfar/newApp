@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
 import { loginUsuario } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import './Login.css';
@@ -9,24 +10,46 @@ function Login() {
   const { setToken, setUsuario } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!email) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email inválido';
+    }
+    if (!senha) {
+      newErrors.senha = 'Senha é obrigatória';
+    } else if (senha.length < 6) {
+      newErrors.senha = 'A senha deve ter pelo menos 6 caracteres';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
+    setLoading(true);
     try {
       const resposta = await loginUsuario({ email, senha });
       if (resposta.token) {
-        // Armazena o token e o usuário no contexto
         setToken(resposta.token);
         setUsuario(resposta.usuario);
         toast.success('Login realizado com sucesso!');
-        navigate('/'); // Redireciona para a página principal
+        navigate('/');
       } else {
         toast.error(resposta.erro || 'Falha no login.');
       }
     } catch (error) {
       console.error(error);
       toast.error('Erro interno ao fazer login.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,26 +57,63 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <h2>Login</h2>
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
+        <form onSubmit={handleLogin} className="login-form">
+          <div className={`form-group ${errors.email ? 'error' : ''}`}>
             <label>Email:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
+            <div className="input-group">
+              <FaEnvelope className="input-icon" />
+              <input
+                type="email"
+                value={email}
+                onChange={e => {
+                  setEmail(e.target.value);
+                  if (errors.email) {
+                    const newErrors = { ...errors };
+                    delete newErrors.email;
+                    setErrors(newErrors);
+                  }
+                }}
+                placeholder="Seu email"
+                required
+              />
+            </div>
+            {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
-          <div className="form-group">
+          <div className={`form-group ${errors.senha ? 'error' : ''}`}>
             <label>Senha:</label>
-            <input
-              type="password"
-              value={senha}
-              onChange={e => setSenha(e.target.value)}
-              required
-            />
+            <div className="input-group">
+              <FaLock className="input-icon" />
+              <input
+                type="password"
+                value={senha}
+                onChange={e => {
+                  setSenha(e.target.value);
+                  if (errors.senha) {
+                    const newErrors = { ...errors };
+                    delete newErrors.senha;
+                    setErrors(newErrors);
+                  }
+                }}
+                placeholder="Sua senha"
+                required
+              />
+            </div>
+            {errors.senha && <span className="error-message">{errors.senha}</span>}
           </div>
-          <button type="submit" className="btn-submit">Entrar</button>
+          <button 
+            type="submit" 
+            className={`btn-submit ${loading ? 'loading' : ''}`}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <FaSpinner className="spinner" />
+                Entrando...
+              </>
+            ) : (
+              'Entrar'
+            )}
+          </button>
         </form>
         <p className="link-registro">
           Não possui uma conta? <a href="/registro">Cadastre-se aqui</a>

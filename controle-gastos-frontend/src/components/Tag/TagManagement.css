@@ -5,12 +5,17 @@
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tag-management-page-container h2 {
+  font-family: var(--fonte-titulos);
   text-align: center;
   margin-bottom: 20px;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* Container que abriga as colunas (Categorias e Tags) */
@@ -18,14 +23,15 @@
   display: flex;
   gap: 20px;
   margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 /* --------------------- */
 /* Coluna de Categorias  */
 /* --------------------- */
 .category-section {
-  /* Ajuste a proporção conforme desejar (ex: 35% / 65%) */
-  width: 35%;
+  flex: 1;
+  min-width: 300px;
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -34,9 +40,12 @@
 }
 
 .category-section h3 {
+  font-family: var(--fonte-titulos);
   font-size: 1.2rem;
   margin-bottom: 10px;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* Lista de categorias */
@@ -44,9 +53,11 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
 .category-list li {
+  font-family: var(--fonte-corpo);
   background-color: #fafafa;
   border: 1px solid #eee;
   border-radius: 6px;
@@ -57,10 +68,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .category-list li:hover {
-  background-color: #e7f3fa; /* leve destaque no hover */
+  background-color: #e7f3fa;
 }
 
 .category-list li.selected {
@@ -72,9 +85,11 @@
 .acoes-categoria {
   display: flex;
   gap: 5px;
+  flex-wrap: wrap;
 }
 
 .acoes-categoria button {
+  font-family: var(--fonte-titulos);
   padding: 5px 10px;
   background-color: var(--cor-primaria);
   color: var(--cor-branca);
@@ -82,6 +97,9 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .acoes-categoria button:hover {
@@ -99,32 +117,44 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .nova-categoria h4,
 .edit-categoria h4 {
+  font-family: var(--fonte-titulos);
   width: 100%;
   margin: 0 0 5px;
   font-size: 1rem;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .nova-categoria input,
 .edit-categoria input {
+  font-family: var(--fonte-corpo);
   flex: 1;
+  min-width: 200px;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .nova-categoria button,
 .edit-categoria button {
+  font-family: var(--fonte-titulos);
   padding: 8px 12px;
   background-color: var(--cor-primaria);
   color: var(--cor-branca);
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .nova-categoria button:hover,
@@ -136,7 +166,8 @@
 /* Coluna de Tags  */
 /* --------------- */
 .tag-section {
-  width: 65%;
+  flex: 2;
+  min-width: 300px;
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -145,9 +176,12 @@
 }
 
 .tag-section h3 {
+  font-family: var(--fonte-titulos);
   font-size: 1.2rem;
   margin-bottom: 10px;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 /* Lista de tags */
@@ -155,9 +189,11 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
 .tag-list li {
+  font-family: var(--fonte-corpo);
   background-color: #fafafa;
   border: 1px solid #eee;
   border-radius: 6px;
@@ -166,6 +202,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .tag-list li:not(:last-child) {
@@ -177,18 +215,23 @@
   justify-content: space-between;
   width: 100%;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .view-tag span {
+  font-family: var(--fonte-corpo);
   flex: 1;
+  min-width: 150px;
 }
 
 .acoes-tag {
   display: flex;
   gap: 5px;
+  flex-wrap: wrap;
 }
 
 .acoes-tag button {
+  font-family: var(--fonte-titulos);
   padding: 5px 10px;
   background-color: var(--cor-primaria);
   color: var(--cor-branca);
@@ -196,6 +239,9 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .acoes-tag button:hover {
@@ -211,19 +257,26 @@
 }
 
 .edit-tag input {
+  font-family: var(--fonte-corpo);
   flex: 1;
+  min-width: 200px;
   padding: 5px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .edit-tag button {
+  font-family: var(--fonte-titulos);
   padding: 5px 10px;
   background-color: var(--cor-primaria);
   color: var(--cor-branca);
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .edit-tag button:hover {
@@ -240,31 +293,83 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .nova-tag h4 {
+  font-family: var(--fonte-titulos);
   width: 100%;
   margin: 0 0 5px;
   font-size: 1rem;
   color: var(--cor-primaria);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .nova-tag input {
+  font-family: var(--fonte-corpo);
   flex: 1;
+  min-width: 200px;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .nova-tag button {
+  font-family: var(--fonte-titulos);
   padding: 8px 12px;
   background-color: var(--cor-primaria);
   color: var(--cor-branca);
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .nova-tag button:hover {
   background-color: var(--cor-secundaria);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .tag-management-page-container {
+    padding: 10px;
+  }
+
+  .category-section,
+  .tag-section {
+    min-width: 100%;
+  }
+
+  .nova-categoria input,
+  .edit-categoria input,
+  .nova-tag input,
+  .edit-tag input {
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tag-management-container {
+    gap: 10px;
+  }
+
+  .category-section,
+  .tag-section {
+    padding: 10px;
+  }
+
+  .acoes-categoria,
+  .acoes-tag {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .view-tag span {
+    min-width: 100%;
+  }
 }
