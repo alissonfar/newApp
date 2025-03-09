@@ -14,8 +14,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
   const [valorTotal, setValorTotal] = useState(transacao ? String(transacao.valor) : '');
   const [observacao, setObservacao] = useState(transacao ? transacao.observacao : '');
   
-  const descricaoSuggestions = ['Compra de pizza', 'Pagamento de conta', 'Arbitragem'];
-  
   // Pagamentos: usamos paymentTags para manipulação (mapeando p.tags do backend)
   const [pagamentos, setPagamentos] = useState(
     transacao && transacao.pagamentos && transacao.pagamentos.length > 0
@@ -25,7 +23,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
         }))
       : [{ pessoa: '', valor: '', paymentTags: {} }]
   );
-  const pessoaSuggestions = ['Eu', 'Alisson', 'Emerson'];
   
   // Categorias e tags (usadas para os dropdowns dos pagamentos)
   const [categorias, setCategorias] = useState([]);
@@ -126,18 +123,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
     return parseFloat(valorTotal || 0) === soma;
   };
   
-  // Atalho: Ctrl+S para salvar
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        handleSubmit(e, false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-  
   // Atalho: Esc para fechar o modal
   useEffect(() => {
     const handleEsc = (e) => {
@@ -161,10 +146,30 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
 
   const handleSubmit = async (e, closeModal = true) => {
     e.preventDefault();
+    
+    // Validar campos obrigatórios
+    if (!descricao.trim()) {
+      toast.warn('A descrição é obrigatória.');
+      return;
+    }
+    
+    if (!valorTotal || isNaN(parseFloat(valorTotal)) || parseFloat(valorTotal) <= 0) {
+      toast.warn('Informe um valor total válido.');
+      return;
+    }
+    
+    // Validar pagamentos
+    const pagamentosValidos = pagamentos.every(p => p.pessoa.trim() && !isNaN(parseFloat(p.valor)) && parseFloat(p.valor) > 0);
+    if (!pagamentosValidos) {
+      toast.warn('Todos os pagamentos devem ter pessoa e valor válido.');
+      return;
+    }
+    
     if (!validatePagamentos()) {
       toast.warn('A soma dos pagamentos deve ser igual ao valor total.');
       return;
     }
+    
     // Monta o objeto para envio ao backend
     const transacaoData = {
       tipo,
@@ -186,8 +191,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
         await criarTransacao(transacaoData);
         toast.success('Transação criada com sucesso!');
       }
-      if (onSuccess) onSuccess();
+      
+      // Chama onSuccess apenas se vai fechar o modal
       if (closeModal) {
+        if (onSuccess) onSuccess();
         onClose();
       } else {
         // Se for "Salvar e Continuar", limpa os campos
@@ -196,7 +203,15 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
         const hoje = new Date().toISOString().split('T')[0];
         setData(hoje);
         setValorTotal('');
+        setObservacao('');
         setPagamentos([{ pessoa: '', valor: '', paymentTags: {} }]);
+        
+        // Foca no campo de descrição após limpar
+        setTimeout(() => {
+          if (descricaoRef.current) {
+            descricaoRef.current.focus();
+          }
+        }, 100);
       }
     } catch (error) {
       console.error('Erro ao salvar transação:', error);
@@ -230,15 +245,9 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
                 value={descricao}
                 onChange={e => setDescricao(e.target.value)}
                 required
-                list="descricao-suggestions"
                 onFocus={handleFocus}
                 ref={descricaoRef}
               />
-              <datalist id="descricao-suggestions">
-                {descricaoSuggestions.map((sug, idx) => (
-                  <option key={idx} value={sug} />
-                ))}
-              </datalist>
             </div>
             <div className="form-section">
               <label>Data:</label>
@@ -288,14 +297,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
                       value={pag.pessoa}
                       onChange={e => handlePagamentoChange(index, 'pessoa', e.target.value)}
                       required
-                      list="pessoa-suggestions"
                       onFocus={handleFocus}
                     />
-                    <datalist id="pessoa-suggestions">
-                      {pessoaSuggestions.map((sug, idx) => (
-                        <option key={idx} value={sug} />
-                      ))}
-                    </datalist>
                   </div>
                   <div className="form-section">
                     <label>Valor:</label>
