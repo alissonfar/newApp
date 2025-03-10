@@ -3,7 +3,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { FaUser, FaEnvelope, FaPhone, FaBriefcase, FaBuilding, FaCalendar, 
          FaLinkedin, FaTwitter, FaInstagram, FaMoon, FaSun, FaBell, FaDollarSign,
-         FaCamera, FaSpinner } from 'react-icons/fa';
+         FaCamera, FaSpinner, FaUserTie } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 import './Profile.css';
@@ -40,7 +40,8 @@ function Profile() {
       email: usuario?.preferencias?.notificacoes?.email ?? true,
       push: usuario?.preferencias?.notificacoes?.push ?? true
     },
-    moedaPadrao: usuario?.preferencias?.moedaPadrao || 'BRL'
+    moedaPadrao: usuario?.preferencias?.moedaPadrao || 'BRL',
+    proprietario: usuario?.preferencias?.proprietario || ''
   });
 
   useEffect(() => {
@@ -206,10 +207,19 @@ function Profile() {
 
     try {
       const response = await api.put('/usuarios/perfil/preferencias', { preferencias });
-      setUsuario(prev => ({
-        ...prev,
+      
+      // Atualiza o usuário no contexto com as novas preferências
+      const usuarioAtualizado = {
+        ...usuario,
         preferencias: response.data.preferencias
-      }));
+      };
+      
+      // Atualiza o estado local e o contexto global
+      setUsuario(usuarioAtualizado);
+      
+      // Recarrega o perfil para garantir que temos os dados mais recentes
+      await carregarPerfil();
+      
       toast.success('Preferências atualizadas com sucesso!');
     } catch (error) {
       toast.error('Erro ao atualizar preferências');
@@ -454,6 +464,18 @@ function Profile() {
                 <option value="claro">Claro</option>
                 <option value="escuro">Escuro</option>
               </select>
+            </div>
+
+            <div className="form-group">
+              <label><FaUserTie /> Proprietário do Sistema</label>
+              <input
+                type="text"
+                name="proprietario"
+                value={preferencias.proprietario}
+                onChange={handlePreferenciasChange}
+                placeholder="Nome do proprietário"
+              />
+              <small>Este nome será exibido como proprietário nas informações do sistema</small>
             </div>
 
             <div className="form-group">

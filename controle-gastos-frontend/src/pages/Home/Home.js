@@ -1,8 +1,8 @@
 // src/pages/Home/Home.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from 'react-calendar';
-import { FaPlus, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote } from 'react-icons/fa';
+import { FaPlus, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote, FaExclamationTriangle, FaUserTie, FaSpinner } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -18,6 +18,7 @@ import { obterTransacoes } from '../../api';
 import { toast } from 'react-toastify';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
+import { AuthContext } from '../../context/AuthContext';
 import './Home.css';
 
 // Registrar componentes do Chart.js
@@ -33,6 +34,7 @@ ChartJS.register(
 
 const Home = () => {
   const navigate = useNavigate();
+  const { usuario, carregando } = useContext(AuthContext);
   const [modalOpen, setModalOpen] = useState(false);
   const [transacoes, setTransacoes] = useState([]);
   const [resumoMes, setResumoMes] = useState({
@@ -64,11 +66,70 @@ const Home = () => {
       }
     ]
   });
+  const [semDados, setSemDados] = useState(false);
+  const [semProprietario, setSemProprietario] = useState(false);
+  const [carregandoDados, setCarregandoDados] = useState(false);
+  const proprietario = usuario?.preferencias?.proprietario || '';
+  const [proprietarioExibicao, setProprietarioExibicao] = useState('');
 
   // Função para carregar transações
   const fetchTransacoes = async () => {
     try {
-      const response = await obterTransacoes();
+      setCarregandoDados(true);
+      
+      // Verifica se há um proprietário definido
+      if (!proprietario) {
+        setSemProprietario(true);
+        setSemDados(false);
+        setCarregandoDados(false);
+        setProprietarioExibicao('');
+        return;
+      }
+      
+      setSemProprietario(false);
+      
+      // Filtra as transações pelo proprietário
+      const params = { proprietario };
+      
+      const response = await obterTransacoes(params);
+      
+      // Verifica se há transações para o proprietário definido
+      if (response.transacoes.length === 0) {
+        setSemDados(true);
+        setTransacoes([]);
+        setResumoMes({
+          totalGastos: 0,
+          totalRecebiveis: 0,
+          saldo: 0
+        });
+        setDadosGrafico({
+          labels: [],
+          datasets: [
+            {
+              label: 'Gastos',
+              data: [],
+              borderColor: 'rgb(255, 99, 132)',
+              tension: 0.1
+            },
+            {
+              label: 'Recebíveis',
+              data: [],
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1
+            }
+          ]
+        });
+        setProprietarioExibicao(proprietario);
+        setCarregandoDados(false);
+        return;
+      }
+      
+      setSemDados(false);
+      
+      // Usar o nome do proprietário como aparece na primeira transação, para manter a formatação original
+      const proprietarioOriginal = response.transacoes[0]?.pagamentos[0]?.pessoa || proprietario;
+      setProprietarioExibicao(proprietarioOriginal);
+      
       setTransacoes(response.transacoes);
       
       // Calcular resumo do mês
@@ -149,16 +210,22 @@ const Home = () => {
         ]
       });
 
+      setCarregandoDados(false);
     } catch (error) {
       console.error('Erro ao carregar transações:', error);
       toast.error('Erro ao carregar dados do dashboard');
+      setSemDados(true);
+      setCarregandoDados(false);
     }
   };
 
-  // Carregar transações inicialmente
+  // Carregar transações inicialmente e quando o proprietário mudar
   useEffect(() => {
-    fetchTransacoes();
-  }, []);
+    // Verificar se o usuário está carregado e não está em carregamento
+    if (usuario && !carregando) {
+      fetchTransacoes();
+    }
+  }, [proprietario, usuario, carregando]);
 
   // Gerenciamento de notas
   const adicionarNota = (e) => {
@@ -214,133 +281,171 @@ const Home = () => {
     <div className="home-container">
       {/* Cabeçalho com Resumo */}
       <div className="dashboard-header">
-        <h1>Dashboard</h1>
-        <div className="resumo-cards">
-          <div className="resumo-card recebiveis">
-            <h3>Recebíveis do Mês</h3>
-            <p>R$ {resumoMes.totalRecebiveis.toFixed(2)}</p>
+        <h1>Dashboard {proprietarioExibicao ? `- ${proprietarioExibicao}` : ''}</h1>
+        
+        {carregando && (
+          <div className="carregando-container">
+            <FaSpinner className="spinner" />
+            <p>Carregando informações do usuário...</p>
           </div>
-          <div className="resumo-card gastos">
-            <h3>Gastos do Mês</h3>
-            <p>R$ {resumoMes.totalGastos.toFixed(2)}</p>
+        )}
+        
+        {!carregando && semProprietario && (
+          <div className="sem-dados-alerta proprietario">
+            <FaUserTie />
+            <p>Nenhum proprietário definido. Configure um proprietário nas preferências do perfil.</p>
+            <button onClick={() => navigate('/profile')} className="btn-configurar">
+              Configurar Proprietário
+            </button>
           </div>
-          <div className="resumo-card saldo">
-            <h3>Saldo do Mês</h3>
-            <p>R$ {resumoMes.saldo.toFixed(2)}</p>
+        )}
+        
+        {!carregando && semDados && !semProprietario && (
+          <div className="sem-dados-alerta">
+            <FaExclamationTriangle />
+            <p>Sem informações disponíveis para {proprietarioExibicao}.</p>
           </div>
-        </div>
+        )}
+        
+        {!carregando && !semProprietario && !semDados && (
+          <div className="resumo-cards">
+            {carregandoDados ? (
+              <div className="carregando-container">
+                <FaSpinner className="spinner" />
+                <p>Carregando dados...</p>
+              </div>
+            ) : (
+              <>
+                <div className="resumo-card recebiveis">
+                  <h3>Recebíveis do Mês</h3>
+                  <p>R$ {resumoMes.totalRecebiveis.toFixed(2)}</p>
+                </div>
+                <div className="resumo-card gastos">
+                  <h3>Gastos do Mês</h3>
+                  <p>R$ {resumoMes.totalGastos.toFixed(2)}</p>
+                </div>
+                <div className="resumo-card saldo">
+                  <h3>Saldo do Mês</h3>
+                  <p>R$ {resumoMes.saldo.toFixed(2)}</p>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="dashboard-grid">
-        {/* Coluna Esquerda */}
-        <div className="dashboard-column">
-          {/* Atalhos */}
-          <section className="dashboard-section atalhos">
-            <h2>Atalhos</h2>
-            <div className="atalhos-grid">
-              <button className="atalho-btn nova-transacao" onClick={handleNovaTransacao}>
-                <FaPlus />
-                <span>Nova Transação</span>
-              </button>
-              <button className="atalho-btn ver-relatorio" onClick={handleVerRelatorio}>
-                <FaChartLine />
-                <span>Ver Relatório</span>
-              </button>
-              <button className="atalho-btn ver-transacoes" onClick={handleVerTransacoes}>
-                <FaFileInvoiceDollar />
-                <span>Ver Transações</span>
-              </button>
-            </div>
-          </section>
+      {!carregando && !semProprietario && (
+        <div className="dashboard-grid">
+          {/* Coluna Esquerda */}
+          <div className="dashboard-column">
+            {/* Atalhos */}
+            <section className="dashboard-section atalhos">
+              <h2>Atalhos</h2>
+              <div className="atalhos-grid">
+                <button className="atalho-btn nova-transacao" onClick={handleNovaTransacao}>
+                  <FaPlus />
+                  <span>Nova Transação</span>
+                </button>
+                <button className="atalho-btn ver-relatorio" onClick={handleVerRelatorio}>
+                  <FaChartLine />
+                  <span>Ver Relatório</span>
+                </button>
+                <button className="atalho-btn ver-transacoes" onClick={handleVerTransacoes}>
+                  <FaFileInvoiceDollar />
+                  <span>Ver Transações</span>
+                </button>
+              </div>
+            </section>
 
-          {/* Gráfico */}
-          <section className="dashboard-section grafico">
-            <h2>Evolução Financeira</h2>
-            <div className="grafico-container">
-              <Line 
-                data={dadosGrafico}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: 'top',
+            {/* Gráfico */}
+            <section className="dashboard-section grafico">
+              <h2>Evolução Financeira</h2>
+              <div className="grafico-container">
+                <Line 
+                  data={dadosGrafico}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'top',
+                      },
+                      title: {
+                        display: false
+                      }
                     },
-                    title: {
-                      display: false
-                    }
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: (value) => `R$ ${value.toFixed(2)}`
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (value) => `R$ ${value.toFixed(2)}`
+                        }
                       }
                     }
-                  }
-                }}
-              />
-            </div>
-          </section>
+                  }}
+                />
+              </div>
+            </section>
 
-          {/* Últimas Transações */}
-          <section className="dashboard-section ultimas-transacoes">
-            <h2>Últimas Transações</h2>
-            <div className="transacoes-lista">
-              {transacoes.slice(0, 5).map((t, index) => (
-                <div key={index} className={`transacao-item ${t.tipo}`}>
-                  <div className="transacao-info">
-                    <strong>{t.descricao}</strong>
-                    <span>{new Date(t.data).toLocaleDateString()}</span>
+            {/* Últimas Transações */}
+            <section className="dashboard-section ultimas-transacoes">
+              <h2>Últimas Transações</h2>
+              <div className="transacoes-lista">
+                {transacoes.slice(0, 5).map((t, index) => (
+                  <div key={index} className={`transacao-item ${t.tipo}`}>
+                    <div className="transacao-info">
+                      <strong>{t.descricao}</strong>
+                      <span>{new Date(t.data).toLocaleDateString()}</span>
+                    </div>
+                    <div className="transacao-valor">
+                      R$ {t.valor.toFixed(2)}
+                    </div>
                   </div>
-                  <div className="transacao-valor">
-                    R$ {t.valor.toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+                ))}
+              </div>
+            </section>
+          </div>
 
-        {/* Coluna Direita */}
-        <div className="dashboard-column">
-          {/* Calendário */}
-          <section className="dashboard-section calendario">
-            <h2>Calendário</h2>
-            <Calendar
-              onChange={setDate}
-              value={date}
-              tileContent={tileContent}
-              className="react-calendar"
-            />
-          </section>
-
-          {/* Notas */}
-          <section className="dashboard-section notas">
-            <h2>Notas Rápidas</h2>
-            <form onSubmit={adicionarNota} className="nova-nota-form">
-              <input
-                type="text"
-                value={novaNota}
-                onChange={(e) => setNovaNota(e.target.value)}
-                placeholder="Digite uma nova nota..."
+          {/* Coluna Direita */}
+          <div className="dashboard-column">
+            {/* Calendário */}
+            <section className="dashboard-section calendario">
+              <h2>Calendário</h2>
+              <Calendar
+                onChange={setDate}
+                value={date}
+                tileContent={tileContent}
+                className="react-calendar"
               />
-              <button type="submit">
-                <FaRegStickyNote />
-              </button>
-            </form>
-            <div className="notas-lista">
-              {notas.map(nota => (
-                <div key={nota.id} className="nota-item">
-                  <p>{nota.texto}</p>
-                  <small>{new Date(nota.data).toLocaleDateString()}</small>
-                  <button onClick={() => removerNota(nota.id)}>×</button>
-                </div>
-              ))}
-            </div>
-          </section>
+            </section>
+
+            {/* Notas */}
+            <section className="dashboard-section notas">
+              <h2>Notas Rápidas</h2>
+              <form onSubmit={adicionarNota} className="nova-nota-form">
+                <input
+                  type="text"
+                  value={novaNota}
+                  onChange={(e) => setNovaNota(e.target.value)}
+                  placeholder="Digite uma nova nota..."
+                />
+                <button type="submit">
+                  <FaRegStickyNote />
+                </button>
+              </form>
+              <div className="notas-lista">
+                {notas.map(nota => (
+                  <div key={nota.id} className="nota-item">
+                    <p>{nota.texto}</p>
+                    <small>{new Date(nota.data).toLocaleDateString()}</small>
+                    <button onClick={() => removerNota(nota.id)}>×</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Modal de Nova Transação */}
       {modalOpen && (
@@ -351,6 +456,7 @@ const Home = () => {
               fetchTransacoes();
             }}
             onClose={() => setModalOpen(false)}
+            proprietarioPadrao={proprietario}
           />
         </ModalTransacao>
       )}

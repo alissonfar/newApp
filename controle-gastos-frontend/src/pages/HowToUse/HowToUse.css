@@ -1,0 +1,169 @@
+.how-to-use-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: #333;
+}
+
+.how-to-use-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #6b8dd6 0%, #8e37d7 100%);
+  border-radius: 15px;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.header-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.how-to-use-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.how-to-use-header p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.steps-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.step-card {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+}
+
+.step-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #6b8dd6 0%, #8e37d7 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.step-icon svg {
+  font-size: 1.8rem;
+  color: white;
+}
+
+.step-card h2 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.step-card p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.step-details {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 10px;
+}
+
+.step-details h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.step-details ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.step-details li {
+  margin-bottom: 0.8rem;
+  padding-left: 1.5rem;
+  position: relative;
+  color: #555;
+}
+
+.step-details li::before {
+  content: "•";
+  color: #8e37d7;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.tips-section {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.tips-section h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tips-section ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.tips-section li {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+  position: relative;
+  color: #555;
+  line-height: 1.6;
+}
+
+.tips-section li::before {
+  content: "→";
+  color: #8e37d7;
+  position: absolute;
+  left: 0;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .how-to-use-container {
+    padding: 1rem;
+  }
+
+  .how-to-use-header {
+    padding: 1.5rem;
+  }
+
+  .how-to-use-header h1 {
+    font-size: 2rem;
+  }
+
+  .steps-container {
+    grid-template-columns: 1fr;
+  }
+
+  .step-card {
+    padding: 1.5rem;
+  }
+} 

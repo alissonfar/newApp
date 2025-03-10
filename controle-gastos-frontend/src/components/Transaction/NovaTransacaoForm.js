@@ -6,7 +6,7 @@ import { toast } from 'react-toastify'; // Import do toast do React Toastify
 import { criarTransacao, atualizarTransacao, obterCategorias, obterTags } from '../../api';
 import './NovaTransacaoForm.css';
 
-const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
+const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '' }) => {
   // Estados dos dados gerais
   const [tipo, setTipo] = useState(transacao ? transacao.tipo : 'gasto');
   const [descricao, setDescricao] = useState(transacao ? transacao.descricao : '');
@@ -21,7 +21,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
           ...p,
           paymentTags: p.tags || {}
         }))
-      : [{ pessoa: '', valor: '', paymentTags: {} }]
+      : [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]
   );
   
   // Categorias e tags (usadas para os dropdowns dos pagamentos)
@@ -73,10 +73,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
           }))
         );
       } else {
-        setPagamentos([{ pessoa: '', valor: '', paymentTags: {} }]);
+        setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
       }
     }
-  }, [transacao]);
+  }, [transacao, proprietarioPadrao]);
 
   // Agrupa as tags do backend por categoria para popular o React-Select
   const tagsPorCategoria = allTags.reduce((acc, tag) => {
@@ -97,7 +97,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
   };
   
   const addPagamento = () => {
-    setPagamentos([...pagamentos, { pessoa: '', valor: '', paymentTags: {} }]);
+    setPagamentos([...pagamentos, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
   };
   
   const removePagamento = (index) => {
@@ -204,7 +204,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao }) => {
         setData(hoje);
         setValorTotal('');
         setObservacao('');
-        setPagamentos([{ pessoa: '', valor: '', paymentTags: {} }]);
+        setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
         
         // Foca no campo de descrição após limpar
         setTimeout(() => {

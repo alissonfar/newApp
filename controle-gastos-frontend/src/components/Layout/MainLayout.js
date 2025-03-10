@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -96,7 +96,9 @@ const MainLayout = ({ children }) => {
           {profileOpen && (
             <div className="profile-dropdown">
               <Link to="/profile" className="profile-link">Meu Perfil</Link>
-              <Link to="/settings" className="profile-link">Configurações</Link>
+              <Link to="/como-utilizar" className="profile-link">
+                <FaQuestionCircle /> Como Utilizar
+              </Link>
               <button onClick={handleLogout} className="profile-link logout-btn">Sair</button>
             </div>
           )}

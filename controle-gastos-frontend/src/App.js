@@ -12,6 +12,7 @@ import Tags from './pages/Tags/Tags';
 import Login from './pages/Login/Login';
 import Registro from './pages/Registro/Registro';
 import Profile from './pages/Profile/Profile';
+import HowToUse from './pages/HowToUse/HowToUse';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -79,17 +80,26 @@ function App() {
               </PrivateRoute>
             }
           />
-
-<Route
-  path="/profile"
-  element={
-    <PrivateRoute>
-      <MainLayout>
-        <Profile />
-      </MainLayout>
-    </PrivateRoute>
-  }
-/>
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <MainLayout>
+                  <Profile />
+                </MainLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/como-utilizar"
+            element={
+              <PrivateRoute>
+                <MainLayout>
+                  <HowToUse />
+                </MainLayout>
+              </PrivateRoute>
+            }
+          />
 
           {/* Opcional: rota para tratar caminhos inexistentes */}
           {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}

@@ -367,3 +367,81 @@
     padding: 1rem;
   }
 }
+
+.sem-dados-alerta {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.sem-dados-alerta.proprietario {
+  background-color: #cce5ff;
+  color: #004085;
+  border-color: #b8daff;
+  flex-direction: column;
+  text-align: center;
+  padding: 20px;
+}
+
+.sem-dados-alerta.proprietario svg {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.sem-dados-alerta svg {
+  font-size: 24px;
+  margin-right: 10px;
+}
+
+.sem-dados-alerta p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.sem-dados-alerta.proprietario p {
+  margin-bottom: 15px;
+}
+
+.btn-configurar {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.btn-configurar:hover {
+  background-color: #0069d9;
+}
+
+.carregando-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  width: 100%;
+  text-align: center;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: var(--cor-primaria);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

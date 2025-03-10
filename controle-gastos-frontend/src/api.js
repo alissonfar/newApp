@@ -43,6 +43,7 @@ export async function loginUsuario({ email, senha }) {
 
 /* ----- Transações ----- */
 export async function obterTransacoes(params = {}) {
+  // Adiciona o parâmetro proprietario na query string se estiver definido
   const query = new URLSearchParams(params).toString();
   const resposta = await fetch(`${API_BASE}/transacoes?${query}`, {
     headers: getHeaders(false)

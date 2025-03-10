@@ -200,21 +200,30 @@
   min-width: 200px;
 }
 
-.profile-dropdown .profile-link {
+.profile-link {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
   color: #333;
   text-decoration: none;
-  transition: all 0.3s;
-  border-radius: 6px;
+  transition: background-color 0.3s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
   font-size: 0.9rem;
 }
 
-.profile-dropdown .profile-link:hover {
+.profile-link:hover {
   background-color: #f0f0f0;
-  color: var(--cor-primaria);
+  color: #8e37d7;
+}
+
+.profile-link svg {
+  font-size: 1.1rem;
+  color: #8e37d7;
 }
 
 /* Botão de logout */

@@ -1,12 +1,23 @@
 // src/controllers/controladorTransacao.js
 const Transacao = require('../models/transacao');
+const Usuario = require('../models/usuarios');
 
 exports.obterTodasTransacoes = async (req, res) => {
   try {
-    // Retorna apenas transações ativas do usuário autenticado
-    const transacoes = await Transacao.find({ status: 'ativo', usuario: req.userId });
+    // Filtros básicos
+    const filtros = { status: 'ativo', usuario: req.userId };
+    
+    // Verifica se há um proprietário na query
+    if (req.query.proprietario) {
+      // Adiciona o filtro de proprietário nos pagamentos usando expressão regular para ignorar case
+      filtros['pagamentos.pessoa'] = new RegExp('^' + req.query.proprietario + '$', 'i');
+    }
+    
+    // Retorna apenas transações ativas do usuário autenticado com os filtros aplicados
+    const transacoes = await Transacao.find(filtros);
     res.json({ transacoes });
   } catch (error) {
+    console.error('Erro ao obter transações:', error);
     res.status(500).json({ erro: 'Erro ao obter transações.' });
   }
 };

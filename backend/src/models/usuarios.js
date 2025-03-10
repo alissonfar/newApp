@@ -24,7 +24,8 @@ const UsuarioSchema = new mongoose.Schema({
       email: { type: Boolean, default: true },
       push: { type: Boolean, default: true }
     },
-    moedaPadrao: { type: String, default: 'BRL' }
+    moedaPadrao: { type: String, default: 'BRL' },
+    proprietario: { type: String, default: '' }
   },
   ultimoAcesso: { type: Date },
   status: { type: String, enum: ['ativo', 'inativo', 'bloqueado'], default: 'ativo' }
