@@ -158,6 +158,10 @@ exports.obterOpcoesCampos = async (req, res) => {
     // Busca status únicos das transações
     const status = await Transacao.find({ usuario: req.userId }).distinct('status');
 
+    // Busca pessoas únicas das transações
+    const pessoas = await Transacao.find({ usuario: req.userId })
+      .distinct('pagamentos.pessoa');
+
     // Define as opções disponíveis para cada campo
     const opcoes = {
       campos: [
@@ -178,6 +182,12 @@ exports.obterOpcoesCampos = async (req, res) => {
           rotulo: 'Status',
           operadores: ['igual', 'diferente'],
           valores: status
+        },
+        {
+          valor: 'pagamentos.pessoa',
+          rotulo: 'Pessoa',
+          operadores: ['igual', 'diferente', 'contem', 'nao_contem'],
+          valores: pessoas.filter(p => p) // Remove valores nulos/vazios
         },
         {
           valor: 'pagamentos.tags',
