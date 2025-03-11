@@ -6,6 +6,18 @@ import { obterTransacoes, obterCategorias, obterTags } from '../../api.js';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF } from '../../utils/export/exportDataPdf';
 import './Relatorio.css';
+import { 
+  Menu, 
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider
+} from '@mui/material';
+import { 
+  PictureAsPdf as PdfIcon,
+  TableChart as CsvIcon,
+  Download as DownloadIcon
+} from '@mui/icons-material';
 
 const Relatorio = () => {
   // Array achatado com base em pai + pagamentos
@@ -35,6 +47,8 @@ const Relatorio = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
+
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
 
   // 1) Carregamento inicial
   useEffect(() => {
@@ -298,15 +312,47 @@ const Relatorio = () => {
       tagFilters
     };
 
+    // Preparar cabeçalhos personalizados para melhor legibilidade
+    const customHeaders = [
+      'Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'
+    ];
+
+    // Mapear os dados para um formato mais amigável para exportação
+    const exportData = filteredRows.map(row => ({
+      'Data': row.dataPai,
+      'Descrição': row.descricaoPai,
+      'Tipo': row.tipoPai,
+      'Status': row.statusPai,
+      'Pessoa': row.pessoa,
+      'Valor': row.valorPagamento,
+      'Tags': Object.entries(row.tagsPagamento || {})
+        .map(([cat, tags]) => {
+          const tagValues = Array.isArray(tags) ? tags.join(', ') : tags;
+          return `${cat}: ${tagValues}`;
+        })
+        .join(' | ')
+    }));
+
     if (exportFormat === 'csv') {
-      exportDataToCSV(filteredRows, 'relatorio.csv');
-      // Se quiser exibir uma mensagem de sucesso ao exportar:
-      // toast.success('Relatório exportado como CSV!');
+      exportDataToCSV(
+        exportData, 
+        'relatorio.csv',
+        {
+          customHeaders,
+          formatDates: true,
+          formatCurrency: true
+        }
+      );
+      toast.success('Relatório exportado como CSV!');
     } else {
       // Padrão PDF
-      exportDataToPDF(filteredRows, filterDetails, summaryInfo, 'relatorio.pdf');
-      // Se quiser exibir uma mensagem de sucesso ao exportar:
-      // toast.success('Relatório exportado como PDF!');
+      exportDataToPDF(
+        filteredRows, 
+        filterDetails, 
+        summaryInfo, 
+        'relatorio.pdf'
+      );
+      toast.success('Relatório exportado como PDF!');
     }
   };
 
@@ -330,6 +376,26 @@ const Relatorio = () => {
 
     // Se quiser já aplicar e mostrar tudo:
     setFilteredRows(allPayments);
+  };
+
+  // Funções para o menu de exportação
+  const handleExportClick = (event) => {
+    setExportAnchorEl(event.currentTarget);
+  };
+
+  const handleExportClose = () => {
+    setExportAnchorEl(null);
+  };
+
+  const handleExportFormat = (format) => {
+    setExportFormat(format);
+    handleExportClose();
+  };
+
+  const handleExportNow = (format) => {
+    setExportFormat(format);
+    handleExport();
+    handleExportClose();
   };
 
   return (
@@ -487,15 +553,52 @@ const Relatorio = () => {
             </button>
 
             <div className="export-group">
-              <label>Formato:</label>
-              <select
-                value={exportFormat}
-                onChange={e => setExportFormat(e.target.value)}
+              <button 
+                className="export-button"
+                onClick={handleExportClick}
+                style={{
+                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                  fontWeight: 'bold'
+                }}
               >
-                <option value="csv">CSV</option>
-                <option value="pdf">PDF</option>
-              </select>
-              <button onClick={handleExport}>Exportar</button>
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <DownloadIcon style={{ marginRight: '8px' }} />
+                  Exportar Relatório
+                </span>
+              </button>
+              <Menu
+                anchorEl={exportAnchorEl}
+                open={Boolean(exportAnchorEl)}
+                onClose={handleExportClose}
+              >
+                <MenuItem disabled>
+                  <span style={{ color: '#666', fontSize: '14px', fontWeight: 'bold' }}>
+                    Escolha o formato
+                  </span>
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={() => handleExportNow('pdf')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <PdfIcon style={{ color: '#f44336' }} />
+                    <span>Exportar como PDF</span>
+                  </div>
+                </MenuItem>
+                <MenuItem onClick={() => handleExportNow('csv')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CsvIcon style={{ color: '#4caf50' }} />
+                    <span>Exportar como CSV</span>
+                  </div>
+                </MenuItem>
+              </Menu>
             </div>
           </div>
         </div> {/* Fim do filter-panel */}
