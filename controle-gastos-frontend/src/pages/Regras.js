@@ -39,11 +39,19 @@ import {
   Preview as PreviewIcon
 } from '@mui/icons-material';
 import * as regraService from '../services/regraService';
+import { obterCategorias, obterTags, obterTransacoes } from '../api';
 
 const Regras = () => {
   const [regras, setRegras] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
+  
+  // Novos estados para armazenar opções disponíveis
+  const [categorias, setCategorias] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [pessoas, setPessoas] = useState([]);
+  const [tagsPorCategoria, setTagsPorCategoria] = useState({});
+
   const [regraAtual, setRegraAtual] = useState({
     nome: '',
     descricao: '',
@@ -69,6 +77,7 @@ const Regras = () => {
 
   useEffect(() => {
     carregarRegras();
+    carregarOpcoes();
   }, []);
 
   const carregarRegras = async () => {
@@ -77,6 +86,77 @@ const Regras = () => {
       setRegras(data);
     } catch (erro) {
       mostrarSnackbar('Erro ao carregar regras', 'error');
+    }
+  };
+
+  const carregarOpcoes = async () => {
+    try {
+      // Carregar categorias e tags
+      const cats = await obterCategorias();
+      const tgs = await obterTags();
+      setCategorias(cats);
+      setTags(tgs);
+
+      // Agrupar tags por categoria
+      const tagsAgrupadas = tgs.reduce((acc, tag) => {
+        if (tag.categoria) {
+          if (!acc[tag.categoria]) {
+            acc[tag.categoria] = [];
+          }
+          acc[tag.categoria].push(tag.nome);
+        }
+        return acc;
+      }, {});
+      setTagsPorCategoria(tagsAgrupadas);
+
+      // Carregar transações para extrair pessoas únicas
+      const { transacoes } = await obterTransacoes();
+      const pessoasUnicas = new Set();
+      transacoes.forEach(tr => {
+        if (tr.pagamentos) {
+          tr.pagamentos.forEach(p => {
+            if (p.pessoa) pessoasUnicas.add(p.pessoa);
+          });
+        }
+      });
+      setPessoas(Array.from(pessoasUnicas));
+    } catch (erro) {
+      console.error('Erro ao carregar opções:', erro);
+      mostrarSnackbar('Erro ao carregar opções disponíveis', 'error');
+    }
+  };
+
+  const obterOpcoesValor = (campo) => {
+    switch (campo) {
+      case 'tipo':
+        return ['gasto', 'recebivel'];
+      case 'status':
+        return ['pendente', 'pago', 'atrasado'];
+      case 'pagamentos.pessoa':
+        return pessoas;
+      case 'tags':
+        return Object.entries(tagsPorCategoria).map(([categoria, tags]) => 
+          tags.map(tag => `${categoria}: ${tag}`)
+        ).flat();
+      default:
+        return [];
+    }
+  };
+
+  // Nova função para obter opções de valor para ações
+  const obterOpcoesValorAcao = (tipo) => {
+    switch (tipo) {
+      case 'adicionar_tag':
+      case 'remover_tag':
+        return Object.entries(tagsPorCategoria).map(([categoria, tags]) => 
+          tags.map(tag => `${categoria}: ${tag}`)
+        ).flat();
+      case 'alterar_status':
+        return ['pendente', 'pago', 'atrasado'];
+      case 'alterar_valor':
+        return []; // Valor numérico, usa TextField
+      default:
+        return [];
     }
   };
 
@@ -481,6 +561,7 @@ const Regras = () => {
                           onChange={(e) => {
                             const novasCondicoes = [...regraAtual.condicoes];
                             novasCondicoes[index].campo = e.target.value;
+                            novasCondicoes[index].valor = ''; // Resetar valor ao mudar campo
                             setRegraAtual({ ...regraAtual, condicoes: novasCondicoes });
                           }}
                         >
@@ -514,16 +595,50 @@ const Regras = () => {
                       </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <TextField
-                        fullWidth
-                        label="Valor"
-                        value={condicao.valor}
-                        onChange={(e) => {
-                          const novasCondicoes = [...regraAtual.condicoes];
-                          novasCondicoes[index].valor = e.target.value;
-                          setRegraAtual({ ...regraAtual, condicoes: novasCondicoes });
-                        }}
-                      />
+                      {condicao.campo === 'valor' ? (
+                        <TextField
+                          fullWidth
+                          label="Valor"
+                          type="number"
+                          value={condicao.valor}
+                          onChange={(e) => {
+                            const novasCondicoes = [...regraAtual.condicoes];
+                            novasCondicoes[index].valor = e.target.value;
+                            setRegraAtual({ ...regraAtual, condicoes: novasCondicoes });
+                          }}
+                        />
+                      ) : condicao.campo === 'data' ? (
+                        <TextField
+                          fullWidth
+                          label="Data"
+                          type="date"
+                          value={condicao.valor}
+                          InputLabelProps={{ shrink: true }}
+                          onChange={(e) => {
+                            const novasCondicoes = [...regraAtual.condicoes];
+                            novasCondicoes[index].valor = e.target.value;
+                            setRegraAtual({ ...regraAtual, condicoes: novasCondicoes });
+                          }}
+                        />
+                      ) : (
+                        <FormControl fullWidth>
+                          <InputLabel>Valor</InputLabel>
+                          <Select
+                            value={condicao.valor}
+                            onChange={(e) => {
+                              const novasCondicoes = [...regraAtual.condicoes];
+                              novasCondicoes[index].valor = e.target.value;
+                              setRegraAtual({ ...regraAtual, condicoes: novasCondicoes });
+                            }}
+                          >
+                            {obterOpcoesValor(condicao.campo).map((opcao, i) => (
+                              <MenuItem key={i} value={opcao}>
+                                {opcao}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
                     </Grid>
                   </Grid>
                   {index > 0 && (
@@ -553,6 +668,7 @@ const Regras = () => {
                           onChange={(e) => {
                             const novasAcoes = [...regraAtual.acoes];
                             novasAcoes[index].tipo = e.target.value;
+                            novasAcoes[index].valor = ''; // Resetar valor ao mudar tipo
                             setRegraAtual({ ...regraAtual, acoes: novasAcoes });
                           }}
                         >
@@ -564,16 +680,37 @@ const Regras = () => {
                       </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Valor"
-                        value={acao.valor}
-                        onChange={(e) => {
-                          const novasAcoes = [...regraAtual.acoes];
-                          novasAcoes[index].valor = e.target.value;
-                          setRegraAtual({ ...regraAtual, acoes: novasAcoes });
-                        }}
-                      />
+                      {acao.tipo === 'alterar_valor' ? (
+                        <TextField
+                          fullWidth
+                          label="Valor"
+                          type="number"
+                          value={acao.valor}
+                          onChange={(e) => {
+                            const novasAcoes = [...regraAtual.acoes];
+                            novasAcoes[index].valor = e.target.value;
+                            setRegraAtual({ ...regraAtual, acoes: novasAcoes });
+                          }}
+                        />
+                      ) : (
+                        <FormControl fullWidth>
+                          <InputLabel>Valor</InputLabel>
+                          <Select
+                            value={acao.valor}
+                            onChange={(e) => {
+                              const novasAcoes = [...regraAtual.acoes];
+                              novasAcoes[index].valor = e.target.value;
+                              setRegraAtual({ ...regraAtual, acoes: novasAcoes });
+                            }}
+                          >
+                            {obterOpcoesValorAcao(acao.tipo).map((opcao, i) => (
+                              <MenuItem key={i} value={opcao}>
+                                {opcao}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
                     </Grid>
                   </Grid>
                   {index > 0 && (
