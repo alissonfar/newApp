@@ -17,11 +17,12 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
-    // Redireciona para login apenas se for erro de token inválido/expirado
-    if (error.response?.status === 401 && 
-        error.response?.data?.erro?.includes('Token')) {
+    // Redireciona para login se for erro de autenticação (401)
+    if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Usa a URL de redirecionamento fornecida pelo backend ou fallback para /login
+      const redirectUrl = error.response?.data?.redirectUrl || '/login';
+      window.location.href = redirectUrl;
     }
     return Promise.reject(error);
   }
