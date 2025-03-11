@@ -13,6 +13,7 @@ import Login from './pages/Login/Login';
 import Registro from './pages/Registro/Registro';
 import Profile from './pages/Profile/Profile';
 import HowToUse from './pages/HowToUse/HowToUse';
+import Regras from './pages/Regras';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -96,6 +97,16 @@ function App() {
               <PrivateRoute>
                 <MainLayout>
                   <HowToUse />
+                </MainLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/regras"
+            element={
+              <PrivateRoute>
+                <MainLayout>
+                  <Regras />
                 </MainLayout>
               </PrivateRoute>
             }

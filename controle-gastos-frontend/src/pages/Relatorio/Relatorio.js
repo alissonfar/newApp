@@ -198,11 +198,13 @@ const Relatorio = () => {
       const selectedTags = tagFilters[cat];
       if (selectedTags && selectedTags.length > 0) {
         result = result.filter(row => {
-          const pagTags = row.tagsPagamento[cat] || [];
-          const pagMatch = pagTags.some(tag =>
+          const pagTags = row.tagsPagamento[cat];
+          if (!pagTags) return false;
+          
+          const pagTagsArray = Array.isArray(pagTags) ? pagTags : [pagTags];
+          return pagTagsArray.some(tag =>
             selectedTags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
           );
-          return pagMatch;
         });
       }
     });
@@ -576,13 +578,17 @@ const Relatorio = () => {
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
                     <td>{row.tipo}</td>
                     <td>
-                      {Object.keys(row.tagsPagamento || {}).map((catName, i) =>
-                        row.tagsPagamento[catName].map((tagName, j) => (
-                          <span key={`pag-${i}-${j}`} className="tag-chip relatorio-tag-chip pag-tag-chip">
+                      {Object.entries(row.tagsPagamento || {}).map(([catName, tags]) => (
+                        Array.isArray(tags) ? tags.map((tagName, j) => (
+                          <span key={`pag-${catName}-${tagName}-${j}`} className="tag-chip relatorio-tag-chip pag-tag-chip">
                             {catName}: {tagName}
                           </span>
-                        ))
-                      )}
+                        )) : (
+                          <span key={`pag-${catName}-${tags}`} className="tag-chip relatorio-tag-chip pag-tag-chip">
+                            {catName}: {tags}
+                          </span>
+                        )
+                      ))}
                     </td>
                   </tr>
                 );

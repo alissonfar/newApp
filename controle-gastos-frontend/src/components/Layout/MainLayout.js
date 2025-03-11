@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -19,6 +19,7 @@ const MainLayout = ({ children }) => {
     { name: 'Insights', path: '/insights', icon: <FaLightbulb /> },
     { name: 'Transações', path: '/transacoes', icon: <FaWallet /> },
     { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },
+    { name: 'Regras de Automação', path: '/regras', icon: <FaCog /> },
   ];
 
   // Controle de exibição do menu de perfil

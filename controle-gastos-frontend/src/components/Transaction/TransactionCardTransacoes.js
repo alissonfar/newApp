@@ -53,13 +53,17 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
                 {/* Exibe tags associadas a esse pagamento, se houver */}
                 {pg.tags && Object.keys(pg.tags).length > 0 ? (
                   <div className="payment-tags">
-                    {Object.keys(pg.tags).map((cat, i) =>
-                      pg.tags[cat].map((tag, j) => (
-                        <span key={`${cat}-${tag}-${j}`} className="tag-chip">
-                          {cat}: {tag}
+                    {Object.entries(pg.tags).map(([categoria, tags]) => (
+                      Array.isArray(tags) ? tags.map((tag, j) => (
+                        <span key={`${categoria}-${tag}-${j}`} className="tag-chip">
+                          {categoria}: {tag}
                         </span>
-                      ))
-                    )}
+                      )) : (
+                        <span key={`${categoria}-${tags}`} className="tag-chip">
+                          {categoria}: {tags}
+                        </span>
+                      )
+                    ))}
                   </div>
                 ) : (
                   <div className="payment-tags">
@@ -70,8 +74,6 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
             ))}
           </div>
         )}
-
-
       </div>
 
       <div className="card-actions">
