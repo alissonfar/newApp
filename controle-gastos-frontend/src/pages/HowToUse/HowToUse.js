@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaUserCog, FaMoneyBillWave, FaChartLine, FaClipboardList, FaUserTie, FaInfoCircle } from 'react-icons/fa';
+import { FaUserCog, FaMoneyBillWave, FaChartLine, FaClipboardList, FaUserTie, FaInfoCircle, FaMagic } from 'react-icons/fa';
 import './HowToUse.css';
 
 const HowToUse = () => {
@@ -94,6 +94,51 @@ const HowToUse = () => {
               <li>Digite sua nota no campo de texto</li>
               <li>Pressione enter ou clique no botão para salvar</li>
               <li>Gerencie suas notas conforme necessário</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="step-card">
+          <div className="step-icon">
+            <FaMagic />
+          </div>
+          <h2>6. Automatize com Regras</h2>
+          <p>Configure regras para automatizar a gestão de suas transações.</p>
+          <div className="step-details">
+            <h3>Como configurar regras:</h3>
+            <ul>
+              <li>Acesse a seção "Regras de Automação" no menu</li>
+              <li>Clique em "Nova Regra" para criar uma automação</li>
+              <li>Defina um nome e descrição para sua regra</li>
+              <li>Configure as condições que ativam a regra:
+                <ul>
+                  <li>Escolha os campos (tipo, valor, data, tags, status, participante)</li>
+                  <li>Selecione os operadores (igual, diferente, maior, menor, contém)</li>
+                  <li>Defina os valores para comparação</li>
+                </ul>
+              </li>
+              <li>Escolha as ações a serem executadas:
+                <ul>
+                  <li>Adicionar ou remover tags</li>
+                  <li>Alterar o status da transação</li>
+                  <li>Modificar o valor</li>
+                </ul>
+              </li>
+            </ul>
+            <h3>Como usar as regras:</h3>
+            <ul>
+              <li>Visualize a pré-execução clicando no ícone de "Prévia"</li>
+              <li>Confirme a execução após revisar as alterações</li>
+              <li>Desfaça a última execução se necessário</li>
+              <li>Edite ou exclua regras existentes conforme necessário</li>
+            </ul>
+            <h3>Dicas de uso:</h3>
+            <ul>
+              <li>Crie regras para categorizar transações automaticamente</li>
+              <li>Use regras para marcar pagamentos recorrentes</li>
+              <li>Automatize a atualização de status de transações</li>
+              <li>Combine múltiplas condições usando operadores "E" ou "OU"</li>
+              <li>Sempre revise as alterações na prévia antes de executar</li>
             </ul>
           </div>
         </div>

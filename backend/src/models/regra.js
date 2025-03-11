@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const CondicaoSchema = new mongoose.Schema({
   campo: { 
     type: String, 
-    enum: ['tipo', 'valor', 'data', 'status', 'pagamentos.pessoa', 'pagamentos.tags', 'pessoa'],
+    enum: ['tipo', 'valor', 'data', 'tags', 'status', 'pagamentos.pessoa'],
     required: true 
   },
   operador: { 

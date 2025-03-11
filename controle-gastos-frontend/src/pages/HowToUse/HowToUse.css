@@ -98,15 +98,30 @@
   margin-bottom: 0.8rem;
   padding-left: 1.5rem;
   position: relative;
-  color: #555;
 }
 
 .step-details li::before {
-  content: "•";
+  content: '•';
   color: #8e37d7;
-  font-weight: bold;
   position: absolute;
   left: 0;
+  top: 0;
+}
+
+.step-details li ul {
+  margin-top: 0.8rem;
+  margin-left: 1rem;
+}
+
+.step-details li ul li {
+  margin-bottom: 0.5rem;
+  font-size: 0.95em;
+  color: #555;
+}
+
+.step-details li ul li::before {
+  content: '○';
+  font-size: 0.8em;
 }
 
 .tips-section {

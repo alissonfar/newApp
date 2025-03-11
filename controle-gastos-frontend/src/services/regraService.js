@@ -38,9 +38,4 @@ export const executarRegra = async (id) => {
 export const desfazerUltimaExecucao = async (id) => {
   const response = await api.post(`/regras/${id}/desfazer`);
   return response.data;
-};
-
-export const obterOpcoesCampos = async () => {
-  const response = await api.get('/regras/opcoes');
-  return response.data;
-};
+}; 

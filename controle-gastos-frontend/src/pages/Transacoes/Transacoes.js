@@ -29,11 +29,37 @@ const Transacoes = () => {
       const dados = await obterTransacoes();
       console.log('Retorno do backend:', dados.transacoes);
 
-      let lista = dados.transacoes || [];
-      
-      // Ordena por data desc inicialmente (padrão)
+      // 1) Para cada transação, unificamos as tags de todos os pagamentos em transacao.tags
+      let lista = (dados.transacoes || []).map((tr) => {
+        const combinedTags = {};
+
+        if (tr.pagamentos && Array.isArray(tr.pagamentos)) {
+          tr.pagamentos.forEach((pg) => {
+            // Aqui usamos "pg.tags" e não "pg.paymentTags"
+            const payTags = pg.tags || {};
+            /*
+              Exemplo de payTags:
+              {
+                "Status da transação": ["Pago"],
+                "Método de Pagamento": ["Pix"]
+              }
+            */
+            Object.keys(payTags).forEach((cat) => {
+              if (!combinedTags[cat]) {
+                combinedTags[cat] = [];
+              }
+              combinedTags[cat] = [...combinedTags[cat], ...payTags[cat]];
+            });
+          });
+        }
+
+        // Retorna a transação com a nova propriedade "tags"
+        return { ...tr, tags: combinedTags };
+      });
+
+      // 2) Ordena por data desc inicialmente (padrão)
       lista.sort((a, b) => new Date(b.data) - new Date(a.data));
-      
+
       setTransacoes(lista);
       setFilteredTransacoes(lista);
     } catch (error) {
@@ -50,27 +76,35 @@ const Transacoes = () => {
   useEffect(() => {
     let resultado = [...transacoes];
 
+    // 1) Filtro de busca
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       resultado = resultado.filter((tr) => {
+        // Verifica se a descrição bate
         const matchDescricao = tr.descricao.toLowerCase().includes(search);
-        const matchPessoa = tr.pagamentos &&
-          tr.pagamentos.some(pg => pg.pessoa && pg.pessoa.toLowerCase().includes(search));
-        const matchTags = tr.pagamentos &&
-          tr.pagamentos.some(pg => 
-            pg.tags && Object.keys(pg.tags).some(cat =>
-              pg.tags[cat].some(tag => tag.toLowerCase().includes(search))
-            )
+
+        // Verifica se o searchTerm aparece em "pessoa" (nos pagamentos)
+        const matchPessoa =
+          tr.pagamentos &&
+          tr.pagamentos.some(
+            (pg) => pg.pessoa && pg.pessoa.toLowerCase().includes(search)
           );
+
+        // Verifica se o searchTerm aparece nas tags unificadas
+        const matchTags = Object.keys(tr.tags || {}).some((cat) =>
+          tr.tags[cat].some((tag) => tag.toLowerCase().includes(search))
+        );
 
         return matchDescricao || matchPessoa || matchTags;
       });
     }
 
+    // 2) Filtro de tipo
     if (filterType !== 'todos') {
       resultado = resultado.filter((tr) => tr.tipo === filterType);
     }
 
+    // 3) Ordenação
     switch (orderOption) {
       case 'mais-recentes':
         resultado.sort((a, b) => new Date(b.data) - new Date(a.data));

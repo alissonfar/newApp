@@ -1,67 +1,29 @@
 const Regra = require('../models/regra');
 const Transacao = require('../models/transacao');
-const Tag = require('../models/tag');
 
 // Função auxiliar para aplicar condições
 const avaliarCondicao = (transacao, condicao) => {
-  let valor;
-  
-  if (condicao.campo === 'pagamentos.tags') {
-    // Busca em todos os pagamentos da transação
-    valor = transacao.pagamentos.reduce((tags, pagamento) => {
-      if (!pagamento.tags) return tags;
-      
-      // Converte o objeto de tags em um array de strings no formato "categoria: valor"
-      const pagTags = Object.entries(pagamento.tags).map(([categoria, valores]) => {
-        if (Array.isArray(valores)) {
-          return valores.map(valor => `${categoria}: ${valor}`);
-        }
-        return [`${categoria}: ${valores}`];
-      }).flat();
-      
-      return [...tags, ...pagTags];
-    }, []);
-  } else if (condicao.campo.startsWith('pagamentos.')) {
-    // Para outros campos de pagamento, verifica em cada pagamento
-    const campo = condicao.campo.split('.')[1];
-    valor = transacao.pagamentos.map(p => p[campo]);
-  } else {
-    valor = transacao[condicao.campo];
-  }
-
-  // Converte os valores para o mesmo tipo antes de comparar
-  const valorTransacao = typeof valor === 'string' ? valor.toLowerCase() : valor;
-  const valorCondicao = typeof condicao.valor === 'string' ? condicao.valor.toLowerCase() : condicao.valor;
+  const valor = condicao.campo.includes('.')
+    ? condicao.campo.split('.').reduce((obj, key) => obj[key], transacao)
+    : transacao[condicao.campo];
 
   switch (condicao.operador) {
     case 'igual':
-      if (Array.isArray(valorTransacao)) {
-        return valorTransacao.some(v => String(v).toLowerCase() === String(valorCondicao).toLowerCase());
-      }
-      return String(valorTransacao).toLowerCase() === String(valorCondicao).toLowerCase();
+      return valor === condicao.valor;
     case 'diferente':
-      if (Array.isArray(valorTransacao)) {
-        return !valorTransacao.some(v => String(v).toLowerCase() === String(valorCondicao).toLowerCase());
-      }
-      return String(valorTransacao).toLowerCase() !== String(valorCondicao).toLowerCase();
+      return valor !== condicao.valor;
     case 'maior':
-      return Number(valorTransacao) > Number(valorCondicao);
+      return valor > condicao.valor;
     case 'menor':
-      return Number(valorTransacao) < Number(valorCondicao);
+      return valor < condicao.valor;
     case 'contem':
-      if (Array.isArray(valorTransacao)) {
-        return valorTransacao.some(v => 
-          String(v).toLowerCase() === String(valorCondicao).toLowerCase()
-        );
-      }
-      return String(valorTransacao).toLowerCase().includes(String(valorCondicao).toLowerCase());
+      return Array.isArray(valor) 
+        ? valor.includes(condicao.valor)
+        : String(valor).includes(String(condicao.valor));
     case 'nao_contem':
-      if (Array.isArray(valorTransacao)) {
-        return !valorTransacao.some(v => 
-          String(v).toLowerCase() === String(valorCondicao).toLowerCase()
-        );
-      }
-      return !String(valorTransacao).toLowerCase().includes(String(valorCondicao).toLowerCase());
+      return Array.isArray(valor)
+        ? !valor.includes(condicao.valor)
+        : !String(valor).includes(String(condicao.valor));
     default:
       return false;
   }
@@ -73,176 +35,25 @@ const aplicarAcao = (transacao, acao) => {
   
   switch (acao.tipo) {
     case 'adicionar_tag':
-      // Adiciona a tag em todos os pagamentos mantendo a estrutura correta
-      novaTransacao.pagamentos = novaTransacao.pagamentos.map(pagamento => {
-        const novoTags = pagamento.tags || {};
-        const [categoria, valor] = acao.valor.split(':').map(s => s.trim());
-        
-        if (!novoTags[categoria]) {
-          novoTags[categoria] = [];
-        }
-        
-        if (Array.isArray(novoTags[categoria])) {
-          if (!novoTags[categoria].includes(valor)) {
-            novoTags[categoria].push(valor);
-          }
-        } else {
-          novoTags[categoria] = [valor];
-        }
-        
-        return {
-          ...pagamento,
-          tags: novoTags
-        };
-      });
+      if (!novaTransacao.tags) novaTransacao.tags = [];
+      if (!novaTransacao.tags.includes(acao.valor)) {
+        novaTransacao.tags.push(acao.valor);
+      }
       break;
     case 'remover_tag':
-      // Remove a tag de todos os pagamentos
-      novaTransacao.pagamentos = novaTransacao.pagamentos.map(pagamento => {
-        const novoTags = { ...pagamento.tags };
-        const [categoria, valor] = acao.valor.split(':').map(s => s.trim());
-        
-        if (novoTags[categoria]) {
-          if (Array.isArray(novoTags[categoria])) {
-            novoTags[categoria] = novoTags[categoria].filter(tag => 
-              tag.toLowerCase() !== valor.toLowerCase()
-            );
-            if (novoTags[categoria].length === 0) {
-              delete novoTags[categoria];
-            }
-          } else {
-            delete novoTags[categoria];
-          }
-        }
-        
-        return {
-          ...pagamento,
-          tags: novoTags
-        };
-      });
+      if (novaTransacao.tags) {
+        novaTransacao.tags = novaTransacao.tags.filter(tag => tag !== acao.valor);
+      }
       break;
     case 'alterar_status':
-      // Adiciona o status como uma tag na categoria 'Status'
-      novaTransacao.pagamentos = novaTransacao.pagamentos.map(pagamento => {
-        const novoTags = pagamento.tags || {};
-        novoTags['Status'] = [acao.valor];
-        return {
-          ...pagamento,
-          tags: novoTags
-        };
-      });
+      novaTransacao.status = acao.valor;
       break;
     case 'alterar_valor':
-      novaTransacao.valor = Number(acao.valor);
+      novaTransacao.valor = acao.valor;
       break;
   }
   
   return novaTransacao;
-};
-
-// Novo endpoint para buscar opções de campos
-exports.obterOpcoesCampos = async (req, res) => {
-  try {
-    // Busca todas as tags disponíveis
-    const tags = await Tag.find({ usuario: req.userId });
-    
-    // Agrupa tags por categoria
-    const tagsPorCategoria = tags.reduce((acc, tag) => {
-      if (!acc[tag.categoria]) {
-        acc[tag.categoria] = [];
-      }
-      acc[tag.categoria].push(tag.nome);
-      return acc;
-    }, {});
-
-    // Busca status únicos das transações
-    const status = await Transacao.find({ usuario: req.userId }).distinct('status');
-
-    // Busca pessoas únicas das transações
-    const pessoas = await Transacao.find({ usuario: req.userId })
-      .distinct('pagamentos.pessoa');
-
-    // Define as opções disponíveis para cada campo
-    const opcoes = {
-      campos: [
-        { 
-          valor: 'tipo',
-          rotulo: 'Tipo',
-          operadores: ['igual', 'diferente'],
-          valores: ['gasto', 'recebivel']
-        },
-        {
-          valor: 'valor',
-          rotulo: 'Valor',
-          operadores: ['igual', 'maior', 'menor'],
-          tipo: 'numero'
-        },
-        {
-          valor: 'status',
-          rotulo: 'Status',
-          operadores: ['igual', 'diferente'],
-          valores: status
-        },
-        {
-          valor: 'pagamentos.pessoa',
-          rotulo: 'Pessoa',
-          operadores: ['igual', 'diferente', 'contem', 'nao_contem'],
-          valores: pessoas.filter(p => p) // Remove valores nulos/vazios
-        },
-        {
-          valor: 'pagamentos.tags',
-          rotulo: 'Tags dos Pagamentos',
-          operadores: ['contem', 'nao_contem'],
-          valores: Object.entries(tagsPorCategoria).map(([categoria, tags]) => 
-            tags.map(tag => `${categoria}: ${tag}`)
-          ).flat()
-        }
-      ],
-      operadores: {
-        igual: 'Igual a',
-        diferente: 'Diferente de',
-        maior: 'Maior que',
-        menor: 'Menor que',
-        contem: 'Contém',
-        nao_contem: 'Não contém'
-      },
-      acoes: [
-        {
-          tipo: 'adicionar_tag',
-          rotulo: 'Adicionar Tag',
-          requerValor: true,
-          valores: Object.entries(tagsPorCategoria).map(([categoria, tags]) => 
-            tags.map(tag => `${categoria}: ${tag}`)
-          ).flat()
-        },
-        {
-          tipo: 'remover_tag',
-          rotulo: 'Remover Tag',
-          requerValor: true,
-          valores: Object.entries(tagsPorCategoria).map(([categoria, tags]) => 
-            tags.map(tag => `${categoria}: ${tag}`)
-          ).flat()
-        },
-        {
-          tipo: 'alterar_status',
-          rotulo: 'Alterar Status',
-          requerValor: true,
-          valores: status
-        },
-        {
-          tipo: 'alterar_valor',
-          rotulo: 'Alterar Valor',
-          requerValor: true,
-          tipo: 'numero'
-        }
-      ]
-    };
-
-    res.json(opcoes);
-  } catch (erro) {
-    console.error('Erro ao buscar opções:', erro);
-    res.status(500).json({ erro: erro.message });
-  }
 };
 
 exports.criarRegra = async (req, res) => {

@@ -1,0 +1,149 @@
+.regras-container {
+  padding: 2rem 0;
+}
+
+.regras-titulo {
+  font-family: var(--font-primary);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  position: relative;
+  display: inline-block;
+}
+
+.regras-titulo::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 60%;
+  height: 3px;
+  background: var(--gradient-primary);
+  border-radius: 2px;
+}
+
+.regras-btn-novo {
+  font-family: var(--font-primary) !important;
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1.5rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.regras-btn-novo:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.regras-table {
+  background: white;
+  border-radius: var(--border-radius) !important;
+  box-shadow: var(--shadow-sm) !important;
+  overflow: hidden;
+}
+
+.regras-table th {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  padding: 1rem !important;
+}
+
+.regras-table td {
+  font-family: var(--font-primary);
+  color: var(--text-secondary);
+  padding: 1rem !important;
+}
+
+.regras-table tr:hover {
+  background-color: var(--bg-hover);
+}
+
+.regras-dialog .MuiDialogTitle-root {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  padding: 1.5rem !important;
+}
+
+.regras-dialog .MuiDialogContent-root {
+  padding: 2rem !important;
+}
+
+.regras-form-title {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1.5rem 0 1rem;
+}
+
+.regras-form-section {
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+.regras-chip {
+  font-family: var(--font-primary) !important;
+  background: var(--bg-tag) !important;
+  color: var(--text-primary) !important;
+  margin: 0.25rem !important;
+}
+
+.regras-preview-dialog .MuiDialogTitle-root {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  padding: 1.5rem !important;
+}
+
+.regras-preview-section {
+  margin: 1.5rem 0;
+}
+
+.regras-preview-title {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.regras-preview-paper {
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.regras-btn-confirmar {
+  font-family: var(--font-primary) !important;
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+  .regras-container {
+    padding: 1rem 0;
+  }
+  
+  .regras-titulo {
+    font-size: 1.5rem;
+  }
+  
+  .regras-dialog .MuiDialogContent-root {
+    padding: 1rem !important;
+  }
+  
+  .regras-form-section {
+    padding: 1rem;
+  }
+} 
