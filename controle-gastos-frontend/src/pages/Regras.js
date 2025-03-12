@@ -56,9 +56,9 @@ const Regras = () => {
     nome: '',
     descricao: '',
     condicoes: [{
-      campo: '',
-      operador: '',
-      valor: ''
+      campo: 'status',
+      operador: 'igual',
+      valor: 'ativo'
     }],
     operadorLogico: 'E',
     acoes: [{
@@ -131,7 +131,7 @@ const Regras = () => {
       case 'tipo':
         return ['gasto', 'recebivel'];
       case 'status':
-        return ['pendente', 'pago', 'atrasado'];
+        return ['ativo', 'estornado'];
       case 'pagamentos.pessoa':
         return pessoas;
       case 'tags':
@@ -152,7 +152,7 @@ const Regras = () => {
           tags.map(tag => `${categoria}: ${tag}`)
         ).flat();
       case 'alterar_status':
-        return ['pendente', 'pago', 'atrasado'];
+        return ['estornado']; // Só permite alterar para estornado
       case 'alterar_valor':
         return []; // Valor numérico, usa TextField
       default:
@@ -177,9 +177,9 @@ const Regras = () => {
         nome: '',
         descricao: '',
         condicoes: [{
-          campo: '',
-          operador: '',
-          valor: ''
+          campo: 'status',
+          operador: 'igual',
+          valor: 'ativo'
         }],
         operadorLogico: 'E',
         acoes: [{
@@ -570,7 +570,7 @@ const Regras = () => {
                           <MenuItem value="data">Data</MenuItem>
                           <MenuItem value="tags">Tags</MenuItem>
                           <MenuItem value="status">Status</MenuItem>
-                          <MenuItem value="pagamentos.pessoa">Participante</MenuItem>
+                          <MenuItem value="pagamentos.pessoa">Pessoa</MenuItem>
                         </Select>
                       </FormControl>
                     </Grid>

@@ -3,9 +3,29 @@ const Transacao = require('../models/transacao');
 
 // Função auxiliar para aplicar condições
 const avaliarCondicao = (transacao, condicao) => {
-  const valor = condicao.campo.includes('.')
-    ? condicao.campo.split('.').reduce((obj, key) => obj[key], transacao)
-    : transacao[condicao.campo];
+  let valor;
+  
+  if (condicao.campo === 'pagamentos.pessoa') {
+    // Para pagamentos.pessoa, verifica se qualquer pagamento tem a pessoa
+    valor = transacao.pagamentos ? 
+      transacao.pagamentos.some(p => p.pessoa === condicao.valor) :
+      false;
+    
+    // Para operadores de igualdade, retornamos direto o resultado
+    if (condicao.operador === 'igual') return valor;
+    if (condicao.operador === 'diferente') return !valor;
+    
+    // Para outros operadores, não faz sentido com booleano
+    return false;
+  } else {
+    // Para outros campos, mantém a lógica original
+    valor = condicao.campo.includes('.')
+      ? condicao.campo.split('.').reduce((obj, key) => obj ? obj[key] : undefined, transacao)
+      : transacao[condicao.campo];
+  }
+
+  // Se o valor for undefined ou null, retorna false
+  if (valor === undefined || valor === null) return false;
 
   switch (condicao.operador) {
     case 'igual':
@@ -35,22 +55,77 @@ const aplicarAcao = (transacao, acao) => {
   
   switch (acao.tipo) {
     case 'adicionar_tag':
-      if (!novaTransacao.tags) novaTransacao.tags = [];
-      if (!novaTransacao.tags.includes(acao.valor)) {
-        novaTransacao.tags.push(acao.valor);
-      }
+    case 'remover_tag': {
+      // Separa categoria e tag do valor (formato "categoria: tag")
+      const [categoria, tagNome] = acao.valor.split(': ');
+      
+      // Garante que cada pagamento tenha a estrutura correta de tags
+      if (!novaTransacao.pagamentos) novaTransacao.pagamentos = [];
+      
+      novaTransacao.pagamentos = novaTransacao.pagamentos.map(pagamento => {
+        const novoPagamento = { ...pagamento };
+        
+        // Garante que o pagamento tenha a estrutura de tags
+        if (!novoPagamento.tags) novoPagamento.tags = {};
+        if (!novoPagamento.tags[categoria]) novoPagamento.tags[categoria] = [];
+        
+        if (acao.tipo === 'adicionar_tag') {
+          // Adiciona a tag se ela não existir
+          if (!novoPagamento.tags[categoria].includes(tagNome)) {
+            novoPagamento.tags[categoria] = [...novoPagamento.tags[categoria], tagNome];
+          }
+        } else { // remover_tag
+          // Remove a tag se ela existir
+          novoPagamento.tags[categoria] = novoPagamento.tags[categoria].filter(
+            tag => tag !== tagNome
+          );
+          
+          // Remove a categoria se ficar vazia
+          if (novoPagamento.tags[categoria].length === 0) {
+            delete novoPagamento.tags[categoria];
+          }
+          
+          // Remove o objeto tags se ficar vazio
+          if (Object.keys(novoPagamento.tags).length === 0) {
+            delete novoPagamento.tags;
+          }
+        }
+        
+        return novoPagamento;
+      });
       break;
-    case 'remover_tag':
-      if (novaTransacao.tags) {
-        novaTransacao.tags = novaTransacao.tags.filter(tag => tag !== acao.valor);
+    }
+    
+    case 'alterar_status': {
+      // Validação: não permite mudar de estornado para ativo
+      if (novaTransacao.status === 'estornado' && acao.valor === 'ativo') {
+        throw new Error('Não é possível alterar o status de estornado para ativo');
       }
-      break;
-    case 'alterar_status':
+      
+      // Validação: só permite os status válidos
+      if (!['ativo', 'estornado'].includes(acao.valor)) {
+        throw new Error('Status inválido. Use "ativo" ou "estornado"');
+      }
+      
       novaTransacao.status = acao.valor;
       break;
-    case 'alterar_valor':
-      novaTransacao.valor = acao.valor;
+    }
+      
+    case 'alterar_valor': {
+      // Não permite alterar valor de transação estornada
+      if (novaTransacao.status === 'estornado') {
+        throw new Error('Não é possível alterar o valor de uma transação estornada');
+      }
+
+      const novoValor = Number(parseFloat(acao.valor).toFixed(2));
+      novaTransacao.valor = novoValor;
+      
+      // Se houver apenas um pagamento, atualiza o valor dele também
+      if (novaTransacao.pagamentos && novaTransacao.pagamentos.length === 1) {
+        novaTransacao.pagamentos[0].valor = novoValor;
+      }
       break;
+    }
   }
   
   return novaTransacao;
