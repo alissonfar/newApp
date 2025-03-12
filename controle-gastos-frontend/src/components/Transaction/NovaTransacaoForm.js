@@ -3,9 +3,55 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Select from 'react-select'; // Import do React-Select
 import { toast } from 'react-toastify'; // Import do toast do React Toastify
+import { Tooltip, IconButton } from '@mui/material';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { criarTransacao, atualizarTransacao, obterCategorias, obterTags } from '../../api';
 import './NovaTransacaoForm.css';
 import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils';
+
+// Componente do Modal de Atalhos
+const ShortcutsHelp = ({ open, onClose }) => {
+  if (!open) return null;
+
+  return (
+    <div className="shortcuts-help-overlay" onClick={onClose}>
+      <div className="shortcuts-help-content" onClick={e => e.stopPropagation()}>
+        <h3>Atalhos de Teclado</h3>
+        <div className="shortcuts-list">
+          <div className="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>Space</kbd>
+            <span>Salvar e Continuar</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+            <span>Salvar e Fechar</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Alt</kbd> + <kbd>H</kbd>
+            <span>Definir data como Hoje</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Alt</kbd> + <kbd>Y</kbd>
+            <span>Definir data como Ontem</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Alt</kbd> + <kbd>P</kbd>
+            <span>Adicionar novo pagamento</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Alt</kbd> + <kbd>R</kbd>
+            <span>Remover último pagamento</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Esc</kbd>
+            <span>Fechar modal</span>
+          </div>
+        </div>
+        <button className="close-shortcuts-btn" onClick={onClose}>Fechar</button>
+      </div>
+    </div>
+  );
+};
 
 const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '' }) => {
   // Estados dos dados gerais
@@ -30,9 +76,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   const [allTags, setAllTags] = useState([]);
   
   // Refs para focar e rolagem
+  const tipoRef = useRef(null);
   const descricaoRef = useRef(null);
   const dataRef = useRef(null);
   const valorRef = useRef(null);
+  
+  // Adicionar estado para controlar a visibilidade do modal de atalhos
+  const [showShortcuts, setShowShortcuts] = useState(false);
   
   // Centraliza o campo em foco
   const handleFocus = (e) => {
@@ -54,8 +104,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     }
     fetchData();
     if (!transacao) {
-      const hoje = new Date().toISOString().split('T')[0];
-      setData(hoje);
+      setData(getTodayBR());
     }
   }, [transacao]);
   
@@ -135,6 +184,52 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
   
+  // Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // CTRL + ESPAÇO para salvar e continuar
+      if (e.ctrlKey && e.keyCode === 32) {
+        e.preventDefault();
+        handleSubmit(new Event('submit'), false);
+      }
+      
+      // CTRL + ENTER para salvar e fechar
+      if (e.ctrlKey && e.keyCode === 13) {
+        e.preventDefault();
+        handleSubmit(new Event('submit'), true);
+      }
+
+      // ALT + H para definir data como hoje
+      if (e.altKey && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        setHoje();
+      }
+
+      // ALT + Y para definir data como ontem
+      if (e.altKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        setOntem();
+      }
+
+      // ALT + P para adicionar novo pagamento
+      if (e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        addPagamento();
+      }
+
+      // ALT + R para remover último pagamento
+      if (e.altKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        if (pagamentos.length > 1) { // Mantém pelo menos um pagamento
+          removePagamento(pagamentos.length - 1);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [tipo, descricao, data, valorTotal, observacao, pagamentos]); // Dependências necessárias para o handleSubmit
+  
   const setHoje = () => {
     setData(getTodayBR());
   };
@@ -199,8 +294,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         // Se for "Salvar e Continuar", limpa os campos
         setTipo('gasto');
         setDescricao('');
-        const hoje = new Date().toISOString().split('T')[0];
-        setData(hoje);
+        setData(getTodayBR());
         setValorTotal('');
         setObservacao('');
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
@@ -218,16 +312,41 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     }
   };
   
+  // Foca no campo de tipo quando o componente é montado
+  useEffect(() => {
+    if (tipoRef.current) {
+      tipoRef.current.focus();
+    }
+  }, []);
 
   return (
     <div className="nova-transacao-form-container">
       <h2>{transacao ? 'Editar Transação' : 'Nova Transação'}</h2>
+      
+      {/* Ícone de ajuda */}
+      <IconButton 
+        className="help-icon"
+        onClick={() => setShowShortcuts(true)}
+        color="primary"
+      >
+        <Tooltip title="Ver atalhos de teclado">
+          <HelpOutlineIcon />
+        </Tooltip>
+      </IconButton>
+
+      {/* Modal de atalhos */}
+      <ShortcutsHelp 
+        open={showShortcuts} 
+        onClose={() => setShowShortcuts(false)} 
+      />
+
       <form onSubmit={(e) => handleSubmit(e, true)}>
         <div className="form-grid">
           <div className="left-column">
             <div className="form-section">
               <label>Tipo:</label>
               <select
+                ref={tipoRef}
                 value={tipo}
                 onChange={e => setTipo(e.target.value)}
                 required
@@ -258,8 +377,12 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 onFocus={handleFocus}
               />
               <div className="date-shortcuts">
-                <button type="button" onClick={setHoje}>Hoje</button>
-                <button type="button" onClick={setOntem}>Ontem</button>
+                <Tooltip title="Alt + H">
+                  <button type="button" onClick={setHoje}>Hoje</button>
+                </Tooltip>
+                <Tooltip title="Alt + Y">
+                  <button type="button" onClick={setOntem}>Ontem</button>
+                </Tooltip>
               </div>
             </div>
             <div className="form-section">
@@ -355,27 +478,33 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                   <hr />
                 </div>
               ))}
-              <button type="button" onClick={addPagamento}>
-                Adicionar Pagamento
-              </button>
+              <Tooltip title="Alt + P">
+                <button type="button" onClick={addPagamento}>
+                  Adicionar Pagamento
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
         <div className="form-buttons">
-          <button
-            type="submit"
-            className="submit-btn"
-            onClick={(e) => handleSubmit(e, true)}
-          >
-            {transacao ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
-          </button>
-          <button
-            type="button"
-            className="submit-btn"
-            onClick={(e) => handleSubmit(e, false)}
-          >
-            {transacao ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
-          </button>
+          <Tooltip title="Ctrl + Enter">
+            <button
+              type="submit"
+              className="submit-btn"
+              onClick={(e) => handleSubmit(e, true)}
+            >
+              {transacao ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
+            </button>
+          </Tooltip>
+          <Tooltip title="Ctrl + Space">
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={(e) => handleSubmit(e, false)}
+            >
+              {transacao ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
+            </button>
+          </Tooltip>
         </div>
       </form>
     </div>

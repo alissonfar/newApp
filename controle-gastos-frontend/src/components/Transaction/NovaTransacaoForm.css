@@ -106,55 +106,24 @@
 
 .form-buttons {
   display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-top: 30px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .submit-btn {
-  font-family: var(--fonte-titulos);
-  padding: 12px 30px;
-  background: var(--gradiente-primario);
-  color: var(--cor-branca);
-  border: none;
-  border-radius: var(--borda-radius);
-  font-weight: 500;
+  flex: 1;
+  padding: 10px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: var(--transicao-padrao);
-  min-width: 180px;
-  letter-spacing: 0.02em;
-}
-
-.submit-btn:hover {
-  background: var(--gradiente-secundario);
-  transform: translateY(-2px);
-  box-shadow: var(--sombra-hover);
-}
-
-.date-shortcuts {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  font-weight: 500;
+  transition: background-color 0.2s;
 }
 
 .date-shortcuts button {
-  font-family: var(--fonte-titulos);
-  padding: 8px 15px;
-  background: var(--cor-fundo-card);
-  border: 1px solid var(--cor-primaria);
-  border-radius: var(--borda-radius);
-  color: var(--cor-primaria);
+  margin: 0 5px;
+  padding: 5px 10px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: var(--transicao-padrao);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.date-shortcuts button:hover {
-  background: var(--cor-primaria);
-  color: var(--cor-branca);
-  transform: translateY(-1px);
-  box-shadow: var(--sombra-hover);
 }
 
 /* Responsividade */
@@ -241,6 +210,83 @@
 
 .mySelect__value-container {
   font-family: var(--fonte-corpo) !important;
+}
+
+/* Modal de Atalhos */
+.shortcuts-help-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.shortcuts-help-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 90%;
+}
+
+.shortcuts-list {
+  margin: 20px 0;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.shortcut-item kbd {
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 2px 6px;
+  margin: 0 4px;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.shortcut-item span {
+  margin-left: 12px;
+  color: #666;
+}
+
+.close-shortcuts-btn {
+  width: 100%;
+  padding: 8px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-shortcuts-btn:hover {
+  background: #1565c0;
+}
+
+/* Ícone de ajuda */
+.help-icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+/* Tooltips personalizados */
+.tooltip {
+  font-size: 12px;
 }
 
 

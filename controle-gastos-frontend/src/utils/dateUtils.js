@@ -1,7 +1,10 @@
 // Função para obter a data atual no fuso horário de Brasília
 export const getCurrentDateBR = () => {
   const now = new Date();
-  return new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  // Ajusta para o fuso horário de Brasília (UTC-3)
+  const offset = -3;
+  const brasiliaTime = new Date(now.getTime() + offset * 60 * 60 * 1000);
+  return brasiliaTime;
 };
 
 // Função para converter uma data para o formato ISO mantendo o fuso horário de Brasília
