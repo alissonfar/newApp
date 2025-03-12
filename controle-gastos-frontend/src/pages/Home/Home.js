@@ -20,6 +20,7 @@ import ModalTransacao from '../../components/Modal/ModalTransacao';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import { AuthContext } from '../../context/AuthContext';
 import './Home.css';
+import { getCurrentDateBR, formatDateBR, toISOStringBR } from '../../utils/dateUtils';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -235,7 +236,7 @@ const Home = () => {
     const novasNotas = [...notas, {
       id: Date.now(),
       texto: novaNota,
-      data: new Date().toISOString()
+      data: toISOStringBR(getCurrentDateBR())
     }];
     setNotas(novasNotas);
     localStorage.setItem('notas', JSON.stringify(novasNotas));
@@ -252,7 +253,7 @@ const Home = () => {
   const tileContent = ({ date, view }) => {
     if (view !== 'month') return null;
     
-    const dataFormatada = date.toISOString().split('T')[0];
+    const dataFormatada = new Date(date.setHours(0, 0, 0, 0)).toISOString().split('T')[0];
     const transacoesDia = transacoesPorData[dataFormatada] || [];
     
     if (transacoesDia.length === 0) return null;
@@ -437,7 +438,7 @@ const Home = () => {
                 {notas.map(nota => (
                   <div key={nota.id} className="nota-item">
                     <p>{nota.texto}</p>
-                    <small>{new Date(nota.data).toLocaleDateString()}</small>
+                    <small>{formatDateBR(nota.data)}</small>
                     <button onClick={() => removerNota(nota.id)}>×</button>
                   </div>
                 ))}

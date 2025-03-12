@@ -18,6 +18,7 @@ import {
   TableChart as CsvIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
+import { getCurrentDateBR, formatDateBR } from '../../utils/dateUtils';
 
 const Relatorio = () => {
   // Array achatado com base em pai + pagamentos
@@ -131,7 +132,7 @@ const Relatorio = () => {
 
   // Seleção rápida de datas
   const handleQuickDateRange = (option) => {
-    const now = new Date();
+    const now = getCurrentDateBR();
     let start, end;
 
     switch (option) {
@@ -146,22 +147,22 @@ const Relatorio = () => {
         break;
       case 'ULTIMOS_60_DIAS':
         end = now;
-        start = new Date();
+        start = new Date(now);
         start.setDate(start.getDate() - 60);
         break;
       case 'ULTIMOS_30_DIAS':
         end = now;
-        start = new Date();
+        start = new Date(now);
         start.setDate(start.getDate() - 30);
         break;
       case 'ULTIMOS_15_DIAS':
         end = now;
-        start = new Date();
+        start = new Date(now);
         start.setDate(start.getDate() - 15);
         break;
       case 'ULTIMOS_7_DIAS':
         end = now;
-        start = new Date();
+        start = new Date(now);
         start.setDate(start.getDate() - 7);
         break;
       default:
@@ -664,12 +665,7 @@ const Relatorio = () => {
             </thead>
             <tbody>
               {filteredRows.map((row, idx) => {
-                // Formatando data manualmente (YYYY-MM-DD -> DD/MM/YYYY)
-                const [fullDate] = row.data.split('T');
-                const [year, month, day] = fullDate.split('-');
-                const displayDate = (year && month && day)
-                  ? `${day}/${month}/${year}`
-                  : row.data; // fallback
+                const displayDate = formatDateBR(row.data);
 
                 return (
                   <tr key={idx}>

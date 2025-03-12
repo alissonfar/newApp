@@ -5,6 +5,7 @@ import Select from 'react-select'; // Import do React-Select
 import { toast } from 'react-toastify'; // Import do toast do React Toastify
 import { criarTransacao, atualizarTransacao, obterCategorias, obterTags } from '../../api';
 import './NovaTransacaoForm.css';
+import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils';
 
 const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '' }) => {
   // Estados dos dados gerais
@@ -135,13 +136,11 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   }, [onClose]);
   
   const setHoje = () => {
-    const hoje = new Date().toISOString().split('T')[0];
-    setData(hoje);
+    setData(getTodayBR());
   };
 
   const setOntem = () => {
-    const ontem = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    setData(ontem);
+    setData(getYesterdayBR());
   };
 
   const handleSubmit = async (e, closeModal = true) => {
@@ -174,7 +173,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     const transacaoData = {
       tipo,
       descricao,
-      data: new Date(data).toISOString(),
+      data: toISOStringBR(data),
       valor: Number(parseFloat(valorTotal).toFixed(2)),
       observacao,
       pagamentos: pagamentos.map((pag) => ({

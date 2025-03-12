@@ -2,12 +2,13 @@
 import React from 'react';
 import ModalTransacao from '../Modal/ModalTransacao';
 import './TransactionDetailsModal.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const TransactionDetailsModal = ({ transacao, onClose }) => {
   if (!transacao) return null;
 
   // Formata data e valor
-  const formattedDate = new Date(transacao.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  const formattedDate = formatDateBR(transacao.data);
   const formattedValue = parseFloat(transacao.valor).toFixed(2);
 
   return (

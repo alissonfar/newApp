@@ -2,6 +2,7 @@
 import React from 'react';
 import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCardTransacoes.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
   // Define o ícone de acordo com o tipo da transação
@@ -12,20 +13,15 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
       <FaArrowUp className="tipo-icon recebivel" />
     );
 
-  // Função que formata a data ISO para "dd/mm/yyyy"
-  const formatDateDDMMYYYY = (isoString) => {
-    if (!isoString) return '';
-    const datePart = isoString.split('T')[0]; // "YYYY-MM-DD"
-    const [year, month, day] = datePart.split('-');
-    return `${day}/${month}/${year}`;
-  };
+  // Formata a data usando a função utilitária
+  const formattedDate = formatDateBR(transacao.data);
 
   return (
     <div className="transaction-card-transacoes">
       <div className="card-header">
         <div className="card-header-left">
           <h3 className="card-title">{transacao.descricao}</h3>
-          <span className="card-date">{formatDateDDMMYYYY(transacao.data)}</span>
+          <span className="card-date">{formattedDate}</span>
         </div>
         <div className="card-header-right">
           {tipoIcon}
