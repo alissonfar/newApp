@@ -20,7 +20,7 @@ import ModalTransacao from '../../components/Modal/ModalTransacao';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import { AuthContext } from '../../context/AuthContext';
 import './Home.css';
-import { getCurrentDateBR, formatDateBR, toISOStringBR } from '../../utils/dateUtils';
+import { getCurrentDateBR, formatDateBR, toISOStringBR, getTodayBR } from '../../utils/dateUtils';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -236,7 +236,7 @@ const Home = () => {
     const novasNotas = [...notas, {
       id: Date.now(),
       texto: novaNota,
-      data: toISOStringBR(getCurrentDateBR())
+      data: getTodayBR()
     }];
     setNotas(novasNotas);
     localStorage.setItem('notas', JSON.stringify(novasNotas));

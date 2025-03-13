@@ -10,10 +10,11 @@ export const getCurrentDateBR = () => {
 // Função para converter uma data para o formato ISO mantendo o fuso horário de Brasília
 export const toISOStringBR = (date) => {
   if (!date) return '';
-  const d = new Date(date);
-  const offset = -3; // Brasília UTC-3
-  const localDate = new Date(d.getTime() + offset * 60 * 60 * 1000);
-  return localDate.toISOString();
+  // Cria uma data a partir do input, que deve estar no formato YYYY-MM-DD
+  const [year, month, day] = date.split('-').map(Number);
+  // Cria uma nova data usando o fuso horário local
+  const d = new Date(year, month - 1, day, 12, 0, 0);
+  return d.toISOString();
 };
 
 // Função para formatar uma data ISO para exibição no formato brasileiro
