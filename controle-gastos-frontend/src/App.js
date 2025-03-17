@@ -14,6 +14,10 @@ import Registro from './pages/Registro/Registro';
 import Profile from './pages/Profile/Profile';
 import HowToUse from './pages/HowToUse/HowToUse';
 import Regras from './pages/Regras';
+import VerificarEmail from './pages/VerificarEmail/VerificarEmail';
+import EmailNaoVerificado from './pages/EmailNaoVerificado/EmailNaoVerificado';
+import EsqueciSenha from './pages/EsqueciSenha/EsqueciSenha';
+import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -29,6 +33,10 @@ function App() {
           {/* Rotas Públicas (sem MainLayout) */}
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
+          <Route path="/verificar-email/:token" element={<VerificarEmail />} />
+          <Route path="/email-nao-verificado" element={<EmailNaoVerificado />} />
+          <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+          <Route path="/redefinir-senha/:token" element={<RedefinirSenha />} />
 
           {/* Rotas Privadas: usam <PrivateRoute> e envolvem o conteúdo em <MainLayout> */}
           <Route

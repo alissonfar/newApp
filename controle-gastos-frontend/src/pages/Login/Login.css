@@ -268,3 +268,49 @@
     vertical-align: middle;
   }
   
+  .form-links {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
+  
+  .forgot-password-link {
+    color: var(--cor-primaria);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    padding-bottom: 2px;
+  }
+  
+  .forgot-password-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background: var(--gradiente-primario);
+    transition: width 0.3s ease;
+  }
+  
+  .forgot-password-link:hover {
+    color: var(--cor-secundaria);
+  }
+  
+  .forgot-password-link:hover::after {
+    width: 100%;
+  }
+  
+  /* Ajuste responsivo para os links */
+  @media (max-width: 480px) {
+    .form-links {
+      margin-bottom: 15px;
+    }
+  
+    .forgot-password-link {
+      font-size: 0.85rem;
+    }
+  }
+  

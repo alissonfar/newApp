@@ -51,19 +51,79 @@ module.exports = {
   async verificarEmail(req, res) {
     try {
       const { token } = req.params;
+      console.log('Token recebido:', token);
 
-      const usuario = await Usuario.findOne({
-        tokenVerificacao: token,
-        tokenVerificacaoExpira: { $gt: Date.now() }
+      // Primeiro, tenta encontrar o usuário pelo token
+      let usuario = await Usuario.findOne({
+        tokenVerificacao: token
       });
 
+      // Se não encontrar pelo token, pode ser porque o email já foi verificado
+      // e o token foi removido. Vamos buscar nos logs recentes.
       if (!usuario) {
+        console.log('Token não encontrado, verificando se o email já foi verificado...');
+        
+        // Busca o usuário que tinha este token (armazenando temporariamente)
+        const tokenAnterior = token;
+        
+        // Atualiza a busca para verificar se existe um usuário que já verificou o email
+        usuario = await Usuario.findOne({
+          $or: [
+            { tokenVerificacao: tokenAnterior },
+            { emailVerificado: true }
+          ]
+        });
+
+        if (usuario && usuario.emailVerificado) {
+          console.log('Email já verificado para o usuário:', usuario.email);
+          return res.json({
+            mensagem: 'Seu email já foi verificado com sucesso! Você pode fazer login na plataforma.',
+            emailVerificado: true
+          });
+        } else {
+          console.log('Token inválido - Nenhum usuário encontrado');
+          return res.status(400).json({
+            erro: 'Token de verificação inválido ou expirado. Por favor, solicite um novo email de verificação.'
+          });
+        }
+      }
+
+      // Se encontrou o usuário pelo token, continua o processo normal
+      console.log('Resultado da busca:', {
+        id: usuario._id,
+        email: usuario.email,
+        emailVerificado: usuario.emailVerificado,
+        tokenVerificacao: usuario.tokenVerificacao,
+        tokenVerificacaoExpira: usuario.tokenVerificacaoExpira
+      });
+
+      // Se o email já foi verificado, retorna sucesso
+      if (usuario.emailVerificado) {
+        console.log('Email já verificado anteriormente para o usuário:', usuario.email);
+        return res.json({
+          mensagem: 'Seu email já foi verificado com sucesso! Você pode fazer login na plataforma.',
+          emailVerificado: true
+        });
+      }
+
+      // Verifica se o token expirou
+      const agora = Date.now();
+      console.log('Verificando expiração do token:', {
+        tokenExpira: usuario.tokenVerificacaoExpira,
+        agora: agora,
+        expirado: usuario.tokenVerificacaoExpira < agora
+      });
+
+      if (usuario.tokenVerificacaoExpira < agora) {
+        console.log('Token expirado para o usuário:', usuario.email);
         return res.status(400).json({
-          erro: 'Token de verificação inválido ou expirado.'
+          erro: 'O link de verificação expirou. Por favor, solicite um novo email de verificação.',
+          emailVerificado: false
         });
       }
 
       // Atualiza o usuário
+      console.log('Atualizando status de verificação para o usuário:', usuario.email);
       usuario.emailVerificado = true;
       usuario.tokenVerificacao = undefined;
       usuario.tokenVerificacaoExpira = undefined;
@@ -71,13 +131,16 @@ module.exports = {
 
       // Envia email de boas-vindas
       try {
+        console.log('Enviando email de boas-vindas para:', usuario.email);
         await emailService.enviarEmailBoasVindas(usuario);
       } catch (erro) {
         console.error('Erro ao enviar email de boas-vindas:', erro);
       }
 
+      console.log('Verificação concluída com sucesso para:', usuario.email);
       return res.json({
-        mensagem: 'Email verificado com sucesso! Sua conta está ativa.'
+        mensagem: 'Email verificado com sucesso! Sua conta está ativa.',
+        emailVerificado: true
       });
     } catch (erro) {
       console.error('Erro ao verificar email:', erro);

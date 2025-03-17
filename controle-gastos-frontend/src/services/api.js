@@ -28,4 +28,60 @@ api.interceptors.response.use(
   }
 );
 
+// Função para verificação de email
+export const verificarEmail = async (token) => {
+  try {
+    const response = await api.get(`/usuarios/verificar-email/${token}`);
+    return response.data;
+  } catch (error) {
+    // Se o erro for 400 e o email já foi verificado, retornamos sucesso
+    if (error.response?.status === 400 && 
+        error.response?.data?.erro === "Token de verificação inválido ou expirado." &&
+        error.response?.data?.emailVerificado) {
+      return { mensagem: "Email já foi verificado anteriormente!" };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+// Função para reenviar email de verificação
+export const reenviarVerificacaoEmail = async (email) => {
+  try {
+    const response = await api.post('/usuarios/reenviar-verificacao', { email });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+// Função para solicitar redefinição de senha
+export const solicitarRedefinicaoSenha = async (email) => {
+  try {
+    const response = await api.post('/usuarios/esqueci-senha', { email });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+// Função para verificar token de redefinição
+export const verificarTokenRedefinicao = async (token) => {
+  try {
+    const response = await api.get(`/usuarios/redefinir-senha/${token}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+// Função para redefinir a senha
+export const redefinirSenha = async (token, novaSenha) => {
+  try {
+    const response = await api.post(`/usuarios/redefinir-senha/${token}`, { novaSenha });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
 export default api; 

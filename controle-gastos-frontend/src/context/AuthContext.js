@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [emailVerificado, setEmailVerificado] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -23,15 +24,18 @@ export function AuthProvider({ children }) {
           setCarregando(true);
           const response = await api.get('/usuarios/perfil');
           setUsuario(response.data);
+          setEmailVerificado(response.data.emailVerificado || false);
         } catch (error) {
           console.error('Erro ao carregar perfil:', error);
           setToken('');
           setUsuario(null);
+          setEmailVerificado(false);
         } finally {
           setCarregando(false);
         }
       } else {
         setUsuario(null);
+        setEmailVerificado(false);
         setCarregando(false);
       }
     };
@@ -42,6 +46,11 @@ export function AuthProvider({ children }) {
   const atualizarAutenticacao = (novoToken, novoUsuario) => {
     setToken(novoToken);
     setUsuario(novoUsuario);
+    setEmailVerificado(novoUsuario?.emailVerificado || false);
+  };
+
+  const atualizarStatusEmail = (status) => {
+    setEmailVerificado(status);
   };
 
   return (
@@ -51,7 +60,9 @@ export function AuthProvider({ children }) {
       usuario, 
       setUsuario,
       atualizarAutenticacao,
-      carregando
+      carregando,
+      emailVerificado,
+      atualizarStatusEmail
     }}>
       {children}
     </AuthContext.Provider>

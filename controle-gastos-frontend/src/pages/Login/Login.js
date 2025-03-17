@@ -1,13 +1,13 @@
 import React, { useState, useContext } from 'react';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
 import { loginUsuario } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import './Login.css';
 
 function Login() {
-  const { setToken, setUsuario } = useContext(AuthContext);
+  const { setToken, setUsuario, atualizarStatusEmail } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,6 +40,14 @@ function Login() {
       if (resposta.token) {
         setToken(resposta.token);
         setUsuario(resposta.usuario);
+        atualizarStatusEmail(resposta.usuario.emailVerificado || false);
+
+        if (!resposta.usuario.emailVerificado) {
+          toast.warning('Por favor, verifique seu email antes de continuar.');
+          navigate('/email-nao-verificado');
+          return;
+        }
+
         toast.success('Login realizado com sucesso!');
         navigate('/');
       } else {
@@ -100,6 +108,11 @@ function Login() {
             </div>
             {errors.senha && <span className="error-message">{errors.senha}</span>}
           </div>
+          <div className="form-links">
+            <Link to="/esqueci-senha" className="forgot-password-link">
+              Esqueci minha senha
+            </Link>
+          </div>
           <button 
             type="submit" 
             className={`btn-submit ${loading ? 'loading' : ''}`}
@@ -116,7 +129,7 @@ function Login() {
           </button>
         </form>
         <p className="link-registro">
-          Não possui uma conta? <a href="/registro">Cadastre-se aqui</a>
+          Não possui uma conta? <Link to="/registro">Cadastre-se aqui</Link>
         </p>
       </div>
     </div>
