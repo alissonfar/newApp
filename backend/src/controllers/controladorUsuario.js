@@ -3,6 +3,7 @@ const Usuario = require('../models/usuarios'); // Atualizado para o nome correto
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { jwtSecret, jwtExpires } = require('../config/config');
+const emailService = require('../services/emailService');
 
 module.exports = {
   async registrar(req, res) {
@@ -18,12 +19,120 @@ module.exports = {
         return res.status(400).json({ erro: 'Email já está em uso.' });
       }
 
-      const novoUsuario = new Usuario({ nome, email, senha });
+      const novoUsuario = new Usuario({ 
+        nome, 
+        email, 
+        senha,
+        emailVerificado: false
+      });
+
+      // Gera o token de verificação
+      const tokenVerificacao = novoUsuario.gerarTokenVerificacaoEmail();
+      
       await novoUsuario.save();
-      return res.status(201).json({ mensagem: 'Usuário registrado com sucesso!' });
+
+      // Envia o email de verificação
+      try {
+        await emailService.enviarEmailVerificacao(novoUsuario, tokenVerificacao);
+      } catch (erro) {
+        console.error('Erro ao enviar email de verificação:', erro);
+        // Não retornamos erro ao usuário, pois o registro foi bem-sucedido
+      }
+
+      return res.status(201).json({ 
+        mensagem: 'Usuário registrado com sucesso! Por favor, verifique seu email para ativar sua conta.' 
+      });
     } catch (error) {
       console.error('Erro ao registrar usuário:', error);
       return res.status(500).json({ erro: 'Erro interno ao registrar usuário.' });
+    }
+  },
+
+  async verificarEmail(req, res) {
+    try {
+      const { token } = req.params;
+
+      const usuario = await Usuario.findOne({
+        tokenVerificacao: token,
+        tokenVerificacaoExpira: { $gt: Date.now() }
+      });
+
+      if (!usuario) {
+        return res.status(400).json({
+          erro: 'Token de verificação inválido ou expirado.'
+        });
+      }
+
+      // Atualiza o usuário
+      usuario.emailVerificado = true;
+      usuario.tokenVerificacao = undefined;
+      usuario.tokenVerificacaoExpira = undefined;
+      await usuario.save();
+
+      // Envia email de boas-vindas
+      try {
+        await emailService.enviarEmailBoasVindas(usuario);
+      } catch (erro) {
+        console.error('Erro ao enviar email de boas-vindas:', erro);
+      }
+
+      return res.json({
+        mensagem: 'Email verificado com sucesso! Sua conta está ativa.'
+      });
+    } catch (erro) {
+      console.error('Erro ao verificar email:', erro);
+      return res.status(500).json({
+        erro: 'Erro interno ao verificar email.'
+      });
+    }
+  },
+
+  async reenviarVerificacao(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          erro: 'Email é obrigatório.'
+        });
+      }
+
+      const usuario = await Usuario.findOne({ email });
+
+      if (!usuario) {
+        return res.status(404).json({
+          erro: 'Usuário não encontrado.'
+        });
+      }
+
+      if (usuario.emailVerificado) {
+        return res.status(400).json({
+          erro: 'Este email já foi verificado.'
+        });
+      }
+
+      // Gera novo token de verificação
+      const tokenVerificacao = usuario.gerarTokenVerificacaoEmail();
+      await usuario.save();
+
+      // Envia novo email de verificação
+      try {
+        await emailService.enviarEmailVerificacao(usuario, tokenVerificacao);
+      } catch (erro) {
+        console.error('Erro ao reenviar email de verificação:', erro);
+        return res.status(500).json({
+          erro: 'Erro ao enviar email de verificação.'
+        });
+      }
+
+      return res.json({
+        mensagem: 'Email de verificação reenviado com sucesso.'
+      });
+    } catch (erro) {
+      console.error('Erro ao reenviar verificação:', erro);
+      return res.status(500).json({
+        erro: 'Erro interno ao reenviar verificação.'
+      });
     }
   },
 
@@ -34,14 +143,30 @@ module.exports = {
         return res.status(400).json({ erro: 'Email e senha são obrigatórios.' });
       }
 
-      const usuario = await Usuario.findOne({ email });
+      // Limpa espaços do email
+      const emailLimpo = email.trim();
+
+      // Busca considerando possíveis espaços extras
+      const usuario = await Usuario.findOne({
+        email: { $regex: new RegExp(`^${emailLimpo}\\s*$`, 'i') }
+      });
+
       if (!usuario) {
         return res.status(401).json({ erro: 'Credenciais inválidas.' });
+      }
+
+      // Verifica se o email foi verificado
+      if (!usuario.emailVerificado) {
+        return res.status(403).json({ 
+          erro: 'Por favor, verifique seu email antes de fazer login.',
+          emailNaoVerificado: true
+        });
       }
 
       // Compara as senhas
       const match = await bcrypt.compare(senha, usuario.senha);
       if (!match) {
+        console.log('Senha fornecida não corresponde ao hash armazenado');
         return res.status(401).json({ erro: 'Credenciais inválidas.' });
       }
 
@@ -56,7 +181,8 @@ module.exports = {
         usuario: {
           _id: usuario._id,
           nome: usuario.nome,
-          email: usuario.email
+          email: usuario.email.trim(), // Remove espaços extras
+          emailVerificado: usuario.emailVerificado
         }
       });
     } catch (error) {
@@ -232,6 +358,161 @@ module.exports = {
     } catch (error) {
       console.error('Erro ao atualizar foto de perfil:', error);
       return res.status(500).json({ erro: 'Erro interno ao atualizar foto de perfil.' });
+    }
+  },
+
+  async solicitarRedefinicaoSenha(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          erro: 'Email é obrigatório.'
+        });
+      }
+
+      // Limpa espaços extras do email
+      const emailLimpo = email.trim();
+
+      const usuario = await Usuario.findOne({ 
+        email: { $regex: new RegExp(`^${emailLimpo}\\s*$`, 'i') }
+      });
+
+      // Por segurança, não informamos se o email existe ou não
+      if (!usuario) {
+        return res.json({
+          mensagem: 'Se um usuário com este email existir, você receberá as instruções para redefinir sua senha.'
+        });
+      }
+
+      // Verifica se já existe um token válido
+      if (usuario.tokenRedefinicaoSenhaExpira && usuario.tokenRedefinicaoSenhaExpira > Date.now()) {
+        return res.status(400).json({
+          erro: 'Uma solicitação de redefinição de senha já foi enviada. Por favor, aguarde alguns minutos antes de tentar novamente.'
+        });
+      }
+
+      // Gera o token de redefinição
+      const tokenRedefinicao = usuario.gerarTokenRedefinicaoSenha();
+      await usuario.save();
+
+      // Envia o email
+      try {
+        await emailService.enviarEmailRedefinicaoSenha(usuario, tokenRedefinicao);
+        console.log('Email de redefinição enviado com sucesso para:', usuario.email);
+      } catch (erro) {
+        console.error('Erro ao enviar email de redefinição:', erro);
+        return res.status(500).json({
+          erro: 'Erro ao enviar email de redefinição de senha.'
+        });
+      }
+
+      return res.json({
+        mensagem: 'Se um usuário com este email existir, você receberá as instruções para redefinir sua senha.'
+      });
+    } catch (erro) {
+      console.error('Erro ao solicitar redefinição de senha:', erro);
+      return res.status(500).json({
+        erro: 'Erro interno ao processar solicitação de redefinição de senha.'
+      });
+    }
+  },
+
+  async redefinirSenha(req, res) {
+    try {
+      const { token } = req.params;
+      const { novaSenha } = req.body;
+
+      if (!novaSenha) {
+        return res.status(400).json({
+          erro: 'Nova senha é obrigatória.'
+        });
+      }
+
+      const usuario = await Usuario.findOne({
+        tokenRedefinicaoSenha: token,
+        tokenRedefinicaoSenhaExpira: { $gt: Date.now() }
+      });
+
+      if (!usuario) {
+        return res.status(400).json({
+          erro: 'Token de redefinição inválido ou expirado.'
+        });
+      }
+
+      // Define a nova senha (o middleware pre-save fará o hash)
+      usuario.senha = novaSenha;
+      usuario.tokenRedefinicaoSenha = undefined;
+      usuario.tokenRedefinicaoSenhaExpira = undefined;
+
+      // Limpa espaços do email
+      usuario.email = usuario.email.trim();
+      
+      await usuario.save();
+
+      // Testa se a nova senha pode ser verificada
+      const testeSenha = await usuario.verificarSenha(novaSenha);
+      console.log('Teste de verificação da nova senha:', testeSenha);
+
+      // Gera um novo token JWT para autenticação automática
+      const authToken = jwt.sign({ userId: usuario._id }, jwtSecret, {
+        expiresIn: jwtExpires
+      });
+
+      // Envia confirmação por email
+      try {
+        await emailService.enviarEmail(
+          usuario.email,
+          'Senha Alterada com Sucesso',
+          `<h1>Senha Alterada</h1>
+           <p>Sua senha foi alterada com sucesso. Se você não realizou esta alteração, entre em contato conosco imediatamente.</p>`
+        );
+      } catch (erro) {
+        console.error('Erro ao enviar email de confirmação:', erro);
+      }
+
+      return res.json({
+        mensagem: 'Senha redefinida com sucesso!',
+        token: authToken,
+        usuario: {
+          _id: usuario._id,
+          nome: usuario.nome,
+          email: usuario.email,
+          emailVerificado: usuario.emailVerificado
+        }
+      });
+    } catch (erro) {
+      console.error('Erro ao redefinir senha:', erro);
+      return res.status(500).json({
+        erro: 'Erro interno ao redefinir senha.'
+      });
+    }
+  },
+
+  async verificarTokenRedefinicao(req, res) {
+    try {
+      const { token } = req.params;
+
+      const usuario = await Usuario.findOne({
+        tokenRedefinicaoSenha: token,
+        tokenRedefinicaoSenhaExpira: { $gt: Date.now() }
+      });
+
+      if (!usuario) {
+        return res.status(400).json({
+          erro: 'Token de redefinição inválido ou expirado.'
+        });
+      }
+
+      return res.json({
+        mensagem: 'Token válido',
+        email: usuario.email
+      });
+    } catch (erro) {
+      console.error('Erro ao verificar token:', erro);
+      return res.status(500).json({
+        erro: 'Erro interno ao verificar token de redefinição.'
+      });
     }
   }
 };

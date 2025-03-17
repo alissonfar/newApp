@@ -36,6 +36,13 @@ const upload = multer({
 // Rotas públicas
 router.post('/registrar', controladorUsuario.registrar);
 router.post('/login', controladorUsuario.login);
+router.get('/verificar-email/:token', controladorUsuario.verificarEmail);
+router.post('/reenviar-verificacao', controladorUsuario.reenviarVerificacao);
+
+// Rotas de recuperação de senha (públicas)
+router.post('/esqueci-senha', controladorUsuario.solicitarRedefinicaoSenha);
+router.get('/redefinir-senha/:token', controladorUsuario.verificarTokenRedefinicao);
+router.post('/redefinir-senha/:token', controladorUsuario.redefinirSenha);
 
 // Rotas protegidas (requerem autenticação)
 router.use(autenticacao);
