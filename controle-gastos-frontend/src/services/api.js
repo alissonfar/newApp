@@ -84,4 +84,22 @@ export const redefinirSenha = async (token, novaSenha) => {
   }
 };
 
+// Função para login do usuário
+export const loginUsuario = async (dados) => {
+  try {
+    const response = await api.post('/usuarios/login', dados);
+    return response.data;
+  } catch (error) {
+    if (error.response?.data?.erro === 'Email não verificado') {
+      // Retornamos um objeto especial para indicar que o email não está verificado
+      return {
+        emailNaoVerificado: true,
+        usuario: { email: dados.email },
+        erro: 'Email não verificado'
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
 export default api; 

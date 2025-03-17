@@ -37,25 +37,28 @@ function Login() {
     setLoading(true);
     try {
       const resposta = await loginUsuario({ email, senha });
+      
+      // Verifica se o email não está verificado
+      if (resposta.emailNaoVerificado) {
+        setUsuario({ email }); // Salva o email para uso na tela de verificação
+        toast.warning('Por favor, verifique seu email antes de continuar.');
+        navigate('/email-nao-verificado');
+        return;
+      }
+
+      // Se chegou aqui, o login foi bem sucedido
       if (resposta.token) {
         setToken(resposta.token);
         setUsuario(resposta.usuario);
-        atualizarStatusEmail(resposta.usuario.emailVerificado || false);
-
-        if (!resposta.usuario.emailVerificado) {
-          toast.warning('Por favor, verifique seu email antes de continuar.');
-          navigate('/email-nao-verificado');
-          return;
-        }
-
+        atualizarStatusEmail(true);
         toast.success('Login realizado com sucesso!');
         navigate('/');
       } else {
         toast.error(resposta.erro || 'Falha no login.');
       }
     } catch (error) {
-      console.error(error);
-      toast.error('Erro interno ao fazer login.');
+      console.error('Erro no login:', error);
+      toast.error(error.erro || 'Erro ao fazer login. Verifique suas credenciais.');
     } finally {
       setLoading(false);
     }
