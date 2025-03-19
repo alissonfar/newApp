@@ -1,0 +1,183 @@
+.editar-transacao-item {
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.editar-transacao-item:last-child {
+  margin-bottom: 0;
+}
+
+.transacao-numero {
+  position: absolute;
+  top: -15px;
+  left: 20px;
+  z-index: 2;
+}
+
+.transacao-badge {
+  background-color: #6200ee;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 15px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.editar-transacao-item .nova-transacao-form-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.editar-transacao-item .nova-transacao-form-container h2 {
+  display: none;
+}
+
+.editar-transacao-item .form-grid {
+  display: flex;
+  gap: 20px;
+}
+
+.editar-transacao-item .left-column,
+.editar-transacao-item .right-column {
+  flex: 1;
+}
+
+.editar-transacao-item .form-section {
+  margin-bottom: 15px;
+}
+
+.editar-transacao-item .form-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.editar-transacao-item .form-section input,
+.editar-transacao-item .form-section select,
+.editar-transacao-item .form-section textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.editar-transacao-item .date-shortcuts {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.editar-transacao-item .date-shortcuts button {
+  padding: 5px 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.editar-transacao-item .pagamentos-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.editar-transacao-item .pagamento-item {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.editar-transacao-item .pagamento-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.editar-transacao-item .payment-tags {
+  margin-top: 10px;
+}
+
+.editar-transacao-item .payment-tags h4 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.editar-transacao-item .tag-dropdown-group {
+  margin-bottom: 10px;
+}
+
+.editar-transacao-item .add-btn,
+.editar-transacao-item .remove-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.editar-transacao-item .add-btn {
+  background-color: #03a9f4;
+  color: white;
+}
+
+.editar-transacao-item .remove-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.editar-transacao-item .remove-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.editar-transacao-item .item-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.editar-transacao-item .save-btn {
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* Estilos para o React-Select dentro do componente */
+.editar-transacao-item .mySelect__control {
+  border-color: #ddd;
+  box-shadow: none;
+}
+
+.editar-transacao-item .mySelect__control:hover {
+  border-color: #aaa;
+}
+
+.editar-transacao-item .mySelect__multi-value {
+  background-color: #e3f2fd;
+}
+
+.editar-transacao-item .mySelect__multi-value__label {
+  color: #0277bd;
+}
+
+@media (max-width: 768px) {
+  .editar-transacao-item .form-grid {
+    flex-direction: column;
+  }
+  
+  .editar-transacao-item {
+    padding: 15px;
+  }
+} 

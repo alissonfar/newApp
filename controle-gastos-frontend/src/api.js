@@ -86,6 +86,20 @@ export async function excluirTransacao(id) {
   return await resposta.json();
 }
 
+// Função para registrar transações em massa
+export const registrarTransacoesEmMassa = async (transacoes) => {
+  try {
+    const response = await fetch(`${API_BASE}/transacoes/bulk`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ transacoes })
+    });
+    return await response.json();
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
 /* ----- Relatório ----- */
 export async function obterRelatorio() {
   const resposta = await fetch(`${API_BASE}/relatorio`, {

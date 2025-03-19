@@ -2,36 +2,110 @@
 
 .transacoes-container {
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: auto;
+  overflow: visible;
 }
 
-.transacoes-container h2 {
-  font-size: 1.6rem;
-  color: var(--cor-primaria);
+.transacoes-container h1 {
   margin-bottom: 20px;
+  color: #333;
 }
 
-.transacoes-filters {
+.transacoes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.transacoes-actions input[type="text"] {
+  flex: 1;
+  min-width: 250px;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.transacoes-actions select {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  min-width: 180px;
+  font-size: 14px;
+}
+
+.button-group {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
-.transacoes-filters input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
+.transacoes-actions button,
+.transacoes-actions .btn {
+  padding: 10px 15px;
+  background-color: #6200ee;
+  color: white;
+  border: none;
   border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.transacoes-filters select {
-  width: 180px; /* Aumentado para comportar o novo seletor */
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.transacoes-actions .btn-importar {
+  background-color: #03a9f4;
+}
+
+.transacoes-actions button:hover,
+.transacoes-actions .btn:hover {
+  opacity: 0.9;
 }
 
 .transacoes-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
+  margin-bottom: 0;
+  min-height: 200px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .transacoes-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .transacoes-actions input[type="text"],
+  .transacoes-actions select {
+    width: 100%;
+  }
+  
+  .button-group {
+    flex-direction: column;
+  }
+}
+
+/* Ajuste para evitar espaço em branco no final da página */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.main-content {
+  min-height: 100vh;
+  height: auto;
+  overflow: visible;
+  padding-bottom: 20px;
 }

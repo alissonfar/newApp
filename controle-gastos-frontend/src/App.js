@@ -7,6 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import Home from './pages/Home/Home';
 import Relatorio from './pages/Relatorio/Relatorio';
 import Transacoes from './pages/Transacoes/Transacoes';
+import ImportacaoEmMassa from './pages/ImportacaoEmMassa/ImportacaoEmMassa';
+import GerenciarImportacoes from './pages/GerenciarImportacoes/GerenciarImportacoes';
 import Insights from './pages/Insights/Insights';
 import Tags from './pages/Tags/Tags';
 import Login from './pages/Login/Login';
@@ -65,6 +67,26 @@ function App() {
               <PrivateRoute>
                 <MainLayout>
                   <Transacoes />
+                </MainLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/importacao-em-massa"
+            element={
+              <PrivateRoute>
+                <MainLayout>
+                  <ImportacaoEmMassa />
+                </MainLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/gerenciar-importacoes"
+            element={
+              <PrivateRoute>
+                <MainLayout>
+                  <GerenciarImportacoes />
                 </MainLayout>
               </PrivateRoute>
             }

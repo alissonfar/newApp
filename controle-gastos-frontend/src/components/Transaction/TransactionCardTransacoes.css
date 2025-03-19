@@ -151,11 +151,11 @@
   gap: 10px;
 }
 
-.action-btn {
+.btn-action {
   font-family: var(--fonte-titulos);
   border: none;
   border-radius: var(--borda-radius);
-  padding: 6px 10px;
+  padding: 8px 15px;
   cursor: pointer;
   font-size: 0.9rem;
   display: flex;
@@ -163,22 +163,21 @@
   gap: 5px;
   transition: var(--transicao-padrao);
   font-weight: 500;
+  color: white;
 }
 
-.edit-btn {
+.btn-action.edit-btn {
   background-color: #0275d8;
-  color: #fff;
 }
 
-.edit-btn:hover {
+.btn-action.edit-btn:hover {
   background-color: #025aa5;
 }
 
-.delete-btn {
+.btn-action.delete-btn {
   background-color: #d9534f;
-  color: #fff;
 }
 
-.delete-btn:hover {
+.btn-action.delete-btn:hover {
   background-color: #c9302c;
 }

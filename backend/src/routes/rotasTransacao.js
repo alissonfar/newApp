@@ -22,4 +22,7 @@ router.put('/:id', controladorTransacao.atualizarTransacao);
 // "Excluir" (estornar) uma transação
 router.delete('/:id', controladorTransacao.excluirTransacao);
 
+// Registrar transações em massa
+router.post('/bulk', controladorTransacao.registrarTransacoesEmMassa);
+
 module.exports = router;

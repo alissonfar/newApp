@@ -1,5 +1,6 @@
 // src/pages/Transacoes/Transacoes.js
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';                     // Import SweetAlert2 para confirmações
 import { toast } from 'react-toastify';             // Import Toastify para mensagens
 import { obterTransacoes, excluirTransacao } from '../../api';
@@ -22,7 +23,7 @@ const Transacoes = () => {
   // Edição/Criação
   const [editingTransacao, setEditingTransacao] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-
+  
   // Carrega todas as transações do backend
   const carregarTransacoes = async () => {
     try {
@@ -176,23 +177,26 @@ const Transacoes = () => {
 
   return (
     <div className="transacoes-container">
-      <h2>Transações</h2>
-      {/* Barra de Filtros */}
-      <div className="transacoes-filters">
+      <h1>Transações</h1>
+
+      {/* Filtros e ações */}
+      <div className="transacoes-actions">
         <input
           type="text"
-          placeholder="Buscar por descrição, pessoa ou tags..."
+          placeholder="Buscar transações..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
         >
-          <option value="todos">Todos</option>
-          <option value="gasto">Gasto</option>
-          <option value="recebivel">Recebível</option>
+          <option value="todos">Todos os tipos</option>
+          <option value="gasto">Gastos</option>
+          <option value="recebivel">Recebíveis</option>
         </select>
+
         <select
           value={orderOption}
           onChange={(e) => setOrderOption(e.target.value)}
@@ -202,7 +206,11 @@ const Transacoes = () => {
           <option value="valor-crescente">Valor total crescente</option>
           <option value="valor-decrescente">Valor total decrescente</option>
         </select>
-        <button onClick={handleCreate}>+ Nova Transação</button>
+        
+        <div className="button-group">
+          <button onClick={handleCreate}>+ Nova Transação</button>
+          <Link to="/importacao-em-massa" className="btn btn-importar">Importar em Massa</Link>
+        </div>
       </div>
 
       {/* Lista de Transações */}

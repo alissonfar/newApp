@@ -71,10 +71,10 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
       </div>
 
       <div className="card-actions">
-        <button className="action-btn edit-btn" onClick={() => onEdit(transacao)}>
+        <button className="btn-action edit-btn" onClick={() => onEdit(transacao)}>
           <FaEdit /> Editar
         </button>
-        <button className="action-btn delete-btn" onClick={() => onDelete(transacao.id)}>
+        <button className="btn-action delete-btn" onClick={() => onDelete(transacao.id)}>
           <FaTrash /> Excluir
         </button>
       </div>

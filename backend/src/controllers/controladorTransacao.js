@@ -84,3 +84,52 @@ exports.excluirTransacao = async (req, res) => {
     res.status(500).json({ erro: 'Erro ao excluir transação.', detalhe: error.message });
   }
 };
+
+exports.registrarTransacoesEmMassa = async (req, res) => {
+  const { transacoes } = req.body;
+  
+  if (!transacoes || !Array.isArray(transacoes) || transacoes.length === 0) {
+    return res.status(400).json({ erro: 'O formato do payload está incorreto. É necessário enviar um array de transações.' });
+  }
+
+  try {
+    const transacoesComUsuario = transacoes.map(transacao => ({
+      ...transacao,
+      usuario: req.userId,
+      dataImportacao: transacao.dataImportacao || new Date()
+    }));
+
+    // Validação básica dos dados
+    for (let i = 0; i < transacoesComUsuario.length; i++) {
+      const t = transacoesComUsuario[i];
+      if (!t.tipo || !t.descricao || !t.valor || !t.data || !t.pagamentos) {
+        return res.status(400).json({ 
+          erro: 'Campos obrigatórios ausentes na transação ' + (i + 1),
+          transacao: t
+        });
+      }
+      
+      // Verificar se o tipo é válido
+      if (!['gasto', 'recebivel'].includes(t.tipo)) {
+        return res.status(400).json({ 
+          erro: 'Tipo de transação inválido na transação ' + (i + 1) + '. Valores permitidos: gasto, recebivel',
+          transacao: t
+        });
+      }
+    }
+
+    // Criar todas as transações
+    const transacoesSalvas = await Transacao.insertMany(transacoesComUsuario);
+    
+    res.status(201).json({ 
+      mensagem: `${transacoesSalvas.length} transações registradas com sucesso.`,
+      transacoes: transacoesSalvas
+    });
+  } catch (error) {
+    console.error('Erro ao registrar transações em massa:', error);
+    res.status(500).json({ 
+      erro: 'Erro ao registrar transações em massa.', 
+      detalhe: error.message 
+    });
+  }
+};
