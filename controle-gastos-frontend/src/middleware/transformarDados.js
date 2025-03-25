@@ -33,32 +33,38 @@ export const processarDados = (dados, formato, usuario) => {
  * @param {Object} usuario - Informações do usuário
  * @returns {Array} Transações no formato padrão
  */
-const processarCSV = (linhas, usuario) => {
-  // A primeira linha é considerada como cabeçalho
-  const cabecalho = linhas[0];
-  const dados = linhas.slice(1);
+const processarCSV = (dados, usuario) => {
+  // Remove o cabeçalho e linhas vazias
+  const linhas = dados.filter(linha => linha.length >= 4 && linha[0] !== 'Data');
   
-  return dados.map((linha, index) => {
-    // Mapeia os campos do CSV para o formato padrão
-    const transacao = {
-      tipo: detectarTipo(linha[cabecalho.indexOf('valor') || 0]),
-      descricao: linha[cabecalho.indexOf('descricao') || 0] || `Transação #${index + 1}`,
-      valor: Math.abs(parseFloat(linha[cabecalho.indexOf('valor') || 0] || 0)),
-      data: normalizarData(linha[cabecalho.indexOf('data') || 0]),
-      observacao: linha[cabecalho.indexOf('observacao') || 0] || '',
+  return linhas.map((linha, index) => {
+    // Extrai os dados do CSV
+    const [data, valorStr, identificador, descricao] = linha;
+    
+    // Processa o valor (remove o sinal de negativo se houver)
+    const valor = Math.abs(parseFloat(valorStr || 0));
+    
+    // Detecta o tipo baseado no valor original (gastos são negativos no Nubank)
+    const tipo = parseFloat(valorStr) < 0 ? 'gasto' : 'recebivel';
+    
+    // Transforma CSV em formato padrão
+    return {
+      tipo: tipo,
+      descricao: descricao || `Transação #${index + 1}`,
+      valor: valor,
+      data: normalizarData(data), // Converte do formato DD/MM/YYYY para YYYY-MM-DD
+      observacao: `Importado do Nubank - ID: ${identificador}`,
       pagamentos: [
         {
-          pessoa: linha[cabecalho.indexOf('pessoa') || 0] || usuario.nome || 'Não especificado',
-          valor: Math.abs(parseFloat(linha[cabecalho.indexOf('valor') || 0] || 0)),
-          tags: processarTags(linha[cabecalho.indexOf('tags') || 0] || '')
+          pessoa: usuario.nome || 'Não especificado',
+          valor: valor,
+          tags: {} // Tags vazias por padrão, podem ser adicionadas na edição
         }
       ],
-      identificador: linha[cabecalho.indexOf('identificador') || 0] || `import-${Date.now()}-${index}`,
+      identificador: identificador || `import-${Date.now()}-${index}`,
       dataImportacao: new Date().toISOString(),
       usuario: usuario.id
     };
-    
-    return transacao;
   });
 };
 
@@ -145,19 +151,25 @@ const detectarTipo = (valor) => {
  * @returns {String} Data no formato ISO 8601
  */
 const normalizarData = (data) => {
-  if (!data) {
-    return new Date().toISOString();
+  if (!data) return new Date().toISOString().split('T')[0];
+  
+  // Verifica se a data está no formato DD/MM/YYYY
+  if (data.includes('/')) {
+    const [dia, mes, ano] = data.split('/');
+    return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
   }
   
+  // Se já estiver no formato YYYY-MM-DD, retorna como está
+  if (data.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return data;
+  }
+  
+  // Para outros formatos, tenta converter ou retorna a data atual
   try {
-    // Tenta converter para objeto Date
     const dataObj = new Date(data);
-    if (isNaN(dataObj.getTime())) {
-      return new Date().toISOString();
-    }
-    return dataObj.toISOString();
-  } catch (error) {
-    return new Date().toISOString();
+    return dataObj.toISOString().split('T')[0];
+  } catch {
+    return new Date().toISOString().split('T')[0];
   }
 };
 
