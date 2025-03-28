@@ -127,6 +127,12 @@ const Relatorio = () => {
     const categoriaId = typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria;
     const categoria = categorias.find(c => c._id === categoriaId);
     
+    console.log('[DEBUG Relatório] Processando tag:', {
+      tagNome: tag.nome,
+      categoriaId,
+      categoriaEncontrada: categoria?.nome
+    });
+    
     if (categoria) {
       if (!acc[categoria._id]) {
         acc[categoria._id] = {
@@ -192,6 +198,7 @@ const Relatorio = () => {
   // 2) Função principal de FILTRO + BUSCA + ORDENAÇÃO
   const applyFilters = () => {
     let result = [...allPayments];
+    console.log('[DEBUG Relatório] Iniciando filtragem com', result.length, 'registros');
 
     // Filtro por data (pai)
     if (dataInicio) {
@@ -219,25 +226,63 @@ const Relatorio = () => {
 
     // Filtro por tags (pagamento)
     Object.entries(tagFilters).forEach(([categoriaId, selectedTags]) => {
+      console.log('[DEBUG Relatório] Aplicando filtro de tags:', {
+        categoriaId,
+        selectedTags,
+        registrosAntes: result.length
+      });
+
       if (selectedTags && selectedTags.length > 0) {
         result = result.filter(row => {
           // Converte as tags antigas (que usam nome) para o novo formato
           const pagTags = {};
-          Object.entries(row.tagsPagamento || {}).forEach(([catName, tagNames]) => {
+          Object.entries(row.tagsPagamento || {}).forEach(([catName, tagIds]) => {
+            console.log('[DEBUG Relatório] Analisando tags do pagamento:', {
+              catName,
+              tagIds,
+              rowId: row.id
+            });
+
             // Procura a categoria pelo nome ou ID
             const categoria = categorias.find(c => 
               c.nome === catName || c._id === catName
             );
+
             if (categoria) {
-              pagTags[categoria._id] = tagNames;
+              // Garante que tagIds seja sempre um array de IDs
+              const normalizedTagIds = tagIds.map(tagId => {
+                // Se for um nome de tag, encontra o ID correspondente
+                if (typeof tagId === 'string' && !tagId.match(/^[0-9a-fA-F]{24}$/)) {
+                  const tag = tags.find(t => t.nome === tagId);
+                  return tag ? tag._id : tagId;
+                }
+                return tagId;
+              });
+              
+              pagTags[categoria._id] = normalizedTagIds;
             }
           });
 
           // Verifica se as tags selecionadas estão presentes
           const pagTagsForCategory = pagTags[categoriaId] || [];
-          return selectedTags.some(selectedTag => 
-            pagTagsForCategory.includes(selectedTag)
+          
+          console.log('[DEBUG Relatório] Comparando tags:', {
+            categoriaId,
+            tagsSelecionadas: selectedTags,
+            tagsNoPagamento: pagTagsForCategory,
+            match: selectedTags.some(selectedTagId => 
+              pagTagsForCategory.includes(selectedTagId)
+            )
+          });
+
+          return selectedTags.some(selectedTagId => 
+            pagTagsForCategory.includes(selectedTagId)
           );
+        });
+
+        console.log('[DEBUG Relatório] Após filtro de tags:', {
+          categoriaId,
+          registrosDepois: result.length
         });
       }
     });
@@ -284,6 +329,7 @@ const Relatorio = () => {
     }
 
     setFilteredRows(result);
+    console.log('[DEBUG Relatório] Resultado final:', result.length, 'registros');
   };
 
   // 3) Recalcula o sumário quando filteredRows muda
@@ -513,15 +559,18 @@ const Relatorio = () => {
                   <Select
                     isMulti
                     options={tags.map(tag => ({
-                      value: tag.nome,
+                      value: tag._id,  // Usando ID da tag em vez do nome
                       label: tag.nome,
                       cor: tag.cor,
                       icone: tag.icone
                     }))}
-                    value={(tagFilters[categoriaId] || []).map(tag => ({ 
-                      value: tag, 
-                      label: tag 
-                    }))}
+                    value={(tagFilters[categoriaId] || []).map(tagId => {
+                      const tag = tags.find(t => t._id === tagId);
+                      return tag ? {
+                        value: tag._id,
+                        label: tag.nome
+                      } : null;
+                    }).filter(Boolean)}
                     onChange={(selectedOptions) => {
                       const selected = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
                       setTagFilters(prev => ({ ...prev, [categoriaId]: selected }));
@@ -699,20 +748,43 @@ const Relatorio = () => {
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
                     <td>{row.tipo}</td>
                     <td>
-                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagNames], i) => {
+                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
                         const categoria = categorias.find(c => 
                           c._id === catId || c.nome === catId
                         );
                         if (!categoria) return null;
 
-                        return tagNames.map((tagName, j) => (
-                          <span 
-                            key={`pag-${i}-${j}`} 
-                            className="tag-chip relatorio-tag-chip pag-tag-chip"
-                          >
-                            {categoria.nome}: {tagName}
-                          </span>
-                        ));
+                        return tagIds.map((tagId, j) => {
+                          // Encontra a tag pelo ID ou nome
+                          const tag = tags.find(t => 
+                            t._id === tagId || t.nome === tagId
+                          );
+                          
+                          if (!tag) return null;
+
+                          return (
+                            <span 
+                              key={`${row.id}-${i}-${j}`} 
+                              className="tag-chip"
+                              style={{
+                                backgroundColor: `${tag.cor}20`,
+                                color: tag.cor,
+                                border: `1px solid ${tag.cor}`,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '0.85rem',
+                                margin: '2px',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              <i className={`fas fa-${tag.icone || 'tag'}`} />
+                              {`${categoria.nome}: ${tag.nome}`}
+                            </span>
+                          );
+                        });
                       })}
                     </td>
                   </tr>

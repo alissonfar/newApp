@@ -16,8 +16,6 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
           obterCategorias(),
           obterTags()
         ]);
-        console.log('[DEBUG Card] Categorias carregadas:', categoriasData);
-        console.log('[DEBUG Card] Tags carregadas:', tagsData);
         setCategorias(categoriasData);
         setTags(tagsData);
       } catch (error) {
@@ -29,9 +27,7 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
 
   // Função para converter IDs em nomes
   const getTagInfo = (tagId) => {
-    console.log('[DEBUG Card] Buscando info da tag:', tagId);
     const tag = tags.find(t => t._id === tagId);
-    console.log('[DEBUG Card] Tag encontrada:', tag);
     
     if (!tag) return null;
     
@@ -46,8 +42,6 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
     if (!categoria && typeof tag.categoria === 'object' && tag.categoria._id) {
       categoria = categorias.find(c => c._id === tag.categoria._id);
     }
-
-    console.log('[DEBUG Card] Categoria encontrada para tag:', categoria);
 
     return {
       tagNome: tag.nome,
@@ -99,7 +93,6 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
         {transacao.pagamentos && transacao.pagamentos.length > 0 && (
           <div className="payments-container">
             {transacao.pagamentos.map((pg, idx) => {
-              console.log('[DEBUG Card] Processando pagamento:', pg);
               return (
                 <div key={idx} className="payment-item">
                   <div className="payment-header">
@@ -113,10 +106,8 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
                   <div className="payment-tags">
                     {pg.tags && Object.entries(pg.tags).length > 0 ? (
                       Object.entries(pg.tags).map(([categoriaId, tagIds]) => {
-                        console.log('[DEBUG Card] Processando tags da categoria:', categoriaId, tagIds);
                         return tagIds.map((tagId) => {
                           const tagInfo = getTagInfo(tagId);
-                          console.log('[DEBUG Card] Info da tag processada:', tagInfo);
                           if (!tagInfo) return null;
                           
                           return (

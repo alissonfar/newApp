@@ -216,37 +216,57 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  overflow: hidden;
 }
 
-.relatorio-table thead {
-  background: linear-gradient(45deg, #2196F3 30%, #21CBF3 90%);
-  color: white;
+.relatorio-table th,
+.relatorio-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
 }
 
 .relatorio-table th {
-  padding: 12px 15px;
-  text-align: left;
-  font-weight: bold;
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
 }
 
-.relatorio-table tbody tr {
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.3s;
+.relatorio-table tr:hover {
+  background-color: #f8f9fa;
 }
 
-.relatorio-table tbody tr:hover {
-  background-color: #f9f9f9;
+/* Ajustes específicos para a coluna de tags */
+.relatorio-table td:last-child {
+  max-width: 300px;
+  white-space: normal;
+  line-height: 1.8;
 }
 
-.relatorio-table td {
-  padding: 12px 15px;
+/* Espaçamento entre as tags */
+.relatorio-table .tag-chip {
+  margin: 2px 4px;
+  display: inline-flex;
 }
 
-.relatorio-table tbody tr:nth-child(even) {
-  background-color: #f7f7f7;
+/* Garantir que os ícones das tags fiquem alinhados */
+.relatorio-table .tag-chip i {
+  font-size: 0.9em;
+  margin-right: 4px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  .relatorio-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .relatorio-table td:last-child {
+    min-width: 200px;
+  }
 }
 
 /* Chips de tags */
