@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';                     // Import SweetAlert2 para confirmações
 import { toast } from 'react-toastify';             // Import Toastify para mensagens
 import { obterTransacoes, excluirTransacao } from '../../api';
-import TransactionCardTransacoes from '../../components/Transaction/TransactionCardTransacoes';
+import TransactionCard from '../../components/Transaction/TransactionCard';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import './Transacoes.css';
@@ -217,7 +217,7 @@ const Transacoes = () => {
       <div className="transacoes-list">
         {filteredTransacoes.length > 0 ? (
           filteredTransacoes.map((tr) => (
-            <TransactionCardTransacoes
+            <TransactionCard
               key={tr.id}
               transacao={tr}
               onEdit={handleEdit}

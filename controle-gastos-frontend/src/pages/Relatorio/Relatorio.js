@@ -93,11 +93,9 @@ const Relatorio = () => {
         // Carrega categorias e tags
         const cats = await obterCategorias();
         setCategorias(cats);
-        
-        // Inicializa os filtros de tag usando IDs de categoria
         const initTagFilters = {};
         cats.forEach(cat => {
-          initTagFilters[cat._id] = [];
+          initTagFilters[cat.nome] = [];
         });
         setTagFilters(initTagFilters);
 
@@ -222,24 +220,24 @@ const Relatorio = () => {
     // Filtro por tags (pagamento)
     Object.entries(tagFilters).forEach(([categoriaId, selectedTags]) => {
       if (selectedTags && selectedTags.length > 0) {
-        console.log('Filtrando por categoria:', categoriaId, 'tags:', selectedTags); // [DEBUG]
-        
         result = result.filter(row => {
-          // Obtém as tags da categoria atual
-          const pagTagsForCategory = row.tagsPagamento[categoriaId] || [];
-          console.log('Tags do pagamento:', pagTagsForCategory); // [DEBUG]
-
-          // Verifica se alguma das tags selecionadas está presente
-          const hasSelectedTag = selectedTags.some(selectedTagNome => {
-            // Encontra a tag pelo nome para obter seu ID
-            const tag = tags.find(t => t.nome === selectedTagNome);
-            if (!tag) return false;
-            
-            return pagTagsForCategory.includes(tag._id);
+          // Converte as tags antigas (que usam nome) para o novo formato
+          const pagTags = {};
+          Object.entries(row.tagsPagamento || {}).forEach(([catName, tagNames]) => {
+            // Procura a categoria pelo nome ou ID
+            const categoria = categorias.find(c => 
+              c.nome === catName || c._id === catName
+            );
+            if (categoria) {
+              pagTags[categoria._id] = tagNames;
+            }
           });
 
-          console.log('Tem tag selecionada?', hasSelectedTag); // [DEBUG]
-          return hasSelectedTag;
+          // Verifica se as tags selecionadas estão presentes
+          const pagTagsForCategory = pagTags[categoriaId] || [];
+          return selectedTags.some(selectedTag => 
+            pagTagsForCategory.includes(selectedTag)
+          );
         });
       }
     });
@@ -388,7 +386,7 @@ const Relatorio = () => {
     // Resetar tags
     const resetTagFilters = {};
     categorias.forEach(cat => {
-      resetTagFilters[cat._id] = [];
+      resetTagFilters[cat.nome] = [];
     });
     setTagFilters(resetTagFilters);
 
@@ -515,14 +513,14 @@ const Relatorio = () => {
                   <Select
                     isMulti
                     options={tags.map(tag => ({
-                      value: tag.nome,  // Usamos o nome para seleção
+                      value: tag.nome,
                       label: tag.nome,
                       cor: tag.cor,
                       icone: tag.icone
                     }))}
-                    value={(tagFilters[categoriaId] || []).map(tagNome => ({ 
-                      value: tagNome, 
-                      label: tagNome 
+                    value={(tagFilters[categoriaId] || []).map(tag => ({ 
+                      value: tag, 
+                      label: tag 
                     }))}
                     onChange={(selectedOptions) => {
                       const selected = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
@@ -701,23 +699,20 @@ const Relatorio = () => {
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
                     <td>{row.tipo}</td>
                     <td>
-                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
-                        const categoria = categorias.find(c => c._id === catId);
+                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagNames], i) => {
+                        const categoria = categorias.find(c => 
+                          c._id === catId || c.nome === catId
+                        );
                         if (!categoria) return null;
 
-                        return tagIds.map((tagId, j) => {
-                          const tag = tags.find(t => t._id === tagId);
-                          if (!tag) return null;
-
-                          return (
-                            <span 
-                              key={`pag-${i}-${j}`} 
-                              className="tag-chip relatorio-tag-chip pag-tag-chip"
-                            >
-                              {categoria.nome}: {tag.nome}
-                            </span>
-                          );
-                        });
+                        return tagNames.map((tagName, j) => (
+                          <span 
+                            key={`pag-${i}-${j}`} 
+                            className="tag-chip relatorio-tag-chip pag-tag-chip"
+                          >
+                            {categoria.nome}: {tagName}
+                          </span>
+                        ));
                       })}
                     </td>
                   </tr>

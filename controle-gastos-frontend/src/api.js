@@ -86,54 +86,38 @@ export async function obterTags() {
   // Mapeia _id para codigo para manter compatibilidade
   return dados.map(tag => ({
     ...tag,
-    codigo: tag._id,
-    // Garante que a categoria seja sempre o ID
-    categoria: typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria
+    codigo: tag._id
   }));
 }
 
 export async function criarTag(tag) {
-  // Garante que a categoria seja enviada como ID
-  const tagData = {
-    ...tag,
-    categoria: typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria
-  };
-
   const resposta = await fetch(`${API_BASE}/tags`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify(tagData)
+    body: JSON.stringify(tag)
   });
   const dados = await resposta.json();
   // Mapeia _id para codigo para manter compatibilidade
   return {
     ...dados,
-    codigo: dados._id,
-    // Garante que a categoria seja sempre o ID
-    categoria: typeof dados.categoria === 'object' ? dados.categoria._id : dados.categoria
+    codigo: dados._id
   };
 }
 
 export async function atualizarTag(codigo, tag) {
-  // Garante que a categoria seja enviada como ID
-  const tagData = {
-    ...tag,
-    _id: codigo,
-    categoria: typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria
-  };
-
   const resposta = await fetch(`${API_BASE}/tags/${codigo}`, {
     method: 'PUT',
     headers: getHeaders(),
-    body: JSON.stringify(tagData)
+    body: JSON.stringify({
+      ...tag,
+      _id: codigo // Adiciona o _id no corpo da requisição
+    })
   });
   const dados = await resposta.json();
   // Mapeia _id para codigo para manter compatibilidade
   return {
     ...dados,
-    codigo: dados._id,
-    // Garante que a categoria seja sempre o ID
-    categoria: typeof dados.categoria === 'object' ? dados.categoria._id : dados.categoria
+    codigo: dados._id
   };
 }
 

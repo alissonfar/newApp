@@ -1,7 +1,7 @@
-// src/components/Transaction/TransactionCardTransacoes.js
+// src/components/Transaction/TransactionCard.js
 import React, { useEffect, useState } from 'react';
 import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
-import './TransactionCardTransacoes.css';
+import './TransactionCard.css';
 import { obterCategorias, obterTags } from '../../api';
 
 const TransactionCard = ({ transacao, onEdit, onDelete }) => {
@@ -16,6 +16,8 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
           obterCategorias(),
           obterTags()
         ]);
+        console.log('[DEBUG Card] Categorias carregadas:', categoriasData);
+        console.log('[DEBUG Card] Tags carregadas:', tagsData);
         setCategorias(categoriasData);
         setTags(tagsData);
       } catch (error) {
@@ -27,28 +29,31 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
 
   // Função para converter IDs em nomes
   const getTagInfo = (tagId) => {
-    console.log('Buscando info para tagId:', tagId); // [DEBUG]
+    console.log('[DEBUG Card] Buscando info da tag:', tagId);
     const tag = tags.find(t => t._id === tagId);
-    if (!tag) {
-      console.log('Tag não encontrada:', tagId); // [DEBUG]
-      return null;
-    }
+    console.log('[DEBUG Card] Tag encontrada:', tag);
+    
+    if (!tag) return null;
     
     // Tenta encontrar a categoria primeiro pelo ID, depois pelo nome
     let categoria = categorias.find(c => c._id === tag.categoria);
-    if (!categoria && typeof tag.categoria === 'object') {
-      categoria = categorias.find(c => c._id === tag.categoria._id);
-    }
     if (!categoria) {
+      // Se não encontrou pelo ID, tenta pelo nome (compatibilidade)
       categoria = categorias.find(c => c.nome === tag.categoria);
     }
 
-    console.log('Tag encontrada:', tag.nome, 'Categoria:', categoria?.nome); // [DEBUG]
+    // Se ainda não encontrou, verifica se o próprio campo categoria é um objeto
+    if (!categoria && typeof tag.categoria === 'object' && tag.categoria._id) {
+      categoria = categorias.find(c => c._id === tag.categoria._id);
+    }
+
+    console.log('[DEBUG Card] Categoria encontrada para tag:', categoria);
 
     return {
       tagNome: tag.nome,
       categoriaNome: categoria ? categoria.nome : 'Categoria não encontrada',
-      cor: tag.cor || categoria?.cor || '#000000'
+      cor: tag.cor || categoria?.cor || '#000000',
+      icone: tag.icone || categoria?.icone || 'tag'
     };
   };
 
@@ -61,62 +66,85 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
     );
 
   return (
-    <div className="transaction-card-transacoes">
+    <div className="transaction-card">
       <div className="card-header">
-        <h3 className="card-title">{transacao.descricao}</h3>
-        <div className="card-header-icon">{tipoIcon}</div>
-      </div>
-      <hr className="divider" />
-      <div className="card-info">
-        <div className="info-date">
-          {new Date(transacao.data).toLocaleDateString('pt-BR')}
-        </div>
-        <div className="info-value">
-          R${parseFloat(transacao.valor).toFixed(2)}
-          <span className="badge">
-            {transacao.tipo === 'gasto' ? 'Gasto' : 'Recebível'}
+        <div className="card-title">
+          <span className={`tipo-badge ${transacao.tipo}`}>
+            {transacao.tipo === 'gasto' ? (
+              <><FaArrowDown /> Gasto</>
+            ) : (
+              <><FaArrowUp /> Recebível</>
+            )}
           </span>
+          <h3>{transacao.descricao}</h3>
+        </div>
+        <div className="card-value">
+          R$ {parseFloat(transacao.valor).toFixed(2)}
         </div>
       </div>
 
-      {/* Exibe cada pagamento, incluindo as tags associadas */}
-      {transacao.pagamentos && transacao.pagamentos.length > 0 && (
-        <div className="card-payments">
-          {transacao.pagamentos.map((pg, idx) => (
-            <div key={idx} className="payment-line">
-              <div className="payment-info">
-                <strong>{pg.pessoa}:</strong> R${parseFloat(pg.valor).toFixed(2)}
-              </div>
-              <div className="payment-tags">
-                {pg.tags && Object.entries(pg.tags).length > 0 ? (
-                  Object.entries(pg.tags).map(([categoriaId, tagIds]) => {
-                    console.log('Tags para categoria:', categoriaId, tagIds); // [DEBUG]
-                    return tagIds.map((tagId) => {
-                      const tagInfo = getTagInfo(tagId);
-                      if (!tagInfo) return null;
-                      
-                      return (
-                        <span
-                          key={`${categoriaId}-${tagId}`}
-                          className="tag-chip"
-                          style={{
-                            backgroundColor: `${tagInfo.cor}20`,
-                            color: tagInfo.cor
-                          }}
-                        >
-                          {tagInfo.categoriaNome}: {tagInfo.tagNome}
-                        </span>
-                      );
-                    });
-                  })
-                ) : (
-                  <span className="no-tags">Sem tags</span>
-                )}
-              </div>
-            </div>
-          ))}
+      <div className="card-details">
+        <div className="transaction-info">
+          <span className="date">
+            {new Date(transacao.data).toLocaleDateString()}
+          </span>
+          {transacao.observacao && (
+            <span className="observation">
+              {transacao.observacao}
+            </span>
+          )}
         </div>
-      )}
+
+        {/* Exibe cada pagamento, incluindo as tags associadas */}
+        {transacao.pagamentos && transacao.pagamentos.length > 0 && (
+          <div className="payments-container">
+            {transacao.pagamentos.map((pg, idx) => {
+              console.log('[DEBUG Card] Processando pagamento:', pg);
+              return (
+                <div key={idx} className="payment-item">
+                  <div className="payment-header">
+                    <span className="person">
+                      {pg.pessoa}
+                    </span>
+                    <span className="value">
+                      R$ {parseFloat(pg.valor).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="payment-tags">
+                    {pg.tags && Object.entries(pg.tags).length > 0 ? (
+                      Object.entries(pg.tags).map(([categoriaId, tagIds]) => {
+                        console.log('[DEBUG Card] Processando tags da categoria:', categoriaId, tagIds);
+                        return tagIds.map((tagId) => {
+                          const tagInfo = getTagInfo(tagId);
+                          console.log('[DEBUG Card] Info da tag processada:', tagInfo);
+                          if (!tagInfo) return null;
+                          
+                          return (
+                            <span
+                              key={`${categoriaId}-${tagId}`}
+                              className="tag-chip"
+                              style={{
+                                backgroundColor: `${tagInfo.cor}20`,
+                                color: tagInfo.cor,
+                                border: `1px solid ${tagInfo.cor}`
+                              }}
+                            >
+                              <i className={`fas fa-${tagInfo.icone}`} />
+                              {tagInfo.categoriaNome}: {tagInfo.tagNome}
+                            </span>
+                          );
+                        });
+                      })
+                    ) : (
+                      <span className="no-tags">Sem tags</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <div className="card-actions">
         <button className="action-btn edit-btn" onClick={() => onEdit(transacao)}>

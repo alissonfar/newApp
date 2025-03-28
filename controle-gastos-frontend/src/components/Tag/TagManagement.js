@@ -80,35 +80,28 @@ const TagManagement = () => {
   // Filtra as tags com base na categoria selecionada
   const filteredTags = selectedCategory
     ? tags.filter(tag => {
-        // Verifica se a tag tem categoria
-        if (!tag.categoria) return false;
-
-        // Se a categoria for um objeto, compara o _id
-        if (typeof tag.categoria === 'object' && tag.categoria !== null) {
-          return tag.categoria._id === selectedCategory._id;
+        // Verifica se a tag.categoria é um ID ou nome
+        if (typeof tag.categoria === 'string') {
+          // Se for string, pode ser ID ou nome
+          return tag.categoria === selectedCategory._id || tag.categoria === selectedCategory.nome;
         }
-
-        // Se a categoria for uma string (ID), compara diretamente
-        return tag.categoria === selectedCategory._id;
+        // Se for objeto, compara o _id
+        return tag.categoria._id === selectedCategory._id;
       })
     : [];
 
   // [LOGS] Adicionais para entender o que está acontecendo
   useEffect(() => {
     console.log('selectedCategory =>', selectedCategory);
-    console.log('tags =>', tags);
     console.log('filteredTags =>', filteredTags);
-  }, [selectedCategory, tags, filteredTags]);
+  }, [selectedCategory, filteredTags]);
 
   // Função para verificar se o nome da tag já existe
   const nomeTagDuplicado = (nome, categoria, codigo = null) => {
     return tags.some(
       (tag) =>
         tag.nome.toLowerCase() === nome.toLowerCase() &&
-        (
-          (typeof tag.categoria === 'object' && tag.categoria?._id === categoria._id) ||
-          tag.categoria === categoria._id
-        ) &&
+        tag.categoria === categoria &&
         tag.codigo !== codigo
     );
   };
@@ -122,7 +115,7 @@ const TagManagement = () => {
       toast.warn('O nome da tag é obrigatório.');
       return;
     }
-    if (nomeTagDuplicado(novoTagNome, selectedCategory)) {
+    if (nomeTagDuplicado(novoTagNome, selectedCategory.nome)) {
       toast.warn('Essa tag já existe nesta categoria.');
       return;
     }
@@ -130,7 +123,7 @@ const TagManagement = () => {
       await criarTag({
         nome: novoTagNome.trim(),
         descricao: novoTagDescricao.trim(),
-        categoria: selectedCategory._id, // Envia o ID da categoria
+        categoria: selectedCategory._id,
         cor: novoTagCor,
         icone: novoTagIcone
       });
@@ -155,10 +148,6 @@ const TagManagement = () => {
   };
 
   const handleSalvarEdicaoTag = async () => {
-    if (!selectedCategory) {
-      toast.warn('Selecione uma categoria primeiro.');
-      return;
-    }
     if (!editTagNome.trim()) {
       toast.warn('O nome da tag é obrigatório.');
       return;
@@ -167,7 +156,7 @@ const TagManagement = () => {
       await atualizarTag(editTagCodigo, {
         nome: editTagNome.trim(),
         descricao: editTagDescricao.trim(),
-        categoria: selectedCategory._id, // Envia o ID da categoria
+        categoria: selectedCategory._id,
         cor: editTagCor,
         icone: editTagIcone
       });

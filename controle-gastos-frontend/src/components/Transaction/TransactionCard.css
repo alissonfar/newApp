@@ -2,153 +2,212 @@
 .transaction-card {
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 16px;
-  position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
   margin-bottom: 16px;
+  transition: box-shadow 0.2s;
 }
 
 .transaction-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  margin-bottom: 16px;
 }
 
 .card-title {
-  font-size: 1.2rem;
-  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-title h3 {
   margin: 0;
+  font-size: 1.1rem;
   color: #333;
 }
 
-.card-header-icon {
+.tipo-badge {
   display: flex;
   align-items: center;
-  font-size: 1.2rem;
-}
-
-.tipo-icon {
-  margin-left: 8px;
-}
-
-.tipo-icon.gasto {
-  color: #d9534f;
-}
-
-.tipo-icon.recebivel {
-  color: #5cb85c;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid #e0e0e0;
-  margin: 8px 0;
-}
-
-.card-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.95rem;
-  color: #555;
-  margin-bottom: 8px;
-}
-
-.info-date {
-  flex: 1;
-}
-
-.info-value {
-  flex: 1;
-  text-align: right;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #333;
-}
-
-.badge {
-  background-color: #f0ad4e;
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  margin-left: 8px;
-}
-
-.card-details {
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
   font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 8px;
+  font-weight: 500;
 }
 
-.tag-info {
+.tipo-badge.gasto {
+  background-color: #ff5c5c20;
+  color: #ff5c5c;
+}
+
+.tipo-badge.recebivel {
+  background-color: #4caf5020;
+  color: #4caf50;
+}
+
+.card-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.transaction-info {
   display: flex;
-  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.transaction-info span {
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 
-.tag-chip {
-  background-color: #007ACC;
-  color: #fff;
-  padding: 3px 8px;
-  border-radius: 12px;
-  margin-right: 4px;
-  font-size: 0.8rem;
+.payments-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.card-actions {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
+.payment-item {
+  background-color: #f8f8f8;
+  border-radius: 6px;
+  padding: 12px;
 }
 
-.view-btn {
-  background-color: var(--cor-primaria);
-  color: var(--cor-branca);
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s;
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-.view-btn:hover {
-  background-color: var(--cor-secundaria);
+.payment-header .person {
+  color: #333;
+  font-weight: 500;
 }
 
-.card-payments {
-  margin-top: 10px;
-}
-
-.payment-line {
-  border-top: 1px dashed #ccc;
-  padding-top: 6px;
-  margin-top: 6px;
-}
-
-.payment-info {
-  font-size: 0.9rem;
-  margin-bottom: 4px;
+.payment-header .value {
+  color: #666;
 }
 
 .payment-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 8px;
 }
 
 .tag-chip {
-  background-color: #007acc;
-  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 8px;
   border-radius: 12px;
-  font-size: 0.8rem;
-  display: inline-block;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.tag-chip i {
+  font-size: 0.9em;
+}
+
+.tag-chip:hover {
+  filter: brightness(0.95);
+}
+
+.no-tags {
+  color: #999;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.action-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.edit-btn {
+  background-color: var(--cor-primaria) !important;
+  color: #FFFFFF !important;
+  border: 1px solid var(--cor-primaria) !important;
+}
+
+.edit-btn:hover {
+  background-color: var(--cor-primaria-escura) !important;
+  border-color: var(--cor-primaria-escura) !important;
+}
+
+.delete-btn {
+  background-color: var(--cor-erro) !important;
+  color: #FFFFFF !important;
+  border: 1px solid var(--cor-erro) !important;
+}
+
+.delete-btn:hover {
+  background-color: var(--cor-erro-escura) !important;
+  border-color: var(--cor-erro-escura) !important;
+}
+
+/* Garantir que os ícones dentro dos botões também sejam visíveis */
+.action-btn svg {
+  color: #FFFFFF !important;
+  fill: currentColor !important;
+}
+
+@media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .card-value {
+    align-self: flex-end;
+  }
+  
+  .transaction-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .payment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .card-actions {
+    flex-direction: row;
+  }
+  
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }

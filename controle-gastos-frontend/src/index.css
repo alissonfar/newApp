@@ -1,4 +1,25 @@
 /* src/index.css */
+:root {
+  --fonte-principal: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  --cor-primaria: #007bff;
+  --cor-primaria-escura: #0056b3;
+  --cor-secundaria: #6c757d;
+  --cor-secundaria-escura: #545b62;
+  --cor-sucesso: #28a745;
+  --cor-sucesso-escura: #218838;
+  --cor-erro: #dc3545;
+  --cor-erro-escura: #c82333;
+  --cor-aviso: #ffc107;
+  --cor-aviso-escura: #e0a800;
+  --cor-info: #17a2b8;
+  --cor-info-escura: #138496;
+  --cor-fundo: #f8f9fa;
+  --cor-texto: #212529;
+  --cor-borda: #dee2e6;
+}
+
 /* Pode manter o básico do create-react-app ou adicionar resets */
 * {
   box-sizing: border-box;

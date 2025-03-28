@@ -6,17 +6,12 @@ const TagSchema = new mongoose.Schema({
     required: true,
     unique: true,
     default: function() {
-      // Usa o ID da categoria ao invés do nome
-      return 'TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      return this.categoria + '_TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
     }
   },
   nome: { type: String, required: true },
   descricao: { type: String, default: '' },
-  categoria: { 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Categoria',
-    required: true 
-  },
+  categoria: { type: String, required: true },
   cor: { type: String, default: '#000000' },
   icone: { type: String, default: 'default-icon' },
   ativo: { type: Boolean, default: true },
@@ -39,14 +34,14 @@ TagSchema.set('toJSON', { virtuals: true });
 // Middleware pre-save para garantir que o código seja único
 TagSchema.pre('save', async function(next) {
   if (this.isNew || this.isModified('categoria')) {
-    this.codigo = 'TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    this.codigo = this.categoria + '_TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
     let codigoUnico = false;
     while (!codigoUnico) {
       const existente = await this.constructor.findOne({ codigo: this.codigo });
       if (!existente) {
         codigoUnico = true;
       } else {
-        this.codigo = 'TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        this.codigo = this.categoria + '_TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
       }
     }
   }

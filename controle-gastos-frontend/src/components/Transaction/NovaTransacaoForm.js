@@ -93,12 +93,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   useEffect(() => {
     async function fetchData() {
       try {
+        console.log('[DEBUG] Iniciando carregamento de categorias e tags');
         const cats = await obterCategorias();
-        console.log('Categorias carregadas:', cats); // [LOG]
+        console.log('[DEBUG] Categorias carregadas:', cats);
         setCategorias(cats);
         
         const tgs = await obterTags();
-        console.log('Tags carregadas:', tgs); // [LOG]
+        console.log('[DEBUG] Tags carregadas:', tgs);
         setAllTags(tgs);
       } catch (error) {
         console.error('Erro ao carregar categorias ou tags:', error);
@@ -114,158 +115,34 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   // Sempre que "transacao" mudar (modo edição), preenche os estados
   useEffect(() => {
     if (transacao) {
+      console.log('[DEBUG] Transação recebida para edição:', transacao);
       setTipo(transacao.tipo);
       setDescricao(transacao.descricao);
       setData(transacao.data.split('T')[0]);
       setValorTotal(String(transacao.valor));
+      setObservacao(transacao.observacao || '');
+      
       if (transacao.pagamentos && transacao.pagamentos.length > 0) {
-        // Converte as tags do formato antigo (nome) para o novo formato (_id)
-        setPagamentos(
-          transacao.pagamentos.map(p => {
-            const paymentTags = {};
-            // Converte as tags antigas (que usam nome da categoria) para usar _id da categoria
-            if (p.tags) {
-              Object.entries(p.tags).forEach(([categoriaNome, tagIds]) => {
-                const categoria = categorias.find(cat => cat.nome === categoriaNome);
-                if (categoria) {
-                  paymentTags[categoria._id] = tagIds;
-                }
-              });
-            }
-            return {
-              ...p,
-              paymentTags: paymentTags
-            };
-          })
-        );
+        console.log('[DEBUG] Pagamentos da transação:', transacao.pagamentos);
+        
+        const pagamentosProcessados = transacao.pagamentos.map(p => {
+          console.log('[DEBUG] Processando pagamento:', p);
+          console.log('[DEBUG] Tags do pagamento:', p.tags);
+          
+          return {
+            pessoa: p.pessoa,
+            valor: String(p.valor),
+            paymentTags: p.tags || {}
+          };
+        });
+        
+        console.log('[DEBUG] Pagamentos processados:', pagamentosProcessados);
+        setPagamentos(pagamentosProcessados);
       } else {
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
       }
     }
-  }, [transacao, proprietarioPadrao, categorias]);
-
-  // Estilo customizado para o React-Select
-  const customStyles = {
-    control: (provided) => ({
-      ...provided,
-      border: '1px solid rgba(44, 62, 80, 0.2)',
-      borderRadius: 'var(--borda-radius)',
-      minHeight: '38px',
-      boxShadow: 'none',
-      '&:hover': {
-        border: '1px solid var(--cor-primaria)'
-      }
-    }),
-    option: (provided, state) => ({
-      ...provided,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      color: state.data.cor || '#000',
-      backgroundColor: state.isSelected ? `${state.data.cor}20` : state.isFocused ? '#f0f0f0' : 'white',
-      '&:hover': {
-        backgroundColor: '#f0f0f0'
-      }
-    }),
-    multiValue: (provided, state) => ({
-      ...provided,
-      backgroundColor: `${state.data.cor}20`,
-      borderRadius: '12px',
-      padding: '2px 6px'
-    }),
-    multiValueLabel: (provided, state) => ({
-      ...provided,
-      color: state.data.cor,
-      fontSize: '0.9em'
-    }),
-    multiValueRemove: (provided, state) => ({
-      ...provided,
-      color: state.data.cor,
-      '&:hover': {
-        backgroundColor: `${state.data.cor}40`,
-        color: state.data.cor
-      }
-    })
-  };
-
-  // Função para formatar a opção no Select
-  const formatOptionLabel = ({ label, cor, icone }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <i className={`fas fa-${icone || 'tag'}`} style={{ color: cor || '#000' }}></i>
-      <span>{label}</span>
-    </div>
-  );
-
-  // Agrupa as tags por categoria usando o ID da categoria
-  const tagsByCategory = {};
-  allTags.forEach(tag => {
-    console.log('Processando tag:', tag); // [LOG]
-    // Usa o ID da categoria diretamente da tag
-    const categoriaId = tag.categoria;
-    if (categoriaId) {
-      if (!tagsByCategory[categoriaId]) {
-        tagsByCategory[categoriaId] = [];
-      }
-      tagsByCategory[categoriaId].push({
-        value: tag._id,
-        label: tag.nome,
-        cor: tag.cor,
-        icone: tag.icone,
-        categoria: categoriaId
-      });
-    }
-  });
-  console.log('Tags agrupadas por categoria:', tagsByCategory); // [LOG]
-
-  // Função para obter as tags selecionadas de um pagamento
-  const getSelectedTags = (paymentTags, categoriaId) => {
-    console.log('getSelectedTags - paymentTags:', paymentTags, 'categoriaId:', categoriaId); // [LOG]
-    if (!paymentTags || !paymentTags[categoriaId]) return [];
-    
-    const tagIds = paymentTags[categoriaId];
-    console.log('getSelectedTags - tagIds:', tagIds); // [LOG]
-    return tagIds.map(tagId => {
-      const tag = allTags.find(t => t._id === tagId);
-      console.log('getSelectedTags - tag encontrada:', tag); // [LOG]
-      if (!tag) return null;
-      return {
-        value: tag._id,
-        label: tag.nome,
-        cor: tag.cor,
-        icone: tag.icone,
-        categoria: tag.categoria
-      };
-    }).filter(Boolean);
-  };
-
-  // Inicializa os pagamentos após carregar categorias e tags
-  useEffect(() => {
-    if (categorias.length > 0 && allTags.length > 0 && transacao) {
-      const pagamentosIniciais = transacao.pagamentos.map(p => {
-        const paymentTags = {};
-        // Converte as tags antigas (que usam nome da categoria) para usar _id da categoria
-        if (p.tags) {
-          Object.entries(p.tags).forEach(([categoriaNome, tagIds]) => {
-            const categoria = categorias.find(cat => 
-              cat.nome === categoriaNome || cat._id === categoriaNome
-            );
-            if (categoria) {
-              paymentTags[categoria._id] = tagIds;
-            }
-          });
-        }
-        return {
-          pessoa: p.pessoa,
-          valor: p.valor,
-          paymentTags: paymentTags
-        };
-      });
-
-      setPagamentos(pagamentosIniciais);
-    } else if (!transacao) {
-      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
-    }
-  }, [transacao, categorias, allTags, proprietarioPadrao]);
+  }, [transacao, proprietarioPadrao]);
 
   // Manipulação dos pagamentos
   const handlePagamentoChange = (index, field, value) => {
@@ -275,12 +152,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   };
   
   const addPagamento = () => {
-    setPagamentos([...pagamentos, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
+    setPagamentos([...pagamentos, { pessoa: '', valor: '', paymentTags: {} }]);
   };
   
-  const removePagamento = (index) => {
-    const novosPagamentos = pagamentos.filter((_, i) => i !== index);
-    setPagamentos(novosPagamentos);
+  const removePagamento = () => {
+    if (pagamentos.length > 1) {
+      setPagamentos(pagamentos.slice(0, -1));
+    }
   };
   
   // Se houver apenas 1 pagamento, replica o valor total
@@ -348,9 +226,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       // ALT + R para remover último pagamento
       if (e.altKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
-        if (pagamentos.length > 1) { // Mantém pelo menos um pagamento
-          removePagamento(pagamentos.length - 1);
-        }
+        removePagamento();
       }
     };
 
@@ -569,7 +445,26 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                   <div className="tags-section">
                     <h4>Tags para Pagamento</h4>
                     {categorias.map((cat) => {
-                      console.log('Renderizando categoria:', cat, 'Tags disponíveis:', tagsByCategory[cat._id]); // [LOG]
+                      console.log('[DEBUG] Renderizando categoria:', cat.nome);
+                      console.log('[DEBUG] Tags disponíveis:', allTags.filter(t => t.categoria === cat._id));
+                      
+                      const options = allTags.filter(t => t.categoria === cat._id).map(t => ({
+                        value: t._id,
+                        label: t.nome,
+                        cor: t.cor,
+                        icone: t.icone
+                      }));
+                      const selectedValues = ((pag.paymentTags && pag.paymentTags[cat._id]) || []).map(tagId => {
+                        const tag = allTags.find(t => t._id === tagId);
+                        console.log('[DEBUG] Procurando tag:', tagId, 'Encontrada:', tag);
+                        return tag ? {
+                          value: tag._id,
+                          label: tag.nome,
+                          cor: tag.cor,
+                          icone: tag.icone
+                        } : null;
+                      }).filter(Boolean);
+
                       return (
                         <div key={cat._id} className="tag-category-group">
                           <label>
@@ -581,16 +476,56 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                           </label>
                           <Select
                             isMulti
-                            options={tagsByCategory[cat._id] || []}
-                            value={getSelectedTags(pag.paymentTags, cat._id)}
+                            options={options}
+                            value={selectedValues}
                             onChange={(selected) => {
-                              console.log('Select onChange - selected:', selected); // [LOG]
+                              console.log('[DEBUG] Seleção alterada:', selected);
                               const newPaymentTags = { ...pag.paymentTags };
-                              newPaymentTags[cat._id] = selected ? selected.map(s => s.value) : [];
+                              newPaymentTags[cat._id] = selected.map(s => s.value);
                               handlePagamentoChange(index, 'paymentTags', newPaymentTags);
                             }}
-                            styles={customStyles}
-                            formatOptionLabel={formatOptionLabel}
+                            styles={{
+                              control: (provided) => ({
+                                ...provided,
+                                border: '1px solid rgba(44, 62, 80, 0.2)',
+                                borderRadius: 'var(--borda-radius)',
+                                minHeight: '38px',
+                                boxShadow: 'none',
+                                '&:hover': {
+                                  border: '1px solid var(--cor-primaria)'
+                                }
+                              }),
+                              option: (provided, state) => ({
+                                ...provided,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                color: state.data.cor || provided.color,
+                                backgroundColor: state.isFocused ? '#f0f0f0' : 'white',
+                                '&:hover': {
+                                  backgroundColor: '#f0f0f0'
+                                }
+                              }),
+                              multiValue: (provided, state) => ({
+                                ...provided,
+                                backgroundColor: state.data.cor + '20',
+                                borderRadius: '12px',
+                                padding: '2px'
+                              }),
+                              multiValueLabel: (provided, state) => ({
+                                ...provided,
+                                color: state.data.cor,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              })
+                            }}
+                            formatOptionLabel={({ label, cor, icone }) => (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className={`fas fa-${icone || 'tag'}`} style={{ color: cor }}></i>
+                                <span>{label}</span>
+                              </div>
+                            )}
                             placeholder="Selecione as tags..."
                             className="tag-select"
                             classNamePrefix="tag-select"
