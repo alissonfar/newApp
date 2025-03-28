@@ -4,7 +4,7 @@ import Select from 'react-select';
 import { toast } from 'react-toastify';  // [NOVO] para exibir mensagens de erro/aviso/sucesso
 import { obterTransacoes, obterCategorias, obterTags } from '../../api.js';
 import { exportDataToCSV } from '../../utils/export/exportData';
-import { exportDataToPDF } from '../../utils/export/exportDataPdf';
+import { exportDataToPDF } from '../../utils/export/exportPDF';
 import './Relatorio.css';
 import { 
   Menu, 
@@ -370,7 +370,25 @@ const Relatorio = () => {
   }, [filteredRows]);
 
   // 4) Exportação
-  const handleExport = () => {
+  const handleExport = async () => {
+    // Logs para debug
+    console.log('Dados para exportação:', {
+      filteredRows,
+      categorias,
+      tags
+    });
+
+    // Normaliza os dados antes de exportar
+    const normalizedRows = filteredRows.map(row => ({
+      ...row,
+      tipo: row.tipo?.toLowerCase(),
+      data: row.data || row.dataPai,
+      descricao: row.descricao || row.descricaoPai,
+      valorPagamento: row.valorPagamento || row.valor,
+      pessoa: row.pessoa || '-',
+      tagsPagamento: row.tagsPagamento || {}
+    }));
+
     const filterDetails = {
       dataInicio,
       dataFim,
@@ -379,33 +397,12 @@ const Relatorio = () => {
       tagFilters
     };
 
-    // Preparar cabeçalhos personalizados para melhor legibilidade
-    const customHeaders = [
-      'Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'
-    ];
-
-    // Mapear os dados para um formato mais amigável para exportação
-    const exportData = filteredRows.map(row => ({
-      'Data': row.dataPai,
-      'Descrição': row.descricaoPai,
-      'Tipo': row.tipoPai,
-      'Status': row.statusPai,
-      'Pessoa': row.pessoa,
-      'Valor': row.valorPagamento,
-      'Tags': Object.entries(row.tagsPagamento || {})
-        .map(([cat, tags]) => {
-          const tagValues = Array.isArray(tags) ? tags.join(', ') : tags;
-          return `${cat}: ${tagValues}`;
-        })
-        .join(' | ')
-    }));
-
     if (exportFormat === 'csv') {
       exportDataToCSV(
-        exportData, 
+        normalizedRows, 
         'relatorio.csv',
         {
-          customHeaders,
+          customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'],
           formatDates: true,
           formatCurrency: true
         }
@@ -413,13 +410,20 @@ const Relatorio = () => {
       toast.success('Relatório exportado como CSV!');
     } else {
       // Padrão PDF
-      exportDataToPDF(
-        filteredRows, 
-        filterDetails, 
-        summaryInfo, 
-        'relatorio.pdf'
-      );
-      toast.success('Relatório exportado como PDF!');
+      try {
+        await exportDataToPDF(
+          normalizedRows,
+          filterDetails, 
+          summaryInfo,
+          categorias,
+          tags,
+          'relatorio.pdf'
+        );
+        toast.success('Relatório exportado como PDF!');
+      } catch (error) {
+        console.error('Erro ao exportar PDF:', error);
+        toast.error('Erro ao exportar o relatório. Tente novamente.');
+      }
     }
   };
 
@@ -459,9 +463,9 @@ const Relatorio = () => {
     handleExportClose();
   };
 
-  const handleExportNow = (format) => {
+  const handleExportNow = async (format) => {
     setExportFormat(format);
-    handleExport();
+    await handleExport();
     handleExportClose();
   };
 
