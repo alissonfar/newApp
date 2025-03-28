@@ -1,10 +1,57 @@
 // src/components/Transaction/TransactionCardTransacoes.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCardTransacoes.css';
 import { formatDateBR } from '../../utils/dateUtils';
+import { obterCategorias, obterTags } from '../../api';
 
 const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
+  const [categorias, setCategorias] = useState([]);
+  const [tags, setTags] = useState([]);
+
+  // Carrega categorias e tags
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriasData, tagsData] = await Promise.all([
+          obterCategorias(),
+          obterTags()
+        ]);
+        setCategorias(categoriasData);
+        setTags(tagsData);
+      } catch (error) {
+        console.error('Erro ao carregar categorias e tags:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Função para converter IDs em nomes
+  const getTagInfo = (tagId) => {
+    const tag = tags.find(t => t._id === tagId);
+    if (!tag) return null;
+    
+    // Tenta encontrar a categoria primeiro pelo ID, depois pelo nome
+    let categoria = categorias.find(c => c._id === tag.categoria);
+    if (!categoria) {
+      // Se não encontrou pelo ID, tenta pelo nome (compatibilidade)
+      categoria = categorias.find(c => c.nome === tag.categoria);
+    }
+
+    // Se ainda não encontrou, verifica se o próprio campo categoria é um objeto
+    if (!categoria && typeof tag.categoria === 'object' && tag.categoria._id) {
+      categoria = categorias.find(c => c._id === tag.categoria._id);
+    }
+
+    console.log('Tag:', tag.nome, 'Categoria encontrada:', categoria?.nome); // [DEBUG]
+
+    return {
+      tagNome: tag.nome,
+      categoriaNome: categoria ? categoria.nome : 'Categoria não encontrada',
+      cor: tag.cor || categoria?.cor || '#000000'
+    };
+  };
+
   // Define o ícone de acordo com o tipo da transação
   const tipoIcon =
     transacao.tipo === 'gasto' ? (
@@ -45,16 +92,31 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
                   <span className="payment-person">
                     <strong>Pessoa:</strong> {pg.pessoa}
                   </span>
+                  <span className="payment-value">
+                    <strong>Valor:</strong> R${parseFloat(pg.valor).toFixed(2)}
+                  </span>
                 </div>
                 {/* Exibe tags associadas a esse pagamento, se houver */}
-                {pg.tags && Object.keys(pg.tags).length > 0 ? (
+                {pg.tags && Object.entries(pg.tags).length > 0 ? (
                   <div className="payment-tags">
-                    {Object.keys(pg.tags).map((cat, i) =>
-                      pg.tags[cat].map((tag, j) => (
-                        <span key={`${cat}-${tag}-${j}`} className="tag-chip">
-                          {cat}: {tag}
-                        </span>
-                      ))
+                    {Object.entries(pg.tags).map(([categoriaId, tagIds]) =>
+                      tagIds.map((tagId) => {
+                        const tagInfo = getTagInfo(tagId);
+                        if (!tagInfo) return null;
+                        
+                        return (
+                          <span
+                            key={`${categoriaId}-${tagId}`}
+                            className="tag-chip"
+                            style={{
+                              backgroundColor: `${tagInfo.cor}20`,
+                              color: tagInfo.cor
+                            }}
+                          >
+                            {tagInfo.categoriaNome}: {tagInfo.tagNome}
+                          </span>
+                        );
+                      })
                     )}
                   </div>
                 ) : (

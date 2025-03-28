@@ -1,9 +1,57 @@
 // src/components/Transaction/TransactionCardTransacoes.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCardTransacoes.css';
+import { obterCategorias, obterTags } from '../../api';
 
-const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
+const TransactionCard = ({ transacao, onEdit, onDelete }) => {
+  const [categorias, setCategorias] = useState([]);
+  const [tags, setTags] = useState([]);
+
+  // Carrega categorias e tags
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriasData, tagsData] = await Promise.all([
+          obterCategorias(),
+          obterTags()
+        ]);
+        setCategorias(categoriasData);
+        setTags(tagsData);
+      } catch (error) {
+        console.error('Erro ao carregar categorias e tags:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Função para converter IDs em nomes
+  const getTagInfo = (tagId) => {
+    console.log('Buscando info para tagId:', tagId); // [DEBUG]
+    const tag = tags.find(t => t._id === tagId);
+    if (!tag) {
+      console.log('Tag não encontrada:', tagId); // [DEBUG]
+      return null;
+    }
+    
+    // Tenta encontrar a categoria primeiro pelo ID, depois pelo nome
+    let categoria = categorias.find(c => c._id === tag.categoria);
+    if (!categoria && typeof tag.categoria === 'object') {
+      categoria = categorias.find(c => c._id === tag.categoria._id);
+    }
+    if (!categoria) {
+      categoria = categorias.find(c => c.nome === tag.categoria);
+    }
+
+    console.log('Tag encontrada:', tag.nome, 'Categoria:', categoria?.nome); // [DEBUG]
+
+    return {
+      tagNome: tag.nome,
+      categoriaNome: categoria ? categoria.nome : 'Categoria não encontrada',
+      cor: tag.cor || categoria?.cor || '#000000'
+    };
+  };
+
   // Define o ícone de acordo com o tipo
   const tipoIcon =
     transacao.tipo === 'gasto' ? (
@@ -40,14 +88,27 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
                 <strong>{pg.pessoa}:</strong> R${parseFloat(pg.valor).toFixed(2)}
               </div>
               <div className="payment-tags">
-                {(pg.paymentTags && Object.keys(pg.paymentTags).length > 0) ? (
-                  Object.keys(pg.paymentTags).map((cat, i) =>
-                    pg.paymentTags[cat].map((tag, j) => (
-                      <span key={`${cat}-${tag}-${j}`} className="tag-chip">
-                        {cat}: {tag}
-                      </span>
-                    ))
-                  )
+                {pg.tags && Object.entries(pg.tags).length > 0 ? (
+                  Object.entries(pg.tags).map(([categoriaId, tagIds]) => {
+                    console.log('Tags para categoria:', categoriaId, tagIds); // [DEBUG]
+                    return tagIds.map((tagId) => {
+                      const tagInfo = getTagInfo(tagId);
+                      if (!tagInfo) return null;
+                      
+                      return (
+                        <span
+                          key={`${categoriaId}-${tagId}`}
+                          className="tag-chip"
+                          style={{
+                            backgroundColor: `${tagInfo.cor}20`,
+                            color: tagInfo.cor
+                          }}
+                        >
+                          {tagInfo.categoriaNome}: {tagInfo.tagNome}
+                        </span>
+                      );
+                    });
+                  })
                 ) : (
                   <span className="no-tags">Sem tags</span>
                 )}
@@ -69,4 +130,4 @@ const TransactionCardTransacoes = ({ transacao, onEdit, onDelete }) => {
   );
 };
 
-export default TransactionCardTransacoes;
+export default TransactionCard;

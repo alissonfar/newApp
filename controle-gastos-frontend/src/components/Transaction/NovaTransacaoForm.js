@@ -94,8 +94,11 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     async function fetchData() {
       try {
         const cats = await obterCategorias();
+        console.log('Categorias carregadas:', cats); // [LOG]
         setCategorias(cats);
+        
         const tgs = await obterTags();
+        console.log('Tags carregadas:', tgs); // [LOG]
         setAllTags(tgs);
       } catch (error) {
         console.error('Erro ao carregar categorias ou tags:', error);
@@ -116,29 +119,154 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       setData(transacao.data.split('T')[0]);
       setValorTotal(String(transacao.valor));
       if (transacao.pagamentos && transacao.pagamentos.length > 0) {
+        // Converte as tags do formato antigo (nome) para o novo formato (_id)
         setPagamentos(
-          transacao.pagamentos.map(p => ({
-            ...p,
-            paymentTags: p.tags || {}
-          }))
+          transacao.pagamentos.map(p => {
+            const paymentTags = {};
+            // Converte as tags antigas (que usam nome da categoria) para usar _id da categoria
+            if (p.tags) {
+              Object.entries(p.tags).forEach(([categoriaNome, tagIds]) => {
+                const categoria = categorias.find(cat => cat.nome === categoriaNome);
+                if (categoria) {
+                  paymentTags[categoria._id] = tagIds;
+                }
+              });
+            }
+            return {
+              ...p,
+              paymentTags: paymentTags
+            };
+          })
         );
       } else {
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
       }
     }
-  }, [transacao, proprietarioPadrao]);
+  }, [transacao, proprietarioPadrao, categorias]);
 
-  // Agrupa as tags do backend por categoria para popular o React-Select
-  const tagsPorCategoria = allTags.reduce((acc, tag) => {
-    if (tag.categoria) {
-      if (!acc[tag.categoria]) {
-        acc[tag.categoria] = [];
+  // Estilo customizado para o React-Select
+  const customStyles = {
+    control: (provided) => ({
+      ...provided,
+      border: '1px solid rgba(44, 62, 80, 0.2)',
+      borderRadius: 'var(--borda-radius)',
+      minHeight: '38px',
+      boxShadow: 'none',
+      '&:hover': {
+        border: '1px solid var(--cor-primaria)'
       }
-      acc[tag.categoria].push(tag.nome);
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      color: state.data.cor || '#000',
+      backgroundColor: state.isSelected ? `${state.data.cor}20` : state.isFocused ? '#f0f0f0' : 'white',
+      '&:hover': {
+        backgroundColor: '#f0f0f0'
+      }
+    }),
+    multiValue: (provided, state) => ({
+      ...provided,
+      backgroundColor: `${state.data.cor}20`,
+      borderRadius: '12px',
+      padding: '2px 6px'
+    }),
+    multiValueLabel: (provided, state) => ({
+      ...provided,
+      color: state.data.cor,
+      fontSize: '0.9em'
+    }),
+    multiValueRemove: (provided, state) => ({
+      ...provided,
+      color: state.data.cor,
+      '&:hover': {
+        backgroundColor: `${state.data.cor}40`,
+        color: state.data.cor
+      }
+    })
+  };
+
+  // Função para formatar a opção no Select
+  const formatOptionLabel = ({ label, cor, icone }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <i className={`fas fa-${icone || 'tag'}`} style={{ color: cor || '#000' }}></i>
+      <span>{label}</span>
+    </div>
+  );
+
+  // Agrupa as tags por categoria usando o ID da categoria
+  const tagsByCategory = {};
+  allTags.forEach(tag => {
+    console.log('Processando tag:', tag); // [LOG]
+    // Usa o ID da categoria diretamente da tag
+    const categoriaId = tag.categoria;
+    if (categoriaId) {
+      if (!tagsByCategory[categoriaId]) {
+        tagsByCategory[categoriaId] = [];
+      }
+      tagsByCategory[categoriaId].push({
+        value: tag._id,
+        label: tag.nome,
+        cor: tag.cor,
+        icone: tag.icone,
+        categoria: categoriaId
+      });
     }
-    return acc;
-  }, {});
-  
+  });
+  console.log('Tags agrupadas por categoria:', tagsByCategory); // [LOG]
+
+  // Função para obter as tags selecionadas de um pagamento
+  const getSelectedTags = (paymentTags, categoriaId) => {
+    console.log('getSelectedTags - paymentTags:', paymentTags, 'categoriaId:', categoriaId); // [LOG]
+    if (!paymentTags || !paymentTags[categoriaId]) return [];
+    
+    const tagIds = paymentTags[categoriaId];
+    console.log('getSelectedTags - tagIds:', tagIds); // [LOG]
+    return tagIds.map(tagId => {
+      const tag = allTags.find(t => t._id === tagId);
+      console.log('getSelectedTags - tag encontrada:', tag); // [LOG]
+      if (!tag) return null;
+      return {
+        value: tag._id,
+        label: tag.nome,
+        cor: tag.cor,
+        icone: tag.icone,
+        categoria: tag.categoria
+      };
+    }).filter(Boolean);
+  };
+
+  // Inicializa os pagamentos após carregar categorias e tags
+  useEffect(() => {
+    if (categorias.length > 0 && allTags.length > 0 && transacao) {
+      const pagamentosIniciais = transacao.pagamentos.map(p => {
+        const paymentTags = {};
+        // Converte as tags antigas (que usam nome da categoria) para usar _id da categoria
+        if (p.tags) {
+          Object.entries(p.tags).forEach(([categoriaNome, tagIds]) => {
+            const categoria = categorias.find(cat => 
+              cat.nome === categoriaNome || cat._id === categoriaNome
+            );
+            if (categoria) {
+              paymentTags[categoria._id] = tagIds;
+            }
+          });
+        }
+        return {
+          pessoa: p.pessoa,
+          valor: p.valor,
+          paymentTags: paymentTags
+        };
+      });
+
+      setPagamentos(pagamentosIniciais);
+    } else if (!transacao) {
+      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
+    }
+  }, [transacao, categorias, allTags, proprietarioPadrao]);
+
   // Manipulação dos pagamentos
   const handlePagamentoChange = (index, field, value) => {
     const novosPagamentos = [...pagamentos];
@@ -271,11 +399,14 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       data: toISOStringBR(data),
       valor: Number(parseFloat(valorTotal).toFixed(2)),
       observacao,
-      pagamentos: pagamentos.map((pag) => ({
-        pessoa: pag.pessoa,
-        valor: Number(parseFloat(pag.valor).toFixed(2)),
-        tags: pag.paymentTags || {}
-      }))
+      pagamentos: pagamentos.map((pag) => {
+        // Mantém os IDs das tags como estão para enviar ao backend
+        return {
+          pessoa: pag.pessoa,
+          valor: Number(parseFloat(pag.valor).toFixed(2)),
+          tags: pag.paymentTags // Já está no formato correto com IDs
+        };
+      })
     };
     try {
       if (transacao && transacao.id) {
@@ -434,38 +565,38 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                     />
                   </div>
 
-                  {/* Substituição do <select multiple> por React-Select para tags */}
-                  <div className="form-section payment-tags">
+                  {/* Tags por Categoria */}
+                  <div className="tags-section">
                     <h4>Tags para Pagamento</h4>
                     {categorias.map((cat) => {
-                      // Cria as opções no formato { value, label }
-                      const options = (tagsPorCategoria[cat.nome] || []).map(tagName => ({
-                        value: tagName,
-                        label: tagName
-                      }));
-                      // Prepara os valores já selecionados
-                      const selectedValues = ((pag.paymentTags && pag.paymentTags[cat.nome]) || [])
-                        .map(tag => ({ value: tag, label: tag }));
+                      console.log('Renderizando categoria:', cat, 'Tags disponíveis:', tagsByCategory[cat._id]); // [LOG]
                       return (
-                        <div key={cat._id} className="tag-dropdown-group">
-                          <label>{cat.nome}:</label>
+                        <div key={cat._id} className="tag-category-group">
+                          <label>
+                            <i 
+                              className={`fas fa-${cat.icone || 'folder'}`} 
+                              style={{ color: cat.cor || '#000' }}
+                            ></i>
+                            {cat.nome} {/* Nome apenas para exibição */}
+                          </label>
                           <Select
                             isMulti
-                            options={options}
-                            value={selectedValues}
-                            onChange={(selectedOptions) => {
-                              const selectedTags = selectedOptions
-                                ? selectedOptions.map(opt => opt.value)
-                                : [];
-                              const novos = [...pagamentos];
-                              if (!novos[index].paymentTags) {
-                                novos[index].paymentTags = {};
-                              }
-                              novos[index].paymentTags[cat.nome] = selectedTags;
-                              setPagamentos(novos);
+                            options={tagsByCategory[cat._id] || []}
+                            value={getSelectedTags(pag.paymentTags, cat._id)}
+                            onChange={(selected) => {
+                              console.log('Select onChange - selected:', selected); // [LOG]
+                              const newPaymentTags = { ...pag.paymentTags };
+                              newPaymentTags[cat._id] = selected ? selected.map(s => s.value) : [];
+                              handlePagamentoChange(index, 'paymentTags', newPaymentTags);
                             }}
-                            classNamePrefix="mySelect"
-                            onFocus={handleFocus}
+                            styles={customStyles}
+                            formatOptionLabel={formatOptionLabel}
+                            placeholder="Selecione as tags..."
+                            className="tag-select"
+                            classNamePrefix="tag-select"
+                            isClearable={true}
+                            isSearchable={true}
+                            closeMenuOnSelect={false}
                           />
                         </div>
                       );

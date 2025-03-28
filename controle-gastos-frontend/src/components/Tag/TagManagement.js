@@ -12,6 +12,8 @@ import {
   atualizarCategoria,
   excluirCategoria
 } from '../../api.js';
+import IconSelector from './IconSelector';
+import ColorPicker from './ColorPicker';
 import './TagManagement.css';
 
 const TagManagement = () => {
@@ -22,20 +24,28 @@ const TagManagement = () => {
   // Estados para nova tag
   const [novoTagNome, setNovoTagNome] = useState('');
   const [novoTagDescricao, setNovoTagDescricao] = useState('');
+  const [novoTagCor, setNovoTagCor] = useState('#000000');
+  const [novoTagIcone, setNovoTagIcone] = useState('tag');
 
   // Estados para edição de tag
-  const [editTagId, setEditTagId] = useState(null);
+  const [editTagCodigo, setEditTagCodigo] = useState(null);
   const [editTagNome, setEditTagNome] = useState('');
   const [editTagDescricao, setEditTagDescricao] = useState('');
+  const [editTagCor, setEditTagCor] = useState('#000000');
+  const [editTagIcone, setEditTagIcone] = useState('tag');
 
   // Estados para nova categoria
   const [novoCatNome, setNovoCatNome] = useState('');
   const [novoCatDescricao, setNovoCatDescricao] = useState('');
+  const [novoCatCor, setNovoCatCor] = useState('#000000');
+  const [novoCatIcone, setNovoCatIcone] = useState('folder');
 
   // Estados para edição de categoria
-  const [editCatId, setEditCatId] = useState(null);
+  const [editCatCodigo, setEditCatCodigo] = useState(null);
   const [editCatNome, setEditCatNome] = useState('');
   const [editCatDescricao, setEditCatDescricao] = useState('');
+  const [editCatCor, setEditCatCor] = useState('#000000');
+  const [editCatIcone, setEditCatIcone] = useState('folder');
 
   const carregarCategorias = async () => {
     try {
@@ -69,24 +79,37 @@ const TagManagement = () => {
 
   // Filtra as tags com base na categoria selecionada
   const filteredTags = selectedCategory
-    ? tags.filter(
-        (tag) =>
-          tag.categoria &&
-          tag.categoria.toLowerCase() === selectedCategory.nome.toLowerCase()
-      )
+    ? tags.filter(tag => {
+        // Verifica se a tag tem categoria
+        if (!tag.categoria) return false;
+
+        // Se a categoria for um objeto, compara o _id
+        if (typeof tag.categoria === 'object' && tag.categoria !== null) {
+          return tag.categoria._id === selectedCategory._id;
+        }
+
+        // Se a categoria for uma string (ID), compara diretamente
+        return tag.categoria === selectedCategory._id;
+      })
     : [];
 
   // [LOGS] Adicionais para entender o que está acontecendo
   useEffect(() => {
     console.log('selectedCategory =>', selectedCategory);
+    console.log('tags =>', tags);
     console.log('filteredTags =>', filteredTags);
-  }, [selectedCategory, filteredTags]);
+  }, [selectedCategory, tags, filteredTags]);
 
   // Função para verificar se o nome da tag já existe
-  const nomeTagDuplicado = (nome, id = null) => {
+  const nomeTagDuplicado = (nome, categoria, codigo = null) => {
     return tags.some(
       (tag) =>
-        tag.nome.toLowerCase() === nome.toLowerCase() && tag.id !== id
+        tag.nome.toLowerCase() === nome.toLowerCase() &&
+        (
+          (typeof tag.categoria === 'object' && tag.categoria?._id === categoria._id) ||
+          tag.categoria === categoria._id
+        ) &&
+        tag.codigo !== codigo
     );
   };
 
@@ -99,18 +122,22 @@ const TagManagement = () => {
       toast.warn('O nome da tag é obrigatório.');
       return;
     }
-    if (nomeTagDuplicado(novoTagNome)) {
-      toast.warn('Essa tag já existe.');
+    if (nomeTagDuplicado(novoTagNome, selectedCategory)) {
+      toast.warn('Essa tag já existe nesta categoria.');
       return;
     }
     try {
       await criarTag({
         nome: novoTagNome.trim(),
         descricao: novoTagDescricao.trim(),
-        categoria: selectedCategory.nome
+        categoria: selectedCategory._id, // Envia o ID da categoria
+        cor: novoTagCor,
+        icone: novoTagIcone
       });
       setNovoTagNome('');
       setNovoTagDescricao('');
+      setNovoTagCor('#000000');
+      setNovoTagIcone('tag');
       carregarTags();
       toast.success('Tag criada com sucesso!');
     } catch (error) {
@@ -120,25 +147,35 @@ const TagManagement = () => {
   };
 
   const handleEditarTag = (tag) => {
-    setEditTagId(tag.id);
+    setEditTagCodigo(tag.codigo);
     setEditTagNome(tag.nome);
     setEditTagDescricao(tag.descricao || '');
+    setEditTagCor(tag.cor || '#000000');
+    setEditTagIcone(tag.icone || 'tag');
   };
 
   const handleSalvarEdicaoTag = async () => {
+    if (!selectedCategory) {
+      toast.warn('Selecione uma categoria primeiro.');
+      return;
+    }
     if (!editTagNome.trim()) {
       toast.warn('O nome da tag é obrigatório.');
       return;
     }
     try {
-      await atualizarTag(editTagId, {
+      await atualizarTag(editTagCodigo, {
         nome: editTagNome.trim(),
         descricao: editTagDescricao.trim(),
-        categoria: selectedCategory ? selectedCategory.nome : ''
+        categoria: selectedCategory._id, // Envia o ID da categoria
+        cor: editTagCor,
+        icone: editTagIcone
       });
-      setEditTagId(null);
+      setEditTagCodigo(null);
       setEditTagNome('');
       setEditTagDescricao('');
+      setEditTagCor('#000000');
+      setEditTagIcone('tag');
       carregarTags();
       toast.success('Tag atualizada com sucesso!');
     } catch (error) {
@@ -147,7 +184,7 @@ const TagManagement = () => {
     }
   };
 
-  const handleExcluirTag = async (tagId) => {
+  const handleExcluirTag = async (codigo) => {
     Swal.fire({
       title: 'Tem certeza que deseja excluir esta tag?',
       text: 'Essa ação não pode ser desfeita.',
@@ -160,7 +197,7 @@ const TagManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await excluirTag(tagId);
+          await excluirTag(codigo);
           carregarTags();
           toast.success('Tag excluída com sucesso!');
         } catch (error) {
@@ -172,10 +209,10 @@ const TagManagement = () => {
   };
 
   // Funções para gerenciamento de categorias
-  const nomeCategoriaDuplicado = (nome, id = null) => {
+  const nomeCategoriaDuplicado = (nome, codigo = null) => {
     return categorias.some(
       (cat) =>
-        cat.nome.toLowerCase() === nome.toLowerCase() && cat.id !== id
+        cat.nome.toLowerCase() === nome.toLowerCase() && cat.codigo !== codigo
     );
   };
 
@@ -189,12 +226,16 @@ const TagManagement = () => {
       return;
     }
     try {
-      await criarCategoria({
+      const novaCategoria = await criarCategoria({
         nome: novoCatNome.trim(),
-        descricao: novoCatDescricao.trim()
+        descricao: novoCatDescricao.trim(),
+        cor: novoCatCor,
+        icone: novoCatIcone
       });
       setNovoCatNome('');
       setNovoCatDescricao('');
+      setNovoCatCor('#000000');
+      setNovoCatIcone('folder');
       carregarCategorias();
       toast.success('Categoria criada com sucesso!');
     } catch (error) {
@@ -203,11 +244,13 @@ const TagManagement = () => {
     }
   };
 
-  const handleEditarCategoria = (cat) => {
-    setEditCatId(cat.id);
-    setEditCatNome(cat.nome);
-    setEditCatDescricao(cat.descricao || '');
-    setSelectedCategory(cat);
+  const handleEditarCategoria = (categoria) => {
+    setEditCatCodigo(categoria.codigo);
+    setEditCatNome(categoria.nome);
+    setEditCatDescricao(categoria.descricao || '');
+    setEditCatCor(categoria.cor || '#000000');
+    setEditCatIcone(categoria.icone || 'folder');
+    setSelectedCategory(categoria);
   };
 
   const handleSalvarEdicaoCategoria = async () => {
@@ -216,13 +259,17 @@ const TagManagement = () => {
       return;
     }
     try {
-      await atualizarCategoria(editCatId, {
+      await atualizarCategoria(editCatCodigo, {
         nome: editCatNome.trim(),
-        descricao: editCatDescricao.trim()
+        descricao: editCatDescricao.trim(),
+        cor: editCatCor,
+        icone: editCatIcone
       });
-      setEditCatId(null);
+      setEditCatCodigo(null);
       setEditCatNome('');
       setEditCatDescricao('');
+      setEditCatCor('#000000');
+      setEditCatIcone('folder');
       carregarCategorias();
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
@@ -231,10 +278,10 @@ const TagManagement = () => {
     }
   };
 
-  const handleExcluirCategoria = async (catId) => {
+  const handleExcluirCategoria = async (codigo) => {
     Swal.fire({
       title: 'Tem certeza que deseja excluir esta categoria?',
-      text: 'Essa ação não pode ser desfeita.',
+      text: 'Todas as tags associadas também serão excluídas. Essa ação não pode ser desfeita.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -244,11 +291,12 @@ const TagManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await excluirCategoria(catId);
-          if (selectedCategory && selectedCategory.id === catId) {
+          await excluirCategoria(codigo);
+          if (selectedCategory && selectedCategory.codigo === codigo) {
             setSelectedCategory(null);
           }
           carregarCategorias();
+          carregarTags();
           toast.success('Categoria excluída com sucesso!');
         } catch (error) {
           console.error('Erro ao excluir categoria:', error);
@@ -269,14 +317,19 @@ const TagManagement = () => {
             <ul className="category-list">
               {categorias.map(cat => (
                 <li
-                  key={cat.id}
-                  className={selectedCategory && cat.id === selectedCategory.id ? 'selected' : ''}
+                  key={cat.codigo}
+                  className={selectedCategory && cat.codigo === selectedCategory.codigo ? 'selected' : ''}
                   onClick={() => setSelectedCategory(cat)}
                 >
-                  {cat.nome}
+                  <div className="categoria-item">
+                    <div className="icone-preview" style={{ color: cat.cor }}>
+                      <i className={`fas fa-${cat.icone || 'folder'}`}></i>
+                    </div>
+                    <span>{cat.nome}</span>
+                  </div>
                   <div className="acoes-categoria">
                     <button onClick={() => handleEditarCategoria(cat)}>Editar</button>
-                    <button onClick={() => handleExcluirCategoria(cat.id)}>Excluir</button>
+                    <button onClick={() => handleExcluirCategoria(cat.codigo)}>Excluir</button>
                   </div>
                 </li>
               ))}
@@ -284,39 +337,101 @@ const TagManagement = () => {
           ) : (
             <p>Nenhuma categoria encontrada.</p>
           )}
-          <div className="nova-categoria">
+          
+          <div className="form-section">
             <h4>Adicionar Nova Categoria</h4>
-            <input
-              type="text"
-              value={novoCatNome}
-              onChange={e => setNovoCatNome(e.target.value)}
-              placeholder="Nome da categoria"
-            />
-            <input
-              type="text"
-              value={novoCatDescricao}
-              onChange={e => setNovoCatDescricao(e.target.value)}
-              placeholder="Descrição (opcional)"
-            />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Nome</label>
+                <input
+                  type="text"
+                  value={novoCatNome}
+                  onChange={e => setNovoCatNome(e.target.value)}
+                  placeholder="Nome da categoria"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Descrição</label>
+                <input
+                  type="text"
+                  value={novoCatDescricao}
+                  onChange={e => setNovoCatDescricao(e.target.value)}
+                  placeholder="Descrição (opcional)"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Cor</label>
+                <ColorPicker
+                  value={novoCatCor}
+                  onChange={setNovoCatCor}
+                  className="color-select"
+                />
+              </div>
+              <div className="form-group">
+                <label>Ícone</label>
+                <IconSelector
+                  value={novoCatIcone}
+                  onChange={setNovoCatIcone}
+                  className="icon-select"
+                  cor={novoCatCor}
+                />
+              </div>
+            </div>
             <button onClick={handleAdicionarCategoria}>Adicionar</button>
           </div>
-          {editCatId && (
-            <div className="edit-categoria">
+          
+          {editCatCodigo && (
+            <div className="form-section">
               <h4>Editar Categoria</h4>
-              <input
-                type="text"
-                value={editCatNome}
-                onChange={e => setEditCatNome(e.target.value)}
-                placeholder="Nome da categoria"
-              />
-              <input
-                type="text"
-                value={editCatDescricao}
-                onChange={e => setEditCatDescricao(e.target.value)}
-                placeholder="Descrição (opcional)"
-              />
-              <button onClick={handleSalvarEdicaoCategoria}>Salvar</button>
-              <button onClick={() => setEditCatId(null)}>Cancelar</button>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Nome</label>
+                  <input
+                    type="text"
+                    value={editCatNome}
+                    onChange={e => setEditCatNome(e.target.value)}
+                    placeholder="Nome da categoria"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Descrição</label>
+                  <input
+                    type="text"
+                    value={editCatDescricao}
+                    onChange={e => setEditCatDescricao(e.target.value)}
+                    placeholder="Descrição (opcional)"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Cor</label>
+                  <ColorPicker
+                    value={editCatCor}
+                    onChange={setEditCatCor}
+                    className="color-select"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Ícone</label>
+                  <IconSelector
+                    value={editCatIcone}
+                    onChange={setEditCatIcone}
+                    className="icon-select"
+                    cor={editCatCor}
+                  />
+                </div>
+              </div>
+              <div className="form-actions">
+                <button onClick={handleSalvarEdicaoCategoria}>Salvar</button>
+                <button onClick={() => setEditCatCodigo(null)} className="secondary">Cancelar</button>
+              </div>
             </div>
           )}
         </div>
@@ -328,38 +443,74 @@ const TagManagement = () => {
               ? `Tags em "${selectedCategory.nome}"`
               : 'Selecione uma categoria para visualizar tags'}
           </h3>
-          {selectedCategory ? (
+          {selectedCategory && (
             <>
               {filteredTags.length > 0 ? (
                 <ul className="tag-list">
                   {filteredTags.map(tag => (
-                    <li key={tag.id}>
-                      {editTagId === tag.id ? (
-                        <div className="edit-tag">
-                          <input
-                            type="text"
-                            value={editTagNome}
-                            onChange={e => setEditTagNome(e.target.value)}
-                            placeholder="Nome da tag"
-                          />
-                          <input
-                            type="text"
-                            value={editTagDescricao}
-                            onChange={e => setEditTagDescricao(e.target.value)}
-                            placeholder="Descrição (opcional)"
-                          />
-                          <button onClick={handleSalvarEdicaoTag}>Salvar</button>
-                          <button onClick={() => setEditTagId(null)}>Cancelar</button>
+                    <li key={tag.codigo}>
+                      {editTagCodigo === tag.codigo ? (
+                        <div className="form-section">
+                          <div className="form-row">
+                            <div className="form-group">
+                              <label>Nome</label>
+                              <input
+                                type="text"
+                                value={editTagNome}
+                                onChange={e => setEditTagNome(e.target.value)}
+                                placeholder="Nome da tag"
+                              />
+                            </div>
+                          </div>
+                          <div className="form-row">
+                            <div className="form-group">
+                              <label>Descrição</label>
+                              <input
+                                type="text"
+                                value={editTagDescricao}
+                                onChange={e => setEditTagDescricao(e.target.value)}
+                                placeholder="Descrição (opcional)"
+                              />
+                            </div>
+                          </div>
+                          <div className="form-row">
+                            <div className="form-group">
+                              <label>Cor</label>
+                              <ColorPicker
+                                value={editTagCor}
+                                onChange={setEditTagCor}
+                                className="color-select"
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label>Ícone</label>
+                              <IconSelector
+                                value={editTagIcone}
+                                onChange={setEditTagIcone}
+                                className="icon-select"
+                                cor={editTagCor}
+                              />
+                            </div>
+                          </div>
+                          <div className="form-actions">
+                            <button onClick={handleSalvarEdicaoTag}>Salvar</button>
+                            <button onClick={() => setEditTagCodigo(null)} className="secondary">Cancelar</button>
+                          </div>
                         </div>
                       ) : (
                         <div className="view-tag">
-                          <span>
-                            <strong>{tag.nome}</strong>
-                            {tag.descricao && ` - ${tag.descricao}`}
-                          </span>
+                          <div className="tag-item">
+                            <div className="icone-preview" style={{ color: tag.cor }}>
+                              <i className={`fas fa-${tag.icone || 'tag'}`}></i>
+                            </div>
+                            <span>
+                              <strong>{tag.nome}</strong>
+                              {tag.descricao && ` - ${tag.descricao}`}
+                            </span>
+                          </div>
                           <div className="acoes-tag">
                             <button onClick={() => handleEditarTag(tag)}>Editar</button>
-                            <button onClick={() => handleExcluirTag(tag.id)}>Excluir</button>
+                            <button onClick={() => handleExcluirTag(tag.codigo)}>Excluir</button>
                           </div>
                         </div>
                       )}
@@ -369,24 +520,53 @@ const TagManagement = () => {
               ) : (
                 <p>Nenhuma tag cadastrada nesta categoria.</p>
               )}
-              <div className="nova-tag">
+              <div className="form-section">
                 <h4>Adicionar Nova Tag</h4>
-                <input
-                  type="text"
-                  value={novoTagNome}
-                  onChange={e => setNovoTagNome(e.target.value)}
-                  placeholder="Nome da tag"
-                />
-                <input
-                  type="text"
-                  value={novoTagDescricao}
-                  onChange={e => setNovoTagDescricao(e.target.value)}
-                  placeholder="Descrição (opcional)"
-                />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Nome</label>
+                    <input
+                      type="text"
+                      value={novoTagNome}
+                      onChange={e => setNovoTagNome(e.target.value)}
+                      placeholder="Nome da tag"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Descrição</label>
+                    <input
+                      type="text"
+                      value={novoTagDescricao}
+                      onChange={e => setNovoTagDescricao(e.target.value)}
+                      placeholder="Descrição (opcional)"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Cor</label>
+                    <ColorPicker
+                      value={novoTagCor}
+                      onChange={setNovoTagCor}
+                      className="color-select"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Ícone</label>
+                    <IconSelector
+                      value={novoTagIcone}
+                      onChange={setNovoTagIcone}
+                      className="icon-select"
+                      cor={novoTagCor}
+                    />
+                  </div>
+                </div>
                 <button onClick={handleAdicionarTag}>Adicionar</button>
               </div>
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

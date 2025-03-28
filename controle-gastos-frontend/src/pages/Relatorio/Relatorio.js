@@ -93,9 +93,11 @@ const Relatorio = () => {
         // Carrega categorias e tags
         const cats = await obterCategorias();
         setCategorias(cats);
+        
+        // Inicializa os filtros de tag usando IDs de categoria
         const initTagFilters = {};
         cats.forEach(cat => {
-          initTagFilters[cat.nome] = [];
+          initTagFilters[cat._id] = [];
         });
         setTagFilters(initTagFilters);
 
@@ -121,11 +123,20 @@ const Relatorio = () => {
 
   // Agrupa as tags por categoria (para exibir nos filtros)
   const tagsPorCategoria = tags.reduce((acc, tag) => {
-    if (tag.categoria) {
-      if (!acc[tag.categoria]) {
-        acc[tag.categoria] = [];
+    if (!tag.categoria) return acc;
+
+    // Encontra a categoria pelo ID
+    const categoriaId = typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria;
+    const categoria = categorias.find(c => c._id === categoriaId);
+    
+    if (categoria) {
+      if (!acc[categoria._id]) {
+        acc[categoria._id] = {
+          nome: categoria.nome,
+          tags: []
+        };
       }
-      acc[tag.categoria].push(tag);
+      acc[categoria._id].tags.push(tag);
     }
     return acc;
   }, {});
@@ -209,15 +220,26 @@ const Relatorio = () => {
     }
 
     // Filtro por tags (pagamento)
-    Object.keys(tagFilters).forEach(cat => {
-      const selectedTags = tagFilters[cat];
+    Object.entries(tagFilters).forEach(([categoriaId, selectedTags]) => {
       if (selectedTags && selectedTags.length > 0) {
+        console.log('Filtrando por categoria:', categoriaId, 'tags:', selectedTags); // [DEBUG]
+        
         result = result.filter(row => {
-          const pagTags = row.tagsPagamento[cat] || [];
-          const pagMatch = pagTags.some(tag =>
-            selectedTags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
-          );
-          return pagMatch;
+          // Obtém as tags da categoria atual
+          const pagTagsForCategory = row.tagsPagamento[categoriaId] || [];
+          console.log('Tags do pagamento:', pagTagsForCategory); // [DEBUG]
+
+          // Verifica se alguma das tags selecionadas está presente
+          const hasSelectedTag = selectedTags.some(selectedTagNome => {
+            // Encontra a tag pelo nome para obter seu ID
+            const tag = tags.find(t => t.nome === selectedTagNome);
+            if (!tag) return false;
+            
+            return pagTagsForCategory.includes(tag._id);
+          });
+
+          console.log('Tem tag selecionada?', hasSelectedTag); // [DEBUG]
+          return hasSelectedTag;
         });
       }
     });
@@ -366,7 +388,7 @@ const Relatorio = () => {
     // Resetar tags
     const resetTagFilters = {};
     categorias.forEach(cat => {
-      resetTagFilters[cat.nome] = [];
+      resetTagFilters[cat._id] = [];
     });
     setTagFilters(resetTagFilters);
 
@@ -487,20 +509,24 @@ const Relatorio = () => {
           <div className="filter-section">
             <h4>Tags de Pagamento</h4>
             <div className="filter-row">
-              {categorias.map(cat => (
-                <div key={cat.id} className="filter-group">
-                  <label>{cat.nome}:</label>
-                  {/* Substituído o <select multiple> pelo React-Select */}
+              {Object.entries(tagsPorCategoria).map(([categoriaId, { nome, tags }]) => (
+                <div key={categoriaId} className="filter-group">
+                  <label>{nome}:</label>
                   <Select
                     isMulti
-                    options={(tagsPorCategoria[cat.nome] || []).map(tag => ({
-                      value: tag.nome,
-                      label: tag.nome
+                    options={tags.map(tag => ({
+                      value: tag.nome,  // Usamos o nome para seleção
+                      label: tag.nome,
+                      cor: tag.cor,
+                      icone: tag.icone
                     }))}
-                    value={(tagFilters[cat.nome] || []).map(tag => ({ value: tag, label: tag }))}
+                    value={(tagFilters[categoriaId] || []).map(tagNome => ({ 
+                      value: tagNome, 
+                      label: tagNome 
+                    }))}
                     onChange={(selectedOptions) => {
                       const selected = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
-                      setTagFilters(prev => ({ ...prev, [cat.nome]: selected }));
+                      setTagFilters(prev => ({ ...prev, [categoriaId]: selected }));
                     }}
                     classNamePrefix="mySelect"
                     placeholder="Selecione tags..."
@@ -675,13 +701,24 @@ const Relatorio = () => {
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
                     <td>{row.tipo}</td>
                     <td>
-                      {Object.keys(row.tagsPagamento || {}).map((catName, i) =>
-                        row.tagsPagamento[catName].map((tagName, j) => (
-                          <span key={`pag-${i}-${j}`} className="tag-chip relatorio-tag-chip pag-tag-chip">
-                            {catName}: {tagName}
-                          </span>
-                        ))
-                      )}
+                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
+                        const categoria = categorias.find(c => c._id === catId);
+                        if (!categoria) return null;
+
+                        return tagIds.map((tagId, j) => {
+                          const tag = tags.find(t => t._id === tagId);
+                          if (!tag) return null;
+
+                          return (
+                            <span 
+                              key={`pag-${i}-${j}`} 
+                              className="tag-chip relatorio-tag-chip pag-tag-chip"
+                            >
+                              {categoria.nome}: {tag.nome}
+                            </span>
+                          );
+                        });
+                      })}
                     </td>
                   </tr>
                 );

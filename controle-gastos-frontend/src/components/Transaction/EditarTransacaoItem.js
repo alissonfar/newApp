@@ -58,7 +58,13 @@ const EditarTransacaoItem = ({
       if (!acc[tag.categoria]) {
         acc[tag.categoria] = [];
       }
-      acc[tag.categoria].push(tag.nome);
+      acc[tag.categoria].push({
+        value: tag.codigo,
+        label: tag.nome,
+        cor: tag.cor,
+        icone: tag.icone,
+        categoria: tag.categoria
+      });
     }
     return acc;
   }, {});
@@ -105,10 +111,44 @@ const EditarTransacaoItem = ({
     setData(getYesterdayBR());
   };
 
+  // Customização do Select para mostrar ícones e cores
+  const customStyles = {
+    option: (provided, state) => ({
+      ...provided,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      color: state.data.cor || provided.color,
+      backgroundColor: state.isFocused ? '#f0f0f0' : 'white',
+      '&:hover': {
+        backgroundColor: '#f0f0f0'
+      }
+    }),
+    multiValue: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.data.cor + '20', // Adiciona transparência à cor
+      borderRadius: '12px',
+      padding: '2px'
+    }),
+    multiValueLabel: (provided, state) => ({
+      ...provided,
+      color: state.data.cor,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px'
+    })
+  };
+
+  const formatOptionLabel = ({ value, label, cor, icone }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <i className={`fas fa-${icone || 'tag'}`} style={{ color: cor }}></i>
+      <span>{label}</span>
+    </div>
+  );
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Valida os dados antes de salvar
     if (!descricao.trim() || 
         !valorTotal || 
         isNaN(parseFloat(valorTotal)) || 
@@ -118,7 +158,6 @@ const EditarTransacaoItem = ({
       return false;
     }
     
-    // Validar pagamentos
     const pagamentosValidos = pagamentos.every(p => 
       p.pessoa.trim() && 
       !isNaN(parseFloat(p.valor)) && 
@@ -130,7 +169,6 @@ const EditarTransacaoItem = ({
       return false;
     }
     
-    // Monta o objeto para envio
     const transacaoAtualizada = {
       tipo,
       descricao,
@@ -142,14 +180,12 @@ const EditarTransacaoItem = ({
         valor: Number(parseFloat(pag.valor).toFixed(2)),
         tags: pag.paymentTags || {}
       })),
-      // Mantém outros campos importantes que a transação já tinha
       identificador: transacao.identificador || `import-${Date.now()}-${index}`,
       dataImportacao: transacao.dataImportacao || new Date().toISOString(),
       usuario: transacao.usuario
     };
     
     try {
-      // Passa a transação atualizada para o componente pai
       onSave(index, transacaoAtualizada);
       return true;
     } catch (error) {
@@ -198,12 +234,8 @@ const EditarTransacaoItem = ({
                 required
               />
               <div className="date-shortcuts">
-                <Tooltip title="Define como hoje">
-                  <button type="button" onClick={setHoje}>Hoje</button>
-                </Tooltip>
-                <Tooltip title="Define como ontem">
-                  <button type="button" onClick={setOntem}>Ontem</button>
-                </Tooltip>
+                <button type="button" onClick={setHoje}>Hoje</button>
+                <button type="button" onClick={setOntem}>Ontem</button>
               </div>
             </div>
             <div className="form-section">
@@ -211,6 +243,7 @@ const EditarTransacaoItem = ({
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={valorTotal}
                 onChange={handleValorTotalChange}
                 required
@@ -221,97 +254,113 @@ const EditarTransacaoItem = ({
               <textarea
                 value={observacao}
                 onChange={e => setObservacao(e.target.value)}
-                rows="3"
-                placeholder="Adicione uma observação (opcional)"
+                rows={3}
               />
             </div>
           </div>
+          
           <div className="right-column">
-            <div className="form-section pagamentos-section">
+            <div className="form-section payment-section">
               <h3>Pagamentos</h3>
               {pagamentos.map((pag, idx) => (
-                <div key={idx} className="pagamento-item">
-                  <div className="form-section">
-                    <label>Pessoa:</label>
-                    <input
-                      type="text"
-                      value={pag.pessoa}
-                      onChange={e => handlePagamentoChange(idx, 'pessoa', e.target.value)}
-                      required
-                    />
+                <div key={idx} className="payment-item">
+                  <div className="payment-header">
+                    <h4>Pagamento {idx + 1}</h4>
+                    {pagamentos.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removePagamento(idx)}
+                        className="remove-payment"
+                      >
+                        Remover
+                      </button>
+                    )}
                   </div>
-                  <div className="form-section">
-                    <label>Valor:</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={pag.valor}
-                      onChange={e => handlePagamentoChange(idx, 'valor', e.target.value)}
-                      required
-                    />
+                  
+                  <div className="payment-fields">
+                    <div className="form-section">
+                      <label>Pessoa:</label>
+                      <input
+                        type="text"
+                        value={pag.pessoa}
+                        onChange={e => handlePagamentoChange(idx, 'pessoa', e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="form-section">
+                      <label>Valor:</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={pag.valor}
+                        onChange={e => handlePagamentoChange(idx, 'valor', e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
-
+                  
                   {/* Seletor de tags */}
                   <div className="form-section payment-tags">
                     <h4>Tags para Pagamento</h4>
                     {categorias.map((cat) => {
-                      // Cria as opções no formato { value, label }
-                      const options = (tagsPorCategoria[cat.nome] || []).map(tagName => ({
-                        value: tagName,
-                        label: tagName
-                      }));
-                      // Prepara os valores já selecionados
+                      const options = (tagsPorCategoria[cat.nome] || []);
                       const selectedValues = ((pag.paymentTags && pag.paymentTags[cat.nome]) || [])
-                        .map(tag => ({ value: tag, label: tag }));
+                        .map(tagCodigo => {
+                          const tag = allTags.find(t => t.codigo === tagCodigo);
+                          return tag ? {
+                            value: tag.codigo,
+                            label: tag.nome,
+                            cor: tag.cor,
+                            icone: tag.icone,
+                            categoria: tag.categoria
+                          } : null;
+                        })
+                        .filter(Boolean);
+
                       return (
-                        <div key={cat._id} className="tag-dropdown-group">
-                          <label>{cat.nome}:</label>
+                        <div key={cat.codigo} className="tag-category-group">
+                          <label>
+                            <i 
+                              className={`fas fa-${cat.icone || 'folder'}`} 
+                              style={{ color: cat.cor }}
+                            ></i>
+                            {cat.nome}:
+                          </label>
                           <Select
                             isMulti
                             options={options}
                             value={selectedValues}
-                            onChange={(selectedOptions) => {
-                              const selectedTags = selectedOptions
-                                ? selectedOptions.map(opt => opt.value)
-                                : [];
-                              const novos = [...pagamentos];
-                              if (!novos[idx].paymentTags) {
-                                novos[idx].paymentTags = {};
-                              }
-                              novos[idx].paymentTags[cat.nome] = selectedTags;
-                              setPagamentos(novos);
+                            onChange={(selected) => {
+                              const newPaymentTags = { ...pag.paymentTags };
+                              newPaymentTags[cat.nome] = selected.map(s => s.value);
+                              handlePagamentoChange(idx, 'paymentTags', newPaymentTags);
                             }}
-                            classNamePrefix="mySelect"
+                            styles={customStyles}
+                            formatOptionLabel={formatOptionLabel}
+                            placeholder="Selecione as tags..."
                           />
                         </div>
                       );
                     })}
                   </div>
-
-                  <button 
-                    type="button" 
-                    onClick={() => removePagamento(idx)}
-                    className="remove-btn"
-                    disabled={pagamentos.length <= 1}
-                  >
-                    Remover Pagamento
-                  </button>
-                  <hr />
                 </div>
               ))}
-              <button type="button" onClick={addPagamento} className="add-btn">
+              
+              <button
+                type="button"
+                onClick={addPagamento}
+                className="add-payment"
+              >
                 Adicionar Pagamento
               </button>
             </div>
           </div>
         </div>
-        <div className="item-buttons">
-          <button
-            type="submit"
-            className="save-btn"
-          >
-            Salvar Alterações
-          </button>
+        
+        <div className="form-actions">
+          <button type="submit">Salvar</button>
+          <button type="button" onClick={onClose}>Cancelar</button>
         </div>
       </form>
     </div>

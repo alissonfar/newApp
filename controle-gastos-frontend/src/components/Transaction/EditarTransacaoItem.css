@@ -1,157 +1,210 @@
 .editar-transacao-item {
-  padding: 20px;
-  background-color: white;
+  background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
-  position: relative;
-}
-
-.editar-transacao-item:last-child {
-  margin-bottom: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
 }
 
 .transacao-numero {
-  position: absolute;
-  top: -15px;
-  left: 20px;
-  z-index: 2;
+  margin-bottom: 20px;
 }
 
 .transacao-badge {
-  background-color: #6200ee;
-  color: white;
-  padding: 5px 15px;
-  border-radius: 15px;
-  font-weight: 500;
+  background-color: #f0f0f0;
+  padding: 4px 12px;
+  border-radius: 16px;
   font-size: 14px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.editar-transacao-item .nova-transacao-form-container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.editar-transacao-item .nova-transacao-form-container h2 {
-  display: none;
-}
-
-.editar-transacao-item .form-grid {
-  display: flex;
-  gap: 20px;
-}
-
-.editar-transacao-item .left-column,
-.editar-transacao-item .right-column {
-  flex: 1;
-}
-
-.editar-transacao-item .form-section {
-  margin-bottom: 15px;
-}
-
-.editar-transacao-item .form-section label {
-  display: block;
-  margin-bottom: 5px;
   font-weight: 500;
 }
 
-.editar-transacao-item .form-section input,
-.editar-transacao-item .form-section select,
-.editar-transacao-item .form-section textarea {
-  width: 100%;
-  padding: 10px;
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+}
+
+.left-column,
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-section label {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-section label i {
+  width: 16px;
+  text-align: center;
+}
+
+.form-section input,
+.form-section select,
+.form-section textarea {
+  padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  font-size: 14px;
 }
 
-.editar-transacao-item .date-shortcuts {
+.form-section textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.date-shortcuts {
   display: flex;
-  gap: 10px;
-  margin-top: 5px;
+  gap: 8px;
 }
 
-.editar-transacao-item .date-shortcuts button {
-  padding: 5px 10px;
+.date-shortcuts button {
+  padding: 4px 12px;
   background-color: #f0f0f0;
-  border: 1px solid #ddd;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  transition: background-color 0.2s;
 }
 
-.editar-transacao-item .pagamentos-section {
-  background-color: #f8f9fa;
-  padding: 15px;
+.date-shortcuts button:hover {
+  background-color: #e0e0e0;
+}
+
+.payment-section {
+  background-color: #f8f8f8;
+  padding: 16px;
   border-radius: 8px;
 }
 
-.editar-transacao-item .pagamento-item {
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
+.payment-item {
+  background-color: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.editar-transacao-item .pagamento-item:last-child {
-  margin-bottom: 0;
-  border-bottom: none;
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.editar-transacao-item .payment-tags {
-  margin-top: 10px;
-}
-
-.editar-transacao-item .payment-tags h4 {
-  margin-bottom: 10px;
+.payment-header h4 {
+  margin: 0;
   font-size: 16px;
+  color: #333;
 }
 
-.editar-transacao-item .tag-dropdown-group {
-  margin-bottom: 10px;
+.payment-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.editar-transacao-item .add-btn,
-.editar-transacao-item .remove-btn {
-  padding: 8px 12px;
-  border: none;
+.payment-tags {
+  border-top: 1px solid #eee;
+  padding-top: 16px;
+}
+
+.payment-tags h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.tag-category-group {
+  margin-bottom: 12px;
+}
+
+.tag-category-group label {
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #333;
+}
+
+.remove-payment {
+  padding: 4px 12px;
+  background-color: #fff0f0;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.remove-payment:hover {
+  background-color: #ffdede;
+}
+
+.add-payment {
+  width: 100%;
+  padding: 12px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 500;
-  margin-top: 10px;
+  transition: all 0.2s;
 }
 
-.editar-transacao-item .add-btn {
-  background-color: #03a9f4;
-  color: white;
+.add-payment:hover {
+  background-color: #bbdefb;
 }
 
-.editar-transacao-item .remove-btn {
-  background-color: #f44336;
-  color: white;
-}
-
-.editar-transacao-item .remove-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.editar-transacao-item .item-buttons {
+.form-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #eee;
 }
 
-.editar-transacao-item .save-btn {
-  padding: 10px 20px;
+.form-actions button {
+  padding: 8px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.form-actions button[type="submit"] {
   background-color: #4caf50;
   color: white;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
+}
+
+.form-actions button[type="submit"]:hover {
+  background-color: #43a047;
+}
+
+.form-actions button[type="button"] {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.form-actions button[type="button"]:hover {
+  background-color: #e0e0e0;
 }
 
 /* Estilos para o React-Select dentro do componente */
@@ -172,9 +225,20 @@
   color: #0277bd;
 }
 
+.tag-category-controls {
+  display: flex;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.tag-category-controls .icon-selector-container,
+.tag-category-controls .color-picker-container {
+  flex: 1;
+}
+
 @media (max-width: 768px) {
-  .editar-transacao-item .form-grid {
-    flex-direction: column;
+  .form-grid {
+    grid-template-columns: 1fr;
   }
   
   .editar-transacao-item {
