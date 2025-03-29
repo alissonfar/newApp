@@ -49,8 +49,7 @@ const MainLayout = ({ children }) => {
       key: 'transacoes',
       submenu: [
         { name: 'Listar Transações', path: '/transacoes', icon: <FaClipboardList />, isSubItem: true },
-        { name: 'Importação em Massa', path: '/importacao-em-massa', icon: <FaFileImport />, isSubItem: true },
-        { name: 'Gerenciar Importações', path: '/gerenciar-importacoes', icon: <FaClipboardList />, isSubItem: true }
+        { name: 'Importação em Massa', path: '/importacao', icon: <FaFileImport />, isSubItem: true }
       ]
     },
     { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },
@@ -149,7 +148,7 @@ const MainLayout = ({ children }) => {
           </nav>
         </div>
 
-        <div className="menu-footer">
+        <div className="menu-bottom">
           <div className="user-info" onClick={handleProfileToggle}>
             <img src={myLogo} alt="Avatar do usuário" className="avatar" />
             {!isMenuCollapsed && (

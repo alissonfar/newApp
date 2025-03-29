@@ -102,4 +102,84 @@ export const loginUsuario = async (dados) => {
   }
 };
 
-export default api; 
+export default api;
+
+// Funções de API para importação
+export const importacaoApi = {
+  // Criar nova importação
+  criar: async (dados) => {
+    try {
+      const response = await api.post('/importacoes', dados);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Upload de arquivo
+  uploadArquivo: async (importacaoId, arquivo) => {
+    try {
+      const formData = new FormData();
+      formData.append('arquivo', arquivo);
+
+      const response = await api.post(`/importacoes/${importacaoId}/arquivo`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Obter detalhes de uma importação
+  obter: async (importacaoId) => {
+    try {
+      const response = await api.get(`/importacoes/${importacaoId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Listar todas as importações
+  listar: async () => {
+    try {
+      const response = await api.get('/importacoes');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Listar transações de uma importação
+  listarTransacoes: async (importacaoId) => {
+    try {
+      const response = await api.get(`/importacoes/${importacaoId}/transacoes`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Salvar uma transação da importação
+  salvarTransacao: async (importacaoId, transacaoId, dados) => {
+    try {
+      const response = await api.put(`/importacoes/${importacaoId}/transacoes/${transacaoId}`, dados);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Finalizar importação
+  finalizar: async (importacaoId) => {
+    try {
+      const response = await api.put(`/importacoes/${importacaoId}/finalizar`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  }
+}; 

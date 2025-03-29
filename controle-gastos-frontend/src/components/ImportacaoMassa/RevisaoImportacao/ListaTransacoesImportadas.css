@@ -1,0 +1,176 @@
+.lista-transacoes {
+  margin: 2rem 0;
+}
+
+.table-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+tr:hover {
+  background-color: #f8f9fa;
+}
+
+tr.validada {
+  background-color: #f8fff9;
+}
+
+tr.validada:hover {
+  background-color: #f0fff2;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  font-size: 2rem;
+  color: #3498db;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.edit-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-badge.validada {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.pendente {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.acoes {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.btn-acao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.btn-acao:hover {
+  transform: translateY(-1px);
+}
+
+.btn-acao.editar {
+  background-color: #3498db;
+}
+
+.btn-acao.editar:hover {
+  background-color: #2980b9;
+}
+
+.btn-acao.remover {
+  background-color: #e74c3c;
+}
+
+.btn-acao.remover:hover {
+  background-color: #c0392b;
+}
+
+.btn-acao.validar {
+  background-color: #2ecc71;
+}
+
+.btn-acao.validar:hover {
+  background-color: #27ae60;
+}
+
+.btn-acao.salvar {
+  background-color: #2ecc71;
+}
+
+.btn-acao.salvar:hover {
+  background-color: #27ae60;
+}
+
+.btn-acao.cancelar {
+  background-color: #95a5a6;
+}
+
+.btn-acao.cancelar:hover {
+  background-color: #7f8c8d;
+}
+
+@media (max-width: 768px) {
+  .lista-transacoes {
+    margin: 1rem 0;
+  }
+
+  th, td {
+    padding: 0.75rem;
+  }
+
+  .btn-acao {
+    width: 28px;
+    height: 28px;
+  }
+
+  .status-badge {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+  }
+} 
