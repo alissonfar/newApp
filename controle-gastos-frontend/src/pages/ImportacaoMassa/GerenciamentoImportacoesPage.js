@@ -72,34 +72,30 @@ const GerenciamentoImportacoesPage = () => {
   };
 
   const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case 'pendente':
-        return 'status-badge pendente';
+    switch (status.toLowerCase()) {
+      case 'finalizada':
+        return 'status-badge finalizada';
+      case 'estornada':
+        return 'status-badge estornada';
       case 'processando':
         return 'status-badge processando';
-      case 'concluido':
-        return 'status-badge concluido';
-      case 'concluido_com_erros':
-        return 'status-badge concluido-erros';
-      case 'erro':
-        return 'status-badge erro';
+      case 'pendente':
+        return 'status-badge pendente';
       default:
         return 'status-badge';
     }
   };
 
   const getStatusText = (status) => {
-    switch (status) {
-      case 'pendente':
-        return 'Pendente';
+    switch (status.toLowerCase()) {
+      case 'finalizada':
+        return 'Finalizada';
+      case 'estornada':
+        return 'Estornada';
       case 'processando':
         return 'Processando';
-      case 'concluido':
-        return 'Concluído';
-      case 'concluido_com_erros':
-        return 'Concluído com Erros';
-      case 'erro':
-        return 'Erro';
+      case 'pendente':
+        return 'Pendente';
       default:
         return status;
     }
@@ -147,16 +143,14 @@ const GerenciamentoImportacoesPage = () => {
 
   return (
     <div className="gerenciamento-importacoes">
-      <div className="page-header">
-        <div className="header-content">
-          <h1>Gerenciamento de Importações</h1>
-          <button 
-            className="btn-nova-importacao"
-            onClick={handleNovaImportacao}
-          >
-            <FaPlus /> Nova Importação
-          </button>
-        </div>
+      <div className="page-title">
+        <h1>Gerenciamento de Importações</h1>
+        <button 
+          className="btn-nova-importacao"
+          onClick={handleNovaImportacao}
+        >
+          + Nova Importação
+        </button>
       </div>
 
       {importacoes.length === 0 ? (
@@ -184,9 +178,9 @@ const GerenciamentoImportacoesPage = () => {
               </thead>
               <tbody>
                 {importacoes.map((importacao) => (
-                  <tr key={importacao.id}>
+                  <tr key={importacao.id || importacao._id}>
                     <td>{importacao.descricao}</td>
-                    <td>{formatarData(importacao.createdAt)}</td>
+                    <td>{formatarData(importacao.createdAt || importacao.data)}</td>
                     <td>
                       <span className={getStatusBadgeClass(importacao.status)}>
                         {getStatusText(importacao.status)}
@@ -197,18 +191,21 @@ const GerenciamentoImportacoesPage = () => {
                         <div className="progresso-bar">
                           <div 
                             className="progresso-fill"
-                            style={{ width: `${importacao.progresso}%` }}
+                            style={{ 
+                              width: `${(importacao.totalProcessado / importacao.totalRegistros) * 100 || 100}%` 
+                            }}
                           />
                         </div>
                         <span className="progresso-text">
-                          {importacao.totalSucesso}/{importacao.totalProcessado}
+                          {importacao.totalProcessado || importacao.total || 0}/
+                          {importacao.totalRegistros || importacao.total || 0}
                         </span>
                       </div>
                     </td>
                     <td>
                       <button
-                        className="btn-continuar"
-                        onClick={() => handleContinuarImportacao(importacao.id)}
+                        className="btn-detalhes"
+                        onClick={() => handleContinuarImportacao(importacao.id || importacao._id)}
                       >
                         Detalhes
                       </button>

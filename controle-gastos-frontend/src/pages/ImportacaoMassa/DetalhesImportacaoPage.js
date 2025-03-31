@@ -330,6 +330,10 @@ const DetalhesImportacaoPage = () => {
 
                 <div className="importacao-info">
                     <div className="info-item">
+                        <label>Nome do Arquivo</label>
+                        <span>{importacao.nomeArquivo || 'Não informado'}</span>
+                    </div>
+                    <div className="info-item">
                         <label>Data de Criação</label>
                         <span>{formatarData(importacao.createdAt)}</span>
                     </div>

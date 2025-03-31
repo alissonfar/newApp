@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -74,6 +74,19 @@ const MainLayout = ({ children }) => {
   const toggleMenu = () => {
     setIsMenuCollapsed(!isMenuCollapsed);
   };
+
+  // Adicionar handler para fechar o menu ao clicar fora
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      const menuFooter = document.querySelector('.menu-footer');
+      if (profileOpen && menuFooter && !menuFooter.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [profileOpen]);
 
   // Verifica se está em /login ou /registro ou não há token
   const isAuthPage = location.pathname === '/login' || location.pathname === '/registro';
@@ -148,24 +161,34 @@ const MainLayout = ({ children }) => {
           </nav>
         </div>
 
-        <div className="menu-bottom">
+        <div className="menu-footer">
           <div className="user-info" onClick={handleProfileToggle}>
             <img src={myLogo} alt="Avatar do usuário" className="avatar" />
             {!isMenuCollapsed && (
-              <span className="user-name">
-                {usuario ? usuario.nome : 'Usuário'}
-              </span>
+              <>
+                <span className="user-name">
+                  {usuario ? usuario.nome : 'Usuário'}
+                </span>
+                <FaChevronDown className={`profile-arrow ${profileOpen ? 'open' : ''}`} />
+              </>
             )}
           </div>
 
           {/* Se profileOpen for true, exibe o submenu */}
           {profileOpen && (
             <div className="profile-dropdown">
-              <Link to="/profile" className="profile-link">Meu Perfil</Link>
-              <Link to="/como-utilizar" className="profile-link">
-                <FaQuestionCircle /> Como Utilizar
+              <Link to="/profile" className="profile-link">
+                <FaUser />
+                Meu Perfil
               </Link>
-              <button onClick={handleLogout} className="profile-link logout-btn">Sair</button>
+              <Link to="/como-utilizar" className="profile-link">
+                <FaQuestionCircle />
+                Como Utilizar
+              </Link>
+              <button onClick={handleLogout} className="profile-link logout-btn">
+                <FaSignOutAlt />
+                Sair
+              </button>
             </div>
           )}
         </div>

@@ -90,7 +90,7 @@
 
 .importacao-info {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   padding: 1.5rem 0;
   border-top: 1px solid var(--cor-borda);
@@ -268,7 +268,7 @@
   }
 
   .importacao-info {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .status-grid {
@@ -282,6 +282,12 @@
   .btn-finalizar,
   .btn-estornar {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .importacao-info {
+    grid-template-columns: 1fr;
   }
 }
 
