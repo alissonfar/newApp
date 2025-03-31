@@ -36,11 +36,14 @@ const NovaImportacaoForm = () => {
 
     setLoading(true);
     try {
-      // Criar nova importação
-      const importacao = await importacaoService.criarImportacao(descricao, tipoArquivo);
-      
-      // Fazer upload do arquivo
-      await importacaoService.uploadArquivo(importacao.id, arquivo);
+      // Criar FormData com os dados da importação
+      const formData = new FormData();
+      formData.append('descricao', descricao);
+      formData.append('tipoArquivo', tipoArquivo);
+      formData.append('arquivo', arquivo);
+
+      // Criar nova importação com o arquivo
+      const importacao = await importacaoService.criarImportacao(formData);
       
       // Iniciar o estado da importação no Context
       iniciarImportacao(importacao);

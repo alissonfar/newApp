@@ -1,0 +1,93 @@
+[
+  {
+    "tipo": "gasto",
+    "descricao": "Fisia Nike Eccomerce - Tênis Nike 2/2",
+    "valor": 179.99,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Ferrareze Moto Center 4/6",
+    "valor": 156.58,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Germania 4/6",
+    "valor": 274.07,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Biologica Farmacia 3/3",
+    "valor": 198,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Google One - Alisson",
+    "valor": 7.99,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Ghs Solucoes 2/3 - Uniforme Arbitragem",
+    "valor": 150.79,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Culligan 3/10 - Bebedouro/purificador",
+    "valor": 81.32,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Otica Nova Aliança - 4/6",
+    "valor": 44.85,
+    "data": "2025-03-01",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Medicamentos Fonseca - farmácia com a Mi",
+    "valor": 61.95,
+    "data": "2025-03-02",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Ana Grasseli - Guri",
+    "valor": 5,
+    "data": "2025-03-02",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "HDI Seguros - 5/10",
+    "valor": 344.96,
+    "data": "2025-03-02",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Farmácias Unipreço - ",
+    "valor": 24.8,
+    "data": "2025-03-03",
+    "pagamentos": []
+  },
+  {
+    "tipo": "gasto",
+    "descricao": "Google One - Emersu",
+    "valor": 38.99,
+    "data": "2025-03-03",
+    "pagamentos": []
+  }
+]

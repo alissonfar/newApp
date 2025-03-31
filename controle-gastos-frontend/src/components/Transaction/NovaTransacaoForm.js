@@ -55,11 +55,16 @@ const ShortcutsHelp = ({ open, onClose }) => {
 
 const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '' }) => {
   // Estados dos dados gerais
+  const [_id, set_Id] = useState(transacao?._id);
   const [tipo, setTipo] = useState(transacao ? transacao.tipo : 'gasto');
   const [descricao, setDescricao] = useState(transacao ? transacao.descricao : '');
   const [data, setData] = useState(transacao ? transacao.data.split('T')[0] : '');
   const [valorTotal, setValorTotal] = useState(transacao ? String(transacao.valor) : '');
   const [observacao, setObservacao] = useState(transacao ? transacao.observacao : '');
+  
+  // Novo estado para identificar se é uma transação importada
+  const [isImportada, setIsImportada] = useState(transacao?.importacao ? true : false);
+  const [importacaoId, setImportacaoId] = useState(transacao?.importacao || null);
   
   // Pagamentos: usamos paymentTags para manipulação (mapeando p.tags do backend)
   const [pagamentos, setPagamentos] = useState(
@@ -93,13 +98,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   useEffect(() => {
     async function fetchData() {
       try {
-        console.log('[DEBUG] Iniciando carregamento de categorias e tags');
+       
         const cats = await obterCategorias();
-        console.log('[DEBUG] Categorias carregadas:', cats);
+      
         setCategorias(cats);
         
         const tgs = await obterTags();
-        console.log('[DEBUG] Tags carregadas:', tgs);
+      
         setAllTags(tgs);
       } catch (error) {
         console.error('Erro ao carregar categorias ou tags:', error);
@@ -115,28 +120,23 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   // Sempre que "transacao" mudar (modo edição), preenche os estados
   useEffect(() => {
     if (transacao) {
-      console.log('[DEBUG] Transação recebida para edição:', transacao);
+      set_Id(transacao._id);
       setTipo(transacao.tipo);
       setDescricao(transacao.descricao);
       setData(transacao.data.split('T')[0]);
       setValorTotal(String(transacao.valor));
       setObservacao(transacao.observacao || '');
       
+      // Atualiza os estados de importação
+      setIsImportada(!!transacao.importacao);
+      setImportacaoId(transacao.importacao || null);
+      
       if (transacao.pagamentos && transacao.pagamentos.length > 0) {
-        console.log('[DEBUG] Pagamentos da transação:', transacao.pagamentos);
-        
-        const pagamentosProcessados = transacao.pagamentos.map(p => {
-          console.log('[DEBUG] Processando pagamento:', p);
-          console.log('[DEBUG] Tags do pagamento:', p.tags);
-          
-          return {
-            pessoa: p.pessoa,
-            valor: String(p.valor),
-            paymentTags: p.tags || {}
-          };
-        });
-        
-        console.log('[DEBUG] Pagamentos processados:', pagamentosProcessados);
+        const pagamentosProcessados = transacao.pagamentos.map(p => ({
+          pessoa: p.pessoa,
+          valor: String(p.valor),
+          paymentTags: p.tags || {}
+        }));
         setPagamentos(pagamentosProcessados);
       } else {
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
@@ -245,77 +245,74 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   const handleSubmit = async (e, closeModal = true) => {
     e.preventDefault();
     
-    // Validar campos obrigatórios
-    if (!descricao.trim()) {
-      toast.warn('A descrição é obrigatória.');
-      return;
-    }
-    
-    if (!valorTotal || isNaN(parseFloat(valorTotal)) || parseFloat(valorTotal) <= 0) {
-      toast.warn('Informe um valor total válido.');
-      return;
-    }
-    
-    // Validar pagamentos
-    const pagamentosValidos = pagamentos.every(p => p.pessoa.trim() && !isNaN(parseFloat(p.valor)) && parseFloat(p.valor) > 0);
-    if (!pagamentosValidos) {
-      toast.warn('Todos os pagamentos devem ter pessoa e valor válido.');
-      return;
-    }
-    
     if (!validatePagamentos()) {
-      toast.warn('A soma dos pagamentos deve ser igual ao valor total.');
+      toast.error('A soma dos pagamentos deve ser igual ao valor total da transação.');
       return;
     }
     
-    // Monta o objeto para envio ao backend
-    const transacaoData = {
-      tipo,
-      descricao,
-      data: toISOStringBR(data),
-      valor: Number(parseFloat(valorTotal).toFixed(2)),
-      observacao,
-      pagamentos: pagamentos.map((pag) => {
-        // Mantém os IDs das tags como estão para enviar ao backend
-        return {
-          pessoa: pag.pessoa,
-          valor: Number(parseFloat(pag.valor).toFixed(2)),
-          tags: pag.paymentTags // Já está no formato correto com IDs
-        };
-      })
-    };
     try {
-      if (transacao && transacao.id) {
-        await atualizarTransacao(transacao.id, transacaoData);
-        toast.success('Transação atualizada com sucesso!');
+      const transacaoData = {
+        _id,
+        tipo,
+        descricao,
+        data: toISOStringBR(data),
+        valor: parseFloat(valorTotal),
+        observacao,
+        pagamentos: pagamentos.map(p => ({
+          pessoa: p.pessoa,
+          valor: parseFloat(p.valor),
+          tags: p.paymentTags
+        }))
+      };
+
+      let response;
+
+      // Se for uma transação importada
+      if (isImportada && importacaoId) {
+        // Importa o serviço de importação dinamicamente para evitar dependência circular
+        const { default: importacaoService } = await import('../../services/importacaoService');
+        
+        console.log('[DEBUG] Atualizando transação importada:', {
+          importacaoId,
+          transacaoId: _id,
+          dados: transacaoData
+        });
+
+        response = await importacaoService.atualizarTransacao(
+          importacaoId,
+          _id,
+          transacaoData
+        );
+      } else if (_id) {
+        // Transação normal - edição
+        response = await atualizarTransacao(_id, transacaoData);
       } else {
-        await criarTransacao(transacaoData);
-        toast.success('Transação criada com sucesso!');
+        // Transação normal - criação
+        response = await criarTransacao(transacaoData);
       }
-      
-      // Chama onSuccess apenas se vai fechar o modal
+
+      // Chama o callback de sucesso com a resposta
+      await onSuccess(response);
+
       if (closeModal) {
-        if (onSuccess) onSuccess();
         onClose();
       } else {
-        // Se for "Salvar e Continuar", limpa os campos
+        // Limpa o formulário para nova entrada
+        set_Id(null);
         setTipo('gasto');
         setDescricao('');
         setData(getTodayBR());
         setValorTotal('');
         setObservacao('');
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
-        
-        // Foca no campo de descrição após limpar
-        setTimeout(() => {
-          if (descricaoRef.current) {
-            descricaoRef.current.focus();
-          }
-        }, 100);
+        setIsImportada(false);
+        setImportacaoId(null);
+        // Foca no primeiro campo
+        descricaoRef.current?.focus();
       }
     } catch (error) {
       console.error('Erro ao salvar transação:', error);
-      toast.error('Erro ao salvar transação.');
+      toast.error(error.message || 'Erro ao salvar transação.');
     }
   };
   
@@ -445,8 +442,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                   <div className="tags-section">
                     <h4>Tags para Pagamento</h4>
                     {categorias.map((cat) => {
-                      console.log('[DEBUG] Renderizando categoria:', cat.nome);
-                      console.log('[DEBUG] Tags disponíveis:', allTags.filter(t => t.categoria === cat._id));
+                     
                       
                       const options = allTags.filter(t => t.categoria === cat._id).map(t => ({
                         value: t._id,
@@ -456,7 +452,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                       }));
                       const selectedValues = ((pag.paymentTags && pag.paymentTags[cat._id]) || []).map(tagId => {
                         const tag = allTags.find(t => t._id === tagId);
-                        console.log('[DEBUG] Procurando tag:', tagId, 'Encontrada:', tag);
+                    
                         return tag ? {
                           value: tag._id,
                           label: tag.nome,
@@ -479,7 +475,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                             options={options}
                             value={selectedValues}
                             onChange={(selected) => {
-                              console.log('[DEBUG] Seleção alterada:', selected);
+                             
+                              
                               const newPaymentTags = { ...pag.paymentTags };
                               newPaymentTags[cat._id] = selected.map(s => s.value);
                               handlePagamentoChange(index, 'paymentTags', newPaymentTags);

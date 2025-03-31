@@ -28,7 +28,7 @@ const Transacoes = () => {
   const carregarTransacoes = async () => {
     try {
       const dados = await obterTransacoes();
-      console.log('Retorno do backend:', dados.transacoes);
+     
 
       // 1) Para cada transação, unificamos as tags de todos os pagamentos em transacao.tags
       let lista = (dados.transacoes || []).map((tr) => {

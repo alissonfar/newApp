@@ -35,6 +35,7 @@ const rotasTag = require('./routes/rotasTag');
 const rotasCategoria = require('./routes/rotasCategoria');
 const rotasRegra = require('./routes/rotasRegra');
 const rotasEmail = require('./routes/emailRoutes');
+const rotasImportacao = require('./routes/importacao');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
@@ -43,6 +44,7 @@ app.use('/api/tags', rotasTag);
 app.use('/api/categorias', rotasCategoria);
 app.use('/api/regras', rotasRegra);
 app.use('/api/email', rotasEmail);
+app.use('/api/importacoes', rotasImportacao);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {

@@ -9,6 +9,7 @@ import Relatorio from './pages/Relatorio/Relatorio';
 import Transacoes from './pages/Transacoes/Transacoes';
 import NovaImportacaoPage from './pages/ImportacaoMassa/NovaImportacaoPage';
 import GerenciamentoImportacoesPage from './pages/ImportacaoMassa/GerenciamentoImportacoesPage';
+import DetalhesImportacaoPage from './pages/ImportacaoMassa/DetalhesImportacaoPage';
 import Insights from './pages/Insights/Insights';
 import Tags from './pages/Tags/Tags';
 import Login from './pages/Login/Login';
@@ -89,6 +90,16 @@ function App() {
                 <PrivateRoute>
                   <MainLayout>
                     <NovaImportacaoPage />
+                  </MainLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/importacao/:id"
+              element={
+                <PrivateRoute>
+                  <MainLayout>
+                    <DetalhesImportacaoPage />
                   </MainLayout>
                 </PrivateRoute>
               }

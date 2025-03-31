@@ -50,7 +50,7 @@ const TagManagement = () => {
   const carregarCategorias = async () => {
     try {
       const cats = await obterCategorias();
-      console.log('carregarCategorias => cats:', cats); // [LOG]
+    
       setCategorias(cats);
       if (!selectedCategory && cats.length > 0) {
         setSelectedCategory(cats[0]); // Seleciona a primeira categoria
@@ -64,7 +64,7 @@ const TagManagement = () => {
   const carregarTags = async () => {
     try {
       const tgs = await obterTags();
-      console.log('carregarTags => tgs:', tgs); // [LOG]
+   
       setTags(tgs);
     } catch (error) {
       console.error('Erro ao carregar tags:', error);
@@ -92,8 +92,7 @@ const TagManagement = () => {
 
   // [LOGS] Adicionais para entender o que está acontecendo
   useEffect(() => {
-    console.log('selectedCategory =>', selectedCategory);
-    console.log('filteredTags =>', filteredTags);
+   
   }, [selectedCategory, filteredTags]);
 
   // Função para verificar se o nome da tag já existe

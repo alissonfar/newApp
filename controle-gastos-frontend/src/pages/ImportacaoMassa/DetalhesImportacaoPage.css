@@ -1,0 +1,577 @@
+/* src/pages/ImportacaoMassa/DetalhesImportacaoPage.css */
+.detalhes-importacao-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.btn-voltar {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-right: 1rem;
+  color: var(--cor-texto);
+  transition: all 0.2s;
+}
+
+.btn-voltar:hover {
+  background: var(--cor-secundaria);
+  color: white;
+}
+
+.btn-voltar svg {
+  margin-right: 0.5rem;
+}
+
+.page-header h1 {
+  font-size: 1.75rem;
+  color: var(--cor-texto);
+  margin: 0;
+}
+
+.importacao-card {
+  background: var(--cor-fundo);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.importacao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.importacao-titulo {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--cor-texto);
+}
+
+.importacao-status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.importacao-status.finalizada { 
+  background-color: var(--cor-sucesso);
+  color: white;
+}
+
+.importacao-status.validado { 
+  background-color: var(--cor-info);
+  color: white;
+}
+
+.importacao-status.processando { 
+  background-color: var(--cor-aviso);
+  color: var(--cor-texto);
+}
+
+.importacao-status.erro { 
+  background-color: var(--cor-erro);
+  color: white;
+}
+
+.importacao-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.info-item {
+  text-align: center;
+}
+
+.info-item label {
+  display: block;
+  color: var(--cor-secundaria);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.info-item span {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.resumo-status {
+  background: var(--cor-fundo);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 1.5rem;
+}
+
+.resumo-status h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: var(--cor-texto);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.status-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid var(--cor-borda);
+}
+
+.status-card.validadas { border-left: 4px solid var(--cor-info); }
+.status-card.pendentes { border-left: 4px solid var(--cor-aviso); }
+.status-card.processadas { border-left: 4px solid var(--cor-info); }
+.status-card.erro { border-left: 4px solid var(--cor-erro); }
+
+.status-card label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--cor-secundaria);
+  margin-bottom: 0.5rem;
+}
+
+.status-card span {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.status-card.validadas span { color: var(--cor-info); }
+.status-card.pendentes span { color: var(--cor-aviso); }
+.status-card.processadas span { color: var(--cor-info); }
+.status-card.erro span { color: var(--cor-erro); }
+
+.transacoes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5rem;
+}
+
+.transacoes-table th {
+  background: var(--cor-fundo);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--cor-secundaria);
+  border-bottom: 2px solid var(--cor-borda);
+}
+
+.transacoes-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--cor-borda);
+  color: var(--cor-texto);
+}
+
+.transacoes-table tr:hover {
+  background-color: var(--cor-fundo);
+}
+
+.acoes-cell {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-acao {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-editar {
+  background-color: var(--cor-info);
+  color: white;
+  border: none;
+}
+
+.btn-editar:hover {
+  background-color: var(--cor-info-escura);
+}
+
+.btn-validar {
+  background-color: var(--cor-sucesso);
+  color: white;
+  border: none;
+}
+
+.btn-validar:hover {
+  background-color: var(--cor-sucesso-escura);
+}
+
+.btn-finalizar {
+  background-color: var(--cor-sucesso);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-finalizar:hover {
+  background-color: var(--cor-sucesso-escura);
+}
+
+.btn-estornar {
+  background-color: var(--cor-erro);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-estornar:hover {
+  background-color: var(--cor-erro-escura);
+}
+
+.acoes-principais {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1024px) {
+  .status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .detalhes-importacao-container {
+    padding: 1rem;
+  }
+
+  .importacao-info {
+    grid-template-columns: 1fr;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acoes-principais {
+    flex-direction: column;
+  }
+
+  .btn-finalizar,
+  .btn-estornar {
+    width: 100%;
+  }
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Melhorias nos status */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  position: relative;
+}
+
+.status-badge::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-badge.pendente {
+  background-color: var(--cor-aviso);
+  color: #000;
+}
+
+.status-badge.pendente::before {
+  background-color: #fff;
+}
+
+.status-badge.validada {
+  background-color: var(--cor-info);
+  color: white;
+}
+
+.status-badge.validada::before {
+  background-color: #fff;
+}
+
+.status-badge.processada {
+  background-color: var(--cor-info);
+  color: white;
+}
+
+.status-badge.processada::before {
+  background-color: #fff;
+}
+
+.status-badge.erro {
+  background-color: var(--cor-erro);
+  color: white;
+}
+
+.status-badge.erro::before {
+  background-color: #fff;
+}
+
+.status-badge.revisada {
+  background-color: var(--cor-secundaria);
+  color: white;
+}
+
+.status-badge.revisada::before {
+  background-color: #fff;
+}
+
+/* Ajuste na tabela para os status */
+.transacoes-table td .status-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+}
+
+/* Cores de fundo para as linhas da tabela baseadas no status */
+.transacoes-table tr.status-pendente {
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+.transacoes-table tr.status-validada {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.transacoes-table tr.status-revisada {
+    background-color: rgba(108, 117, 125, 0.05);
+}
+
+.transacoes-table tr.status-erro {
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.transacoes-table tr.status-processada {
+    background-color: rgba(23, 162, 184, 0.05);
+}
+
+/* Hover mais suave mantendo a cor de fundo */
+.transacoes-table tr:hover {
+    filter: brightness(0.98);
+}
+
+/* Ajuste do status validada para azul */
+.status-badge.validada {
+    background-color: var(--cor-info);
+    color: white;
+}
+
+.status-card.validadas {
+    border-left: 4px solid var(--cor-info);
+}
+
+.status-card.validadas span {
+    color: var(--cor-info);
+}
+
+/* Status da Importação no cabeçalho */
+.importacao-header .status-badge {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.importacao-header .status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+/* Cores específicas para cada status da importação */
+.importacao-header .status-badge.pendente {
+    background-color: var(--cor-aviso);
+    color: #000;
+}
+
+.importacao-header .status-badge.validada,
+.importacao-header .status-badge.validado {
+    background-color: var(--cor-info);
+    color: white;
+}
+
+.importacao-header .status-badge.processada,
+.importacao-header .status-badge.processando {
+    background-color: var(--cor-info);
+    color: white;
+}
+
+.importacao-header .status-badge.finalizada {
+    background-color: var(--cor-sucesso);
+    color: white;
+}
+
+.importacao-header .status-badge.estornada {
+    background-color: var(--cor-erro);
+    color: white;
+}
+
+.importacao-header .status-badge.erro {
+    background-color: var(--cor-erro);
+    color: white;
+}
+
+/* Estilos para o Toast de Confirmação */
+.confirmacao-toast {
+    background: white !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    width: 400px !important;
+    max-width: 90vw !important;
+}
+
+.confirmacao-toast .titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    color: var(--cor-texto);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.confirmacao-toast .titulo svg {
+    color: var(--cor-aviso);
+    font-size: 1.2rem;
+}
+
+.confirmacao-toast .mensagem {
+    color: var(--cor-texto);
+    margin-bottom: 20px;
+}
+
+.confirmacao-toast .mensagem p {
+    margin-bottom: 8px;
+    color: var(--cor-texto-secundaria);
+}
+
+.confirmacao-toast .mensagem ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.confirmacao-toast .mensagem ul li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    color: var(--cor-texto-secundaria);
+}
+
+.confirmacao-toast .mensagem ul li::before {
+    content: "•";
+    color: var(--cor-info);
+}
+
+.confirmacao-toast .acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.confirmacao-toast .btn-cancelar {
+    padding: 8px 16px;
+    border: 1px solid var(--cor-borda);
+    border-radius: 4px;
+    background: white;
+    color: var(--cor-texto);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.confirmacao-toast .btn-cancelar:hover {
+    background: var(--cor-fundo);
+}
+
+.confirmacao-toast .btn-confirmar {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.confirmacao-toast .btn-confirmar.finalizar {
+    background: var(--cor-sucesso);
+}
+
+.confirmacao-toast .btn-confirmar.finalizar:hover {
+    background: var(--cor-sucesso-escura);
+}
+
+.confirmacao-toast .btn-confirmar.estornar {
+    background: var(--cor-erro);
+}
+
+.confirmacao-toast .btn-confirmar.estornar:hover {
+    background: var(--cor-erro-escura);
+} 
