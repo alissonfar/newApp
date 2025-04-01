@@ -38,7 +38,7 @@ const DetalhesImportacaoPage = () => {
     const carregarTransacoes = async () => {
         try {
             setLoadingTransacoes(true);
-            const response = await importacaoService.listarTransacoes(id);
+            const response = await importacaoService.listarTransacoes(id, 1, 1000);
             setTransacoes(response.items || []);
         } catch (error) {
             console.error('Erro ao carregar transações:', error);
