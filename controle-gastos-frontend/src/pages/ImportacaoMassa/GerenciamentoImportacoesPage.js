@@ -81,6 +81,10 @@ const GerenciamentoImportacoesPage = () => {
         return 'status-badge processando';
       case 'pendente':
         return 'status-badge pendente';
+      case 'erro':
+        return 'status-badge erro';
+      case 'validado':
+        return 'status-badge validado';
       default:
         return 'status-badge';
     }
@@ -96,6 +100,10 @@ const GerenciamentoImportacoesPage = () => {
         return 'Processando';
       case 'pendente':
         return 'Pendente';
+      case 'erro':
+        return 'Erro';
+      case 'validado':
+        return 'Validado';
       default:
         return status;
     }

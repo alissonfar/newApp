@@ -484,15 +484,18 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
-                                // Seleciona a opção em foco
+                                // Seleciona a opção em foco e fecha o menu
                                 const focusedOption = e.target.getElementsByClassName('option-focused')[0];
                                 if (focusedOption) {
                                   focusedOption.click();
+                                  // Força o fechamento do menu
+                                  e.target.blur();
+                                  e.target.focus();
                                 }
                               }
                             }}
                             blurInputOnSelect={false}
-                            closeMenuOnSelect={false}
+                            closeMenuOnSelect={true}
                             tabSelectsOption={false}
                             openMenuOnFocus={false}
                             backspaceRemovesValue={false}

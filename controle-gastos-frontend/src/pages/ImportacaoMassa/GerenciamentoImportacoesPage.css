@@ -209,6 +209,24 @@
   background-color: var(--cor-erro);
 }
 
+.status-badge.erro {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: var(--cor-erro);
+}
+
+.status-badge.erro::before {
+  background-color: var(--cor-erro);
+}
+
+.status-badge.validado {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: var(--cor-info);
+}
+
+.status-badge.validado::before {
+  background-color: var(--cor-info);
+}
+
 .status-badge.processando {
   background-color: rgba(33, 150, 243, 0.1);
   color: var(--cor-primaria);
