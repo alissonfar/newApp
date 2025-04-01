@@ -137,7 +137,8 @@ class ImportacaoService {
    */
   converterData(dataStr) {
     const [dia, mes, ano] = dataStr.split('/');
-    return new Date(ano, mes - 1, dia);
+    // Define o horário como 12:00 para evitar problemas com timezone
+    return new Date(ano, mes - 1, dia, 12, 0, 0);
   }
 
   /**
@@ -286,6 +287,11 @@ class ImportacaoService {
         if (!Array.isArray(transacoes)) {
           transacoes = [transacoes];
         }
+        // Ajusta as datas para 12:00
+        transacoes = transacoes.map(t => ({
+          ...t,
+          data: new Date(new Date(t.data).setHours(12, 0, 0, 0))
+        }));
       } else if (importacao.caminhoArquivo.endsWith('.csv')) {
         console.log('[DEBUG] Processando arquivo CSV');
         console.log('[DEBUG] Conteúdo do arquivo:', conteudoArquivo);
@@ -302,7 +308,7 @@ class ImportacaoService {
           try {
             console.log('[DEBUG] Processando transação:', transacao);
             const transacaoImportada = new TransacaoImportada({
-              data: new Date(transacao.data),
+              data: transacao.data, // A data já está com horário 12:00
               tipo: transacao.tipo,
               valor: transacao.valor,
               descricao: transacao.descricao,
@@ -398,9 +404,9 @@ class ImportacaoService {
         const valorStr = registro['Valor'].toString();
         const valor = Math.abs(parseFloat(valorStr.replace(',', '.')) || 0);
         
-        // Converte a data do formato DD/MM/YYYY para Date
+        // Converte a data do formato DD/MM/YYYY para Date com horário 12:00
         const [dia, mes, ano] = registro['Data'].split('/');
-        const data = new Date(ano, mes - 1, dia);
+        const data = new Date(ano, mes - 1, dia, 12, 0, 0);
 
         // Determina o tipo baseado no valor original (com sinal)
         const valorOriginal = parseFloat(valorStr.replace(',', '.')) || 0;
