@@ -36,8 +36,8 @@ class ValidadorTransacaoService {
     }
 
     // Validar tipo
-    if (!['receita', 'despesa'].includes(dados.tipo.toLowerCase())) {
-      throw new Error('Tipo deve ser "receita" ou "despesa"');
+    if (!['gasto', 'recebivel'].includes(dados.tipo.toLowerCase())) {
+      throw new Error('Tipo deve ser "gasto" ou "recebivel"');
     }
 
     // Validar categoria (opcional)

@@ -59,11 +59,27 @@ class ImportacaoService {
    */
   async processarArquivoCSV(caminhoArquivo, importacaoId, usuarioId) {
     try {
-      const conteudo = await fs.readFile(caminhoArquivo, 'utf-8');
+      // Lê o arquivo como buffer para detectar e converter a codificação
+      const buffer = await fs.readFile(caminhoArquivo);
+      const iconv = require('iconv-lite');
+      const chardet = require('chardet');
+      
+      // Detecta a codificação do arquivo
+      const encoding = chardet.detect(buffer);
+      
+      // Converte para UTF-8 se necessário
+      const conteudo = encoding && encoding.toLowerCase() !== 'utf-8' 
+        ? iconv.decode(buffer, encoding)
+        : buffer.toString('utf-8');
+
       const parser = csv.parse(conteudo, {
         columns: true,
         skip_empty_lines: true,
-        trim: true
+        trim: true,
+        encoding: 'utf-8',
+        bom: true, // Adiciona suporte a BOM
+        delimiter: ',', // Força o delimitador como vírgula
+        from_line: 1 // Começa da primeira linha
       });
 
       const importacao = await Importacao.findById(importacaoId);
@@ -71,22 +87,41 @@ class ImportacaoService {
       importacao.totalRegistros = linhas;
       await importacao.save();
 
+      console.log('Iniciando processamento do CSV...'); // Debug
+
       for await (const registro of parser) {
         try {
-          const transacao = this.mapearCamposCSV(registro);
+          console.log('Registro original:', registro); // Debug
+          const transacao = {
+            descricao: registro['Descrição'] || registro.Descricao || '',
+            valor: Math.abs(parseFloat(registro['Valor'].replace(',', '.')) || 0),
+            data: this.converterData(registro['Data']),
+            tipo: parseFloat(registro['Valor']) < 0 ? 'gasto' : 'recebivel',
+            categoria: null,
+            identificador: registro['Identificador'],
+            observacao: `Importado do Nubank - ID: ${registro['Identificador']}`,
+            pagamentos: [{
+              pessoa: 'Titular',
+              valor: Math.abs(parseFloat(registro['Valor'].replace(',', '.')) || 0),
+              tags: {}
+            }]
+          };
+
+          console.log('Transação mapeada:', transacao); // Debug
           await this.processarTransacao(transacao, importacaoId, usuarioId);
           importacao.registrosProcessados++;
           await importacao.save();
         } catch (error) {
+          console.error('Erro ao processar registro:', error); // Debug
           importacao.registrosComErro++;
           await importacao.save();
-          console.error('Erro ao processar registro CSV:', error);
         }
       }
 
       importacao.status = 'finalizada';
       await importacao.save();
     } catch (error) {
+      console.error('Erro geral no processamento:', error); // Debug
       const importacao = await Importacao.findById(importacaoId);
       importacao.status = 'erro';
       importacao.erro = error.message;
@@ -96,18 +131,13 @@ class ImportacaoService {
   }
 
   /**
-   * Mapeia os campos do CSV para o formato padrão
-   * @param {Object} registro - Registro do CSV
-   * @returns {Object} Transação mapeada
+   * Converte uma data do formato DD/MM/YYYY para um objeto Date
+   * @param {string} dataStr - Data no formato DD/MM/YYYY
+   * @returns {Date} Objeto Date
    */
-  mapearCamposCSV(registro) {
-    return {
-      descricao: registro.descricao,
-      valor: parseFloat(registro.valor),
-      data: new Date(registro.data),
-      tipo: registro.tipo.toLowerCase(),
-      categoria: registro.categoria
-    };
+  converterData(dataStr) {
+    const [dia, mes, ano] = dataStr.split('/');
+    return new Date(ano, mes - 1, dia);
   }
 
   /**
@@ -234,6 +264,8 @@ class ImportacaoService {
         throw new Error('Importação não encontrada');
       }
 
+      console.log('[DEBUG] Iniciando processamento do arquivo:', importacao.nomeArquivo);
+
       // Atualiza status para processando
       importacao.status = 'processando';
       await importacao.save();
@@ -244,6 +276,7 @@ class ImportacaoService {
 
       // Parse do arquivo baseado no tipo
       if (importacao.caminhoArquivo.endsWith('.json')) {
+        console.log('[DEBUG] Processando arquivo JSON');
         transacoes = JSON.parse(conteudoArquivo);
         // Se for um objeto com propriedade transacoes, use ela
         if (transacoes.transacoes && Array.isArray(transacoes.transacoes)) {
@@ -254,15 +287,20 @@ class ImportacaoService {
           transacoes = [transacoes];
         }
       } else if (importacao.caminhoArquivo.endsWith('.csv')) {
+        console.log('[DEBUG] Processando arquivo CSV');
+        console.log('[DEBUG] Conteúdo do arquivo:', conteudoArquivo);
         transacoes = ImportacaoService.parseCSV(conteudoArquivo);
+        console.log('[DEBUG] Transações extraídas do CSV:', transacoes);
       } else {
         throw new Error('Formato de arquivo não suportado');
       }
 
       // Processa cada transação
+      console.log('[DEBUG] Iniciando processamento das transações');
       const resultados = await Promise.all(
         transacoes.map(async (transacao) => {
           try {
+            console.log('[DEBUG] Processando transação:', transacao);
             const transacaoImportada = new TransacaoImportada({
               data: new Date(transacao.data),
               tipo: transacao.tipo,
@@ -271,13 +309,20 @@ class ImportacaoService {
               categoria: transacao.categoria,
               importacao: importacaoId,
               usuario: importacao.usuario,
-              dadosOriginais: transacao
+              dadosOriginais: transacao,
+              pagamentos: transacao.pagamentos || [{
+                pessoa: 'Titular',
+                valor: transacao.valor,
+                tags: {}
+              }]
             });
 
             await transacaoImportada.validate();
             await transacaoImportada.save();
+            console.log('[DEBUG] Transação processada com sucesso');
             return { sucesso: true, transacao: transacaoImportada };
           } catch (erro) {
+            console.error('[DEBUG] Erro ao processar transação:', erro);
             return {
               sucesso: false,
               erro: erro.message,
@@ -290,6 +335,12 @@ class ImportacaoService {
       // Atualiza estatísticas da importação
       const sucessos = resultados.filter(r => r.sucesso).length;
       const falhas = resultados.filter(r => !r.sucesso).length;
+
+      console.log('[DEBUG] Resultados do processamento:', {
+        sucessos,
+        falhas,
+        total: resultados.length
+      });
 
       importacao.totalProcessado = resultados.length;
       importacao.totalSucesso = sucessos;
@@ -313,7 +364,7 @@ class ImportacaoService {
         total: resultados.length
       };
     } catch (erro) {
-      console.error('Erro ao processar importação:', erro);
+      console.error('[DEBUG] Erro geral no processamento:', erro);
       
       // Atualiza status da importação para erro
       const importacao = await Importacao.findById(importacaoId);
@@ -336,13 +387,47 @@ class ImportacaoService {
       .filter(linha => linha.trim())
       .map(linha => {
         const valores = linha.split(',').map(val => val.trim());
-        const transacao = {};
+        const registro = {};
         
+        // Mapeia os valores para o cabeçalho
         cabecalho.forEach((coluna, index) => {
-          transacao[coluna] = valores[index];
+          registro[coluna] = valores[index];
         });
+
+        // Processa o valor (remove caracteres não numéricos e converte para número)
+        const valorStr = registro['Valor'].toString();
+        const valor = Math.abs(parseFloat(valorStr.replace(',', '.')) || 0);
         
-        return transacao;
+        // Converte a data do formato DD/MM/YYYY para Date
+        const [dia, mes, ano] = registro['Data'].split('/');
+        const data = new Date(ano, mes - 1, dia);
+
+        // Determina o tipo baseado no valor original (com sinal)
+        const valorOriginal = parseFloat(valorStr.replace(',', '.')) || 0;
+        const tipo = valorOriginal < 0 ? 'gasto' : 'recebivel';
+
+        // Extrai a descrição
+        const descricao = registro['Descrição'] || registro['DescriÃ§Ã£o'] || registro['Descricao'] || '';
+
+        // Extrai o identificador
+        const identificador = registro['Identificador'];
+
+        // Monta o objeto no mesmo formato que o JSON espera
+        return {
+          descricao: descricao || 'Transação Nubank',
+          valor,
+          data,
+          tipo,
+          categoria: null,
+          identificador,
+          observacao: `Importado do Nubank - ID: ${identificador}`,
+          dadosOriginais: registro,
+          pagamentos: [{
+            pessoa: 'Titular',
+            valor,
+            tags: {}
+          }]
+        };
       });
   }
 }
