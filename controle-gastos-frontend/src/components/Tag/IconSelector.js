@@ -8,11 +8,31 @@ import {
   FaTools, FaHammer, FaScrewdriver, FaWrench, FaPaintRoller,
   FaCouch, FaBed, FaChair, FaTableTennis, FaDumbbell, FaRunning,
   FaBicycle, FaSwimmer, FaFootballBall, FaBasketballBall, FaBowlingBall,
-  FaCreditCard, FaMoneyBillAlt, FaPiggyBank, FaWallet, FaHandHoldingUsd
+  FaCreditCard, FaMoneyBillAlt, FaPiggyBank, FaWallet, FaHandHoldingUsd,
+  FaChartLine, FaChartBar, FaChartPie, FaCalculator, FaBalanceScale,
+  FaUniversity, FaPercentage, FaReceipt, FaFileInvoiceDollar, FaCoins
 } from 'react-icons/fa';
+import IconRenderer from '../shared/IconRenderer';
 import './IconSelector.css';
 
 const icones = {
+  // Finanças (Primeiro para priorizar)
+  creditcard: { icon: FaCreditCard, label: 'Cartão' },
+  moneybill: { icon: FaMoneyBillAlt, label: 'Dinheiro' },
+  piggybank: { icon: FaPiggyBank, label: 'Poupança' },
+  wallet: { icon: FaWallet, label: 'Carteira' },
+  money: { icon: FaHandHoldingUsd, label: 'Pagamento' },
+  chartline: { icon: FaChartLine, label: 'Gráfico Linha' },
+  chartbar: { icon: FaChartBar, label: 'Gráfico Barras' },
+  chartpie: { icon: FaChartPie, label: 'Gráfico Pizza' },
+  calculator: { icon: FaCalculator, label: 'Calculadora' },
+  balance: { icon: FaBalanceScale, label: 'Balanço' },
+  bank: { icon: FaUniversity, label: 'Banco' },
+  percentage: { icon: FaPercentage, label: 'Porcentagem' },
+  receipt: { icon: FaReceipt, label: 'Recibo' },
+  invoice: { icon: FaFileInvoiceDollar, label: 'Fatura' },
+  coins: { icon: FaCoins, label: 'Moedas' },
+
   // Casa e Utilidades
   home: { icon: FaHome, label: 'Casa' },
   couch: { icon: FaCouch, label: 'Móveis' },
@@ -70,18 +90,10 @@ const icones = {
   football: { icon: FaFootballBall, label: 'Futebol' },
   basketball: { icon: FaBasketballBall, label: 'Basquete' },
   bowling: { icon: FaBowlingBall, label: 'Boliche' },
-
-  // Finanças
-  creditcard: { icon: FaCreditCard, label: 'Cartão' },
-  moneybill: { icon: FaMoneyBillAlt, label: 'Dinheiro' },
-  piggybank: { icon: FaPiggyBank, label: 'Poupança' },
-  wallet: { icon: FaWallet, label: 'Carteira' },
-  money: { icon: FaHandHoldingUsd, label: 'Pagamento' },
 };
 
 const IconSelector = ({ value, onChange, className, cor }) => {
   const [mostrarGrid, setMostrarGrid] = useState(false);
-  const IconeAtual = icones[value]?.icon || icones.home.icon;
 
   return (
     <div className="icon-selector-container">
@@ -90,7 +102,7 @@ const IconSelector = ({ value, onChange, className, cor }) => {
         onClick={() => setMostrarGrid(!mostrarGrid)}
         style={{ color: cor }}
       >
-        <IconeAtual size={20} />
+        <IconRenderer nome={value} size={20} cor={cor} />
         <span>{icones[value]?.label || 'Selecione um ícone'}</span>
       </div>
       
@@ -107,7 +119,7 @@ const IconSelector = ({ value, onChange, className, cor }) => {
               title={label}
               style={{ color: value === key ? cor : 'inherit' }}
             >
-              <Icon size={20} />
+              <IconRenderer nome={key} size={20} cor={value === key ? cor : 'inherit'} />
               <span className="icone-label">{label}</span>
             </div>
           ))}

@@ -6,6 +6,7 @@ import { toast } from 'react-toastify'; // Import do toast do React Toastify
 import { Tooltip, IconButton } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { criarTransacao, atualizarTransacao, obterCategorias, obterTags } from '../../api';
+import IconRenderer from '../shared/IconRenderer';
 import './NovaTransacaoForm.css';
 import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils';
 
@@ -464,22 +465,40 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                       return (
                         <div key={cat._id} className="tag-category-group">
                           <label>
-                            <i 
-                              className={`fas fa-${cat.icone || 'folder'}`} 
-                              style={{ color: cat.cor || '#000' }}
-                            ></i>
-                            {cat.nome} {/* Nome apenas para exibição */}
+                            <IconRenderer 
+                              nome={cat.icone || 'folder'} 
+                              size={20} 
+                              cor={cat.cor || '#000'} 
+                            />
+                            {cat.nome}
                           </label>
                           <Select
                             isMulti
                             options={options}
                             value={selectedValues}
                             onChange={(selected) => {
-                             
-                              
                               const newPaymentTags = { ...pag.paymentTags };
                               newPaymentTags[cat._id] = selected.map(s => s.value);
                               handlePagamentoChange(index, 'paymentTags', newPaymentTags);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                // Seleciona a opção em foco
+                                const focusedOption = e.target.getElementsByClassName('option-focused')[0];
+                                if (focusedOption) {
+                                  focusedOption.click();
+                                }
+                              }
+                            }}
+                            blurInputOnSelect={false}
+                            closeMenuOnSelect={false}
+                            tabSelectsOption={false}
+                            openMenuOnFocus={false}
+                            backspaceRemovesValue={false}
+                            components={{
+                              DropdownIndicator: null, // Remove a setinha do dropdown
+                              IndicatorSeparator: null // Remove o separador
                             }}
                             styles={{
                               control: (provided) => ({
@@ -515,20 +534,30 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '4px'
+                              }),
+                              menu: (provided) => ({
+                                ...provided,
+                                zIndex: 999
+                              }),
+                              menuList: (provided) => ({
+                                ...provided,
+                                maxHeight: '200px'
                               })
                             }}
                             formatOptionLabel={({ label, cor, icone }) => (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className={`fas fa-${icone || 'tag'}`} style={{ color: cor }}></i>
+                                <IconRenderer nome={icone || 'tag'} size={20} cor={cor} />
                                 <span>{label}</span>
                               </div>
                             )}
                             placeholder="Selecione as tags..."
                             className="tag-select"
                             classNamePrefix="tag-select"
-                            isClearable={true}
+                            isClearable={false}
                             isSearchable={true}
-                            closeMenuOnSelect={false}
+                            menuPlacement="auto"
+                            noOptionsMessage={() => "Nenhuma tag encontrada"}
+                            loadingMessage={() => "Carregando..."}
                           />
                         </div>
                       );

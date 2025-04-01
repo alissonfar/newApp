@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';  // [NOVO] para exibir mensagens de erro
 import { obterTransacoes, obterCategorias, obterTags } from '../../api.js';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF } from '../../utils/export/exportPDF';
+import IconRenderer from '../../components/shared/IconRenderer';
 import './Relatorio.css';
 import { 
   Menu, 
@@ -784,7 +785,7 @@ const Relatorio = () => {
                                 whiteSpace: 'nowrap'
                               }}
                             >
-                              <i className={`fas fa-${tag.icone || 'tag'}`} />
+                              <IconRenderer nome={tag.icone || 'tag'} size={14} cor={tag.cor} />
                               {`${categoria.nome}: ${tag.nome}`}
                             </span>
                           );

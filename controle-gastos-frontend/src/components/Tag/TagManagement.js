@@ -13,6 +13,7 @@ import {
   excluirCategoria
 } from '../../api.js';
 import IconSelector from './IconSelector';
+import IconRenderer from '../shared/IconRenderer';
 import ColorPicker from './ColorPicker';
 import './TagManagement.css';
 
@@ -311,7 +312,7 @@ const TagManagement = () => {
                 >
                   <div className="categoria-item">
                     <div className="icone-preview" style={{ color: cat.cor }}>
-                      <i className={`fas fa-${cat.icone || 'folder'}`}></i>
+                      <IconRenderer nome={cat.icone} size={24} cor={cat.cor} />
                     </div>
                     <span>{cat.nome}</span>
                   </div>
@@ -489,7 +490,7 @@ const TagManagement = () => {
                         <div className="view-tag">
                           <div className="tag-item">
                             <div className="icone-preview" style={{ color: tag.cor }}>
-                              <i className={`fas fa-${tag.icone || 'tag'}`}></i>
+                              <IconRenderer nome={tag.icone} size={24} cor={tag.cor} />
                             </div>
                             <span>
                               <strong>{tag.nome}</strong>
