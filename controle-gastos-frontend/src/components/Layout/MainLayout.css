@@ -1,5 +1,22 @@
 /* src/components/Layout/MainLayout.css */
 
+/* Definição de cores refinadas para o tema azul */
+:root {
+  /* --cor-fundo-menu: #1E90FF; */ /* Dodger Blue antigo */
+  --cor-fundo-menu: #2c5282; /* Azul mais escuro/dessaturado */
+  --cor-texto-menu: #FFFFFF; /* Branco */
+  /* --cor-texto-menu-secundario: #D1E9FF; */
+  --cor-texto-menu-secundario: #a0aec0; /* Cinza azulado claro (melhor contraste com novo fundo) */
+  /* --cor-hover-menu: rgba(255, 255, 255, 0.1); */
+  --cor-hover-menu: rgba(255, 255, 255, 0.08); /* Overlay branco sutil (ajustado para novo fundo) */
+  /* --cor-ativo-menu-fundo: rgba(255, 255, 255, 0.2); */
+  --cor-ativo-menu-fundo: rgba(255, 255, 255, 0.12); /* Overlay branco mais visível */
+  --cor-ativo-menu-texto: #FFFFFF; /* Branco */
+  /* --cor-borda-menu: rgba(255, 255, 255, 0.2); */
+  --cor-borda-menu: rgba(255, 255, 255, 0.1); /* Borda branca sutil */
+  --cor-borda-ativa-menu: var(--cor-texto-menu); /* Branco para borda ativa */
+}
+
 /* Layout principal: side-menu + main-content */
 .main-layout {
   display: flex;
@@ -11,28 +28,29 @@
 
 /* Menu lateral */
 .side-menu {
-  width: 260px;
-  min-width: 260px;
-  background-color: #ffffff;
+  /* width: 260px; */
+  /* min-width: 260px; */
+  width: 280px;
+  min-width: 280px;
+  background-color: var(--cor-fundo-menu);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 1.25rem 1rem;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-right: 1px solid var(--cor-borda-menu);
   transition: all 0.3s ease;
   position: fixed;
   left: 0;
   top: 0;
   height: 100vh;
   z-index: 1000;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.02);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Menu colapsado */
 .side-menu.collapsed {
   width: 72px;
   min-width: 72px;
-  padding: 1.25rem 0.75rem;
 }
 
 /* Logo e nome do sistema */
@@ -40,8 +58,8 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2.5rem;
-  padding: 0.5rem 0.75rem;
+  margin-bottom: 2rem; /* Ajuste leve no espaçamento inferior */
+  padding: 0.75rem 0.75rem; /* Ajuste leve no padding */
 }
 
 .logo img {
@@ -53,10 +71,12 @@
 }
 
 .system-name {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--cor-primaria);
+  /* font-size: 1.125rem; */
+  font-size: 1.2rem; /* Leve ajuste */
+  font-weight: 600; /* Reduzido de 700 para algo menos forte */
+  color: var(--cor-texto-menu);
   white-space: nowrap;
+  letter-spacing: 0.3px; /* Reduzido */
 }
 
 /* Itens do menu */
@@ -66,7 +86,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.5rem; /* Aumentando levemente o espaço entre itens */
 }
 
 .menu-items li {
@@ -78,25 +98,31 @@
   display: flex;
   align-items: center;
   gap: 0.875rem;
-  padding: 0.625rem 0.875rem;
-  color: #64748b;
+  /* padding: 0.625rem 0.875rem; */
+  padding: 0.75rem 1rem; /* Aumentando padding interno */
+  color: var(--cor-texto-menu-secundario);
   text-decoration: none;
   transition: all 0.2s ease;
   border-radius: 6px;
   font-weight: 500;
   position: relative;
   overflow: hidden;
+  border-left: 3px solid transparent; /* Espaço para borda ativa */
+  margin-left: -3px; /* Compensa a borda transparente */
 }
 
 .menu-item:hover {
-  color: var(--cor-primaria);
-  background-color: rgba(var(--cor-primaria-rgb), 0.04);
+  color: var(--cor-texto-menu);
+  background-color: var(--cor-hover-menu);
 }
 
-.menu-items li.active .menu-item {
-  color: var(--cor-primaria);
-  background-color: rgba(var(--cor-primaria-rgb), 0.08);
+.menu-items li.active > .menu-item,
+.menu-items .submenu li.active > .menu-item
+{
+  color: var(--cor-ativo-menu-texto);
+  background-color: var(--cor-ativo-menu-fundo);
   font-weight: 600;
+  border-left: 3px solid var(--cor-borda-ativa-menu); /* Borda esquerda ativa */
 }
 
 .menu-icon {
@@ -120,18 +146,46 @@
   line-height: 1.5;
 }
 
+/* Adiciona ellipsis ao texto dos subitens se transbordar */
+.submenu .menu-item.sub-item .menu-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
 /* Submenu styles */
 .submenu {
   list-style: none;
-  padding-left: 2.25rem !important;
-  margin: 0.375rem 0 !important;
+  /* padding-left: 1.75rem !important; */
+  padding-left: 1.5rem !important; /* Reduzindo um pouco, pois o item pai já tem mais padding */
+  margin: 0.5rem 0 !important; /* Ajustando margem vertical do submenu */
   width: 100%;
+  position: relative;
+  /* Linha guia opcional */
+  /* &::before {
+    content: '';
+    position: absolute;
+    left: calc(1rem + 12px - 1px); // Alinha com centro do ícone pai
+    top: -0.5rem;
+    bottom: 0.5rem;
+    width: 1px;
+    background-color: var(--cor-borda-menu);
+  } */
 }
 
 .menu-item.sub-item {
-  padding: 0.5rem 0.875rem;
+  /* padding: 0.5rem 0.875rem; */
+  padding: 0.625rem 1rem; /* Ajustando padding */
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--cor-texto-menu-secundario);
+  border-left-color: transparent; /* Subitem normal não tem borda esquerda */
+}
+
+.menu-items .submenu li.active > .menu-item.sub-item {
+  border-left-color: var(--cor-borda-ativa-menu); /* Subitem ativo tem borda */
+  /* Outros estilos ativos já herdados/aplicados pela regra geral */
 }
 
 .menu-item.with-submenu {
@@ -142,54 +196,54 @@
 .submenu-arrow {
   font-size: 0.75rem;
   transition: transform 0.2s ease;
-  color: #94a3b8;
+  color: var(--cor-texto-menu-secundario);
   margin-left: auto;
   padding-left: 0.5rem;
 }
 
-.has-submenu.active > .menu-item.with-submenu {
-  color: var(--cor-primaria);
-  font-weight: 600;
-}
-
+/* Cor da seta no item pai ativo */
 .has-submenu.active > .menu-item.with-submenu .submenu-arrow {
-  transform: rotate(180deg);
-  color: var(--cor-primaria);
+  color: var(--cor-ativo-menu-texto); /* Branco */
 }
 
 /* Botão de toggle do menu */
 .menu-toggle {
   position: absolute;
-  right: -12px;
-  top: 2rem;
-  width: 24px;
-  height: 24px;
+  right: -15px;
+  top: 1.5rem;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 100;
   transition: all 0.3s ease;
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  /* background-color: var(--cor-texto-menu); */
+  background-color: rgba(255, 255, 255, 0.1); /* Fundo integrado ao tema */
+  border: none;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); /* Sombra sutil */
   padding: 0;
 }
 
 .menu-toggle:hover {
-  background-color: var(--cor-primaria);
-  border-color: var(--cor-primaria);
+  /* background-color: #f0f0f0; */
+  background-color: rgba(255, 255, 255, 0.2); /* Mais claro no hover */
+  transform: scale(1.05);
 }
 
 .menu-toggle:hover svg {
-  color: #ffffff;
+  /* color: #1E90FF; */
+  /* Mantém a cor do ícone */
 }
 
 .menu-toggle svg {
-  width: 14px;
-  height: 14px;
-  color: #64748b;
+  width: 16px;
+  height: 16px;
+  /* color: var(--cor-fundo-menu); */
+  color: var(--cor-texto-menu); /* Ícone branco */
   transition: all 0.3s ease;
 }
 
@@ -201,9 +255,11 @@
 .main-content {
   flex: 1;
   padding: 2rem;
-  margin-left: 260px;
+  /* margin-left: 260px; */
+  margin-left: 280px; /* Ajustando margem para nova largura do menu */
   transition: all 0.3s ease;
-  width: calc(100% - 260px);
+  /* width: calc(100% - 260px); */
+  width: calc(100% - 280px); /* Ajustando largura */
   min-height: 100vh;
   background-color: #f8fafc;
 }
@@ -216,8 +272,10 @@
 /* Responsividade */
 @media (max-width: 1024px) {
   .side-menu {
-    width: 240px;
-    min-width: 240px;
+    /* width: 240px; */
+    /* min-width: 240px; */
+    width: 260px; /* Ajuste responsivo */
+    min-width: 260px;
   }
 
   .side-menu.collapsed {
@@ -226,8 +284,10 @@
   }
 
   .main-content {
-    margin-left: 240px;
-    width: calc(100% - 240px);
+    /* margin-left: 240px; */
+    /* width: calc(100% - 240px); */
+    margin-left: 260px;
+    width: calc(100% - 260px);
     padding: 1.5rem;
   }
 
@@ -275,29 +335,29 @@
 
 /* Rodapé do menu (usuário e links) */
 .menu-footer {
-  border-top: 1px solid #ddd;
-  padding-top: 16px;
+  border-top: 1px solid var(--cor-borda-menu);
+  padding-top: 1rem; /* Ajuste padding */
+  margin-top: 1rem; /* Ajuste margem */
   position: relative;
-  margin-top: auto;
 }
 
 /* Informações do usuário (avatar + nome) */
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 12px; /* Ajuste gap */
+  margin-bottom: 0.75rem; /* Ajuste margem */
   cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 0.625rem 0.75rem; /* Ajuste padding */
+  border-radius: 6px;
   transition: all 0.3s ease;
   position: relative;
   z-index: 1001;
-  background-color: rgba(0, 0, 0, 0.03);
+  background-color: var(--cor-hover-menu); /* Mesmo fundo do hover dos itens */
 }
 
 .user-info:hover {
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: rgba(255, 255, 255, 0.15); /* Levemente mais claro no hover */
 }
 
 .user-info .avatar {
@@ -306,7 +366,7 @@
   border-radius: 50%;
   min-width: 40px;
   object-fit: cover;
-  border: 2px solid var(--cor-primaria);
+  border: 2px solid var(--cor-ativo-menu-texto);
   transition: transform 0.3s ease;
 }
 
@@ -316,7 +376,7 @@
 
 .user-name {
   font-size: 0.95rem;
-  color: #333;
+  color: var(--cor-texto-menu);
   white-space: nowrap;
   font-weight: 500;
   flex: 1;
@@ -324,7 +384,7 @@
 
 .profile-arrow {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--cor-texto-menu-secundario);
   transition: transform 0.3s ease;
 }
 
@@ -430,113 +490,4 @@
 
 .profile-dropdown .logout-btn:hover svg {
   color: #e74c3c;
-}
-
-/* Estilo para os itens do menu */
-.sidebar .menu-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 15px;
-  color: var(--sidebar-text);
-  text-decoration: none;
-  transition: background-color 0.3s;
-  border-radius: 4px;
-  margin: 2px 0;
-}
-
-.sidebar .menu-item.sub-item {
-  padding-left: 35px;
-  font-size: 0.9em;
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Estilo para menus com submenus */
-.has-submenu {
-  position: relative;
-}
-
-.menu-item.with-submenu {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 15px;
-  color: var(--sidebar-text);
-  text-decoration: none;
-  transition: background-color 0.3s;
-  border-radius: 4px;
-  margin: 2px 0;
-  cursor: pointer;
-  background-color: transparent;
-}
-
-.menu-item.with-submenu:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.submenu-arrow {
-  margin-left: 10px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-}
-
-/* Submenu styles */
-.submenu {
-  list-style: none;
-  padding-left: 15px;
-  margin: 0;
-  width: 100%;
-}
-
-.submenu li {
-  margin: 2px 0;
-  width: 100%;
-}
-
-.menu-item.sub-item {
-  padding-left: 35px;
-  font-size: 0.9em;
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.menu-item.sub-item:hover {
-  background-color: #e0e0e0;
-  color: #333;
-}
-
-.submenu li.active .menu-item.sub-item {
-  background-color: #2196F3;
-  color: #fff;
-}
-
-.submenu li .menu-item.sub-item {
-  background-color: transparent;
-  color: #333;
-}
-
-/* Corrigindo o submenu para que apenas o item ativo tenha destaque */
-.has-submenu .submenu li {
-  background-color: transparent;
-}
-
-.has-submenu .submenu li a:not(.active-item) {
-  background-color: transparent;
-  color: #333;
-}
-
-.has-submenu .submenu li.active a:not(.active-item) {
-  background-color: #2196F3;
-  color: #fff;
-}
-
-/* Estilo para o item com submenu */
-.has-submenu.active .menu-item.with-submenu {
-  background-color: transparent;
-  color: #2196F3;
-  font-weight: 500;
-}
-
-.menu-item.sub-item.active-item {
-  background-color: #2196F3;
-  color: #fff;
 }
