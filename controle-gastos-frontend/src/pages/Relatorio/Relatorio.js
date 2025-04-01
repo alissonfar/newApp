@@ -541,7 +541,7 @@ const Relatorio = () => {
               </div>
 
               <div className="filter-group">
-                <label>Tipo de Transação (Pai):</label>
+                <label>Tipo de Transação:</label>
                 <select
                   value={selectedTipo}
                   onChange={e => setSelectedTipo(e.target.value)}
@@ -573,12 +573,62 @@ const Relatorio = () => {
                       const tag = tags.find(t => t._id === tagId);
                       return tag ? {
                         value: tag._id,
-                        label: tag.nome
+                        label: tag.nome,
+                        cor: tag.cor,
+                        icone: tag.icone
                       } : null;
                     }).filter(Boolean)}
                     onChange={(selectedOptions) => {
                       const selected = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
                       setTagFilters(prev => ({ ...prev, [categoriaId]: selected }));
+                    }}
+                    formatOptionLabel={({ value, label, cor, icone }) => (
+                      <span 
+                        className="tag-chip-like"
+                        style={{ 
+                          backgroundColor: `${cor || '#ccc'}20`,
+                          color: cor || '#666',
+                          border: `1px solid ${cor || '#ccc'}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '4px 10px',
+                          borderRadius: '14px',
+                          fontSize: '0.88rem',
+                          fontWeight: 500,
+                          margin: '2px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {icone && <IconRenderer nome={icone} size={14} cor={cor || '#ccc'} />}
+                        {label}
+                      </span>
+                    )}
+                    components={{ 
+                      MultiValueLabel: (props) => {
+                        const { label, cor, icone } = props.data;
+                        return (
+                          <span 
+                            className="tag-chip-like"
+                            style={{
+                              backgroundColor: `${cor || '#ccc'}20`,
+                              color: cor || '#666',
+                              border: `1px solid ${cor || '#ccc'}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 6px',
+                              borderRadius: '10px',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              margin: '1px 2px'
+                            }}
+                          >
+                            {icone && <IconRenderer nome={icone} size={12} cor={cor || '#ccc'} />}
+                            {props.children}
+                          </span>
+                        );
+                      }
                     }}
                     classNamePrefix="mySelect"
                     placeholder="Selecione tags..."
@@ -691,19 +741,19 @@ const Relatorio = () => {
               <h4>Informações Gerais</h4>
               <div className="summary-item">
                 <span>Total de "Transações" (Pagamentos):</span>
-                <span>{summaryInfo.totalTransactions}</span>
+                <span><strong>{summaryInfo.totalTransactions}</strong></span>
               </div>
               <div className="summary-item">
                 <span>Total em Valor:</span>
-                <span>R${summaryInfo.totalValue}</span>
+                <span><strong>R${summaryInfo.totalValue}</strong></span>
               </div>
               <div className="summary-item">
                 <span>Número de Pessoas:</span>
-                <span>{summaryInfo.totalPeople}</span>
+                <span><strong>{summaryInfo.totalPeople}</strong></span>
               </div>
               <div className="summary-item">
                 <span>Média por Pessoa:</span>
-                <span>R${summaryInfo.averagePerPerson}</span>
+                <span><strong>R${summaryInfo.averagePerPerson}</strong></span>
               </div>
             </div>
 
@@ -712,15 +762,17 @@ const Relatorio = () => {
               <h4>Detalhes Financeiros</h4>
               <div className="summary-item">
                 <span>Total de Gastos:</span>
-                <span>R${summaryInfo.totalGastos}</span>
+                <strong className="valor-negativo">R${summaryInfo.totalGastos}</strong>
               </div>
               <div className="summary-item">
                 <span>Total de Recebíveis:</span>
-                <span>R${summaryInfo.totalRecebiveis}</span>
+                <strong className="valor-positivo">R${summaryInfo.totalRecebiveis}</strong>
               </div>
               <div className="summary-item">
                 <span>Saldo (Recebíveis - Gastos):</span>
-                <span>R${summaryInfo.netValue}</span>
+                <strong className={summaryInfo.netValue >= 0 ? 'valor-positivo' : 'valor-negativo'}>
+                  R${summaryInfo.netValue}
+                </strong>
               </div>
             </div>
           </div>
@@ -733,11 +785,11 @@ const Relatorio = () => {
           <table className="relatorio-table">
             <thead>
               <tr>
-                <th>Descrição (Pai)</th>
-                <th>Data (Pai)</th>
+                <th>Descrição</th>
+                <th>Data</th>
                 <th>Pessoa (Pagamento)</th>
                 <th>Valor (Pagamento)</th>
-                <th>Tipo (Pai)</th>
+                <th>Tipo</th>
                 <th>Tags (Pagamento)</th>
               </tr>
             </thead>
@@ -751,7 +803,9 @@ const Relatorio = () => {
                     <td>{displayDate}</td>
                     <td>{row.pessoa || '—'}</td>
                     <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
-                    <td>{row.tipo}</td>
+                    <td className={row.tipo?.toLowerCase() === 'gasto' ? 'tipo-gasto' : row.tipo?.toLowerCase() === 'recebivel' ? 'tipo-recebivel' : ''}>
+                      {row.tipo}
+                    </td>
                     <td>
                       {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
                         const categoria = categorias.find(c => 

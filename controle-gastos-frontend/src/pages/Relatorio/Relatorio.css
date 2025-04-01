@@ -1,60 +1,78 @@
 /* Container principal do relatório */
 .relatorio-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 20px 30px; /* Aumenta padding lateral */
+  max-width: none; /* Remove a largura máxima fixa */
   margin: 0 auto;
+  width: 100%; /* Garante que o container tente ocupar 100% */
+  box-sizing: border-box; /* Inclui padding na largura total */
 }
 
 /* Título principal */
 .relatorio-title {
   font-family: var(--fonte-titulos);
-  font-size: 2rem;
-  color: var(--cor-primaria);
+  font-size: 2.2rem; /* Um pouco maior */
+  color: var(--cor-primaria-mais-escura, #0a369d); /* Azul bem escuro */
   text-align: center;
-  margin-bottom: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  margin-bottom: 25px; /* Mais espaço */
+  font-weight: 700; /* Mais negrito */
+  letter-spacing: -0.03em;
 }
 
 /* Seção superior dividida em duas colunas (Painel de Filtros e Resumo) */
 .top-section {
   display: flex;
-  gap: 20px;
+  gap: 25px; /* Mais espaço */
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 30px; /* Mais espaço */
 }
 
-/* Painel de Filtros (agora em layout de grid) */
+/* Painel de Filtros */
 .filter-panel {
-  /* Atribui mais espaço ao painel de filtros que ao de resumo (2:1) */
   flex: 2;
   display: grid;
-  grid-template-columns: 1fr; /* Se quiser 2 colunas horizontais, use: repeat(2, 1fr) */
-  gap: 15px;
-  background-color: var(--cor-fundo);
-  padding: 15px;
-  border-radius: var(--borda-radius);
-  box-shadow: var(--sombra-card);
+  grid-template-columns: 1fr; 
+  gap: 25px; /* Mais espaço */
+  /* Fundo gradiente mais escuro */
+  background: linear-gradient(135deg, var(--cor-fundo-pagina-escura, #e4e9f0) 0%, var(--cor-primaria-muito-leve-escura, #d0e0f0) 100%); 
+  padding: 30px; /* Mais padding */
+  border-radius: var(--borda-radius-grande, 12px); 
+  border: 1px solid var(--cor-primaria-borda-forte, #8ab4f8); /* Borda azul mais forte */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Sombra mais forte */
 }
 
-/* Cada seção de filtro vira um "card" */
+/* Cada seção de filtro como card */
 .filter-section {
-  background-color: #fff;
-  border-radius: 6px;
-  padding: 10px;
-  border: 1px solid #ddd;
+  background-color: var(--cor-fundo-card, #ffffff);
+  border-radius: 8px; 
+  padding: 25px 30px; /* Mais padding */
+  border: 1px solid var(--cor-borda-card-media, #c0c8d4); /* Borda cinza-azulada mais forte */
+  box-shadow: 0 3px 7px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.1); /* Sombra mais definida */
+  transition: box-shadow 0.3s ease;
+}
+
+.filter-section:hover {
+    box-shadow: 0 6px 12px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.18); /* Sombra hover mais forte */
 }
 
 /* Título de cada seção */
 .filter-section h4 {
   font-family: var(--fonte-titulos);
   margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1rem;
-  color: var(--cor-primaria);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  margin-bottom: 25px; /* Mais espaço */
+  font-size: 1.15rem; /* Maior */
+  color: var(--cor-primaria-mais-escura, #104a8e); /* Azul bem escuro */
+  font-weight: 700; /* Mais negrito */
+  letter-spacing: -0.01em;
+  border-bottom: 2px solid var(--cor-primaria-leve-forte, #a0c4f8); /* Linha azul mais forte */
+  padding-bottom: 12px; 
+  display: flex; 
+  align-items: center;
+  gap: 8px; 
 }
+
+/* Adicionar ícones aos títulos (EXEMPLO - requer IconRenderer ou similar no JS) */
+/* .filter-section:nth-child(1) h4::before { content: '\f073'; font-family: 'Font Awesome 5 Free'; font-weight: 900; color: var(--cor-primaria); } */
+/* ... etc para outras seções ... */
 
 /* Linha interna para organizar grupos de filtros lado a lado */
 .filter-row {
@@ -81,90 +99,112 @@
 }
 
 .filter-group input,
-.filter-group select {
+.filter-group select,
+.filter-group .mySelect__control {
   font-family: var(--fonte-corpo);
   padding: 8px;
   font-size: 0.95rem;
-  border: 1px solid rgba(224, 231, 255, 0.4);
+  border: 1px solid var(--cor-borda-input-forte, #9aa0a6); /* Borda bem definida */
   border-radius: var(--borda-radius);
-  background-color: var(--cor-fundo);
+  background-color: var(--cor-fundo-input, #fff);
   color: var(--cor-texto);
   width: 100%;
   transition: var(--transicao-padrao);
+  min-height: 38px; /* Garante altura mínima consistente */
+  box-sizing: border-box; /* Inclui padding/border na altura */
+}
+
+.filter-group .mySelect__control {
+  padding: 0; /* Remove padding extra do react-select */
 }
 
 .filter-group input:focus,
-.filter-group select:focus {
-  border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 2px rgba(var(--cor-primaria-rgb), 0.1);
+.filter-group select:focus,
+.filter-group .mySelect__control--is-focused {
+  border-color: var(--cor-primaria-escura, #1565c0); /* Foco com azul mais escuro */
+  box-shadow: 0 0 0 3px rgba(var(--cor-primaria-rgb), 0.25); /* Sombra foco mais visível */
   outline: none;
 }
 
-/* Garante que o React-Select ocupe 100% da largura do .filter-group */
-.filter-group .mySelect__control {
-  width: 100% !important; /* Força a largura total */
-  min-height: 38px;       /* Ajuste mínimo para caber texto */
-}
-
-/* Seção especial para botões (Filtrar e Exportar) */
+/* Seção especial para botões */
 .filter-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-/* Grupo de exportação (Formato + Botão) */
-.export-group {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.export-button {
-  transition: all 0.3s ease;
-}
-
-.export-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(33, 203, 243, 0.4) !important;
+  justify-content: flex-end; /* Alinha botões à direita */
+  gap: 15px; /* Espaço entre botões */
+  margin-top: 10px; /* Espaço acima dos botões */
+  padding-top: 15px; /* Espaço acima */
+  border-top: 1px dashed var(--cor-borda-leve, #e0e7ff); /* Linha tracejada separadora */
 }
 
 .filter-actions button {
   font-family: var(--fonte-titulos);
-  padding: 10px 15px;
-  background: var(--gradiente-primario);
-  color: var(--cor-branca);
+  padding: 10px 20px; /* Mais padding horizontal */
   border: none;
   border-radius: var(--borda-radius);
   cursor: pointer;
   font-size: 0.95rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  transition: var(--transicao-padrao);
+  font-weight: 600; /* Mais forte */
+  letter-spacing: 0.03em;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.filter-actions button:hover {
-  background: var(--gradiente-secundario);
-  transform: translateY(-1px);
+/* Botão Principal (Filtrar) */
+.filter-actions button:first-of-type { 
+  background: var(--gradiente-primario, linear-gradient(45deg, #2196F3 30%, #21CBF3 90%));
+  color: var(--cor-branca, white);
+  box-shadow: 0 2px 5px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.3);
+}
+
+.filter-actions button:first-of-type:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.4);
+}
+
+/* Botão Secundário (Limpar) */
+.filter-actions button:nth-of-type(2) {
+  background-color: var(--cor-fundo-botao-secundario, #f1f3f5); 
+  color: var(--cor-texto-botao-secundario, #555);
+  border: 1px solid var(--cor-borda-input, #ced4da);
+}
+
+.filter-actions button:nth-of-type(2):hover {
+  background-color: var(--cor-fundo-botao-secundario-hover, #e9ecef);
+  border-color: #adb5bd;
+  color: #333;
+}
+
+/* Botão Exportar (já está estilizado com o gradiente no JS/MUI, mas podemos garantir hover) */
+.export-group .export-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(33, 203, 243, 0.4) !important;
 }
 
 /* Painel de Resumo */
 .summary-panel {
-  flex: 1; /* Ocupa menos espaço que o painel de filtros, equilibrando o layout */
-  background-color: #e8f4fd;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  flex: 1; 
+  /* Gradiente mais contrastante */
+  background: linear-gradient(135deg, #ffffff 0%, var(--cor-primaria-muito-leve-escura, #dde8f5) 100%); 
+  padding: 30px;
+  border-radius: var(--borda-radius-grande, 12px);
+  border: 1px solid var(--cor-primaria-borda-forte, #8ab4f8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .summary-panel h3 {
   font-family: var(--fonte-titulos);
   margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1.3rem;
-  color: var(--cor-primaria);
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  color: var(--cor-primaria-mais-escura, #104a8e);
   font-weight: 600;
   letter-spacing: -0.02em;
+  text-align: center; /* Centraliza título */
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--cor-primaria-leve-forte, #a0c4f8);
 }
 
 .summary-panel p {
@@ -180,19 +220,22 @@
 }
 
 .summary-section {
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.7); /* Fundo branco mais opaco */
   border-radius: 6px;
-  padding: 10px;
-  border: 1px solid #ddd;
+  padding: 15px;
+  border: 1px solid var(--cor-borda-leve-forte, #c0d3eb); /* Borda mais visível */
+  margin-top: 15px; /* Espaço entre seções internas */
 }
 
 .summary-section h4 {
   font-family: var(--fonte-titulos);
-  margin: 0 0 5px;
+  margin: 0 0 10px; /* Aumenta margem inferior */
   font-size: 1rem;
-  color: var(--cor-primaria);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  color: var(--cor-primaria-escura, #1565c0); /* Azul mais escuro */
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--cor-primaria-leve-forte, #a0c4f8);
 }
 
 .summary-item {
@@ -207,35 +250,121 @@
   font-weight: 500;
 }
 
+.summary-item strong {
+  font-weight: 600; /* Garante negrito */
+}
+
+/* Cores para valores positivos/negativos */
+.summary-item .valor-positivo {
+  color: var(--cor-sucesso-forte, #1e8e3e); /* Verde mais escuro */
+}
+
+.summary-item .valor-negativo {
+  color: var(--cor-erro-forte, #d93025); /* Vermelho mais escuro */
+}
+
 /* Seção de resultados (tabela) */
 .relatorio-results {
   margin-top: 20px;
 }
 
+.relatorio-results h3 {
+  font-size: 1.4rem;
+  color: var(--cor-texto-forte, #202124); /* Texto mais escuro */
+  margin-bottom: 15px;
+}
+
 .relatorio-table {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  border-collapse: separate; /* Mudar para separate para usar border-spacing */
+  border-spacing: 0 5px; /* Adiciona espaçamento vertical entre linhas */
+  margin-top: 25px; /* Aumenta margem superior */
 }
 
 .relatorio-table th,
 .relatorio-table td {
-  padding: 12px;
+  padding: 15px 18px; /* Aumenta o padding interno */
   text-align: left;
-  border-bottom: 1px solid #eee;
+  vertical-align: middle; 
+  background-color: var(--cor-fundo-card, #ffffff); /* Fundo branco padrão para células */
 }
 
+/* Estilo do Cabeçalho */
 .relatorio-table th {
-  background-color: #f8f9fa;
+  /* Gradiente mais escuro */
+  background: var(--gradiente-primario-mais-escuro, linear-gradient(45deg, #1976d2 30%, #0d47a1 90%)); 
+  color: var(--cor-branca, #ffffff);
   font-weight: 600;
-  color: #495057;
+  font-size: 0.9rem;
+  text-transform: uppercase; 
+  letter-spacing: 0.05em; 
+  border-bottom: none; /* Remover borda inferior, o fundo já separa */
+  position: sticky; /* Fixa o cabeçalho no topo ao rolar */
+  top: 0; /* Necessário para sticky */
+  z-index: 10; /* Garante que fique sobre o conteúdo */
+}
+.relatorio-table th:first-child {
+  border-top-left-radius: 8px;
+}
+.relatorio-table th:last-child {
+  border-top-right-radius: 8px;
 }
 
-.relatorio-table tr:hover {
-  background-color: #f8f9fa;
+/* Estilo das Linhas do Corpo */
+.relatorio-table tbody tr {
+   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07); /* Sombra suave em cada linha */
+   border-radius: 8px; /* Bordas arredondadas em cada linha */
+   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Efeito suave no hover */
+}
+
+/* Arredonda as células das pontas em cada linha */
+.relatorio-table td:first-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+.relatorio-table td:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Zebra striping (Aplicado aos TDs dentro de TRs pares) */
+.relatorio-table tbody tr:nth-child(even) td {
+  background-color: var(--cor-fundo-linha-par-escura, #f1f5f9); /* Fundo cinza-azulado para par */
+}
+
+/* Garante que o fundo padrão das células ímpares seja branco */
+.relatorio-table tbody tr:nth-child(odd) td {
+    background-color: var(--cor-fundo-card, #ffffff);
+}
+
+/* Hover na linha (agora aplica a tds para sobrescrever zebra) */
+.relatorio-table tbody tr:hover td {
+  background-color: var(--cor-fundo-linha-hover-escura, #e3eefc); /* Fundo azul bem claro no hover */
+}
+
+/* Destaque para coluna de Data */
+.relatorio-table td:nth-child(2) { /* Coluna Data */
+  font-weight: 500;
+  color: var(--cor-texto-secundario, #555);
+  font-size: 0.9rem;
+}
+
+/* Alinha coluna de Valor à direita e dá destaque */
+.relatorio-table td:nth-child(4), 
+.relatorio-table th:nth-child(4) {
+  text-align: right;
+  font-weight: 600; /* Mais negrito para valor */
+}
+
+/* Adiciona cor para tipo gasto/recebível */
+.relatorio-table td.tipo-gasto {
+  color: var(--cor-erro, #dc3545); /* Usa variável CSS ou fallback vermelho */
+  font-weight: 500; 
+}
+
+.relatorio-table td.tipo-recebivel {
+  color: var(--cor-sucesso, #28a745); /* Usa variável CSS ou fallback verde */
+  font-weight: 500;
 }
 
 /* Ajustes específicos para a coluna de tags */
@@ -245,28 +374,27 @@
   line-height: 1.8;
 }
 
-/* Espaçamento entre as tags */
-.relatorio-table .tag-chip {
-  margin: 2px 4px;
+/* Estilo dos Chips de Tag na Tabela */
+.tag-chip {
   display: inline-flex;
+  align-items: center;
+  gap: 5px; 
+  padding: 4px 10px; 
+  border-radius: 14px; 
+  font-size: 0.88rem; 
+  font-weight: 500; 
+  margin: 3px;
+  white-space: nowrap;
+  border: 1px solid; /* Apenas define que haverá borda, cor vem do style inline */
+  /* As cores de fundo e texto são definidas inline via style no JS */
+  /* Remover !important para permitir que o inline style funcione */
+  /* background-color: var(--tag-bg-color, transparent) !important; */ 
+  /* color: var(--tag-color, inherit) !important; */
+  /* border-color: var(--tag-color, #ccc) !important; */
 }
 
-/* Garantir que os ícones das tags fiquem alinhados */
-.relatorio-table .tag-chip i {
-  font-size: 0.9em;
-  margin-right: 4px;
-}
-
-/* Responsividade para telas menores */
-@media (max-width: 768px) {
-  .relatorio-table {
-    display: block;
-    overflow-x: auto;
-  }
-
-  .relatorio-table td:last-child {
-    min-width: 200px;
-  }
+.tag-chip > svg, .tag-chip > i { 
+    font-size: 14px; 
 }
 
 /* Chips de tags */
@@ -283,4 +411,16 @@
 
 .pag-tag-chip {
   background-color: #28a745; /* Ex: verde */
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  .relatorio-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .relatorio-table td:last-child {
+    min-width: 200px;
+  }
 }
