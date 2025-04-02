@@ -385,48 +385,78 @@ class ImportacaoService {
   }
 
   static parseCSV(conteudo) {
-    const linhas = conteudo.split('\n');
+    const linhas = conteudo.trim().split('\n');
+    if (linhas.length < 2) {
+      return []; // Retorna vazio se não houver dados ou apenas cabeçalho
+    }
     const cabecalho = linhas[0].split(',').map(col => col.trim());
-    
+
+    // Detecta o formato baseado no cabeçalho
+    let formato;
+    const isFormatoFatura = cabecalho.includes('date') && cabecalho.includes('title') && cabecalho.includes('amount');
+    const isFormatoExtrato = cabecalho.includes('Data') && cabecalho.includes('Valor') && (cabecalho.includes('Descrição') || cabecalho.includes('DescriÃ§Ã£o') || cabecalho.includes('Descricao'));
+
+    if (isFormatoFatura) {
+      formato = 'fatura';
+      console.log('[DEBUG] Formato CSV detectado: Fatura Nubank');
+    } else if (isFormatoExtrato) {
+      formato = 'extrato';
+      console.log('[DEBUG] Formato CSV detectado: Extrato Nubank');
+    } else {
+      throw new Error('Formato de cabeçalho CSV não reconhecido. Esperado formato de Extrato ou Fatura Nubank.');
+    }
+
     return linhas
       .slice(1)
       .filter(linha => linha.trim())
       .map(linha => {
         const valores = linha.split(',').map(val => val.trim());
         const registro = {};
-        
+
         // Mapeia os valores para o cabeçalho
         cabecalho.forEach((coluna, index) => {
           registro[coluna] = valores[index];
         });
 
-        // Processa o valor (remove caracteres não numéricos e converte para número)
-        const valorStr = registro['Valor'].toString();
-        const valor = Math.abs(parseFloat(valorStr.replace(',', '.')) || 0);
-        
-        // Converte a data do formato DD/MM/YYYY para Date com horário 12:00
-        const [dia, mes, ano] = registro['Data'].split('/');
-        const data = new Date(ano, mes - 1, dia, 12, 0, 0);
+        let descricao, valor, data, tipo, categoria, identificador, observacao;
 
-        // Determina o tipo baseado no valor original (com sinal)
-        const valorOriginal = parseFloat(valorStr.replace(',', '.')) || 0;
-        const tipo = valorOriginal < 0 ? 'gasto' : 'recebivel';
+        if (formato === 'fatura') {
+          // Processamento para formato Fatura (date, title, amount)
+          const [ano, mes, dia] = registro['date'].split('-');
+          data = new Date(Date.UTC(ano, mes - 1, dia, 12, 0, 0)); // Usar UTC para consistência
+          valor = Math.abs(parseFloat(registro['amount']) || 0);
+          descricao = registro['title'] || 'Transação Fatura';
+          tipo = 'gasto'; // Faturas geralmente são gastos
+          categoria = null;
+          identificador = null; // Formato fatura não possui identificador
+          observacao = `Importado da Fatura Nubank`;
 
-        // Extrai a descrição
-        const descricao = registro['Descrição'] || registro['DescriÃ§Ã£o'] || registro['Descricao'] || '';
+        } else { // formato === 'extrato'
+          // Processamento para formato Extrato (existente)
+          const valorStr = registro['Valor'] ? registro['Valor'].toString() : '0';
+          const valorOriginal = parseFloat(valorStr.replace(',', '.')) || 0;
+          valor = Math.abs(valorOriginal);
+          
+          const dataStr = registro['Data'];
+          const [diaExt, mesExt, anoExt] = dataStr ? dataStr.split('/') : [null, null, null];
+          data = diaExt && mesExt && anoExt ? new Date(Date.UTC(anoExt, mesExt - 1, diaExt, 12, 0, 0)) : new Date(Date.UTC(1970, 0, 1, 12, 0, 0)); // Data padrão em caso de erro
 
-        // Extrai o identificador
-        const identificador = registro['Identificador'];
+          tipo = valorOriginal < 0 ? 'gasto' : 'recebivel';
+          descricao = registro['Descrição'] || registro['DescriÃ§Ã£o'] || registro['Descricao'] || 'Transação Extrato';
+          categoria = null; // Mantém como null inicialmente
+          identificador = registro['Identificador'];
+          observacao = `Importado do Extrato Nubank - ID: ${identificador}`;
+        }
 
         // Monta o objeto no mesmo formato que o JSON espera
         return {
-          descricao: descricao || 'Transação Nubank',
+          descricao,
           valor,
           data,
           tipo,
-          categoria: null,
+          categoria,
           identificador,
-          observacao: `Importado do Nubank - ID: ${identificador}`,
+          observacao,
           dadosOriginais: registro,
           pagamentos: [{
             pessoa: 'Titular',
