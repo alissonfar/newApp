@@ -159,9 +159,15 @@ class ImportacaoController {
                 return res.status(404).json({ erro: 'Importação não encontrada' });
             }
 
-            // Remove as transações importadas
-            await TransacaoImportada.deleteMany({ importacao: id });
-            console.log('[Importação] Transações removidas:', { id });
+            // Verifica se o status permite a exclusão
+            if (importacao.status === 'finalizada' || importacao.status === 'estornada') {
+                console.warn('[Importação] Tentativa de excluir importação já processada:', { id, status: importacao.status });
+                return res.status(400).json({ erro: 'Não é possível excluir uma importação com status ' + importacao.status + '.' });
+            }
+
+            // Remove as transações importadas associadas
+            await TransacaoImportada.deleteMany({ importacao: id, usuario: usuario }); // Garante que só remove do usuário
+            console.log('[Importação] Transações importadas removidas:', { id });
 
             // Remove o arquivo se ainda existir
             if (importacao.caminhoArquivo) {
@@ -173,8 +179,8 @@ class ImportacaoController {
                 }
             }
 
-            // Remove a importação
-            await importacao.remove();
+            // Remove a importação do banco de dados
+            await Importacao.deleteOne({ _id: id, usuario: usuario }); // Usar deleteOne ou findOneAndDelete
             console.log('[Importação] Importação removida com sucesso:', { id });
 
             return res.status(204).send();

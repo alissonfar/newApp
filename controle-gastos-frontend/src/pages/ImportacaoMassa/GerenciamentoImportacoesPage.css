@@ -398,4 +398,148 @@
 .btn-detalhes:hover {
   background-color: var(--cor-fundo-hover);
   color: var(--cor-texto-destaque);
-} 
+}
+
+/* --- Estilos Adicionais para Ações e Confirmação --- */
+
+.acoes-cell {
+  display: flex;
+  gap: 0.5rem; /* Espaço entre os botões */
+  align-items: center;
+}
+
+.btn-acao {
+  padding: 0.5rem 0.75rem; /* Padding base para botões de ação */
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+  min-height: 34px; /* Altura similar a outros elementos */
+}
+
+.btn-acao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-detalhes {
+  background-color: var(--cor-info);
+  color: white;
+}
+
+.btn-detalhes:hover:not(:disabled) {
+  background-color: var(--cor-info-escura);
+}
+
+.btn-excluir {
+  background-color: var(--cor-erro);
+  color: white;
+}
+
+.btn-excluir:hover:not(:disabled) {
+  background-color: var(--cor-erro-escura);
+}
+
+.btn-excluir svg {
+  margin: 0; /* Garante centralização do ícone */
+}
+
+
+/* Estilos para o Toast de Confirmação */
+.confirmacao-toast {
+  background-color: var(--cor-aviso-fundo) !important; /* Amarelo claro */
+  color: var(--cor-aviso-texto) !important; /* Texto escuro */
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  padding: 1rem !important;
+  border-left: 5px solid var(--cor-aviso) !important;
+}
+
+.confirmacao-toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.confirmacao-toast-content .titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--cor-aviso-texto); /* Ajustar cor se necessário */
+}
+
+.confirmacao-toast-content .titulo svg {
+  color: var(--cor-aviso); /* Ícone amarelo */
+}
+
+.confirmacao-toast-content .mensagem {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--cor-texto-secundario); /* Cinza mais escuro */
+}
+
+.confirmacao-toast-content .mensagem p {
+  margin: 0 0 0.5rem 0;
+}
+
+.confirmacao-toast-content .acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.confirmacao-toast-content .acoes button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.confirmacao-toast-content .btn-cancelar {
+  background-color: transparent;
+  color: var(--cor-texto-secundario);
+  border-color: var(--cor-borda);
+}
+
+.confirmacao-toast-content .btn-cancelar:hover {
+  background-color: var(--cor-fundo-hover);
+  border-color: var(--cor-borda-forte);
+}
+
+.confirmacao-toast-content .btn-confirmar {
+  color: white;
+}
+
+/* Estilos específicos por tipo de confirmação */
+.confirmacao-toast-content .btn-confirmar.excluir {
+  background-color: var(--cor-erro);
+  border-color: var(--cor-erro);
+}
+
+.confirmacao-toast-content .btn-confirmar.excluir:hover {
+  background-color: var(--cor-erro-escura);
+  border-color: var(--cor-erro-escura);
+}
+
+.confirmacao-toast-content .btn-confirmar.finalizar {
+  background-color: var(--cor-sucesso);
+  border-color: var(--cor-sucesso);
+}
+
+.confirmacao-toast-content .btn-confirmar.finalizar:hover {
+  background-color: var(--cor-sucesso-escura);
+  border-color: var(--cor-sucesso-escura);
+}
+
+/* Adicione outros tipos (e.g., .estornar) se necessário */ 

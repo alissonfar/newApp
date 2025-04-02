@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaPlus, FaSpinner, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaPlus, FaSpinner, FaChevronLeft, FaChevronRight, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
 import importacaoService from '../../services/importacaoService';
 import './GerenciamentoImportacoesPage.css';
 
@@ -36,6 +36,80 @@ const GerenciamentoImportacoesPage = () => {
       setError('Erro ao carregar lista de importações.');
       toast.error('Erro ao carregar lista de importações.');
       setImportacoes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mostrarConfirmacao = (mensagem, tipo) => {
+    return new Promise((resolve) => {
+      const toastId = toast.warn(
+        <div className="confirmacao-toast-content">
+          <div className="titulo">
+            <FaExclamationTriangle />
+            <span>Confirmação Necessária</span>
+          </div>
+          <div className="mensagem">
+            {mensagem}
+          </div>
+          <div className="acoes">
+            <button
+              onClick={() => {
+                toast.dismiss(toastId);
+                resolve(false);
+              }}
+              className="btn-cancelar"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                toast.dismiss(toastId);
+                resolve(true);
+              }}
+              className={`btn-confirmar ${tipo}`}
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>,
+        {
+          position: "top-center",
+          autoClose: false,
+          closeOnClick: false,
+          draggable: false,
+          closeButton: false,
+          className: 'confirmacao-toast'
+        }
+      );
+    });
+  };
+
+  const handleExcluirImportacao = async (importacaoId, status) => {
+    if (status === 'finalizada' || status === 'estornada') {
+      toast.error('Não é possível excluir uma importação com status ' + status + '.');
+      return;
+    }
+
+    const mensagemConfirmacao = (
+      <div>
+        <p>Tem certeza que deseja excluir esta importação?</p>
+        <p>Todas as transações importadas associadas (pendentes ou com erro) também serão removidas.</p>
+        <p>Esta ação não pode ser desfeita.</p>
+      </div>
+    );
+
+    const confirmado = await mostrarConfirmacao(mensagemConfirmacao, 'excluir');
+    if (!confirmado) return;
+
+    try {
+      setLoading(true);
+      await importacaoService.excluirImportacao(importacaoId);
+      toast.success('Importação excluída com sucesso!');
+      await carregarImportacoes(paginacao.pagina);
+    } catch (error) {
+      console.error('Erro ao excluir importação:', error);
+      toast.error(error.message || 'Erro ao excluir importação.');
     } finally {
       setLoading(false);
     }
@@ -211,12 +285,25 @@ const GerenciamentoImportacoesPage = () => {
                       </div>
                     </td>
                     <td>
-                      <button
-                        className="btn-detalhes"
-                        onClick={() => handleContinuarImportacao(importacao.id || importacao._id)}
-                      >
-                        Detalhes
-                      </button>
+                      <div className="acoes-cell">
+                        <button
+                          className="btn-detalhes btn-acao"
+                          onClick={() => handleContinuarImportacao(importacao.id || importacao._id)}
+                          title="Ver detalhes da importação"
+                        >
+                          Detalhes
+                        </button>
+                        <button
+                          className="btn-excluir btn-acao"
+                          onClick={() => handleExcluirImportacao(importacao.id || importacao._id, importacao.status)}
+                          disabled={importacao.status === 'finalizada' || importacao.status === 'estornada'}
+                          title={importacao.status === 'finalizada' || importacao.status === 'estornada' 
+                                 ? 'Não é possível excluir importações finalizadas ou estornadas' 
+                                 : 'Excluir esta importação'}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
