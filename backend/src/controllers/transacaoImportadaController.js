@@ -246,6 +246,27 @@ const transacaoImportadaController = {
       console.error('[TransacaoImportada] Erro ao validar múltiplas transações:', error);
       res.status(500).json({ erro: 'Erro ao validar transações.' });
     }
+  },
+
+  // Excluir transação importada
+  async excluirTransacao(req, res) {
+    try {
+      const transacaoExcluida = await TransacaoImportada.findOneAndDelete({
+        _id: req.params.id,
+        usuario: req.userId
+      });
+
+      if (!transacaoExcluida) {
+        return res.status(404).json({ erro: 'Transação importada não encontrada ou não pertence ao usuário.' });
+      }
+
+      // Retorna 204 No Content para indicar sucesso na exclusão sem corpo de resposta
+      res.sendStatus(204);
+
+    } catch (error) {
+      console.error('[TransacaoImportada] Erro ao excluir transação:', error);
+      res.status(500).json({ erro: 'Erro interno ao excluir transação importada.' });
+    }
   }
 };
 

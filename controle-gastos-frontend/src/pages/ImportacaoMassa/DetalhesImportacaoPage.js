@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaSpinner, FaEdit, FaExclamationTriangle } from 'react-icons/fa';
+import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
 import './DetalhesImportacaoPage.css';
@@ -223,6 +223,31 @@ const DetalhesImportacaoPage = () => {
         });
     };
 
+    // Função para excluir uma transação
+    const handleExcluirTransacao = async (transacaoId) => {
+        const mensagemConfirmacao = (
+            <div>
+                <p>Tem certeza que deseja excluir esta transação importada?</p>
+                <p>Esta ação não pode ser desfeita.</p>
+            </div>
+        );
+
+        const confirmado = await mostrarConfirmacao(mensagemConfirmacao, 'excluir');
+        if (!confirmado) return;
+
+        try {
+            await importacaoService.excluirTransacao(transacaoId);
+            toast.success('Transação excluída com sucesso!');
+            // Remove a transação do estado local para atualizar a UI imediatamente
+            setTransacoes(prevTransacoes => prevTransacoes.filter(t => t.id !== transacaoId));
+            // Opcional: recarregar detalhes para atualizar contadores, se necessário
+            await carregarDetalhes();
+        } catch (error) {
+            console.error('Erro ao excluir transação:', error);
+            toast.error(error.message || 'Erro ao excluir transação.');
+        }
+    };
+
     // Função para finalizar importação
     const handleFinalizarImportacao = async () => {
         const mensagemConfirmacao = (
@@ -433,6 +458,13 @@ const DetalhesImportacaoPage = () => {
                                                     Validar
                                                 </button>
                                             )}
+                                            <button
+                                                onClick={() => handleExcluirTransacao(transacao.id)}
+                                                className="btn-acao btn-excluir"
+                                                title="Excluir esta transação"
+                                            >
+                                                <FaTrash />
+                                            </button>
                                         </>
                                     )}
                                 </td>

@@ -57,6 +57,7 @@ router.get('/:importacaoId/transacoes', transacaoImportadaController.listarTrans
 router.put('/transacoes/:id', transacaoImportadaController.atualizarTransacao);
 router.post('/transacoes/:id/validar', transacaoImportadaController.validarTransacao);
 router.post('/transacoes/:id/erro', transacaoImportadaController.marcarErro);
+router.delete('/transacoes/:id', transacaoImportadaController.excluirTransacao);
 router.post('/transacoes/validar-multiplas', transacaoImportadaController.validarMultiplas);
 
 module.exports = router; 

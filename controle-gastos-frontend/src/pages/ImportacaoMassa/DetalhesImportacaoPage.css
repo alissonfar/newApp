@@ -250,6 +250,25 @@
   background-color: var(--cor-erro-escura);
 }
 
+.btn-excluir {
+  background-color: var(--cor-erro);
+  color: white;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+}
+
+.btn-excluir svg {
+  margin: 0;
+}
+
+.btn-excluir:hover {
+  background-color: var(--cor-erro-escura);
+}
+
 .acoes-principais {
   display: flex;
   gap: 1rem;

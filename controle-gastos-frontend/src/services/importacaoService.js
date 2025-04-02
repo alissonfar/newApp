@@ -133,6 +133,25 @@ const importacaoService = {
     }
   },
 
+  // Excluir uma transação importada
+  excluirTransacao: async (transacaoId) => {
+    try {
+      // A rota correta é /importacoes/transacoes/:id
+      const response = await api.delete(`/importacoes/transacoes/${transacaoId}`);
+      // O backend retorna 204 No Content em caso de sucesso, então não há dados no response.data
+      return { sucesso: true };
+    } catch (error) {
+      console.error('[DEBUG] Erro ao excluir transação:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      // Retorna a mensagem de erro do backend, se disponível
+      const mensagemErro = error.response?.data?.erro || 'Erro ao excluir transação.';
+      throw new Error(mensagemErro);
+    }
+  },
+
   // Finalizar importação
   finalizarImportacao: async (importacaoId) => {
     try {
