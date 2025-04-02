@@ -209,7 +209,6 @@ const Transacoes = () => {
         
         <div className="button-group">
           <button onClick={handleCreate}>+ Nova Transação</button>
-          <Link to="/importacao-em-massa" className="btn btn-importar">Importar em Massa</Link>
         </div>
       </div>
 
