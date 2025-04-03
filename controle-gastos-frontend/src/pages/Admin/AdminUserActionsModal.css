@@ -162,4 +162,92 @@
   display: block;
   color: #6c757d; /* Cinza padrão para texto pequeno */
   font-size: 0.85rem;
+}
+
+/* Novos estilos para ações com select */
+
+.action-buttons-group {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px; /* Espaço antes dos selects */
+}
+
+/* Ajusta os botões de ação direta para ocupar espaço igual se necessário */
+.action-buttons-group .modal-action-button {
+  flex: 1; 
+}
+
+.select-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Espaço entre Role e Status */
+}
+
+.select-action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.select-action-item label {
+  font-weight: 500;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Espaço entre ícone e texto */
+  min-width: 80px; /* Alinha os selects */
+}
+
+.select-action-item select {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+.select-action-item select:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.select-action-item select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+/* Estilo para destacar quando o valor do select mudou */
+.select-action-item select.changed {
+  border-color: #ffc107; /* Borda amarela para indicar mudança não salva */
+}
+
+.save-select-button {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.save-select-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.save-select-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner-small {
+  animation: spin 1s linear infinite;
+  font-size: 0.9em; /* Menor que o spinner padrão */
 } 

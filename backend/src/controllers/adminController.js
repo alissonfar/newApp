@@ -143,4 +143,109 @@ exports.verifyUserEmail = async (req, res) => {
     console.error("Erro ao verificar email do usuário pelo admin:", error);
     res.status(500).json({ erro: "Erro interno ao verificar email do usuário." });
   }
+};
+
+// Função para atualizar o role de um usuário
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newRole } = req.body;
+    const adminUserId = req.userId; // ID do admin fazendo a requisição
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ erro: "ID de usuário inválido." });
+    }
+
+    // Valida se o newRole é um valor permitido pelo Schema
+    const allowedRoles = Usuario.schema.path('role').enumValues;
+    if (!allowedRoles.includes(newRole)) {
+      return res.status(400).json({ erro: `Role inválido. Roles permitidos: ${allowedRoles.join(', ')}` });
+    }
+
+    const targetUser = await Usuario.findById(id).select('role _id'); // Seleciona role e id
+    if (!targetUser) {
+      return res.status(404).json({ erro: "Usuário alvo não encontrado." });
+    }
+
+    // Segurança: Impede admin de alterar o próprio role por aqui
+    if (targetUser._id.equals(adminUserId)) {
+        return res.status(403).json({ erro: "Você não pode alterar seu próprio role através desta interface." });
+    }
+
+    // Segurança: Impede rebaixamento do último admin
+    if (targetUser.role === 'admin' && newRole !== 'admin') {
+      const adminCount = await Usuario.countDocuments({ role: 'admin' });
+      if (adminCount <= 1) {
+        return res.status(400).json({ erro: "Não é possível rebaixar o último administrador do sistema." });
+      }
+    }
+
+    // Atualiza o role
+    const updatedUser = await Usuario.findByIdAndUpdate(
+      id,
+      { role: newRole },
+      { new: true, runValidators: true } // runValidators é importante aqui
+    ).select('-senha');
+
+    res.status(200).json({
+      mensagem: `Role do usuário ${updatedUser.nome} atualizado para ${newRole} com sucesso.`,
+      usuario: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Erro ao atualizar role do usuário:", error);
+    // Verifica se é erro de validação (pode acontecer se outros campos estiverem inválidos)
+    if (error.name === 'ValidationError') {
+        return res.status(400).json({ erro: `Erro de validação ao atualizar role: ${error.message}` });
+    }
+    res.status(500).json({ erro: "Erro interno ao atualizar role do usuário." });
+  }
+};
+
+// Função para atualizar o status de um usuário
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newStatus } = req.body;
+    const adminUserId = req.userId;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ erro: "ID de usuário inválido." });
+    }
+
+    // Valida se o newStatus é um valor permitido
+    const allowedStatuses = Usuario.schema.path('status').enumValues;
+    if (!allowedStatuses.includes(newStatus)) {
+      return res.status(400).json({ erro: `Status inválido. Status permitidos: ${allowedStatuses.join(', ')}` });
+    }
+
+    const targetUser = await Usuario.findById(id).select('status _id');
+    if (!targetUser) {
+      return res.status(404).json({ erro: "Usuário alvo não encontrado." });
+    }
+
+    // Segurança: Impede admin de alterar o próprio status por aqui
+    if (targetUser._id.equals(adminUserId)) {
+      return res.status(403).json({ erro: "Você não pode alterar seu próprio status através desta interface." });
+    }
+
+    // Atualiza o status
+    const updatedUser = await Usuario.findByIdAndUpdate(
+      id,
+      { status: newStatus },
+      { new: true, runValidators: true } 
+    ).select('-senha');
+
+    res.status(200).json({
+      mensagem: `Status do usuário ${updatedUser.nome} atualizado para ${newStatus} com sucesso.`,
+      usuario: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Erro ao atualizar status do usuário:", error);
+    if (error.name === 'ValidationError') {
+        return res.status(400).json({ erro: `Erro de validação ao atualizar status: ${error.message}` });
+    }
+    res.status(500).json({ erro: "Erro interno ao atualizar status do usuário." });
+  }
 }; 

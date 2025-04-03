@@ -12,6 +12,8 @@ router.get('/usuarios', adminController.listarUsuarios);
 router.get('/usuarios/:id', adminController.obterDetalhesUsuario);
 router.post('/usuarios/:id/resetar-senha', adminController.resetarSenhaUsuario);
 router.put('/usuarios/:id/verify-email', adminController.verifyUserEmail);
+router.put('/usuarios/:id/role', adminController.updateUserRole);
+router.put('/usuarios/:id/status', adminController.updateUserStatus);
 
 // (Futuras rotas de admin podem ser adicionadas aqui)
 // Ex: router.put('/usuarios/:id/atualizar-role', adminController.atualizarRoleUsuario);

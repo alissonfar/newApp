@@ -128,12 +128,8 @@ const Relatorio = () => {
     const categoriaId = typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria;
     const categoria = categorias.find(c => c._id === categoriaId);
     
-    console.log('[DEBUG Relatório] Processando tag:', {
-      tagNome: tag.nome,
-      categoriaId,
-      categoriaEncontrada: categoria?.nome
-    });
-    
+
+
     if (categoria) {
       if (!acc[categoria._id]) {
         acc[categoria._id] = {
@@ -199,7 +195,7 @@ const Relatorio = () => {
   // 2) Função principal de FILTRO + BUSCA + ORDENAÇÃO
   const applyFilters = () => {
     let result = [...allPayments];
-    console.log('[DEBUG Relatório] Iniciando filtragem com', result.length, 'registros');
+
 
     // Filtro por data (pai)
     if (dataInicio) {
@@ -227,22 +223,13 @@ const Relatorio = () => {
 
     // Filtro por tags (pagamento)
     Object.entries(tagFilters).forEach(([categoriaId, selectedTags]) => {
-      console.log('[DEBUG Relatório] Aplicando filtro de tags:', {
-        categoriaId,
-        selectedTags,
-        registrosAntes: result.length
-      });
+
 
       if (selectedTags && selectedTags.length > 0) {
         result = result.filter(row => {
           // Converte as tags antigas (que usam nome) para o novo formato
           const pagTags = {};
           Object.entries(row.tagsPagamento || {}).forEach(([catName, tagIds]) => {
-            console.log('[DEBUG Relatório] Analisando tags do pagamento:', {
-              catName,
-              tagIds,
-              rowId: row.id
-            });
 
             // Procura a categoria pelo nome ou ID
             const categoria = categorias.find(c => 
@@ -267,24 +254,15 @@ const Relatorio = () => {
           // Verifica se as tags selecionadas estão presentes
           const pagTagsForCategory = pagTags[categoriaId] || [];
           
-          console.log('[DEBUG Relatório] Comparando tags:', {
-            categoriaId,
-            tagsSelecionadas: selectedTags,
-            tagsNoPagamento: pagTagsForCategory,
-            match: selectedTags.some(selectedTagId => 
-              pagTagsForCategory.includes(selectedTagId)
-            )
-          });
+
 
           return selectedTags.some(selectedTagId => 
             pagTagsForCategory.includes(selectedTagId)
           );
         });
 
-        console.log('[DEBUG Relatório] Após filtro de tags:', {
-          categoriaId,
-          registrosDepois: result.length
-        });
+
+
       }
     });
 
@@ -330,7 +308,7 @@ const Relatorio = () => {
     }
 
     setFilteredRows(result);
-    console.log('[DEBUG Relatório] Resultado final:', result.length, 'registros');
+
   };
 
   // 3) Recalcula o sumário quando filteredRows muda
@@ -373,11 +351,7 @@ const Relatorio = () => {
   // 4) Exportação
   const handleExport = async () => {
     // Logs para debug
-    console.log('Dados para exportação:', {
-      filteredRows,
-      categorias,
-      tags
-    });
+
 
     // Normaliza os dados antes de exportar
     const normalizedRows = filteredRows.map(row => ({

@@ -67,12 +67,17 @@ function UserList() {
     setSelectedUserForActions(null);
   };
 
-  const handleActionSuccess = (message, actionType) => {
+  const handleActionSuccess = (message, actionType, updatedUser) => {
     if (actionType !== 'reset') {
       handleCloseActionsModal();
     }
     toast.success(message);
-    if (actionType === 'verify') {
+    if (actionType === 'verify' || actionType === 'updateRole' || actionType === 'updateStatus') {
+      if (updatedUser) {
+        setUsuarios(prevUsuarios => 
+          prevUsuarios.map(u => u._id === updatedUser._id ? { ...u, ...updatedUser } : u)
+        );
+      }
       carregarUsuarios(paginaAtual);
     }
   };
