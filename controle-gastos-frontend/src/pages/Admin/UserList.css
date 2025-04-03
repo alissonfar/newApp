@@ -1,0 +1,145 @@
+/* src/pages/Admin/UserList.css */
+.user-list-container {
+  margin-top: 20px;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 20px;
+  font-size: 1.2em;
+  color: #555;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+.spinner-small {
+  animation: spin 1s linear infinite;
+  width: 1em; /* Ajustar tamanho se necessário */
+  height: 1em;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.user-table th, .user-table td {
+  border: 1px solid #ddd;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.user-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.user-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.user-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1em;
+  margin: 0 5px;
+  padding: 5px;
+  color: #555;
+  transition: color 0.2s;
+}
+
+.action-button:hover {
+  color: #007bff;
+}
+
+.action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.reset-button:hover {
+  color: #dc3545; /* Vermelho para resetar */
+}
+
+.view-button:hover {
+  color: #17a2b8; /* Azul info */
+}
+
+.edit-button:hover {
+  color: #ffc107; /* Amarelo warning */
+}
+
+.delete-button:hover {
+  color: #dc3545; /* Vermelho danger */
+}
+
+/* Estilos para o Role Badge */
+.role-badge {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  color: white;
+  text-transform: capitalize;
+}
+
+.role-admin {
+  background-color: #dc3545; /* Vermelho */
+}
+
+.role-pro {
+  background-color: #007bff; /* Azul */
+}
+
+.role-comum {
+  background-color: #6c757d; /* Cinza */
+}
+
+/* Controles de Paginação */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.pagination-controls button {
+  padding: 8px 15px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #f2f2f2;
+}
+
+.pagination-controls button:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.pagination-controls span {
+  font-weight: bold;
+} 

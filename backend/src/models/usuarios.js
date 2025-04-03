@@ -34,7 +34,13 @@ const UsuarioSchema = new mongoose.Schema({
     proprietario: { type: String, default: '' }
   },
   ultimoAcesso: { type: Date },
-  status: { type: String, enum: ['ativo', 'inativo', 'bloqueado'], default: 'ativo' }
+  status: { type: String, enum: ['ativo', 'inativo', 'bloqueado'], default: 'ativo' },
+  role: { 
+    type: String, 
+    enum: ['admin', 'pro', 'comum'], 
+    default: 'comum',
+    index: true // Adicionado para buscas futuras por role
+  }
 }, { 
   timestamps: true,
   toJSON: { 

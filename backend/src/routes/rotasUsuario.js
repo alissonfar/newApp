@@ -4,7 +4,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const controladorUsuario = require('../controllers/controladorUsuario');
-const autenticacao = require('../middlewares/autenticacao');
+const { autenticacao } = require('../middlewares/autenticacao');
 
 // Configuração do Multer para upload de arquivos
 const storage = multer.diskStorage({

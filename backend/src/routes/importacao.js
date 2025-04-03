@@ -4,7 +4,7 @@ const ImportacaoController = require('../controllers/importacaoController');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
-const autenticacao = require('../middlewares/autenticacao');
+const { autenticacao } = require('../middlewares/autenticacao');
 const transacaoImportadaController = require('../controllers/transacaoImportadaController');
 
 // Configuração do Multer para upload de arquivos

@@ -21,9 +21,11 @@ import VerificarEmail from './pages/VerificarEmail/VerificarEmail';
 import EmailNaoVerificado from './pages/EmailNaoVerificado/EmailNaoVerificado';
 import EsqueciSenha from './pages/EsqueciSenha/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
+import AdminRoute from './AdminRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ImportacaoProvider } from './contexts/ImportacaoContext';
 
@@ -154,6 +156,21 @@ function App() {
                 </PrivateRoute>
               }
             />
+
+            {/* Rota de Administração - Estrutura Correta com Layout Route */}
+            <Route element={<AdminRoute />}> {/* Elemento pai que aplica a proteção */}
+              <Route 
+                path="/admin" 
+                element={ /* Elemento filho renderizado pelo Outlet do AdminRoute */
+                  /* RESTAURANDO: Conteúdo original da página admin */
+                  /* <div>Página Admin - Teste Direto Outlet v2</div> */ 
+                   <MainLayout> 
+                    <AdminDashboard />
+                  </MainLayout> 
+                }
+              />
+              {/* Outras rotas que exigem admin podem ser aninhadas aqui */}
+            </Route>
           </Routes>
 
           <ToastContainer

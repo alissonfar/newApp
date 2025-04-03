@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -157,6 +157,16 @@ const MainLayout = ({ children }) => {
                   )}
                 </li>
               ))}
+              
+              {/* Adiciona o item de menu Admin condicionalmente */}
+              {usuario?.role === 'admin' && (
+                <li className={`${location.pathname === '/admin' ? 'active' : ''}`}>
+                   <Link to="/admin" className="menu-item">
+                     <span className="menu-icon"><FaUserShield /></span>
+                     {!isMenuCollapsed && <span className="menu-text">Administração</span>}
+                   </Link>
+                </li>
+              )}
             </ul>
           </nav>
         </div>

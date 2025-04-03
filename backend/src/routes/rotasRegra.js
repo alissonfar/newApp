@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const controladorRegra = require('../controllers/controladorRegra');
-const autenticacao = require('../middlewares/autenticacao');
+const { autenticacao } = require('../middlewares/autenticacao');
 
 // Aplica o middleware de autenticação em todas as rotas
 router.use(autenticacao);

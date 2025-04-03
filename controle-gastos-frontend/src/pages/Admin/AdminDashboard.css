@@ -1,0 +1,23 @@
+/* src/pages/Admin/AdminDashboard.css */
+.admin-dashboard-container {
+  padding: 20px;
+}
+
+.admin-dashboard-container h1 {
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.admin-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-management-section h2 {
+  margin-bottom: 20px;
+  color: #555;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+} 

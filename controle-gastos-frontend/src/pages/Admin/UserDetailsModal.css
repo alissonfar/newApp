@@ -1,0 +1,143 @@
+/* src/pages/Admin/UserDetailsModal.css */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Garante que fique sobre outros conteúdos */
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 30px 40px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.modal-close-button:hover {
+  color: #333;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  color: #333;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+}
+
+.user-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.detail-item {
+  background-color: #f9f9f9;
+  padding: 12px 15px;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  word-wrap: break-word; /* Quebra palavras longas */
+}
+
+.detail-item.long-text {
+  /* Opcional: fazer itens longos ocuparem mais espaço se necessário */
+  /* grid-column: span 2; */
+}
+
+.detail-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.detail-label svg {
+  color: #888;
+  flex-shrink: 0; /* Impede que o ícone encolha */
+}
+
+.detail-value {
+  color: #333;
+  font-size: 0.95em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Estilos específicos para badges e indicadores */
+.role-badge {
+  /* Reutiliza estilos de UserList.css se já definidos */
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  color: white;
+  text-transform: capitalize;
+}
+.role-admin { background-color: #dc3545; }
+.role-pro { background-color: #007bff; }
+.role-comum { background-color: #6c757d; }
+
+.status-badge {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  color: white;
+  text-transform: capitalize;
+}
+.status-ativo { background-color: #28a745; } /* Verde */
+.status-inativo { background-color: #ffc107; } /* Amarelo */
+.status-bloqueado { background-color: #dc3545; } /* Vermelho */
+
+.text-success {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.text-warning {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.text-warning svg {
+    color: #ffc107;
+    margin-left: 5px;
+}
+
+/* Área de Ações (descomentar se/quando adicionar botões) */
+/* .modal-actions {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+} */ 

@@ -1,6 +1,7 @@
 // src/middlewares/autenticacao.js
 const jwt = require('jsonwebtoken');
 const { jwtSecret, loginRedirectUrl } = require('../config/config');
+const Usuario = require('../models/usuarios'); // Importa o modelo
 
 function autenticacao(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -36,4 +37,33 @@ function autenticacao(req, res, next) {
   });
 }
 
-module.exports = autenticacao;
+// Middleware para verificar se o usuário é administrador
+async function isAdmin(req, res, next) {
+  try {
+    // Verifica se userId foi anexado pela autenticação
+    if (!req.userId) {
+      return res.status(401).json({ 
+        erro: 'Usuário não autenticado.',
+        redirectUrl: require('../config/config').loginRedirectUrl // Acesso seguro à config
+      });
+    }
+
+    const usuario = await Usuario.findById(req.userId).select('role'); // Busca apenas o campo 'role'
+
+    if (!usuario) {
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    if (usuario.role !== 'admin') {
+      return res.status(403).json({ erro: 'Acesso negado. Permissão de administrador necessária.' });
+    }
+
+    // Se for admin, continua para a próxima função
+    next();
+  } catch (error) {
+    console.error('Erro no middleware isAdmin:', error);
+    res.status(500).json({ erro: 'Erro interno do servidor ao verificar permissão.' });
+  }
+}
+
+module.exports = { autenticacao, isAdmin }; // Exporta ambas as funções
