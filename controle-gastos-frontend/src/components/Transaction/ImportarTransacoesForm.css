@@ -520,4 +520,128 @@
   background-color: #f0f0f0;
   color: #34495e;
   transform: rotate(90deg);
-} 
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .formato-selector {
+    flex-wrap: wrap; /* Permite que os radio buttons quebrem linha */
+    gap: 15px;
+  }
+
+  .transacoes-list {
+    overflow-x: auto; /* Adicionado para permitir rolagem horizontal */
+    padding-bottom: 20px; /* Mantém padding inferior */
+    /* Preserva overflow-y: auto; da regra global */
+  }
+
+  .transacao-preview {
+    padding: 12px;
+    padding-bottom: 15px; /* Padding normal inferior */
+    margin-bottom: 20px;
+    min-width: 450px; /* Adicionado para forçar rolagem do container pai */
+  }
+
+  .transacao-header {
+    flex-wrap: wrap; /* Permite quebra de linha no header */
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .transacao-details {
+    padding: 8px 12px;
+  }
+
+  .pagamentos-preview {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .pagamento-item {
+     padding: 8px;
+  }
+
+  .transacao-actions {
+    padding: 10px;
+    gap: 8px;
+    position: static; /* Muda para estático para evitar sobreposição */
+    margin-top: 15px; /* Adiciona espaço acima */
+    border-top: none; /* Remove borda superior, já que está estático */
+    background-color: transparent; /* Remove fundo */
+    border-radius: 0; /* Remove border-radius */
+    justify-content: space-around; /* Espaça melhor os botões */
+  }
+
+  .transacao-actions .btn-action {
+    min-width: 120px; /* Reduz largura mínima */
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .importacao-em-massa-container .transacoes-list {
+    /* Mantém o max-height e overflow, mas remove padding-bottom extra */
+    padding-bottom: 20px;
+  }
+
+  /* Ajustes do Modal */
+  .json-info-content {
+    padding: 20px;
+    max-height: 85vh;
+  }
+
+  .json-info-content h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+  }
+
+  .json-info-content h4 {
+     font-size: 18px;
+     margin: 16px 0 12px;
+  }
+
+  .json-info-description pre {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .close-btn {
+    top: 15px;
+    right: 15px;
+    font-size: 24px;
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .formato-selector {
+     flex-direction: column; /* Uma opção por linha */
+     align-items: flex-start;
+  }
+
+  .file-input-container button,
+  .manual-input-container button {
+     padding: 8px 12px;
+     font-size: 14px;
+  }
+
+  .transacao-header {
+    /* Pode precisar de mais ajustes se o conteúdo for muito longo */
+  }
+
+  .transacao-actions {
+     flex-direction: column; /* Empilha os botões */
+     align-items: stretch; /* Estica os botões */
+     gap: 10px;
+  }
+
+  .transacao-actions .btn-action {
+     width: 100%;
+     min-width: unset;
+  }
+
+  .transacao-preview {
+     min-width: 380px; /* Adicionado/Ajustado para telas menores */
+  }
+}

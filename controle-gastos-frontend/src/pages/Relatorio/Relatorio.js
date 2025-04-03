@@ -756,75 +756,77 @@ const Relatorio = () => {
       <div className="relatorio-results">
         <h3>Resultados ({filteredRows.length})</h3>
         {filteredRows.length > 0 ? (
-          <table className="relatorio-table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Data</th>
-                <th>Pessoa (Pagamento)</th>
-                <th>Valor (Pagamento)</th>
-                <th>Tipo</th>
-                <th>Tags (Pagamento)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map((row, idx) => {
-                const displayDate = formatDateBR(row.data);
+          <div className="table-container">
+            <table className="relatorio-table">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Data</th>
+                  <th>Pessoa (Pagamento)</th>
+                  <th>Valor (Pagamento)</th>
+                  <th>Tipo</th>
+                  <th>Tags (Pagamento)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((row, idx) => {
+                  const displayDate = formatDateBR(row.data);
 
-                return (
-                  <tr key={idx}>
-                    <td>{row.descricao}</td>
-                    <td>{displayDate}</td>
-                    <td>{row.pessoa || '—'}</td>
-                    <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
-                    <td className={row.tipo?.toLowerCase() === 'gasto' ? 'tipo-gasto' : row.tipo?.toLowerCase() === 'recebivel' ? 'tipo-recebivel' : ''}>
-                      {row.tipo}
-                    </td>
-                    <td>
-                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
-                        const categoria = categorias.find(c => 
-                          c._id === catId || c.nome === catId
-                        );
-                        if (!categoria) return null;
-
-                        return tagIds.map((tagId, j) => {
-                          // Encontra a tag pelo ID ou nome
-                          const tag = tags.find(t => 
-                            t._id === tagId || t.nome === tagId
+                  return (
+                    <tr key={idx}>
+                      <td>{row.descricao}</td>
+                      <td>{displayDate}</td>
+                      <td>{row.pessoa || '—'}</td>
+                      <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
+                      <td className={row.tipo?.toLowerCase() === 'gasto' ? 'tipo-gasto' : row.tipo?.toLowerCase() === 'recebivel' ? 'tipo-recebivel' : ''}>
+                        {row.tipo}
+                      </td>
+                      <td>
+                        {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
+                          const categoria = categorias.find(c => 
+                            c._id === catId || c.nome === catId
                           );
-                          
-                          if (!tag) return null;
+                          if (!categoria) return null;
 
-                          return (
-                            <span 
-                              key={`${row.id}-${i}-${j}`} 
-                              className="tag-chip"
-                              style={{
-                                backgroundColor: `${tag.cor}20`,
-                                color: tag.cor,
-                                border: `1px solid ${tag.cor}`,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '0.85rem',
-                                margin: '2px',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              <IconRenderer nome={tag.icone || 'tag'} size={14} cor={tag.cor} />
-                              {`${categoria.nome}: ${tag.nome}`}
-                            </span>
-                          );
-                        });
-                      })}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          return tagIds.map((tagId, j) => {
+                            // Encontra a tag pelo ID ou nome
+                            const tag = tags.find(t => 
+                              t._id === tagId || t.nome === tagId
+                            );
+                            
+                            if (!tag) return null;
+
+                            return (
+                              <span 
+                                key={`${row.id}-${i}-${j}`} 
+                                className="tag-chip"
+                                style={{
+                                  backgroundColor: `${tag.cor}20`,
+                                  color: tag.cor,
+                                  border: `1px solid ${tag.cor}`,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.85rem',
+                                  margin: '2px',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                <IconRenderer nome={tag.icone || 'tag'} size={14} cor={tag.cor} />
+                                {`${categoria.nome}: ${tag.nome}`}
+                              </span>
+                            );
+                          });
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <p>Nenhum registro encontrado.</p>
         )}

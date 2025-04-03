@@ -414,13 +414,133 @@
 }
 
 /* Responsividade para telas menores */
-@media (max-width: 768px) {
+@media (max-width: 1024px) { /* Ajustes para tablets e telas menores */
+  .top-section {
+    flex-direction: column; /* Filtros acima do resumo */
+    gap: 30px; /* Aumenta o espaço vertical */
+  }
+
+  .filter-panel,
+  .summary-panel {
+    flex: none; /* Remove a proporção flex */
+    width: 100%; /* Ocupa toda a largura */
+  }
+
+  .filter-row {
+    gap: 15px; /* Reduz o gap entre filtros */
+  }
+
+  .filter-group {
+    min-width: calc(50% - 8px); /* Tenta colocar 2 filtros por linha */
+  }
+}
+
+@media (max-width: 768px) { /* Ajustes para celulares */
+  .relatorio-container {
+    padding: 15px 20px; /* Reduz padding geral */
+  }
+
+  .relatorio-title {
+    font-size: 1.8rem; /* Reduz título */
+    margin-bottom: 20px;
+  }
+
+  .filter-panel,
+  .summary-panel {
+    padding: 20px; /* Reduz padding interno */
+  }
+
+  .filter-section {
+    padding: 20px 25px; /* Reduz padding interno */
+  }
+
+  .filter-group {
+    min-width: 100%; /* Um filtro por linha */
+  }
+
+  .filter-actions {
+    flex-direction: column; /* Botões um abaixo do outro */
+    align-items: stretch; /* Estica botões */
+  }
+
+  .filter-actions button {
+    width: 100%; /* Botões ocupam largura total */
+    justify-content: center;
+  }
+
+  /* Ajuste da tabela para rolagem - Envolver <table> em <div class="table-container"> no JSX */
+  .table-container { /* Adicionar esta classe ao div pai da tabela no JSX */
+      overflow-x: auto; /* Permite rolagem horizontal no container */
+      width: 100%;
+      margin-top: 15px;
+  }
+
   .relatorio-table {
-    display: block;
-    overflow-x: auto;
+    /* display: block;  Removido - block quebra sticky header */
+    /* overflow-x: auto; Movido para .table-container */
+    min-width: 600px; /* Garante uma largura mínima para a tabela, forçando a rolagem se necessário */
+    width: 100%; /* Tenta ocupar o espaço do container */
+    border-spacing: 0 8px; /* Mantém espaçamento */
+  }
+
+  .relatorio-table th {
+    /* position: sticky; Mantém o sticky */
+    /* top: 0; Mantém o top */
+    /* z-index: 10; Mantém o z-index */
+     padding: 12px 15px; /* Reduz padding do cabeçalho */
+  }
+
+  .relatorio-table td {
+     padding: 12px 15px; /* Reduz padding das células */
   }
 
   .relatorio-table td:last-child {
-    min-width: 200px;
+    min-width: 200px; /* Mantém min-width para coluna de tags */
+    white-space: normal; /* Permite quebra de linha nas tags */
   }
+
+   /* Esconde sombra das linhas no modo mobile se ficar estranho com a rolagem */
+  .relatorio-table tbody tr {
+    box-shadow: none;
+  }
+
+  /* Garante borda apenas nas pontas no modo mobile, mesmo com rolagem */
+   .relatorio-table th:first-child,
+   .relatorio-table td:first-child {
+     border-top-left-radius: 8px;
+     border-bottom-left-radius: 8px;
+     border-top-right-radius: 0;
+     border-bottom-right-radius: 0;
+   }
+   .relatorio-table th:last-child,
+   .relatorio-table td:last-child {
+     border-top-right-radius: 8px;
+     border-bottom-right-radius: 8px;
+     border-top-left-radius: 0;
+     border-bottom-left-radius: 0;
+   }
+}
+
+@media (max-width: 480px) { /* Ajustes finos para celulares menores */
+   .relatorio-container {
+    padding: 10px 15px;
+   }
+
+   .filter-panel,
+   .summary-panel {
+     padding: 15px;
+   }
+
+   .filter-section {
+     padding: 15px 20px;
+   }
+
+   .relatorio-table {
+     min-width: 450px; /* Reduz min-width da tabela */
+   }
+
+   .relatorio-table th,
+   .relatorio-table td {
+      padding: 10px 12px;
+   }
 }
