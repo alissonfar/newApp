@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from 'react-calendar';
-import { FaPlus, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote, FaExclamationTriangle, FaUserTie, FaSpinner } from 'react-icons/fa';
+import { FaPlus, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote, FaExclamationTriangle, FaUserTie, FaSpinner, FaCalendarDay, FaCalendarWeek, FaCalendarAlt } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -18,9 +18,11 @@ import { obterTransacoes } from '../../api';
 import { toast } from 'react-toastify';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
+import DayDetailModal from '../../components/Modal/DayDetailModal';
 import { AuthContext } from '../../context/AuthContext';
 import './Home.css';
 import { getCurrentDateBR, formatDateBR, toISOStringBR, getTodayBR } from '../../utils/dateUtils';
+import useDashboardData from '../../hooks/useDashboardData';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -35,200 +37,40 @@ ChartJS.register(
 
 const Home = () => {
   const navigate = useNavigate();
-  const { usuario, carregando } = useContext(AuthContext);
+  const { usuario, carregando: carregandoUsuario } = useContext(AuthContext);
   const [modalOpen, setModalOpen] = useState(false);
-  const [transacoes, setTransacoes] = useState([]);
-  const [resumoMes, setResumoMes] = useState({
-    totalGastos: 0,
-    totalRecebiveis: 0,
-    saldo: 0
-  });
+  const [selectedDateTransactions, setSelectedDateTransactions] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   const [notas, setNotas] = useState(() => {
     const notasSalvas = localStorage.getItem('notas');
     return notasSalvas ? JSON.parse(notasSalvas) : [];
   });
   const [novaNota, setNovaNota] = useState('');
-  const [date, setDate] = useState(new Date());
-  const [transacoesPorData, setTransacoesPorData] = useState({});
-  const [dadosGrafico, setDadosGrafico] = useState({
-    labels: [],
-    datasets: [
-      {
-        label: 'Gastos',
-        data: [],
-        borderColor: 'rgb(255, 99, 132)',
-        tension: 0.1
-      },
-      {
-        label: 'Recebíveis',
-        data: [],
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0.1
-      }
-    ]
-  });
-  const [semDados, setSemDados] = useState(false);
-  const [semProprietario, setSemProprietario] = useState(false);
-  const [carregandoDados, setCarregandoDados] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
   const proprietario = usuario?.preferencias?.proprietario || '';
-  const [proprietarioExibicao, setProprietarioExibicao] = useState('');
+  const usuarioCarregado = !carregandoUsuario;
 
-  // Função para carregar transações
-  const fetchTransacoes = async () => {
-    try {
-      setCarregandoDados(true);
-      
-      // Verifica se há um proprietário definido
-      if (!proprietario) {
-        setSemProprietario(true);
-        setSemDados(false);
-        setCarregandoDados(false);
-        setProprietarioExibicao('');
-        return;
-      }
-      
-      setSemProprietario(false);
-      
-      // Filtra as transações pelo proprietário
-      const params = { proprietario };
-      
-      const response = await obterTransacoes(params);
-      
-      // Verifica se há transações para o proprietário definido
-      if (response.transacoes.length === 0) {
-        setSemDados(true);
-        setTransacoes([]);
-        setResumoMes({
-          totalGastos: 0,
-          totalRecebiveis: 0,
-          saldo: 0
-        });
-        setDadosGrafico({
-          labels: [],
-          datasets: [
-            {
-              label: 'Gastos',
-              data: [],
-              borderColor: 'rgb(255, 99, 132)',
-              tension: 0.1
-            },
-            {
-              label: 'Recebíveis',
-              data: [],
-              borderColor: 'rgb(75, 192, 192)',
-              tension: 0.1
-            }
-          ]
-        });
-        setProprietarioExibicao(proprietario);
-        setCarregandoDados(false);
-        return;
-      }
-      
-      setSemDados(false);
-      
-      // Usar o nome do proprietário como aparece na primeira transação, para manter a formatação original
-      const proprietarioOriginal = response.transacoes[0]?.pagamentos[0]?.pessoa || proprietario;
-      setProprietarioExibicao(proprietarioOriginal);
-      
-      setTransacoes(response.transacoes);
-      
-      // Calcular resumo do mês
-      const hoje = new Date();
-      const transacoesMes = response.transacoes.filter(t => {
-        const dataTransacao = new Date(t.data);
-        return dataTransacao.getMonth() === hoje.getMonth() &&
-               dataTransacao.getFullYear() === hoje.getFullYear();
-      });
+  const {
+    transacoes,
+    resumoPeriodo,
+    transacoesPorData,
+    dadosGrafico,
+    semDados,
+    carregandoDados,
+    proprietarioExibicao,
+    periodoSelecionado,
+    setPeriodoSelecionado,
+    fetchTransacoes
+  } = useDashboardData(proprietario, usuarioCarregado);
 
-      const resumo = transacoesMes.reduce((acc, t) => {
-        if (t.tipo === 'gasto') {
-          acc.totalGastos += t.valor;
-        } else {
-          acc.totalRecebiveis += t.valor;
-        }
-        return acc;
-      }, { totalGastos: 0, totalRecebiveis: 0 });
+  const semProprietario = usuarioCarregado && !proprietario;
 
-      resumo.saldo = resumo.totalRecebiveis - resumo.totalGastos;
-      setResumoMes(resumo);
-
-      // Agrupar transações por data para o calendário
-      const porData = response.transacoes.reduce((acc, t) => {
-        const data = t.data.split('T')[0];
-        if (!acc[data]) acc[data] = [];
-        acc[data].push(t);
-        return acc;
-      }, {});
-      setTransacoesPorData(porData);
-
-      // Calcular dados para o gráfico
-      const ultimosMeses = [];
-      const gastosUltimosMeses = [];
-      const recebiveisUltimosMeses = [];
-
-      for (let i = 5; i >= 0; i--) {
-        const data = new Date();
-        data.setMonth(data.getMonth() - i);
-        const mes = data.toLocaleString('pt-BR', { month: 'short' });
-        const ano = data.getFullYear();
-        
-        ultimosMeses.push(`${mes}/${ano}`);
-
-        const transacoesMes = response.transacoes.filter(t => {
-          const dataTransacao = new Date(t.data);
-          return dataTransacao.getMonth() === data.getMonth() &&
-                 dataTransacao.getFullYear() === data.getFullYear();
-        });
-
-        const gastosMes = transacoesMes
-          .filter(t => t.tipo === 'gasto')
-          .reduce((acc, t) => acc + t.valor, 0);
-
-        const recebiveisMes = transacoesMes
-          .filter(t => t.tipo === 'recebivel')
-          .reduce((acc, t) => acc + t.valor, 0);
-
-        gastosUltimosMeses.push(gastosMes);
-        recebiveisUltimosMeses.push(recebiveisMes);
-      }
-
-      setDadosGrafico({
-        labels: ultimosMeses,
-        datasets: [
-          {
-            label: 'Gastos',
-            data: gastosUltimosMeses,
-            borderColor: 'rgb(255, 99, 132)',
-            tension: 0.1
-          },
-          {
-            label: 'Recebíveis',
-            data: recebiveisUltimosMeses,
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-          }
-        ]
-      });
-
-      setCarregandoDados(false);
-    } catch (error) {
-      console.error('Erro ao carregar transações:', error);
-      toast.error('Erro ao carregar dados do dashboard');
-      setSemDados(true);
-      setCarregandoDados(false);
-    }
-  };
-
-  // Carregar transações inicialmente e quando o proprietário mudar
   useEffect(() => {
-    // Verificar se o usuário está carregado e não está em carregamento
-    if (usuario && !carregando) {
-      fetchTransacoes();
-    }
-  }, [proprietario, usuario, carregando]);
+    localStorage.setItem('notas', JSON.stringify(notas));
+  }, [notas]);
 
-  // Gerenciamento de notas
   const adicionarNota = (e) => {
     e.preventDefault();
     if (!novaNota.trim()) return;
@@ -239,17 +81,14 @@ const Home = () => {
       data: getTodayBR()
     }];
     setNotas(novasNotas);
-    localStorage.setItem('notas', JSON.stringify(novasNotas));
     setNovaNota('');
   };
 
   const removerNota = (id) => {
     const novasNotas = notas.filter(nota => nota.id !== id);
     setNotas(novasNotas);
-    localStorage.setItem('notas', JSON.stringify(novasNotas));
   };
 
-  // Função para renderizar o conteúdo do tile do calendário
   const tileContent = ({ date, view }) => {
     if (view !== 'month') return null;
     
@@ -265,7 +104,20 @@ const Home = () => {
     );
   };
 
-  // Navegação
+  const handleDayClick = (value) => {
+    const dataFormatada = new Date(value.setHours(0, 0, 0, 0)).toISOString().split('T')[0];
+    const transacoesDoDia = transacoesPorData[dataFormatada] || [];
+
+    if (transacoesDoDia.length > 0) {
+      transacoesDoDia.sort((a, b) => a.descricao.localeCompare(b.descricao)); 
+      setSelectedDateTransactions(transacoesDoDia);
+      setSelectedDate(value);
+      setIsDayModalOpen(true);
+    } else {
+      setCalendarDate(value);
+    }
+  };
+
   const handleNovaTransacao = () => {
     setModalOpen(true);
   };
@@ -279,19 +131,20 @@ const Home = () => {
   };
 
   return (
-    <div className="home-container">
-      {/* Cabeçalho com Resumo */}
-      <div className="dashboard-header">
-        <h1>Dashboard {proprietarioExibicao ? `- ${proprietarioExibicao}` : ''}</h1>
+    <div className="home-container p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <div className="dashboard-header mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+          Dashboard {proprietarioExibicao ? `- ${proprietarioExibicao}` : ''}
+        </h1>
         
-        {carregando && (
+        {carregandoUsuario && (
           <div className="carregando-container">
             <FaSpinner className="spinner" />
             <p>Carregando informações do usuário...</p>
           </div>
         )}
         
-        {!carregando && semProprietario && (
+        {!carregandoUsuario && semProprietario && (
           <div className="sem-dados-alerta proprietario">
             <FaUserTie />
             <p>Nenhum proprietário definido. Configure um proprietário nas preferências do perfil.</p>
@@ -301,33 +154,62 @@ const Home = () => {
           </div>
         )}
         
-        {!carregando && semDados && !semProprietario && (
+        {!carregandoUsuario && !semProprietario && semDados && (
           <div className="sem-dados-alerta">
             <FaExclamationTriangle />
             <p>Sem informações disponíveis para {proprietarioExibicao}.</p>
           </div>
         )}
         
-        {!carregando && !semProprietario && !semDados && (
-          <div className="resumo-cards">
+        {!carregandoUsuario && !semProprietario && !semDados && (
+          <div className="periodo-controles mb-4 flex flex-wrap gap-2">
+            <button 
+              onClick={() => setPeriodoSelecionado('semanaAtual')}
+              className={`btn-periodo ${periodoSelecionado === 'semanaAtual' ? 'ativo' : ''}`}
+            >
+              <FaCalendarWeek className="mr-1" /> Semana Atual
+            </button>
+            <button 
+              onClick={() => setPeriodoSelecionado('mesAtual')}
+              className={`btn-periodo ${periodoSelecionado === 'mesAtual' ? 'ativo' : ''}`}
+            >
+              <FaCalendarDay className="mr-1" /> Mês Atual
+            </button>
+            <button 
+              onClick={() => setPeriodoSelecionado('mesPassado')}
+              className={`btn-periodo ${periodoSelecionado === 'mesPassado' ? 'ativo' : ''}`}
+            >
+              <FaCalendarAlt className="mr-1" /> Mês Passado
+            </button>
+             <button 
+              onClick={() => setPeriodoSelecionado('anoAtual')}
+              className={`btn-periodo ${periodoSelecionado === 'anoAtual' ? 'ativo' : ''}`}
+            >
+               <FaCalendarAlt className="mr-1" /> Ano Atual
+            </button>
+          </div>
+        )}
+
+        {!carregandoUsuario && !semProprietario && !semDados && (
+          <div className="resumo-cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {carregandoDados ? (
-              <div className="carregando-container">
-                <FaSpinner className="spinner" />
-                <p>Carregando dados...</p>
+              <div className="col-span-full carregando-container flex items-center justify-center p-6 bg-white rounded-lg shadow">
+                <FaSpinner className="spinner text-blue-500 mr-2" />
+                <p className="text-gray-600">Carregando dados...</p>
               </div>
             ) : (
               <>
-                <div className="resumo-card recebiveis">
-                  <h3>Recebíveis do Mês</h3>
-                  <p>R$ {resumoMes.totalRecebiveis.toFixed(2)}</p>
+                <div className="resumo-card recebiveis bg-green-100 p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-semibold text-green-800 mb-1">Recebíveis ({periodoSelecionado.replace('Atual', ' Atuais').replace('Passado', ' Passado')})</h3>
+                  <p className="text-xl font-bold text-green-900">R$ {resumoPeriodo.totalRecebiveis.toFixed(2)}</p>
                 </div>
-                <div className="resumo-card gastos">
-                  <h3>Gastos do Mês</h3>
-                  <p>R$ {resumoMes.totalGastos.toFixed(2)}</p>
+                <div className="resumo-card gastos bg-red-100 p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-semibold text-red-800 mb-1">Gastos ({periodoSelecionado.replace('Atual', ' Atuais').replace('Passado', ' Passado')})</h3>
+                  <p className="text-xl font-bold text-red-900">R$ {resumoPeriodo.totalGastos.toFixed(2)}</p>
                 </div>
-                <div className="resumo-card saldo">
-                  <h3>Saldo do Mês</h3>
-                  <p>R$ {resumoMes.saldo.toFixed(2)}</p>
+                <div className="resumo-card saldo bg-blue-100 p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-1">Saldo ({periodoSelecionado.replace('Atual', ' Atuais').replace('Passado', ' Passado')})</h3>
+                  <p className="text-xl font-bold text-blue-900">R$ {resumoPeriodo.saldo.toFixed(2)}</p>
                 </div>
               </>
             )}
@@ -335,14 +217,12 @@ const Home = () => {
         )}
       </div>
 
-      {!carregando && !semProprietario && (
-        <div className="dashboard-grid">
-          {/* Coluna Esquerda */}
-          <div className="dashboard-column">
-            {/* Atalhos */}
-            <section className="dashboard-section atalhos">
-              <h2>Atalhos</h2>
-              <div className="atalhos-grid">
+      {!carregandoUsuario && !semProprietario && (
+        <div className="dashboard-grid grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="dashboard-column lg:col-span-2 flex flex-col gap-6">
+            <section className="dashboard-section atalhos bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold text-gray-700 mb-3">Atalhos</h2>
+              <div className="atalhos-grid grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <button className="atalho-btn nova-transacao" onClick={handleNovaTransacao}>
                   <FaPlus />
                   <span>Nova Transação</span>
@@ -358,10 +238,9 @@ const Home = () => {
               </div>
             </section>
 
-            {/* Gráfico */}
-            <section className="dashboard-section grafico">
-              <h2>Evolução Financeira</h2>
-              <div className="grafico-container">
+            <section className="dashboard-section grafico bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold text-gray-700 mb-3">Evolução Financeira (Últimos 6 Meses)</h2>
+              <div className="grafico-container h-64 md:h-80">
                 <Line 
                   data={dadosGrafico}
                   options={{
@@ -388,58 +267,62 @@ const Home = () => {
               </div>
             </section>
 
-            {/* Últimas Transações */}
-            <section className="dashboard-section ultimas-transacoes">
-              <h2>Últimas Transações</h2>
-              <div className="transacoes-lista">
+            <section className="dashboard-section ultimas-transacoes bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold text-gray-700 mb-3">Últimas 5 Transações</h2>
+              <div className="transacoes-lista space-y-3">
                 {transacoes.slice(0, 5).map((t, index) => (
-                  <div key={index} className={`transacao-item ${t.tipo}`}>
+                  <div key={index} className={`transacao-item flex justify-between items-center p-3 rounded border-l-4 ${t.tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}>
                     <div className="transacao-info">
-                      <strong>{t.descricao}</strong>
-                      <span>{new Date(t.data).toLocaleDateString()}</span>
+                      <strong className="text-sm text-gray-800 block">{t.descricao}</strong>
+                      <span className="text-xs text-gray-500">{new Date(t.data).toLocaleDateString()}</span>
                     </div>
-                    <div className="transacao-valor">
-                      R$ {t.valor.toFixed(2)}
+                    <div className={`transacao-valor font-medium text-sm ${t.tipo === 'gasto' ? 'text-red-600' : 'text-green-600'}`}>
+                      {t.tipo === 'gasto' ? '-' : '+'} R$ {t.valor.toFixed(2)}
                     </div>
                   </div>
                 ))}
+                {transacoes.length === 0 && !carregandoDados && (
+                  <p className="text-sm text-gray-500 text-center py-4">Nenhuma transação encontrada.</p>
+                )}
               </div>
             </section>
           </div>
 
-          {/* Coluna Direita */}
-          <div className="dashboard-column">
-            {/* Calendário */}
-            <section className="dashboard-section calendario">
-              <h2>Calendário</h2>
+          <div className="dashboard-column lg:col-span-1 flex flex-col gap-6">
+            <section className="dashboard-section calendario bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold text-gray-700 mb-3">Calendário</h2>
               <Calendar
-                onChange={setDate}
-                value={date}
+                onChange={setCalendarDate}
+                onClickDay={handleDayClick}
+                value={calendarDate}
                 tileContent={tileContent}
                 className="react-calendar"
               />
             </section>
 
-            {/* Notas */}
-            <section className="dashboard-section notas">
-              <h2>Notas Rápidas</h2>
-              <form onSubmit={adicionarNota} className="nova-nota-form">
+            <section className="dashboard-section notas bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold text-gray-700 mb-3">Notas Rápidas</h2>
+              <form onSubmit={adicionarNota} className="nova-nota-form flex gap-2 mb-3">
                 <input
                   type="text"
                   value={novaNota}
                   onChange={(e) => setNovaNota(e.target.value)}
                   placeholder="Digite uma nova nota..."
+                  className="flex-grow input-field"
                 />
-                <button type="submit">
+                <button type="submit" className="btn-icon">
                   <FaRegStickyNote />
                 </button>
               </form>
-              <div className="notas-lista">
+              <div className="notas-lista max-h-48 overflow-y-auto space-y-2 pr-2">
+                {notas.length === 0 && <p className="text-sm text-gray-400 text-center py-2">Nenhuma nota ainda.</p>}
                 {notas.map(nota => (
-                  <div key={nota.id} className="nota-item">
-                    <p>{nota.texto}</p>
-                    <small>{formatDateBR(nota.data)}</small>
-                    <button onClick={() => removerNota(nota.id)}>×</button>
+                  <div key={nota.id} className="nota-item bg-yellow-50 p-2 rounded border border-yellow-200 flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-gray-800">{nota.texto}</p>
+                      <small className="text-xs text-gray-500">{formatDateBR(nota.data)}</small>
+                    </div>
+                    <button onClick={() => removerNota(nota.id)} className="text-gray-400 hover:text-red-500 text-xs ml-2">×</button>
                   </div>
                 ))}
               </div>
@@ -448,7 +331,6 @@ const Home = () => {
         </div>
       )}
 
-      {/* Modal de Nova Transação */}
       {modalOpen && (
         <ModalTransacao onClose={() => setModalOpen(false)}>
           <NovaTransacaoForm
@@ -461,6 +343,13 @@ const Home = () => {
           />
         </ModalTransacao>
       )}
+
+      <DayDetailModal
+        open={isDayModalOpen}
+        transactions={selectedDateTransactions}
+        date={selectedDate}
+        onClose={() => setIsDayModalOpen(false)}
+      />
     </div>
   );
 };
