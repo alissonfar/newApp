@@ -3,14 +3,28 @@ const Categoria = require('../models/categoria');
 
 exports.obterTodasCategorias = async (req, res) => {
   try {
-    // Retorna somente as categorias ativas do usuário autenticado
-    const categorias = await Categoria.find({ 
+    // Opções de paginação: buscar todos os resultados por enquanto (limite alto)
+    const options = {
+      page: 1,
+      limit: 10000, // Limite alto para buscar todos
+      sort: { nome: 1 } // Opcional: ordenar por nome
+    };
+    
+    // Filtro: apenas categorias ativas do usuário autenticado
+    const query = {
       usuario: req.userId,
-      ativo: true 
-    });
-    res.json(categorias);
+      ativo: true
+    };
+
+    // Usa paginate em vez de find
+    const resultadoPaginado = await Categoria.paginate(query, options);
+    
+    // Retorna apenas o array de documentos para manter compatibilidade com frontend
+    res.json(resultadoPaginado.docs);
+    
   } catch (error) {
-    res.status(500).json({ erro: 'Erro ao obter categorias.' });
+    console.error("Erro ao obter categorias com paginação:", error); // Melhor log de erro
+    res.status(500).json({ erro: 'Erro ao obter categorias.', detalhe: error.message });
   }
 };
 

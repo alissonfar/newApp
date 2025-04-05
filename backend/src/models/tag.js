@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const TagSchema = new mongoose.Schema({
   codigo: { 
@@ -24,6 +25,9 @@ const TagSchema = new mongoose.Schema({
     updatedAt: 'dataAtualizacao'
   }
 });
+
+// Adicionar o plugin de paginação
+TagSchema.plugin(mongoosePaginate);
 
 // Cria um índice composto único para { nome, usuario }
 TagSchema.index({ nome: 1, usuario: 1 }, { unique: true });

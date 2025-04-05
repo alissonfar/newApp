@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const CategoriaSchema = new mongoose.Schema({
   codigo: { 
@@ -23,6 +24,9 @@ const CategoriaSchema = new mongoose.Schema({
     updatedAt: 'dataAtualizacao'
   }
 });
+
+// Adicionar o plugin de paginação
+CategoriaSchema.plugin(mongoosePaginate);
 
 // Cria um índice composto único para { nome, usuario }
 CategoriaSchema.index({ nome: 1, usuario: 1 }, { unique: true });

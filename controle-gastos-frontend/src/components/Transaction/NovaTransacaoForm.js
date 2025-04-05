@@ -5,7 +5,8 @@ import Select from 'react-select'; // Import do React-Select
 import { toast } from 'react-toastify'; // Import do toast do React Toastify
 import { Tooltip, IconButton } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { criarTransacao, atualizarTransacao, obterCategorias, obterTags } from '../../api';
+import { criarTransacao, atualizarTransacao } from '../../api';
+import { useData } from '../../context/DataContext';
 import IconRenderer from '../shared/IconRenderer';
 import './NovaTransacaoForm.css';
 import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils';
@@ -77,9 +78,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       : [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]
   );
   
-  // Categorias e tags (usadas para os dropdowns dos pagamentos)
-  const [categorias, setCategorias] = useState([]);
-  const [allTags, setAllTags] = useState([]);
+  // Obter categorias e tags do DataContext
+  const { categorias, tags: allTags, loadingData, errorData } = useData();
   
   // Refs para focar e rolagem
   const tipoRef = useRef(null);
@@ -95,27 +95,12 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   
-  // Carrega categorias e tags do backend
+  // Ajustar useEffect para setar data inicial quando não for edição
   useEffect(() => {
-    async function fetchData() {
-      try {
-       
-        const cats = await obterCategorias();
-      
-        setCategorias(cats);
-        
-        const tgs = await obterTags();
-      
-        setAllTags(tgs);
-      } catch (error) {
-        console.error('Erro ao carregar categorias ou tags:', error);
-        toast.error('Erro ao carregar categorias ou tags.');
-      }
-    }
-    fetchData();
     if (!transacao) {
       setData(getTodayBR());
     }
+    // A dependência [transacao] permanece para garantir que execute quando o modo muda
   }, [transacao]);
   
   // Sempre que "transacao" mudar (modo edição), preenche os estados
@@ -323,6 +308,15 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       tipoRef.current.focus();
     }
   }, []);
+
+  // Adicionar tratamento para loading e erro dos dados do contexto
+  if (loadingData) {
+    return <div className="loading-indicator">Carregando dados essenciais...</div>; // Ou um spinner
+  }
+
+  if (errorData) {
+    return <div className="error-message">Erro ao carregar categorias e tags. Tente atualizar a página.</div>;
+  }
 
   return (
     <div className="nova-transacao-form-container">
