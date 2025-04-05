@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { toast } from 'react-toastify';  // [NOVO] para exibir mensagens de erro/aviso/sucesso
-import { obterTransacoes, obterCategorias, obterTags } from '../../api.js';
+import { obterTransacoes } from '../../api.js';
+import { useData } from '../../context/DataContext';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF } from '../../utils/export/exportPDF';
 import IconRenderer from '../../components/shared/IconRenderer';
@@ -27,13 +28,18 @@ const Relatorio = () => {
   // Resultado final após filtros/busca/ordenação
   const [filteredRows, setFilteredRows] = useState([]);
 
+  // Obter categorias e tags do Contexto
+  const { categorias, tags, loadingData: loadingContextData, errorData: errorContextData } = useData();
+
+  // Estado local para loading das transações
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [errorTransactions, setErrorTransactions] = useState(null);
+
   // Filtros
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [selectedTipo, setSelectedTipo] = useState('both');
   const [selectedPessoas, setSelectedPessoas] = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [tags, setTags] = useState([]);
   const [tagFilters, setTagFilters] = useState({});
 
   // Sumário
@@ -52,9 +58,11 @@ const Relatorio = () => {
 
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
 
-  // 1) Carregamento inicial
+  // 1) Carregamento inicial - Agora apenas transações
   useEffect(() => {
-    async function fetchData() {
+    async function fetchTransactions() {
+      setLoadingTransactions(true);
+      setErrorTransactions(null);
       try {
         const transData = await obterTransacoes();
         const transArray = transData.transacoes || [];
@@ -91,7 +99,8 @@ const Relatorio = () => {
 
         setAllPayments(flattened);
 
-        // Carrega categorias e tags
+        // REMOVER carregamento de categorias e tags daqui
+        /*
         const cats = await obterCategorias();
         setCategorias(cats);
         const initTagFilters = {};
@@ -102,14 +111,30 @@ const Relatorio = () => {
 
         const tgs = await obterTags();
         setTags(tgs);
+        */
 
       } catch (error) {
-        console.error('Erro ao carregar dados para relatório:', error);
-        toast.error('Erro ao carregar dados para relatório.');
+        console.error('Erro ao carregar transações para relatório:', error);
+        toast.error('Erro ao carregar transações para relatório.');
+        setErrorTransactions(error);
+      } finally {
+        setLoadingTransactions(false);
       }
     }
-    fetchData();
-  }, []);
+    fetchTransactions();
+  }, []); // Dependência vazia, carrega transações uma vez
+
+  // Inicializar filtros de tag quando as categorias carregarem do contexto
+  useEffect(() => {
+    if (categorias.length > 0) {
+      const initTagFilters = {};
+      categorias.forEach(cat => {
+        // Usar _id da categoria como chave é mais robusto
+        initTagFilters[cat._id] = []; 
+      });
+      setTagFilters(initTagFilters);
+    }
+  }, [categorias]); // Depende das categorias do contexto
 
   // Função para extrair pessoas únicas
   const distinctPessoas = (rows) => {
@@ -121,26 +146,24 @@ const Relatorio = () => {
   };
 
   // Agrupa as tags por categoria (para exibir nos filtros)
-  const tagsPorCategoria = tags.reduce((acc, tag) => {
-    if (!tag.categoria) return acc;
-
-    // Encontra a categoria pelo ID
-    const categoriaId = typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria;
-    const categoria = categorias.find(c => c._id === categoriaId);
-    
-
-
-    if (categoria) {
-      if (!acc[categoria._id]) {
-        acc[categoria._id] = {
-          nome: categoria.nome,
-          tags: []
-        };
+  // Esta lógica agora usa `categorias` e `tags` do contexto
+  const tagsPorCategoria = React.useMemo(() => {
+    return tags.reduce((acc, tag) => {
+      if (!tag.categoria) return acc;
+      const categoriaId = typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria;
+      const categoria = categorias.find(c => c._id === categoriaId);
+      if (categoria) {
+        if (!acc[categoria._id]) {
+          acc[categoria._id] = {
+            nome: categoria.nome,
+            tags: []
+          };
+        }
+        acc[categoria._id].tags.push(tag);
       }
-      acc[categoria._id].tags.push(tag);
-    }
-    return acc;
-  }, {});
+      return acc;
+    }, {});
+  }, [tags, categorias]); // Recalcula se tags ou categorias mudarem
 
   // Seleção rápida de datas
   const handleQuickDateRange = (option) => {
@@ -411,7 +434,7 @@ const Relatorio = () => {
     // Resetar tags
     const resetTagFilters = {};
     categorias.forEach(cat => {
-      resetTagFilters[cat.nome] = [];
+      resetTagFilters[cat._id] = [];
     });
     setTagFilters(resetTagFilters);
 
@@ -443,6 +466,15 @@ const Relatorio = () => {
     await handleExport();
     handleExportClose();
   };
+
+  // Adicionar tratamento para loading/erro geral
+  if (loadingContextData || loadingTransactions) {
+    return <div className="relatorio-loading">Carregando dados do relatório...</div>; // Mensagem unificada
+  }
+
+  if (errorContextData || errorTransactions) {
+    return <div className="relatorio-error">Erro ao carregar dados. {errorContextData?.message || errorTransactions?.message}. Tente recarregar a página.</div>;
+  }
 
   return (
     <div className="relatorio-container">
@@ -836,3 +868,4 @@ const Relatorio = () => {
 };
 
 export default Relatorio;
+

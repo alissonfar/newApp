@@ -2,24 +2,15 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';     
 import Swal from 'sweetalert2';            
-import {
-  obterCategorias,
-  obterTags,
-  criarTag,
-  atualizarTag,
-  excluirTag,
-  criarCategoria,
-  atualizarCategoria,
-  excluirCategoria
-} from '../../api.js';
+import { useData } from '../../context/DataContext';
+import { criarTag, atualizarTag, excluirTag, criarCategoria, atualizarCategoria, excluirCategoria } from '../../api.js';
 import IconSelector from './IconSelector';
 import IconRenderer from '../shared/IconRenderer';
 import ColorPicker from './ColorPicker';
 import './TagManagement.css';
 
 const TagManagement = () => {
-  const [categorias, setCategorias] = useState([]);
-  const [tags, setTags] = useState([]);
+  const { categorias, tags, loadingData, errorData, refreshData } = useData();
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   // Estados para nova tag
@@ -48,35 +39,11 @@ const TagManagement = () => {
   const [editCatCor, setEditCatCor] = useState('#000000');
   const [editCatIcone, setEditCatIcone] = useState('folder');
 
-  const carregarCategorias = async () => {
-    try {
-      const cats = await obterCategorias();
-    
-      setCategorias(cats);
-      if (!selectedCategory && cats.length > 0) {
-        setSelectedCategory(cats[0]); // Seleciona a primeira categoria
-      }
-    } catch (error) {
-      console.error('Erro ao carregar categorias:', error);
-      toast.error('Erro ao carregar categorias.');
-    }
-  };
-
-  const carregarTags = async () => {
-    try {
-      const tgs = await obterTags();
-   
-      setTags(tgs);
-    } catch (error) {
-      console.error('Erro ao carregar tags:', error);
-      toast.error('Erro ao carregar tags.');
-    }
-  };
-
   useEffect(() => {
-    carregarCategorias();
-    carregarTags();
-  }, []);
+    if (!loadingData && !errorData && categorias.length > 0 && !selectedCategory) {
+      setSelectedCategory(categorias[0]);
+    }
+  }, [loadingData, errorData, categorias, selectedCategory]);
 
   // Filtra as tags com base na categoria selecionada
   const filteredTags = selectedCategory
@@ -131,7 +98,7 @@ const TagManagement = () => {
       setNovoTagDescricao('');
       setNovoTagCor('#000000');
       setNovoTagIcone('tag');
-      carregarTags();
+      await refreshData();
       toast.success('Tag criada com sucesso!');
     } catch (error) {
       console.error('Erro ao criar tag:', error);
@@ -165,7 +132,7 @@ const TagManagement = () => {
       setEditTagDescricao('');
       setEditTagCor('#000000');
       setEditTagIcone('tag');
-      carregarTags();
+      await refreshData();
       toast.success('Tag atualizada com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar tag:', error);
@@ -187,7 +154,7 @@ const TagManagement = () => {
       if (result.isConfirmed) {
         try {
           await excluirTag(codigo);
-          carregarTags();
+          await refreshData();
           toast.success('Tag excluída com sucesso!');
         } catch (error) {
           console.error('Erro ao excluir tag:', error);
@@ -225,7 +192,7 @@ const TagManagement = () => {
       setNovoCatDescricao('');
       setNovoCatCor('#000000');
       setNovoCatIcone('folder');
-      carregarCategorias();
+      await refreshData();
       toast.success('Categoria criada com sucesso!');
     } catch (error) {
       console.error('Erro ao criar categoria:', error);
@@ -259,7 +226,7 @@ const TagManagement = () => {
       setEditCatDescricao('');
       setEditCatCor('#000000');
       setEditCatIcone('folder');
-      carregarCategorias();
+      await refreshData();
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar categoria:', error);
@@ -284,8 +251,7 @@ const TagManagement = () => {
           if (selectedCategory && selectedCategory.codigo === codigo) {
             setSelectedCategory(null);
           }
-          carregarCategorias();
-          carregarTags();
+          await refreshData();
           toast.success('Categoria excluída com sucesso!');
         } catch (error) {
           console.error('Erro ao excluir categoria:', error);
@@ -294,6 +260,14 @@ const TagManagement = () => {
       }
     });
   };
+
+  if (loadingData) {
+    return <div>Carregando categorias e tags...</div>;
+  }
+
+  if (errorData) {
+    return <div>Erro ao carregar dados. Tente recarregar a página.</div>;
+  }
 
   return (
     <div className="tag-management-page-container">
