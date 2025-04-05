@@ -1,16 +1,49 @@
 // src/components/Layout/MainLayout.js
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
+
+// Hook para detectar o tamanho da tela
+const useMediaQuery = (query) => {
+  const [matches, setMatches] = useState(window.matchMedia(query).matches);
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(query);
+    const documentChangeHandler = (e) => setMatches(e.matches);
+
+    // Atualizar o estado quando a media query mudar
+    try {
+        mediaQueryList.addEventListener('change', documentChangeHandler);
+    } catch (e) {
+      // Fallback para navegadores mais antigos
+      mediaQueryList.addListener(documentChangeHandler);
+    }
+
+
+    // Cleanup listener na desmontagem
+    return () => {
+        try {
+            mediaQueryList.removeEventListener('change', documentChangeHandler);
+        } catch (e) {
+            // Fallback para navegadores mais antigos
+            mediaQueryList.removeListener(documentChangeHandler);
+        }
+    };
+  }, [query]);
+
+  return matches;
+};
 
 const MainLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { token, usuario, setToken, setUsuario } = useContext(AuthContext);
   const [isMenuCollapsed, setIsMenuCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 992px)');
   
   // Estado para controlar quais submenus estão expandidos
   const [expandedMenus, setExpandedMenus] = useState({
@@ -70,10 +103,38 @@ const MainLayout = ({ children }) => {
     navigate('/login');
   };
 
-  // Toggle menu
-  const toggleMenu = () => {
-    setIsMenuCollapsed(!isMenuCollapsed);
+  // Função para fechar o menu mobile
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
+
+  // Função para lidar com clique nos links do menu (fecha mobile)
+  const handleMenuLinkClick = () => {
+    if (isMobile) {
+      closeMobileMenu();
+    }
+    // Se precisar de lógica adicional para links, adicione aqui
+  };
+
+  // Função de Toggle principal (controla ambos os estados mobile/desktop)
+  const handleToggleClick = () => {
+    if (isMobile) {
+      setIsMobileMenuOpen(!isMobileMenuOpen);
+    } else {
+      setIsMenuCollapsed(!isMenuCollapsed);
+    }
+  };
+
+  // Fecha menu mobile se redimensionar para desktop
+  useEffect(() => {
+    if (!isMobile && isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+    // Fecha o menu colapsado se redimensionar para mobile
+    if (isMobile && isMenuCollapsed) {
+        setIsMenuCollapsed(false); // Garante que o menu não fique colapsado no mobile
+    }
+  }, [isMobile, isMobileMenuOpen, isMenuCollapsed]);
 
   // Adicionar handler para fechar o menu ao clicar fora
   React.useEffect(() => {
@@ -99,22 +160,69 @@ const MainLayout = ({ children }) => {
     );
   }
 
-  // Se o usuário estiver autenticado e não estiver em /login ou /registro, exibe o layout completo
+  // Determina as classes CSS para o menu lateral
+  const sideMenuClasses = [
+    'side-menu',
+    isMobile ? 'mobile' : 'desktop',
+    isMobile ? (isMobileMenuOpen ? 'mobile-menu-open' : '') : (isMenuCollapsed ? 'collapsed' : ''),
+  ].filter(Boolean).join(' ');
+
+  // Determina as classes CSS para o conteúdo principal
+  const mainContentClasses = [
+    'main-content',
+    // Aplica 'expanded' no desktop quando colapsado
+    // Aplica 'mobile-menu-padding' no mobile sempre (para botão fixo)
+    !isMobile ? (isMenuCollapsed ? 'expanded' : '') : 'mobile-menu-padding',
+  ].filter(Boolean).join(' ');
+
+  // Se o usuário estiver autenticado, exibe o layout completo
   return (
     <div className="main-layout">
-      <aside className={`side-menu ${isMenuCollapsed ? 'collapsed' : ''}`}>
-        <button className="menu-toggle" onClick={toggleMenu} title={isMenuCollapsed ? 'Expandir menu' : 'Recolher menu'}>
-          <FaChevronLeft />
+      {/* Backdrop para fechar menu mobile */}
+      {isMobile && isMobileMenuOpen && (
+        <div className="mobile-menu-backdrop" onClick={closeMobileMenu}></div>
+      )}
+
+      {/* BOTÕES DE TOGGLE CONDICIONAIS */}
+
+      {/* Botão Hamburger (Mobile - Menu Fechado - FORA do Aside) */}
+      {isMobile && !isMobileMenuOpen && (
+        <button
+          className="main-menu-toggle mobile-hamburger-toggle"
+          onClick={handleToggleClick}
+          title="Abrir menu"
+        >
+          <FaBars />
         </button>
+      )}
+
+      {/* INVERTENDO ORDEM: Aside ANTES do botão Desktop */}
+      <aside className={sideMenuClasses}>
+          {/* Botão Fechar 'X' (Mobile - Menu Aberto - DENTRO do Aside) */}
+          {isMobile && isMobileMenuOpen && (
+             <button
+                className="main-menu-toggle mobile-close-toggle"
+                onClick={handleToggleClick}
+                title="Fechar menu"
+             >
+                <FaTimes />
+             </button>
+          )}
 
         <div className="menu-top">
-          <div className="logo">
-            <img src={myLogo} alt="Logo" />
-            {!isMenuCollapsed && <span className="system-name">Controle de Gastos</span>}
-          </div>
+           {/* Adiciona padding interno no topo APENAS se for mobile para o botão 'X' */}
+           <div className={`logo ${isMobile ? 'mobile-padding' : ''}`}>
+              <img src={myLogo} alt="Logo" />
+               {/* Oculta nome se colapsado no desktop OU se for mobile (independente de aberto/fechado) */}
+              {/*!isMenuCollapsed && !isMobile && <span className="system-name">Controle de Gastos</span>*/}
+               {/* Mostra nome se não colapsado E não for mobile */}
+              {!isMenuCollapsed && !isMobile && <span className="system-name">Controle de Gastos</span>}
+               {/* OU se for mobile E o menu estiver aberto */}
+              {isMobile && isMobileMenuOpen && <span className="system-name">Controle de Gastos</span>}
+           </div>
 
-          <nav className="menu-items">
-            <ul>
+           <nav className="menu-items">
+             <ul>
               {menuItems.map(item => (
                 <li
                   key={item.path || item.key}
@@ -127,7 +235,8 @@ const MainLayout = ({ children }) => {
                         className="menu-item with-submenu"
                       >
                         <span className="menu-icon">{item.icon}</span>
-                        {!isMenuCollapsed && (
+                         {/* Oculta texto se colapsado no desktop */}
+                        {(!isMenuCollapsed || isMobile) && (
                           <>
                             <span className="menu-text">{item.name}</span>
                             <span className="submenu-arrow">
@@ -136,11 +245,12 @@ const MainLayout = ({ children }) => {
                           </>
                         )}
                       </a>
-                      {expandedMenus[item.key] && !isMenuCollapsed && (
+                      {/* Mostra submenu se expandido E (não colapsado OU for mobile) */}
+                      {expandedMenus[item.key] && (!isMenuCollapsed || isMobile) && (
                         <ul className="submenu">
                           {item.submenu.map(subItem => (
                             <li key={subItem.path} className={location.pathname === subItem.path ? 'active' : ''}>
-                              <Link to={subItem.path} className={`menu-item sub-item ${location.pathname === subItem.path ? 'active-item' : ''}`}>
+                              <Link to={subItem.path} className={`menu-item sub-item ${location.pathname === subItem.path ? 'active-item' : ''}`} onClick={handleMenuLinkClick}>
                                 <span className="menu-icon">{subItem.icon}</span>
                                 <span className="menu-text">{subItem.name}</span>
                               </Link>
@@ -150,20 +260,22 @@ const MainLayout = ({ children }) => {
                       )}
                     </>
                   ) : (
-                    <Link to={item.path} className="menu-item">
+                    <Link to={item.path} className="menu-item" onClick={handleMenuLinkClick}>
                       <span className="menu-icon">{item.icon}</span>
-                      {!isMenuCollapsed && <span className="menu-text">{item.name}</span>}
+                       {/* Oculta texto se colapsado no desktop */}
+                      {(!isMenuCollapsed || isMobile) && <span className="menu-text">{item.name}</span>}
                     </Link>
                   )}
                 </li>
               ))}
               
-              {/* Adiciona o item de menu Admin condicionalmente */}
+              {/* Admin Link */}
               {usuario?.role === 'admin' && (
                 <li className={`${location.pathname === '/admin' ? 'active' : ''}`}>
-                   <Link to="/admin" className="menu-item">
+                   <Link to="/admin" className="menu-item" onClick={handleMenuLinkClick}>
                      <span className="menu-icon"><FaUserShield /></span>
-                     {!isMenuCollapsed && <span className="menu-text">Administração</span>}
+                      {/* Oculta texto se colapsado no desktop */}
+                     {(!isMenuCollapsed || isMobile) && <span className="menu-text">Administração</span>}
                    </Link>
                 </li>
               )}
@@ -173,25 +285,29 @@ const MainLayout = ({ children }) => {
 
         <div className="menu-footer">
           <div className="user-info" onClick={handleProfileToggle}>
-            <img src={myLogo} alt="Avatar do usuário" className="avatar" />
-            {!isMenuCollapsed && (
+             {/* Sempre mostra avatar se não colapsado no desktop, ou se for mobile */}
+             {(!isMenuCollapsed || isMobile) && <img src={myLogo} alt="Avatar do usuário" className="avatar" />}
+             {/* Mostra nome/seta apenas se não colapsado desktop OU se mobile E menu aberto */}
+             {(!isMenuCollapsed || (isMobile && isMobileMenuOpen)) && (
               <>
                 <span className="user-name">
                   {usuario ? usuario.nome : 'Usuário'}
                 </span>
-                <FaChevronDown className={`profile-arrow ${profileOpen ? 'open' : ''}`} />
+                {/* Seta só no desktop não colapsado */}
+                 {!isMenuCollapsed && !isMobile && <FaChevronDown className={`profile-arrow ${profileOpen ? 'open' : ''}`} />}
               </>
             )}
           </div>
 
-          {/* Se profileOpen for true, exibe o submenu */}
-          {profileOpen && (
+          {/* Dropdown de perfil - mostra se profileOpen E (não colapsado desktop OU mobile) */}
+          {profileOpen && (!isMenuCollapsed || isMobile) && (
             <div className="profile-dropdown">
-              <Link to="/profile" className="profile-link">
+              {/* ... links do dropdown com handleMenuLinkClick ... */}
+              <Link to="/profile" className="profile-link" onClick={handleMenuLinkClick}>
                 <FaUser />
                 Meu Perfil
               </Link>
-              <Link to="/como-utilizar" className="profile-link">
+              <Link to="/como-utilizar" className="profile-link" onClick={handleMenuLinkClick}>
                 <FaQuestionCircle />
                 Como Utilizar
               </Link>
@@ -204,7 +320,18 @@ const MainLayout = ({ children }) => {
         </div>
       </aside>
 
-      <main className={`main-content ${isMenuCollapsed ? 'expanded' : ''}`}>
+       {/* Botão Desktop (Renderizado DEPOIS do Aside) */}
+       {!isMobile && (
+         <button
+            className="main-menu-toggle desktop-toggle"
+            onClick={handleToggleClick}
+            title={isMenuCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            <FaChevronLeft />
+          </button>
+      )}
+
+      <main className={mainContentClasses}>
         {children}
       </main>
     </div>
