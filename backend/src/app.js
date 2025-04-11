@@ -37,6 +37,11 @@ const rotasRegra = require('./routes/rotasRegra');
 const rotasEmail = require('./routes/emailRoutes');
 const rotasImportacao = require('./routes/importacao');
 const adminRoutes = require('./routes/adminRoutes');
+const everestNotesRoutes = require('./routes/everestNotes');
+const everestLinksRoutes = require('./routes/everestLinks');
+const everestTicketInfoRoutes = require('./routes/everestTicketInfo');
+const everestCnpjRoutes = require('./routes/everestCnpj');
+const everestXmlRoutes = require('./routes/everestXml');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
@@ -47,6 +52,11 @@ app.use('/api/regras', rotasRegra);
 app.use('/api/email', rotasEmail);
 app.use('/api/importacoes', rotasImportacao);
 app.use('/api/admin', adminRoutes);
+app.use('/api/everest/notes', everestNotesRoutes);
+app.use('/api/everest/links', everestLinksRoutes);
+app.use('/api/everest/ticketinfo', everestTicketInfoRoutes);
+app.use('/api/everest/cnpj', everestCnpjRoutes);
+app.use('/api/everest/xml', everestXmlRoutes);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {
@@ -58,3 +68,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+module.exports = app;

@@ -32,6 +32,7 @@ function autenticacao(req, res, next) {
         redirectUrl: loginRedirectUrl
       });
     }
+    req.user = decoded;
     req.userId = decoded.userId;
     next();
   });
@@ -40,15 +41,14 @@ function autenticacao(req, res, next) {
 // Middleware para verificar se o usuário é administrador
 async function isAdmin(req, res, next) {
   try {
-    // Verifica se userId foi anexado pela autenticação
     if (!req.userId) {
       return res.status(401).json({ 
         erro: 'Usuário não autenticado.',
-        redirectUrl: require('../config/config').loginRedirectUrl // Acesso seguro à config
+        redirectUrl: require('../config/config').loginRedirectUrl
       });
     }
 
-    const usuario = await Usuario.findById(req.userId).select('role'); // Busca apenas o campo 'role'
+    const usuario = await Usuario.findById(req.userId).select('role');
 
     if (!usuario) {
       return res.status(404).json({ erro: 'Usuário não encontrado.' });
@@ -58,7 +58,6 @@ async function isAdmin(req, res, next) {
       return res.status(403).json({ erro: 'Acesso negado. Permissão de administrador necessária.' });
     }
 
-    // Se for admin, continua para a próxima função
     next();
   } catch (error) {
     console.error('Erro no middleware isAdmin:', error);
@@ -66,4 +65,4 @@ async function isAdmin(req, res, next) {
   }
 }
 
-module.exports = { autenticacao, isAdmin }; // Exporta ambas as funções
+module.exports = { autenticacao, isAdmin };

@@ -234,9 +234,16 @@ module.exports = {
       }
 
       // Gera o token JWT
-      const token = jwt.sign({ userId: usuario._id }, jwtSecret, {
-        expiresIn: jwtExpires
-      });
+      const token = jwt.sign(
+        {
+          userId: usuario._id,
+          role: usuario.role
+        },
+        jwtSecret,
+        {
+          expiresIn: jwtExpires
+        }
+      );
 
       return res.json({
         mensagem: 'Login bem-sucedido!',
@@ -245,7 +252,8 @@ module.exports = {
           _id: usuario._id,
           nome: usuario.nome,
           email: usuario.email.trim(), // Remove espaços extras
-          emailVerificado: usuario.emailVerificado
+          emailVerificado: usuario.emailVerificado,
+          role: usuario.role
         }
       });
     } catch (error) {

@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const controladorUsuario = require('../controllers/controladorUsuario');
 const { autenticacao } = require('../middlewares/autenticacao');
+const checkRole = require('../middlewares/checkRole');
 
 // Configuração do Multer para upload de arquivos
 const storage = multer.diskStorage({
@@ -46,6 +47,14 @@ router.post('/redefinir-senha/:token', controladorUsuario.redefinirSenha);
 
 // Rotas protegidas (requerem autenticação)
 router.use(autenticacao);
+
+// Rota de Teste para roles Everest e Admin
+router.get('/teste-everest', checkRole(['everest', 'admin']), (req, res) => {
+  res.json({ 
+    mensagem: 'Acesso permitido para Everest/Admin!', 
+    usuario: req.user // Mostra o usuário decodificado pelo middleware de autenticação
+  });
+});
 
 // Rotas de perfil
 router.get('/perfil', controladorUsuario.obterPerfil);

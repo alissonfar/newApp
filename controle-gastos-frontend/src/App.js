@@ -22,6 +22,8 @@ import EmailNaoVerificado from './pages/EmailNaoVerificado/EmailNaoVerificado';
 import EsqueciSenha from './pages/EsqueciSenha/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import EverestRoute from './EverestRoute';
+import EverestPage from './pages/Everest/EverestPage';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -172,6 +174,19 @@ function App() {
                   }
                 />
                 {/* Outras rotas que exigem admin podem ser aninhadas aqui */}
+              </Route>
+
+              {/* Rota Everest (requer role everest) */}
+              <Route element={<EverestRoute />}> {/* Aplica a proteção EverestRoute */}
+                <Route 
+                  path="/everest" 
+                  element={ /* Conteúdo renderizado pelo Outlet do EverestRoute */
+                    <MainLayout> 
+                      <EverestPage /> { /* Página placeholder dentro do layout */}
+                    </MainLayout> 
+                  }
+                />
+                {/* Outras rotas que exigem 'everest' podem ser aninhadas aqui */}
               </Route>
             </Routes>
 

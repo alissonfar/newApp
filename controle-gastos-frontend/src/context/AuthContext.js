@@ -4,6 +4,10 @@ import api from '../services/api';
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  // --- REMOVER MOCK TEMPORÁRIO ---
+  // const IS_EVEREST_DEV = true;
+  // --- FIM DO MOCK REMOVIDO ---
+
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -22,9 +26,15 @@ export function AuthProvider({ children }) {
       if (token) {
         try {
           setCarregando(true);
+          // A resposta da API /perfil agora deve incluir a role correta
           const response = await api.get('/usuarios/perfil');
-          setUsuario(response.data);
+          setUsuario(response.data); 
           setEmailVerificado(response.data.emailVerificado || false);
+
+          // --- REMOVER Bloco if que aplicava o MOCK ---
+          // if (IS_EVEREST_DEV && response.data) { ... }
+          // --- FIM DO Bloco REMOVIDO ---
+
         } catch (error) {
           console.error('Erro ao carregar perfil:', error);
           setToken('');

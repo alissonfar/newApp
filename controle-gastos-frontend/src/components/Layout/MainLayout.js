@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaTools } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -276,6 +276,17 @@ const MainLayout = ({ children }) => {
                      <span className="menu-icon"><FaUserShield /></span>
                       {/* Oculta texto se colapsado no desktop */}
                      {(!isMenuCollapsed || isMobile) && <span className="menu-text">Administração</span>}
+                   </Link>
+                </li>
+              )}
+
+              {/* Everest Link */}
+              {(usuario?.role === 'everest' || usuario?.role === 'admin') && (
+                <li className={`${location.pathname === '/everest' ? 'active' : ''}`}>
+                   <Link to="/everest" className="menu-item" onClick={handleMenuLinkClick}>
+                     <span className="menu-icon"><FaTools /></span>
+                      {/* Oculta texto se colapsado no desktop */}
+                     {(!isMenuCollapsed || isMobile) && <span className="menu-text">Ferramentas Everest</span>}
                    </Link>
                 </li>
               )}
