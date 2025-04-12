@@ -2,146 +2,151 @@
 @tailwind components;
 @tailwind utilities;
 
-/* src/index.css */
-:root {
-  --fonte-principal: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  /* Cores baseadas nos nomes de classes Tailwind para consistência */
-  --color-blue-600: #2563eb;   /* Ex: bg-blue-600 */
-  --color-blue-700: #1d4ed8;   /* Ex: hover:bg-blue-700 */
-  --color-gray-300: #d1d5db;  /* Ex: border-gray-300 */
-  --color-gray-700: #374151;  /* Ex: text-gray-700 */
-  --color-gray-50:  #f9fafb;   /* Ex: hover:bg-gray-50 */
-  --color-gray-400: #9ca3af;  /* Ex: placeholder-gray-400 */
-  --color-white:    #ffffff;
-  --color-ring-blue: rgba(59, 130, 246, 0.5); /* Cor para o ring/focus */
-  --color-ring-indigo: rgba(99, 102, 241, 0.5); /* Cor alternativa para o ring/focus */
+/* Certificando que as diretivas do Tailwind tenham prioridade */
+@layer base {
+  /* src/index.css */
+  :root {
+    --fonte-principal: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    /* Cores baseadas nos nomes de classes Tailwind para consistência */
+    --color-blue-600: #2563eb;   /* Ex: bg-blue-600 */
+    --color-blue-700: #1d4ed8;   /* Ex: hover:bg-blue-700 */
+    --color-gray-300: #d1d5db;  /* Ex: border-gray-300 */
+    --color-gray-700: #374151;  /* Ex: text-gray-700 */
+    --color-gray-50:  #f9fafb;   /* Ex: hover:bg-gray-50 */
+    --color-gray-400: #9ca3af;  /* Ex: placeholder-gray-400 */
+    --color-white:    #ffffff;
+    --color-ring-blue: rgba(59, 130, 246, 0.5); /* Cor para o ring/focus */
+    --color-ring-indigo: rgba(99, 102, 241, 0.5); /* Cor alternativa para o ring/focus */
 
-  /* Variáveis antigas (podem ser mantidas ou substituídas pelas acima) */
-  --cor-primaria: var(--color-blue-600);
-  --cor-primaria-escura: var(--color-blue-700);
-  --cor-secundaria: #6c757d;
-  --cor-secundaria-escura: #545b62;
-  --cor-sucesso: #28a745;
-  --cor-sucesso-escura: #218838;
-  --cor-erro: #dc3545;
-  --cor-erro-escura: #c82333;
-  --cor-aviso: #ffc107;
-  --cor-aviso-escura: #e0a800;
-  --cor-info: #17a2b8;
-  --cor-info-escura: #138496;
-  --cor-fundo: #f8f9fa;
-  --cor-texto: #212529;
-  --cor-borda: var(--color-gray-300);
+    /* Variáveis antigas (podem ser mantidas ou substituídas pelas acima) */
+    --cor-primaria: var(--color-blue-600);
+    --cor-primaria-escura: var(--color-blue-700);
+    --cor-secundaria: #6c757d;
+    --cor-secundaria-escura: #545b62;
+    --cor-sucesso: #28a745;
+    --cor-sucesso-escura: #218838;
+    --cor-erro: #dc3545;
+    --cor-erro-escura: #c82333;
+    --cor-aviso: #ffc107;
+    --cor-aviso-escura: #e0a800;
+    --cor-info: #17a2b8;
+    --cor-info-escura: #138496;
+    --cor-fundo: #f8f9fa;
+    --cor-texto: #212529;
+    --cor-borda: var(--color-gray-300);
+  }
+
+  /* Pode manter o básico do create-react-app ou adicionar resets */
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--fonte-principal);
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
+  }
 }
 
-/* Pode manter o básico do create-react-app ou adicionar resets */
-* {
-  box-sizing: border-box;
+@layer components {
+  /* --- Estilos Globais para Componentes Comuns (Estilo CSS Padrão) --- */
+
+  /* Input Field */
+  .input-field {
+    display: block; /* Comportamento padrão de block */
+    width: 100%; /* Ocupa largura total por padrão */
+    padding: 0.5rem 0.75rem; /* Ajuste padding (similar a py-2 px-3) */
+    border: 1px solid var(--cor-borda); /* Usa variável CSS para borda */
+    border-radius: 0.375rem; /* Similar a rounded-md */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Similar a shadow-sm */
+    font-size: 0.875rem; /* Similar a sm:text-sm */
+    line-height: 1.25rem;
+  }
+
+  .input-field::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--color-blue-600);
+    box-shadow: 0 0 0 3px var(--color-ring-blue); /* Simula focus:ring */
+  }
+
+  /* Todas as classes de botão comentadas para evitar conflito com Tailwind */
+  /*
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+
+  .btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-ring-blue);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    color: var(--color-white);
+    background-color: var(--cor-primaria);
+    border-color: var(--cor-primaria);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--cor-primaria-escura);
+    border-color: var(--cor-primaria-escura);
+  }
+
+  .btn-primary:focus {
+     box-shadow: 0 0 0 3px var(--color-ring-blue);
+  }
+
+  .btn-secondary {
+    color: var(--color-gray-700);
+    background-color: var(--color-white);
+    border-color: var(--cor-borda);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-gray-50);
+  }
+
+  .btn-secondary:focus {
+     box-shadow: 0 0 0 3px var(--color-ring-indigo);
+  }
+  */
 }
 
-body {
-  margin: 0;
-  font-family: var(--fonte-principal);
-  background-color: var(--cor-fundo);
-  color: var(--cor-texto);
-}
+/* Garantindo que estas classes estejam em 'utilities' para maior prioridade */
+@layer utilities {
+  /* Estilos específicos para botões de ícone (Editar/Excluir) */
+  .hover\:text-blue-600:hover {
+    color: var(--color-blue-600);
+  }
+  
+  .hover\:text-red-600:hover {
+    color: var(--color-erro);
+  }
 
-/* --- Estilos Globais para Componentes Comuns (Estilo CSS Padrão) --- */
-
-/* Input Field */
-.input-field {
-  display: block; /* Comportamento padrão de block */
-  width: 100%; /* Ocupa largura total por padrão */
-  padding: 0.5rem 0.75rem; /* Ajuste padding (similar a py-2 px-3) */
-  border: 1px solid var(--cor-borda); /* Usa variável CSS para borda */
-  border-radius: 0.375rem; /* Similar a rounded-md */
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Similar a shadow-sm */
-  font-size: 0.875rem; /* Similar a sm:text-sm */
-  line-height: 1.25rem;
-}
-
-.input-field::placeholder {
-  color: var(--color-gray-400);
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: var(--color-blue-600);
-  box-shadow: 0 0 0 3px var(--color-ring-blue); /* Simula focus:ring */
-}
-
-/* Botão Base */
-.btn {
-  display: inline-flex; /* Para alinhar itens internos como ícones */
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1rem; /* Ajuste padding (similar a px-4 py-2) */
-  border: 1px solid transparent; /* Borda transparente por padrão */
-  border-radius: 0.375rem; /* Similar a rounded-md */
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Similar a shadow-sm */
-  font-size: 0.875rem; /* Similar a text-sm */
-  font-weight: 500; /* Similar a font-medium */
-  cursor: pointer;
-  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--color-ring-blue); /* Efeito de foco genérico, pode ser sobrescrito */
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Botão Primário */
-.btn-primary {
-  color: var(--color-white);
-  background-color: var(--cor-primaria); /* Usa variável --cor-primaria */
-  border-color: var(--cor-primaria);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--cor-primaria-escura);
-  border-color: var(--cor-primaria-escura);
-}
-
-.btn-primary:focus {
-   box-shadow: 0 0 0 3px var(--color-ring-blue);
-}
-
-/* Botão Secundário */
-.btn-secondary {
-  color: var(--color-gray-700);
-  background-color: var(--color-white);
-  border-color: var(--cor-borda);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-gray-50);
-}
-
-.btn-secondary:focus {
-   box-shadow: 0 0 0 3px var(--color-ring-indigo); /* Pode usar outra cor de ring */
-}
-
-/* Estilos específicos para botões de ícone (Editar/Excluir) */
-/* Remove estilos base de .btn para aplicar apenas hover */
-.text-gray-500 {
-  /* Não precisa de estilos base aqui, Tailwind cuida */
-}
-.hover\:text-blue-600:hover {
-  color: var(--color-blue-600);
-}
-.hover\:text-red-600:hover {
-  color: var(--color-erro);
-}
-
-/* Garante que o modal básico tenha algum estilo */
-.fixed.inset-0.bg-black.bg-opacity-50 {
-  /* Estilos já aplicados por Tailwind, mas verificar se z-index é suficiente */
-  z-index: 50; /* Confirmar se 50 é adequado ou precisa ser maior */
+  /* Garante que o modal básico tenha algum estilo */
+  .fixed.inset-0.bg-black.bg-opacity-50 {
+    /* Estilos já aplicados por Tailwind, mas verificar se z-index é suficiente */
+    z-index: 50; /* Confirmar se 50 é adequado ou precisa ser maior */
+  }
 }

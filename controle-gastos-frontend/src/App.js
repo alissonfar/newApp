@@ -23,7 +23,14 @@ import EsqueciSenha from './pages/EsqueciSenha/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import EverestRoute from './EverestRoute';
+
+// Páginas Everest
 import EverestPage from './pages/Everest/EverestPage';
+import NotesPage from './pages/Everest/NotesPage';
+import LinksPage from './pages/Everest/LinksPage';
+import TicketTrackerPage from './pages/Everest/TicketTrackerPage';
+import CnpjPage from './pages/Everest/CnpjPage';
+import XmlPage from './pages/Everest/XmlPage';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -32,6 +39,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ImportacaoProvider } from './contexts/ImportacaoContext';
 import { DataProvider } from './context/DataContext';
 
+// Importação CSS movida para depois de todos os imports de componentes
 import './App.css';
 
 function App() {
@@ -176,17 +184,63 @@ function App() {
                 {/* Outras rotas que exigem admin podem ser aninhadas aqui */}
               </Route>
 
-              {/* Rota Everest (requer role everest) */}
+              {/* Rotas Everest (requer role everest) */}
               <Route element={<EverestRoute />}> {/* Aplica a proteção EverestRoute */}
+                {/* Página inicial (hub de navegação) */}
                 <Route 
                   path="/everest" 
-                  element={ /* Conteúdo renderizado pelo Outlet do EverestRoute */
+                  element={
                     <MainLayout> 
-                      <EverestPage /> { /* Página placeholder dentro do layout */}
+                      <EverestPage />
                     </MainLayout> 
                   }
                 />
-                {/* Outras rotas que exigem 'everest' podem ser aninhadas aqui */}
+                
+                {/* Subrotas para cada ferramenta */}
+                <Route 
+                  path="/everest/notes" 
+                  element={
+                    <MainLayout> 
+                      <NotesPage />
+                    </MainLayout> 
+                  }
+                />
+                
+                <Route 
+                  path="/everest/links" 
+                  element={
+                    <MainLayout> 
+                      <LinksPage />
+                    </MainLayout> 
+                  }
+                />
+                
+                <Route 
+                  path="/everest/ticket-tracker" 
+                  element={
+                    <MainLayout> 
+                      <TicketTrackerPage />
+                    </MainLayout> 
+                  }
+                />
+                
+                <Route 
+                  path="/everest/cnpj" 
+                  element={
+                    <MainLayout> 
+                      <CnpjPage />
+                    </MainLayout> 
+                  }
+                />
+                
+                <Route 
+                  path="/everest/xml" 
+                  element={
+                    <MainLayout> 
+                      <XmlPage />
+                    </MainLayout> 
+                  }
+                />
               </Route>
             </Routes>
 

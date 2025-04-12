@@ -1,0 +1,110 @@
+/* EverestPage.css - Estilos específicos para a página Everest */
+
+/* Estilos específicos para a página Everest */
+.everest-page {
+  background-color: #f9fafc !important;
+}
+
+/* Estilos para cabeçalhos */
+.everest-page h1 {
+  color: #1d4ed8 !important;
+  position: relative;
+}
+
+.everest-page header p {
+  max-width: 600px;
+}
+
+/* Estilização das seções */
+.everest-page section {
+  transition: all 0.3s ease !important;
+  overflow: hidden;
+}
+
+.everest-page section:hover {
+  transform: translateY(-2px);
+}
+
+/* Estilos para ícones nos cabeçalhos das seções - CORRIGINDO TAMANHO */
+.everest-page h2 svg,
+.everest-page header svg {
+  color: #3b82f6 !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+}
+
+/* Estilos para ícones pequenos em botões e elementos interativos */
+.everest-page button svg,
+.everest-page a svg,
+.everest-page .icon-small svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+}
+
+/* Prevenção de SVGs gigantes */
+svg {
+  max-width: 24px !important;
+  max-height: 24px !important;
+}
+
+/* Estilizações para componentes específicos */
+.everest-page input[type="text"],
+.everest-page textarea {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  padding: 0.5rem 0.75rem !important;
+  width: 100% !important;
+  background-color: white !important;
+}
+
+.everest-page input[type="text"]:focus,
+.everest-page textarea:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Botões específicos da página Everest */
+.everest-page button.btn-primary,
+.everest-page button.btn {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.375rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.everest-page button.btn-primary:hover,
+.everest-page button.btn:hover {
+  background-color: #2563eb !important;
+}
+
+.everest-page button.btn-secondary {
+  background-color: white !important;
+  color: #1f2937 !important;
+  border: 1px solid #e5e7eb !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.375rem !important;
+}
+
+.everest-page button.btn-secondary:hover {
+  background-color: #f9fafb !important;
+}
+
+/* Ajustes para layout responsivo */
+@media (max-width: 768px) {
+  .everest-page section {
+    padding: 1rem !important;
+  }
+} 

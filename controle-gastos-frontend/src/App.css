@@ -109,7 +109,8 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
 }
 
-/* Estilização de botões globais */
+/* Estilização de botões globais - **Regra global comentada para permitir Tailwind** */
+/* 
 button {
   font-family: var(--fonte-titulos);
   font-size: 0.95rem;
@@ -131,6 +132,32 @@ button:hover {
 }
 
 button:active {
+  transform: translateY(0);
+}
+*/
+
+/* Nova classe base para botões que dependiam do estilo global */
+.app-button-base {
+  font-family: var(--fonte-titulos);
+  font-size: 0.95rem;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--borda-radius);
+  background: var(--gradiente-primario);
+  color: white;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: var(--transicao-padrao);
+}
+
+.app-button-base:hover {
+  background: var(--gradiente-secundario);
+  transform: translateY(-1px);
+  box-shadow: var(--sombra-hover);
+}
+
+.app-button-base:active {
   transform: translateY(0);
 }
 
