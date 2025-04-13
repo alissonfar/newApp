@@ -467,9 +467,6 @@ const NotesManager = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="notes-search-input"
           />
-          <span className="notes-search-icon">
-            <SearchIcon />
-          </span>
         </div>
 
         <button 

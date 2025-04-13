@@ -63,35 +63,78 @@ const LinkModal = ({ isOpen, onClose, onSave, link }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">{link ? 'Editar Link' : 'Adicionar Novo Link'}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" disabled={isSaving}>
-            <FaTimes />
+    <div className="link-modal-overlay">
+      <div className="link-modal">
+        <div className="link-modal-header">
+          <h3 className="link-modal-title">{link ? 'Editar Link' : 'Adicionar Novo Link'}</h3>
+          <button onClick={onClose} className="link-modal-close" disabled={isSaving}>
+            <span className="sr-only">Fechar</span>
           </button>
         </div>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="link-title" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-            <input id="link-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="input-field w-full" placeholder="Nome descritivo do link" disabled={isSaving}/>
+        
+        <div className="link-modal-body">
+          <div className="link-form-group">
+            <label htmlFor="link-title" className="link-form-label">Título</label>
+            <input 
+              id="link-title" 
+              type="text" 
+              value={title} 
+              onChange={(e) => setTitle(e.target.value)} 
+              className="link-form-input" 
+              placeholder="Nome descritivo do link" 
+              disabled={isSaving}
+            />
           </div>
-          <div>
-            <label htmlFor="link-url" className="block text-sm font-medium text-gray-700 mb-1">URL</label>
-            <input id="link-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} className="input-field w-full" placeholder="https://..." required disabled={isSaving}/>
+          
+          <div className="link-form-group">
+            <label htmlFor="link-url" className="link-form-label">URL</label>
+            <input 
+              id="link-url" 
+              type="url" 
+              value={url} 
+              onChange={(e) => setUrl(e.target.value)} 
+              className="link-form-input" 
+              placeholder="https://..." 
+              required 
+              disabled={isSaving}
+            />
           </div>
-          <div>
-            <label htmlFor="link-description" className="block text-sm font-medium text-gray-700 mb-1">Descrição (Opcional)</label>
-            <input id="link-description" type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="input-field w-full" placeholder="Breve descrição do link" disabled={isSaving}/>
+          
+          <div className="link-form-group">
+            <label htmlFor="link-description" className="link-form-label">Descrição (Opcional)</label>
+            <textarea 
+              id="link-description" 
+              value={description} 
+              onChange={(e) => setDescription(e.target.value)} 
+              className="link-form-textarea" 
+              placeholder="Breve descrição do link" 
+              disabled={isSaving}
+            />
           </div>
-           <div>
-            <label htmlFor="link-tags" className="block text-sm font-medium text-gray-700 mb-1">Tags (separadas por vírgula)</label>
-            <input id="link-tags" type="text" value={tagsStr} onChange={(e) => setTagsStr(e.target.value)} className="input-field w-full" placeholder="ex: interno, docs, ferramenta" disabled={isSaving}/>
+          
+          <div className="link-form-group">
+            <label htmlFor="link-tags" className="link-form-label">Tags (separadas por vírgula)</label>
+            <input 
+              id="link-tags" 
+              type="text" 
+              value={tagsStr} 
+              onChange={(e) => setTagsStr(e.target.value)} 
+              className="link-form-input" 
+              placeholder="ex: interno, docs, ferramenta" 
+              disabled={isSaving}
+            />
           </div>
         </div>
-        <div className="mt-6 flex justify-end space-x-3">
-          <button onClick={onClose} className="btn btn-secondary" disabled={isSaving}>Cancelar</button>
-          <button onClick={handleInternalSave} className="btn btn-primary" disabled={!url || !url.startsWith('http') || isSaving}>
+        
+        <div className="link-modal-footer">
+          <button onClick={onClose} className="link-cancel-button" disabled={isSaving}>
+            Cancelar
+          </button>
+          <button 
+            onClick={handleInternalSave} 
+            className="link-save-button" 
+            disabled={!url || !url.startsWith('http') || isSaving}
+          >
             {isSaving ? <FaSpinner className="animate-spin mr-2"/> : null}
             {isSaving ? 'Salvando...' : 'Salvar Link'}
           </button>
@@ -191,85 +234,108 @@ const LinksManager = () => {
   );
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold text-gray-700 mb-6">Repositório de Links</h2>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-        <div className="relative w-full sm:w-auto flex-grow">
+    <div>      
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-3">
+        <div className="links-search-bar w-full sm:w-auto flex-grow">
           <input 
             type="text"
             placeholder="Buscar links..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-8 w-full"
+            className="links-search-input"
           />
-          <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <FaSearch className="links-search-icon" />
         </div>
         <button 
           onClick={handleAddLink}
-          className="btn btn-primary w-full sm:w-auto whitespace-nowrap"
+          className="links-add-button"
         >
-          <FaPlus className="mr-2" /> Adicionar Link
+          <FaPlus /> Adicionar Link
         </button>
       </div>
 
       {isLoading && (
-          <div className="text-center py-4 text-gray-500">
-              <FaSpinner className="animate-spin inline mr-2" /> Carregando links...
-          </div>
+        <div className="links-loading">
+          <FaSpinner className="links-spinner" />
+          <p>Carregando links...</p>
+        </div>
       )}
+      
       {error && !isLoading && (
-          <div className="text-center py-4 text-red-600 bg-red-50 p-3 rounded border border-red-200">
-              {error}
-          </div>
+        <div className="text-center py-4 text-red-600 bg-red-50 p-3 rounded border border-red-200">
+          {error}
+        </div>
       )}
 
       {!isLoading && !error && (
         <div className="space-y-4">
           {filteredLinks.length > 0 ? (
             filteredLinks.map(link => (
-              <div key={link._id} className={`border border-gray-200 rounded p-4 transition-opacity duration-300 ${isProcessing ? 'opacity-50' : 'hover:bg-gray-50'}`}>
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-grow min-w-0">
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline break-words block mb-1">
-                      <FaLink className="inline mr-1 text-sm"/> {link.title || link.url} 
-                    </a>
-                    {link.description && (
-                      <p className="text-sm text-gray-600 break-words">{link.description}</p>
-                    )}
-                     {link.tags && link.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {link.tags.map((tag, index) => (
-                          <span key={index} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+              <div key={link._id} className={`link-card ${isProcessing ? 'opacity-50' : ''}`}>
+                <h3 className="link-title">
+                  <FaLink /> {link.title || link.url}
+                </h3>
+                
+                <a href={link.url} target="_blank" rel="noopener noreferrer" className="link-url">
+                  {link.url}
+                </a>
+                
+                {link.description && (
+                  <p className="link-description">{link.description}</p>
+                )}
+                
+                {link.tags && link.tags.length > 0 && (
+                  <div className="link-tags">
+                    {link.tags.map((tag, index) => (
+                      <span key={index} className="link-tag">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
-                  <div className="flex space-x-2 flex-shrink-0">
-                    <button onClick={() => handleEditLink(link)} className="text-gray-500 hover:text-blue-600 disabled:opacity-50" title="Editar" disabled={isProcessing}>
-                      <FaEdit />
-                    </button>
-                    <button onClick={() => handleDeleteLink(link._id)} className="text-gray-500 hover:text-red-600 disabled:opacity-50" title="Excluir" disabled={isProcessing}>
-                      <FaTrash />
-                    </button>
-                  </div>
+                )}
+                
+                <div className="link-actions">
+                  <button 
+                    onClick={() => handleEditLink(link)} 
+                    className="link-action-button link-edit-button" 
+                    title="Editar" 
+                    disabled={isProcessing}
+                  >
+                    <FaEdit />
+                    <span className="action-btn-label">Editar</span>
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteLink(link._id)} 
+                    className="link-action-button link-delete-button" 
+                    title="Excluir" 
+                    disabled={isProcessing}
+                  >
+                    <FaTrash />
+                    <span className="action-btn-label">Excluir</span>
+                  </button>
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 py-4">Nenhum link encontrado.</p>
+            <div className="links-empty-state">
+              <FaLink className="links-empty-icon" />
+              <p className="links-empty-text">Nenhum link encontrado.</p>
+              <button onClick={handleAddLink} className="links-empty-button">
+                <FaPlus /> Adicionar Primeiro Link
+              </button>
+            </div>
           )}
         </div>
       )}
 
-      <LinkModal 
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSave={handleSaveLink}
-        link={currentLink}
-      />
+      {isModalOpen && (
+        <LinkModal 
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveLink}
+          link={currentLink}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { FaUpload, FaSearch, FaSpinner } from 'react-icons/fa';
+import { FaUpload, FaSearch, FaSpinner, FaBuilding, FaFileExcel } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { uploadPlanilhaCnpj, consultarCnpj } from '../../api';
 
@@ -78,89 +78,130 @@ const CnpjAccessTool = () => {
     }
   };
 
-  return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold text-gray-700 mb-6">Consulta Acesso por CNPJ</h2>
+  // Formatar CNPJ (XX.XXX.XXX/XXXX-XX)
+  const formatCnpj = (cnpj) => {
+    if (!cnpj) return '';
+    cnpj = cnpj.replace(/\D/g, '');
+    return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+  };
 
+  return (
+    <div>
       {/* Seção de Upload */}
-      <div className="mb-8 pb-6 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-800 mb-4">Atualizar Base de Dados</h3>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-2">
-          <label htmlFor="cnpj-file-upload" className="sr-only">Escolher arquivo</label>
-          <input 
-            id="cnpj-file-upload"
-            ref={fileInputRef}
-            type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={handleFileChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 flex-grow cursor-pointer"
-            disabled={isLoadingUpload}
-          />
-          <button 
-            onClick={handleUpload}
-            className="btn btn-secondary w-full sm:w-auto whitespace-nowrap disabled:opacity-50"
-            disabled={!selectedFile || isLoadingUpload}
-          >
-            {isLoadingUpload ? <FaSpinner className="animate-spin mr-2" /> : <FaUpload className="mr-2" />}
-            {isLoadingUpload ? 'Enviando...' : 'Enviar Arquivo'}
-          </button>
+      <div className="cnpj-search-container">
+        <h3 className="cnpj-section-title">
+          <FaFileExcel className="inline-block mr-2" />
+          Atualizar Base de Dados
+        </h3>
+        <div className="cnpj-search-form">
+          <div className="cnpj-form-group">
+            <label htmlFor="cnpj-file-upload" className="cnpj-form-label">Selecione um arquivo de planilha (.csv ou .xlsx)</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input 
+                id="cnpj-file-upload"
+                ref={fileInputRef}
+                type="file"
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={handleFileChange}
+                className="cnpj-form-input file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                disabled={isLoadingUpload}
+              />
+              <button 
+                onClick={handleUpload}
+                className="cnpj-search-button"
+                disabled={!selectedFile || isLoadingUpload}
+              >
+                {isLoadingUpload ? <FaSpinner className="animate-spin" /> : <FaUpload />}
+                {isLoadingUpload ? 'ENVIANDO...' : 'ENVIAR ARQUIVO'}
+              </button>
+            </div>
+          </div>
+          {uploadStatus && (
+            <p className={`mt-2 text-sm ${uploadStatus.includes('Erro') || uploadStatus.includes('Por favor') ? 'cnpj-error' : 'text-green-600'}`}>
+              {uploadStatus}
+            </p>
+          )}
         </div>
-        {uploadStatus && (
-          <p className={`mt-2 text-sm ${uploadStatus.includes('Erro') || uploadStatus.includes('Por favor') ? 'text-red-600' : 'text-green-600'}`}>
-            {uploadStatus}
-          </p>
-        )}
       </div>
 
       {/* Seção de Busca */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-800 mb-4">Consultar CNPJ</h3>
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative w-full flex-grow">
-            <input 
-              type="text"
-              placeholder="Digite o CNPJ (somente números)"
-              value={cnpjSearchTerm}
-              onChange={(e) => setCnpjSearchTerm(e.target.value.replace(/\D/g, ''))}
-              className="input-field pl-8 w-full"
-              disabled={isLoadingSearch}
-            />
-            <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+      <div className="cnpj-search-container">
+        <h3 className="cnpj-section-title">
+          <FaSearch className="inline-block mr-2" />
+          Consultar CNPJ
+        </h3>
+        <div className="cnpj-search-form">
+          <div className="cnpj-form-group">
+            <label htmlFor="cnpj-search" className="cnpj-form-label">Digite o número do CNPJ (somente números)</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input 
+                id="cnpj-search"
+                type="text"
+                placeholder="00.000.000/0000-00"
+                value={cnpjSearchTerm}
+                onChange={(e) => setCnpjSearchTerm(e.target.value.replace(/\D/g, ''))}
+                className="cnpj-form-input"
+                disabled={isLoadingSearch}
+              />
+              <button 
+                onClick={handleSearch}
+                className="cnpj-search-button"
+                disabled={isLoadingSearch || !cnpjSearchTerm.trim()}
+              >
+                {isLoadingSearch ? <FaSpinner className="animate-spin" /> : <FaSearch />}
+                {isLoadingSearch ? 'BUSCANDO...' : 'BUSCAR CNPJ'}
+              </button>
+            </div>
           </div>
-          <button 
-            onClick={handleSearch}
-            className="btn btn-primary w-full sm:w-auto whitespace-nowrap disabled:opacity-50"
-            disabled={isLoadingSearch || !cnpjSearchTerm.trim()}
-          >
-            {isLoadingSearch ? <FaSpinner className="animate-spin mr-2" /> : <FaSearch className="mr-2" />}
-            {isLoadingSearch ? 'Buscando...' : 'Buscar CNPJ'}
-          </button>
         </div>
 
         {/* Área de Resultado */}
-        <div className="mt-6 p-4 border border-gray-200 rounded bg-gray-50 min-h-[80px]">
-          {isLoadingSearch && (
-            <div className="flex items-center justify-center text-gray-500">
-              <FaSpinner className="animate-spin mr-2" /> Buscando informações...
+        {isLoadingSearch && (
+          <div className="cnpj-loading mt-4">
+            <FaSpinner className="cnpj-spinner" />
+            <p>Buscando informações do CNPJ...</p>
+          </div>
+        )}
+        
+        {!isLoadingSearch && searchResult && searchResult.error && (
+          <div className="cnpj-error mt-4">
+            {searchResult.error}
+          </div>
+        )}
+        
+        {!isLoadingSearch && searchResult && !searchResult.error && (
+          <div className="cnpj-result mt-4">
+            <div className="cnpj-result-header">
+              <span className="cnpj-result-status">Ativo</span>
+              <h3 className="cnpj-result-title">{searchResult.razaoSocial || 'Empresa'}</h3>
             </div>
-          )}
-          {!isLoadingSearch && searchResult && (
-            searchResult.error ? (
-              <p className="text-center text-red-600">{searchResult.error}</p>
-            ) : (
-              <div className="space-y-1">
-                <p><strong className="font-medium text-gray-800">CNPJ:</strong> {searchResult.cnpj}</p>
-                <p><strong className="font-medium text-gray-800">Usuário de Acesso:</strong> {searchResult.usuarioAcesso}</p>
-                <p><strong className="font-medium text-gray-800">Info Adicional:</strong> {searchResult.infoAdicional}</p>
+            <div className="cnpj-result-body">
+              <div className="cnpj-info-group">
+                <div className="cnpj-info">
+                  <span className="cnpj-info-label">CNPJ</span>
+                  <span className="cnpj-info-value">{formatCnpj(searchResult.cnpj)}</span>
+                </div>
+                <div className="cnpj-info">
+                  <span className="cnpj-info-label">Usuário de Acesso</span>
+                  <span className="cnpj-info-value">{searchResult.usuarioAcesso || 'Não definido'}</span>
+                </div>
+                <div className="cnpj-info">
+                  <span className="cnpj-info-label">Situação</span>
+                  <span className="cnpj-info-value">ATIVA</span>
+                </div>
               </div>
-            )
-          )}
-          {!isLoadingSearch && !searchResult && (
-            <p className="text-center text-gray-400 italic">Digite um CNPJ e clique em buscar.</p>
-          )}
-        </div>
+              
+              <h4 className="cnpj-section-title">Informações Adicionais</h4>
+              <div className="cnpj-info-group">
+                <div className="cnpj-info">
+                  <span className="cnpj-info-label">Informação</span>
+                  <span className="cnpj-info-value">{searchResult.infoAdicional || 'Nenhuma informação adicional disponível'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
     </div>
   );
 };

@@ -9,29 +9,18 @@ const NotesPage = () => {
     const removeLargeSVGs = () => {
       // Remove SVGs gigantes de acordo com seletores específicos
       const svgSelectors = [
-        'body > svg',
-        'main > svg',
-        'div > svg:not([class])',
-        'svg[viewBox="0 0 24 20"]',
-        'svg[width="100%"]',
-        'svg[height="100%"]',
+        // Seletores mais específicos para SVGs problemáticos
         'svg[width="298.38"][height="596.75"]',
-        'path[d^="M8.59"]',
-        '[role="graphics-symbol"] > svg',
-        'svg:not([width])',
-        'svg:not([height])',
-        'body > path'
+        'svg[viewBox="0 0 24 20"]'
       ];
 
       svgSelectors.forEach(selector => {
         document.querySelectorAll(selector).forEach(svg => {
-          if (!svg.closest('.notes-icon, .notes-add-button, .notes-search-icon, .note-action-button')) {
+          if (!svg.closest('.notes-icon, .notes-add-button, .notes-search-icon, .note-action-button, .everest-tool-icon')) {
+            // Oculta o SVG em vez de removê-lo completamente
             svg.style.display = 'none';
             svg.style.visibility = 'hidden';
             svg.style.opacity = '0';
-            svg.style.width = '0';
-            svg.style.height = '0';
-            svg.remove(); // Remove completamente o elemento
           }
         });
       });

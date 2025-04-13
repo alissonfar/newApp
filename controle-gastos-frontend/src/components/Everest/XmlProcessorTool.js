@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { FaUpload, FaSpinner, FaFileCode } from 'react-icons/fa';
+import { FaUpload, FaSpinner, FaFileCode, FaFileAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { processarXml } from '../../api';
 
@@ -58,64 +58,93 @@ const XmlProcessorTool = () => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold text-gray-700 mb-6">Processador de XML</h2>
-      
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
-        <label htmlFor="xml-file-upload" className="sr-only">Escolher arquivo XML</label>
-        <input 
-          id="xml-file-upload"
-          ref={fileInputRef}
-          type="file"
-          accept=".xml, text/xml"
-          onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 disabled:opacity-50 flex-grow cursor-pointer"
-          disabled={isLoading}
-        />
-        <button 
-          onClick={handleProcessXml}
-          className="btn btn-primary w-full sm:w-auto whitespace-nowrap disabled:opacity-50 bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
-          disabled={!selectedFile || isLoading}
-        >
-          {isLoading ? <FaSpinner className="animate-spin mr-2" /> : <FaFileCode className="mr-2" />}
-          {isLoading ? 'Processando...' : 'Processar XML'}
-        </button>
-      </div>
-      
-       {uploadStatus && (
-          <p className={`mb-4 text-sm ${uploadStatus.includes('Erro') || uploadStatus.includes('Por favor') ? 'text-red-600' : 'text-green-600'}`}>
+    <div>
+      {/* Seção de Upload e Processamento */}
+      <div className="xml-processor-container">
+        <h3 className="xml-section-title">
+          <FaFileCode />
+          Processamento de Arquivos XML
+        </h3>
+        
+        <div className="xml-form-group">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input 
+              id="xml-file-upload"
+              ref={fileInputRef}
+              type="file"
+              accept=".xml, text/xml"
+              onChange={handleFileChange}
+              className="xml-file-input file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
+              disabled={isLoading}
+            />
+            <button 
+              onClick={handleProcessXml}
+              className="xml-process-button"
+              disabled={!selectedFile || isLoading}
+            >
+              {isLoading ? <FaSpinner className="animate-spin" /> : <FaFileCode />}
+              {isLoading ? 'PROCESSANDO...' : 'PROCESSAR XML'}
+            </button>
+          </div>
+        </div>
+        
+        {uploadStatus && (
+          <p className={`xml-status ${uploadStatus.includes('Erro') || uploadStatus.includes('Por favor') ? 'error' : 'success'}`}>
             {uploadStatus}
           </p>
         )}
-
-      {/* Área de Resumo */}
-      <div className="mt-6 border-t border-gray-200 pt-4">
-        <h3 className="text-lg font-medium text-gray-800 mb-4">Resumo do Último XML Processado</h3>
-        <div className="p-4 border border-gray-200 rounded bg-gray-50 min-h-[150px]">
-           {isLoading && (
-            <div className="flex items-center justify-center text-gray-500">
-              <FaSpinner className="animate-spin mr-2" /> Processando e extraindo dados...
-            </div>
-          )}
-          {!isLoading && xmlSummary && (
-             <div className="space-y-2 text-sm">
-                <p><strong className="font-medium text-gray-800">Número:</strong> {xmlSummary.numeroNota}</p>
-                <p><strong className="font-medium text-gray-800">Emitente:</strong> {xmlSummary.emitente}</p>
-                <p><strong className="font-medium text-gray-800">Destinatário:</strong> {xmlSummary.destinatario}</p>
-                <p><strong className="font-medium text-gray-800">Valor Total:</strong> R$ {xmlSummary.valorTotal}</p>
-                {xmlSummary.dataEmissao && 
-                  <p><strong className="font-medium text-gray-800">Data Emissão:</strong> {new Date(xmlSummary.dataEmissao + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
-                }
-              </div>
-          )}
-           {!isLoading && !xmlSummary && (
-            <p className="text-center text-gray-400 italic">Nenhum XML processado recentemente. Envie um arquivo para ver o resumo.</p>
-          )}
-        </div>
       </div>
 
+      {/* Área de Resultado */}
+      {isLoading && (
+        <div className="xml-loading">
+          <FaSpinner className="xml-spinner" />
+          <p>Processando e extraindo dados do XML...</p>
+        </div>
+      )}
+      
+      {!isLoading && xmlSummary && (
+        <div className="xml-summary">
+          <div className="xml-summary-header">
+            <FaFileAlt className="text-purple-700" />
+            <h3 className="xml-summary-title">Resumo do XML Processado</h3>
+          </div>
+          <div className="xml-summary-body">
+            <div className="xml-summary-item">
+              <span className="xml-summary-label">Número da Nota</span>
+              <span className="xml-summary-value">{xmlSummary.numeroNota}</span>
+            </div>
+            <div className="xml-summary-item">
+              <span className="xml-summary-label">Emitente</span>
+              <span className="xml-summary-value">{xmlSummary.emitente}</span>
+            </div>
+            <div className="xml-summary-item">
+              <span className="xml-summary-label">Destinatário</span>
+              <span className="xml-summary-value">{xmlSummary.destinatario}</span>
+            </div>
+            <div className="xml-summary-item">
+              <span className="xml-summary-label">Valor Total</span>
+              <span className="xml-summary-value">R$ {xmlSummary.valorTotal}</span>
+            </div>
+            {xmlSummary.dataEmissao && (
+              <div className="xml-summary-item">
+                <span className="xml-summary-label">Data de Emissão</span>
+                <span className="xml-summary-value">{new Date(xmlSummary.dataEmissao + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {!isLoading && !xmlSummary && (
+        <div className="xml-empty-state">
+          <FaFileCode className="text-purple-200 text-5xl mb-4" />
+          <p className="text-lg">Nenhum XML processado recentemente.</p>
+          <p className="text-sm mt-2">Selecione um arquivo XML e clique em "Processar XML" para ver os dados extraídos.</p>
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default XmlProcessorTool; 

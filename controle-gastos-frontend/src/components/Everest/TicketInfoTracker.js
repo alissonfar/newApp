@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes, FaSpinner } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaTimes, FaSpinner, FaTicketAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import {
   obterInfosChamados,
@@ -74,72 +74,96 @@ const TicketInfoModal = ({ isOpen, onClose, onSave, ticket }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pt-1 z-10">
-          <h3 className="text-lg font-semibold">{ticket ? 'Editar Informação do Chamado' : 'Adicionar Informação do Chamado'}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" disabled={isSaving}>
+    <div className="ticket-modal-overlay">
+      <div className="ticket-modal">
+        <div className="ticket-modal-header">
+          <h3 className="ticket-modal-title">{ticket ? 'Editar Informação do Chamado' : 'Adicionar Informação do Chamado'}</h3>
+          <button onClick={onClose} className="ticket-modal-close" disabled={isSaving}>
             <FaTimes />
           </button>
         </div>
-        <div className="space-y-4">
+        
+        <div className="ticket-modal-body">
           {/* ID Externo */}
-          <div>
-            <label htmlFor="ticket-externalId" className="block text-sm font-medium text-gray-700 mb-1">ID Externo (INC/SR)</label>
-            <input id="ticket-externalId" type="text" value={externalId} onChange={(e) => setExternalId(e.target.value)} className="input-field w-full" placeholder="Ex: INC123456" disabled={isSaving}/>
+          <div className="ticket-form-group">
+            <label htmlFor="ticket-externalId" className="ticket-form-label">ID Externo (INC/SR)</label>
+            <input 
+              id="ticket-externalId" 
+              type="text" 
+              value={externalId} 
+              onChange={(e) => setExternalId(e.target.value)} 
+              className="ticket-form-input" 
+              placeholder="Ex: INC123456" 
+              disabled={isSaving}
+            />
           </div>
+          
           {/* Cliente */}
-          <div>
-            <label htmlFor="ticket-client" className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-            <input id="ticket-client" type="text" value={client} onChange={(e) => setClient(e.target.value)} className="input-field w-full" placeholder="Nome do cliente" disabled={isSaving}/>
+          <div className="ticket-form-group">
+            <label htmlFor="ticket-client" className="ticket-form-label">Cliente</label>
+            <input 
+              id="ticket-client" 
+              type="text" 
+              value={client} 
+              onChange={(e) => setClient(e.target.value)} 
+              className="ticket-form-input" 
+              placeholder="Nome do cliente" 
+              disabled={isSaving}
+            />
           </div>
+          
           {/* Resumo */}
-          <div>
-            <label htmlFor="ticket-summary" className="block text-sm font-medium text-gray-700 mb-1">Resumo*</label>
+          <div className="ticket-form-group">
+            <label htmlFor="ticket-summary" className="ticket-form-label">Resumo*</label>
             <input 
               id="ticket-summary"
               type="text" 
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              className={`input-field w-full ${errors.summary ? 'border-red-500' : ''}`}
+              className={`ticket-form-input ${errors.summary ? 'border-red-500' : ''}`}
               placeholder="Breve descrição do chamado"
               required 
               disabled={isSaving}
             />
-             {errors.summary && <p className="text-red-600 text-xs mt-1">{errors.summary}</p>}
+            {errors.summary && <p className="ticket-form-error">{errors.summary}</p>}
           </div>
+          
           {/* Status */}
-          <div>
-            <label htmlFor="ticket-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <div className="ticket-form-group">
+            <label htmlFor="ticket-status" className="ticket-form-label">Status</label>
             <select 
               id="ticket-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="input-field w-full bg-white" // Garante fundo branco para select
+              className="ticket-form-select" 
               disabled={isSaving}
             >
               {ticketStatuses.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+          
           {/* Passos/Detalhes */}
-          <div>
-            <label htmlFor="ticket-steps" className="block text-sm font-medium text-gray-700 mb-1">Passos/Detalhes</label>
+          <div className="ticket-form-group">
+            <label htmlFor="ticket-steps" className="ticket-form-label">Passos/Detalhes</label>
             <textarea 
               id="ticket-steps"
               rows="5"
               value={steps}
               onChange={(e) => setSteps(e.target.value)}
-              className="input-field w-full"
+              className="ticket-form-textarea"
               placeholder="Detalhes, passos de reprodução, links úteis..."
               disabled={isSaving}
             ></textarea>
           </div>
         </div>
-        <div className="mt-6 flex justify-end space-x-3 sticky bottom-0 bg-white pb-1 z-10">
-          <button onClick={onClose} className="btn btn-secondary" disabled={isSaving}>Cancelar</button>
-          <button onClick={handleInternalSave} className="btn btn-primary" disabled={isSaving}>
-             {isSaving ? <FaSpinner className="animate-spin mr-2"/> : null}
-             {isSaving ? 'Salvando...' : 'Salvar'}
+        
+        <div className="ticket-modal-footer">
+          <button onClick={onClose} className="ticket-cancel-button" disabled={isSaving}>
+            Cancelar
+          </button>
+          <button onClick={handleInternalSave} className="ticket-save-button" disabled={isSaving}>
+            {isSaving ? <FaSpinner className="animate-spin mr-2"/> : null}
+            {isSaving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </div>
@@ -249,90 +273,106 @@ const TicketInfoTracker = () => {
   );
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold text-gray-700 mb-6">Rastreador de Informações de Chamados</h2>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
-        <div className="relative w-full sm:w-auto flex-grow">
+    <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
+        <div className="ticket-search-bar w-full sm:w-auto flex-grow">
           <input 
             type="text"
             placeholder="Buscar por ID, Cliente, Resumo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-8 w-full"
+            className="ticket-search-input"
           />
-          <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
         </div>
         <button 
           onClick={handleAddTicket}
-          className="btn btn-primary w-full sm:w-auto whitespace-nowrap"
+          className="ticket-add-button"
         >
-          <FaPlus className="mr-2" /> Adicionar Registro
+          <FaPlus className="mr-1" /> Adicionar Registro
         </button>
       </div>
 
-       {isLoading && (
-          <div className="text-center py-4 text-gray-500">
-              <FaSpinner className="animate-spin inline mr-2" /> Carregando registros...
-          </div>
+      {isLoading && (
+        <div className="ticket-loading">
+          <FaSpinner className="ticket-spinner" />
+          <p>Carregando registros...</p>
+        </div>
       )}
+      
       {error && !isLoading && (
-          <div className="text-center py-4 text-red-600 bg-red-50 p-3 rounded border border-red-200">
-              {error}
-          </div>
+        <div className="text-center py-4 text-red-600 bg-red-50 p-3 rounded border border-red-200">
+          {error}
+        </div>
       )}
 
       {!isLoading && !error && (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Externo</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resumo</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTickets.length > 0 ? (
-                filteredTickets.map(ticket => (
-                  <tr key={ticket._id} className={`transition-opacity duration-300 ${isProcessing ? 'opacity-50' : 'hover:bg-gray-50'}`}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{ticket.externalId || '-'}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{ticket.client || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={ticket.summary}>{ticket.summary}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
+          {filteredTickets.length > 0 ? (
+            <table className="ticket-table w-full">
+              <thead className="ticket-table-header">
+                <tr>
+                  <th className="px-4 py-3 text-left">ID Externo</th>
+                  <th className="px-4 py-3 text-left">Cliente</th>
+                  <th className="px-4 py-3 text-left">Resumo</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="ticket-table-body">
+                {filteredTickets.map(ticket => (
+                  <tr key={ticket._id} className={isProcessing ? 'opacity-50' : ''}>
+                    <td className="px-4 py-3 whitespace-nowrap">{ticket.externalId || '-'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{ticket.client || '-'}</td>
+                    <td className="px-4 py-3 max-w-xs truncate" title={ticket.summary}>{ticket.summary}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`ticket-status ${getStatusColor(ticket.status)}`}>
                         {ticket.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button onClick={() => handleEditTicket(ticket)} className="text-indigo-600 hover:text-indigo-900 disabled:opacity-50" title="Editar" disabled={isProcessing}>
-                        <FaEdit />
-                      </button>
-                      <button onClick={() => handleDeleteTicket(ticket._id)} className="text-red-600 hover:text-red-900 disabled:opacity-50" title="Excluir" disabled={isProcessing}>
-                        <FaTrash />
-                      </button>
+                    <td className="px-4 py-3 whitespace-nowrap text-right">
+                      <div className="ticket-actions">
+                        <button 
+                          onClick={() => handleEditTicket(ticket)} 
+                          className="ticket-action-button ticket-edit-button" 
+                          title="Editar" 
+                          disabled={isProcessing}
+                        >
+                          <FaEdit />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTicket(ticket._id)} 
+                          className="ticket-action-button ticket-delete-button" 
+                          title="Excluir" 
+                          disabled={isProcessing}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="ticket-empty-state">
+              <FaTicketAlt className="ticket-empty-icon" />
+              <p className="ticket-empty-text">Nenhum registro de chamado encontrado.</p>
+              <button onClick={handleAddTicket} className="ticket-empty-button">
+                <FaPlus className="mr-2" /> Adicionar Primeiro Registro
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-       <TicketInfoModal 
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSave={handleSaveTicket} // Async
-        ticket={currentTicket}
-      />
-
+      {isModalOpen && (
+        <TicketInfoModal 
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveTicket}
+          ticket={currentTicket}
+        />
+      )}
     </div>
   );
 };

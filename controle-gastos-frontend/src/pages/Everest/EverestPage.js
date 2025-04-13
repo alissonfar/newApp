@@ -83,7 +83,7 @@ const EverestPage = () => {
             to={`/everest/${ferramenta.id}`}
             className="no-underline"
           >
-            <div className="everest-tool-card">
+            <div className="everest-tool-card" data-tool={ferramenta.id}>
               <div className="everest-tool-icon">
                 {ferramenta.icon}
               </div>

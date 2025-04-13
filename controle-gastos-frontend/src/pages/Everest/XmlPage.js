@@ -1,39 +1,44 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import XmlProcessorTool from '../../components/Everest/XmlProcessorTool';
+import { FaCode, FaArrowLeft } from 'react-icons/fa';
 import './EverestPage.css';
 
 const XmlPage = () => {
   return (
     <div className="p-6 md:p-8 lg:p-10 space-y-6 everest-page">
       {/* Breadcrumb navigation */}
-      <nav className="flex items-center text-sm text-gray-500 mb-4">
-        <Link to="/everest" className="hover:text-blue-600">Ferramentas Everest</Link>
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        <span className="text-blue-600 font-medium">Processador de XML</span>
+      <nav className="breadcrumb-nav">
+        <Link to="/everest" className="breadcrumb-link">Ferramentas Everest</Link>
+        <span className="breadcrumb-separator">/</span>
+        <span className="breadcrumb-current">Processador de XML</span>
       </nav>
 
-      {/* Page header */}
-      <header className="border-b border-blue-200 pb-4">
-        <div className="flex items-center">
-          <div className="bg-blue-100 p-2 rounded-lg mr-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-            </svg>
+      {/* Botão de voltar */}
+      <Link to="/everest" className="back-button">
+        <FaArrowLeft />
+        <span>Voltar para Ferramentas</span>
+      </Link>
+
+      {/* Header Banner */}
+      <div className="xml-header-banner">
+        <div className="xml-header-decoration"></div>
+        <div className="xml-header-decoration-2"></div>
+        
+        <div className="xml-icon-container">
+          <div className="xml-icon">
+            <FaCode />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-700">
-            Processador de XML
-          </h1>
         </div>
-        <p className="text-gray-600 mt-2 ml-11">
-          Extraia e processe informações de arquivos XML de forma eficiente.
-        </p>
-      </header>
+        
+        <div className="xml-header-content">
+          <h1>Processador de XML</h1>
+          <p>Extraia e processe informações de arquivos XML de forma eficiente. Envie e obtenha um resumo completo das informações contidas nos documentos.</p>
+        </div>
+      </div>
 
       {/* Main content */}
-      <section className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+      <section>
         <XmlProcessorTool />
       </section>
     </div>
