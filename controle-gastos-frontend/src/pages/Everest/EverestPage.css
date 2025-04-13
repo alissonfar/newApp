@@ -5,54 +5,205 @@
   background-color: #f9fafc !important;
 }
 
+/* Estilos para o banner de cabeçalho aprimorado */
+.everest-page .header-banner {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 2rem !important;
+  margin-bottom: 2rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.everest-page .header-banner::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 300px !important;
+  height: 300px !important;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%) !important;
+  z-index: 0 !important;
+}
+
 /* Estilos para cabeçalhos */
-.everest-page h1 {
-  color: #1d4ed8 !important;
-  position: relative;
+.everest-page .header-banner h1 {
+  color: white !important;
+  position: relative !important;
+  font-size: 2rem !important;
+  letter-spacing: 0.025em !important;
+  margin-bottom: 0.5rem !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  z-index: 1 !important;
 }
 
-.everest-page header p {
-  max-width: 600px;
+.everest-page .header-banner p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  max-width: 600px !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-/* Estilização das seções */
-.everest-page section {
+.everest-page .header-icon {
+  width: 64px !important;
+  height: 64px !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 1rem !important;
+}
+
+.everest-page .header-icon svg {
+  width: 32px !important;
+  height: 32px !important;
+  color: white !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+}
+
+/* Estilos para o grid de ferramentas */
+.everest-tools-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.5rem !important;
+  margin-top: 2rem !important;
+}
+
+/* Estilos para os cards de ferramentas */
+.everest-tool-card {
+  background-color: white !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid rgba(59, 130, 246, 0.1) !important;
+  padding: 1.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.everest-tool-card::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 4px !important;
+  background: linear-gradient(to right, #3b82f6, #60a5fa) !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+.everest-tool-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+.everest-tool-card:hover::after {
+  opacity: 1 !important;
+}
+
+.everest-tool-icon {
+  background-color: #eff6ff !important;
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 1rem !important;
   transition: all 0.3s ease !important;
-  overflow: hidden;
 }
 
-.everest-page section:hover {
-  transform: translateY(-2px);
+.everest-tool-card:hover .everest-tool-icon {
+  transform: scale(1.05) !important;
+  background-color: #dbeafe !important;
 }
 
-/* Estilos para ícones nos cabeçalhos das seções - CORRIGINDO TAMANHO */
-.everest-page h2 svg,
-.everest-page header svg {
-  color: #3b82f6 !important;
-  width: 20px !important;
-  height: 20px !important;
-  min-width: 20px !important;
-  min-height: 20px !important;
-  max-width: 20px !important;
-  max-height: 20px !important;
+.everest-tool-icon svg {
+  width: 28px !important;
+  height: 28px !important;
+  color: #2563eb !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
 }
 
-/* Estilos para ícones pequenos em botões e elementos interativos */
-.everest-page button svg,
-.everest-page a svg,
-.everest-page .icon-small svg {
+.everest-tool-card h3 {
+  color: #1d4ed8 !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  letter-spacing: 0.01em !important;
+}
+
+.everest-tool-card p {
+  color: #6b7280 !important;
+  font-size: 0.9375rem !important;
+  line-height: 1.5 !important;
+  flex-grow: 1 !important;
+}
+
+.everest-tool-footer {
+  margin-top: 1.5rem !important;
+  padding-top: 1rem !important;
+  border-top: 1px solid #f3f4f6 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.everest-tool-footer .access-btn {
+  color: #2563eb !important;
+  font-weight: 500 !important;
+  font-size: 0.9375rem !important;
+  display: flex !important;
+  align-items: center !important;
+  transition: all 0.2s ease !important;
+}
+
+.everest-tool-footer .access-btn:hover {
+  color: #1d4ed8 !important;
+  text-decoration: none !important;
+}
+
+.everest-tool-footer .access-btn svg {
   width: 16px !important;
   height: 16px !important;
   min-width: 16px !important;
   min-height: 16px !important;
   max-width: 16px !important;
   max-height: 16px !important;
+  margin-left: 0.5rem !important;
+  transition: transform 0.2s ease !important;
 }
 
-/* Prevenção de SVGs gigantes */
-svg {
-  max-width: 24px !important;
-  max-height: 24px !important;
+.everest-tool-footer .access-btn:hover svg {
+  transform: translateX(3px) !important;
+}
+
+/* Rodapé da página */
+.everest-page .page-footer {
+  margin-top: 3rem !important;
+  padding-top: 1.5rem !important;
+  border-top: 1px solid #e5e7eb !important;
+  text-align: center !important;
+  color: #6b7280 !important;
+  font-size: 0.875rem !important;
+}
+
+/* Corrigindo o seletor SVG global para evitar conflitos */
+.everest-page svg {
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 /* Estilizações para componentes específicos */
@@ -106,5 +257,1117 @@ svg {
 @media (max-width: 768px) {
   .everest-page section {
     padding: 1rem !important;
+  }
+  
+  .everest-page .header-banner {
+    padding: 1.5rem !important;
+  }
+  
+  .everest-page .header-icon {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .everest-page .header-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+/* ========= ESTILOS PARA O GERENCIADOR DE NOTAS ========= */
+
+/* Banner header para a página de notas - Versão aprimorada */
+.everest-page .notes-header-banner {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+  padding: 2rem !important;
+  margin-bottom: 2rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+}
+
+.everest-page .notes-header-decoration {
+  position: absolute !important;
+  top: -35px !important;
+  right: -35px !important;
+  width: 200px !important;
+  height: 200px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%) !important;
+  z-index: 0 !important;
+}
+
+.everest-page .notes-header-decoration-2 {
+  position: absolute !important;
+  bottom: -25px !important;
+  left: -25px !important;
+  width: 150px !important;
+  height: 150px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 65%) !important;
+  z-index: 0 !important;
+}
+
+.everest-page .notes-header-banner::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 300px !important;
+  height: 300px !important;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%) !important;
+  z-index: 0 !important;
+}
+
+.everest-page .notes-icon-container {
+  display: flex !important;
+  align-items: flex-start !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.everest-page .notes-header-content {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.everest-page .notes-header-banner h1 {
+  color: white !important;
+  position: relative !important;
+  font-size: 2rem !important;
+  letter-spacing: 0.025em !important;
+  margin-bottom: 0.75rem !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+.everest-page .notes-header-banner p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  max-width: 600px !important;
+  line-height: 1.6 !important;
+  margin-bottom: 1.25rem !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.everest-page .notes-icon {
+  width: 64px !important;
+  height: 64px !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 1rem !important;
+  backdrop-filter: blur(5px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.everest-page .notes-icon:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.everest-page .notes-icon svg {
+  width: 32px !important;
+  height: 32px !important;
+  color: white !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+}
+
+/* Novos estilos para os recursos destacados */
+.everest-page .notes-header-features {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 1rem !important;
+  margin-top: 1.25rem !important;
+}
+
+.everest-page .notes-header-feature {
+  display: flex !important;
+  align-items: center !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(5px) !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.875rem !important;
+  color: white !important;
+  font-weight: 500 !important;
+  gap: 0.5rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.everest-page .notes-header-feature:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+.everest-page .notes-feature-icon {
+  font-size: 1rem !important;
+}
+
+/* Ajustes para layout responsivo do banner */
+@media (max-width: 768px) {
+  .everest-page .notes-header-banner {
+    padding: 1.5rem !important;
+  }
+  
+  .everest-page .notes-icon {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .everest-page .notes-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  .everest-page .notes-header-features {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  .everest-page .notes-header-feature {
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.75rem !important;
+  }
+}
+
+/* Barra de pesquisa e botão de adicionar */
+.everest-page .notes-search-bar {
+  position: relative !important;
+  flex-grow: 1 !important;
+}
+
+.everest-page .notes-search-input {
+  width: 100% !important;
+  padding: 0.75rem 1rem 0.75rem 2.75rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #e5e7eb !important;
+  background-color: white !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.9375rem !important;
+}
+
+.everest-page .notes-search-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+  outline: none !important;
+}
+
+.everest-page .notes-search-icon {
+  position: absolute !important;
+  left: 1rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: #9ca3af !important;
+  pointer-events: none !important;
+}
+
+.everest-page .notes-add-button {
+  background: linear-gradient(to right, #2563eb, #3b82f6) !important;
+  color: white !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1.25rem !important;
+  font-weight: 500 !important;
+  font-size: 0.9375rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+.everest-page .notes-add-button:hover {
+  background: linear-gradient(to right, #1d4ed8, #2563eb) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25) !important;
+}
+
+.everest-page .notes-add-button:active {
+  transform: translateY(0) !important;
+}
+
+.everest-page .notes-add-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+}
+
+/* Estado vazio */
+.notes-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: var(--bg-element);
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+  text-align: center;
+}
+
+.notes-empty-icon {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.notes-empty-text {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.notes-empty-button {
+  padding: 0.65rem 1.25rem;
+  background-color: var(--primary);
+  color: white;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notes-empty-button:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Estado de carregamento */
+.notes-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.notes-spinner {
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+/* Card de nota aprimorado */
+.note-card {
+  position: relative !important;
+  background-color: white !important;
+  border-radius: 10px !important;
+  border-left: 4px solid #3b82f6 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  padding: 1.5rem !important;
+  padding-right: 5rem !important; /* Espaço para os botões */
+  transition: all 0.2s ease !important;
+  margin-bottom: 1rem !important;
+}
+
+.note-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px) !important;
+}
+
+.note-card-title {
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  color: #1f2937 !important;
+  margin-bottom: 0.75rem !important;
+  padding-right: 2rem !important;
+}
+
+.note-card-content {
+  color: #4b5563 !important;
+  font-size: 0.95rem !important;
+  white-space: pre-wrap !important;
+  margin-bottom: 1rem !important;
+  line-height: 1.5 !important;
+  overflow-wrap: break-word !important;
+}
+
+.note-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-bottom: 1rem !important;
+}
+
+.note-tag {
+  font-size: 0.75rem !important;
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  background-color: #f3f4f8 !important;
+  color: #4f46e5 !important;
+  font-weight: 500 !important;
+  border: 1px solid #e5e7eb !important;
+  transition: all 0.2s ease !important;
+}
+
+.note-tag:hover {
+  background-color: #eef2ff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(-1px) !important;
+}
+
+.note-actions {
+  display: flex !important;
+  gap: 10px !important;
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  opacity: 0.8 !important;
+  transition: all 0.2s ease !important;
+}
+
+.note-card:hover .note-actions {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.note-action-button {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 10px !important;
+  background: white !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease-in-out !important;
+  cursor: pointer !important;
+  position: relative !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  margin: 0 2px !important;
+}
+
+.note-edit-button {
+  background-color: #f5f3ff !important;
+  border: 1px solid #e0e7ff !important;
+}
+
+.note-delete-button {
+  background-color: #fef2f2 !important;
+  border: 1px solid #fee2e2 !important;
+}
+
+.note-action-button svg {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.note-edit-button svg {
+  color: #4f46e5 !important;
+  fill: #4f46e5 !important;
+}
+
+.note-delete-button svg {
+  color: #ef4444 !important;
+  fill: #ef4444 !important;
+}
+
+.note-edit-button:hover {
+  background-color: #ede9fe !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 12px rgba(79, 70, 229, 0.15) !important;
+}
+
+.note-delete-button:hover {
+  background-color: #fee2e2 !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Corrigindo elementos SVG grandes não intencionais */
+.everest-page > svg {
+  display: none !important;
+}
+
+/* Estilos melhorados para o modal de notas */
+.note-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+}
+
+.note-modal {
+  background-color: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  width: 95% !important;
+  max-width: 600px !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.note-modal-header {
+  background-color: #f8f9fa !important;
+  padding: 16px 20px !important;
+  border-bottom: 1px solid #e9ecef !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.note-modal-title {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin: 0 !important;
+}
+
+.note-modal-close {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e9ecef !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  padding: 0 !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.note-modal-close:hover {
+  background-color: #e9ecef !important;
+}
+
+.note-modal-close::before,
+.note-modal-close::after {
+  content: '' !important;
+  position: absolute !important;
+  width: 16px !important;
+  height: 2px !important;
+  background-color: #6c757d !important;
+  top: 50% !important;
+  left: 50% !important;
+}
+
+.note-modal-close::before {
+  transform: translate(-50%, -50%) rotate(45deg) !important;
+}
+
+.note-modal-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg) !important;
+}
+
+/* Adicionando instruções de atalho no rodapé do modal */
+.note-modal-footer::before {
+  content: 'Atalhos: Ctrl+Enter para salvar, Esc para fechar' !important;
+  font-size: 0.75rem !important;
+  color: #6c757d !important;
+  margin-right: auto !important;
+  align-self: center !important;
+}
+
+.note-modal-body {
+  padding: 20px !important;
+  flex: 1 !important;
+}
+
+.note-form-group {
+  margin-bottom: 16px !important;
+}
+
+.note-form-label {
+  display: block !important;
+  margin-bottom: 6px !important;
+  font-weight: 500 !important;
+  color: #495057 !important;
+}
+
+.note-form-input,
+.note-form-textarea {
+  width: 100% !important;
+  padding: 10px 12px !important;
+  font-size: 0.9rem !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 4px !important;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+
+.note-form-input:focus,
+.note-form-textarea:focus {
+  border-color: #80bdff !important;
+  outline: 0 !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+
+.note-form-textarea {
+  min-height: 150px !important;
+  resize: vertical !important;
+}
+
+.note-modal-footer {
+  padding: 16px 20px !important;
+  background-color: #f8f9fa !important;
+  border-top: 1px solid #e9ecef !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  border-radius: 0 0 8px 8px !important;
+}
+
+.note-cancel-button,
+.note-save-button {
+  padding: 8px 16px !important;
+  font-size: 0.9rem !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.note-cancel-button {
+  background-color: #f8f9fa !important;
+  border: 1px solid #ced4da !important;
+  color: #495057 !important;
+}
+
+.note-cancel-button:hover {
+  background-color: #e9ecef !important;
+}
+
+.note-save-button {
+  background-color: #007bff !important;
+  border: 1px solid #007bff !important;
+  color: white !important;
+}
+
+.note-save-button:hover {
+  background-color: #0069d9 !important;
+  border-color: #0062cc !important;
+}
+
+/* Estilos para o componente de estatísticas */
+.everest-page .notes-stats-container {
+  background-color: white !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #f3f4f6 !important;
+  padding: 1.25rem !important;
+  margin-bottom: 1.5rem !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.everest-page .notes-stats-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 1rem !important;
+  padding-bottom: 0.75rem !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.everest-page .notes-stats-header h3 {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+
+.everest-page .notes-stats-counter {
+  font-size: 0.9rem !important;
+  color: #6b7280 !important;
+  background-color: #f3f4f6 !important;
+  padding: 0.35rem 0.75rem !important;
+  border-radius: 9999px !important;
+  font-weight: 500 !important;
+}
+
+.everest-page .notes-stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  gap: 1rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+.everest-page .notes-stat-item {
+  display: flex !important;
+  flex-direction: column !important;
+  background-color: #f9fafb !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid #f3f4f6 !important;
+}
+
+.everest-page .notes-stat-label {
+  font-size: 0.8rem !important;
+  color: #6b7280 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.everest-page .notes-stat-value {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+
+.everest-page .notes-tags-stats h4 {
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  color: #4b5563 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.everest-page .notes-top-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+}
+
+.everest-page .notes-top-tag {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.375rem !important;
+  background-color: #eff6ff !important;
+  padding: 0.4rem 0.75rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.8rem !important;
+}
+
+.everest-page .notes-top-tag-name {
+  color: #1d4ed8 !important;
+  font-weight: 500 !important;
+}
+
+.everest-page .notes-top-tag-count {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+  font-weight: 600 !important;
+  padding: 0.15rem 0.4rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.75rem !important;
+}
+
+@media (max-width: 640px) {
+  .everest-page .notes-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Eliminação definitiva dos SVGs gigantes indesejados */
+body > svg, 
+main > svg, 
+.everest-page > svg,
+#root > svg,
+[role="graphics-symbol"] > svg,
+div[role="main"] > svg,
+div > svg:not([class]),
+svg[viewBox="0 0 24 20"],
+svg[width="100%"], 
+svg[height="100%"],
+path[d^="M8.59"],
+svg:not([width]),
+svg:not([height]),
+body > path,
+svg[width="298.38"][height="596.75"],
+svg:first-child:not(.note-action-button svg):not(.notes-search-icon svg):not(.notes-add-button svg) {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  z-index: -9999 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+}
+
+/* Estilo para garantir que os SVGs usados na interface tenham tamanho apropriado */
+.note-actions svg,
+.notes-search-icon svg,
+.notes-add-button svg,
+.note-action-button svg,
+.everest-tool-footer .access-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+}
+
+/* Regra para garantir que o componente Ferramentas Everest não tenha SVGs indesejados */
+.everest-page a:contains("Ferramentas Everest") + svg,
+a[href="/everest/notes"] + svg,
+a[href^="/everest"] + svg {
+  display: none !important;
+}
+
+/* Regra de emergência para quaisquer SVGs soltos que não foram explicitamente controlados */
+div.everest-page ~ svg,
+body > div > svg:not(.notes-icon svg):not(.notes-search-icon svg):not(.note-action-button svg):not(.notes-add-button svg),
+svg[viewBox="0 0 24 20"],
+svg[role="graphics-symbol"],
+svg:not([class]):not([width]):not([height]) {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  opacity: 0 !important;
+  z-index: -9999 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Garantir que qualquer SVG usado nos componentes tenha tamanho controlado */
+.notes-icon svg, 
+nav svg,
+.everest-page svg {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Estilo para o breadcrumb */
+.breadcrumb-nav {
+  display: flex !important;
+  align-items: center !important;
+  background-color: white !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  font-size: 0.9rem !important;
+}
+
+.breadcrumb-link {
+  color: #3b82f6 !important;
+  font-weight: 500 !important;
+  transition: color 0.2s !important;
+}
+
+.breadcrumb-link:hover {
+  color: #1d4ed8 !important;
+  text-decoration: underline !important;
+}
+
+.breadcrumb-separator {
+  color: #94a3b8 !important;
+  margin: 0 10px !important;
+  font-weight: 400 !important;
+}
+
+.breadcrumb-current {
+  color: #1f2937 !important;
+  font-weight: 600 !important;
+}
+
+/* Estilo aprimorado do botão de voltar */
+.back-button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 16px !important;
+  background: linear-gradient(to right, #e6f0ff, #f0f7ff) !important;
+  border: 1px solid #c2d9ff !important;
+  border-radius: 8px !important;
+  color: #2563eb !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.back-button:hover {
+  background: linear-gradient(to right, #dbe9ff, #e6f0ff) !important;
+  transform: translateX(-3px) !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+.back-button:active {
+  transform: translateX(-1px) !important;
+}
+
+.back-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  color: #2563eb !important;
+}
+
+/* Classe de acessibilidade para leitores de tela */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+}
+
+/* Melhorando a visibilidade dos ícones de ação */
+.note-action-button svg {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  display: block !important;
+  margin: 0 auto !important;
+  color: currentColor !important;
+  transition: transform 0.2s ease !important;
+  pointer-events: none !important;
+}
+
+.note-edit-button svg {
+  fill: #4f46e5 !important;
+}
+
+.note-delete-button svg {
+  fill: #ef4444 !important;
+}
+
+/* Melhorando a aparência dos botões de ação */
+.note-action-button {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  cursor: pointer !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease-in-out !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  position: relative !important;
+}
+
+/* Melhorando a animação de hover dos botões de ação */
+.note-edit-button:hover {
+  background-color: rgba(79, 70, 229, 0.12) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2) !important;
+}
+
+.note-delete-button:hover {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Estilizando os rótulos dos botões de ação */
+.action-btn-label {
+  display: none !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  top: -25px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background-color: #333 !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 0.7rem !important;
+  white-space: nowrap !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+
+.action-btn-label::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 50% !important;
+  margin-left: -5px !important;
+  border-width: 5px !important;
+  border-style: solid !important;
+  border-color: #333 transparent transparent transparent !important;
+}
+
+.note-action-button:hover .action-btn-label {
+  display: block !important;
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(-5px) !important;
+}
+
+.note-edit-button .action-btn-label {
+  background-color: #4f46e5 !important;
+}
+
+.note-edit-button .action-btn-label::after {
+  border-color: #4f46e5 transparent transparent transparent !important;
+}
+
+.note-delete-button .action-btn-label {
+  background-color: #ef4444 !important;
+}
+
+.note-delete-button .action-btn-label::after {
+  border-color: #ef4444 transparent transparent transparent !important;
+}
+
+/* Estilos para o modal de confirmação de exclusão */
+.delete-confirm-modal {
+  background-color: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12) !important;
+  width: 95% !important;
+  max-width: 450px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  animation: fadeInScale 0.2s ease-out !important;
+}
+
+.delete-confirm-header {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  padding: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+.delete-confirm-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+.delete-confirm-icon svg {
+  color: #ef4444 !important;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.delete-confirm-title {
+  color: #111827 !important;
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+}
+
+.delete-confirm-body {
+  padding: 24px !important;
+}
+
+.delete-confirm-body p {
+  color: #4b5563 !important;
+  margin: 0 0 16px 0 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+}
+
+.delete-confirm-note {
+  font-weight: 600 !important;
+  color: #111827 !important;
+  background-color: #f9fafb !important;
+  padding: 10px 14px !important;
+  border-radius: 6px !important;
+  border-left: 3px solid #ef4444 !important;
+  margin: 12px 0 !important;
+}
+
+.delete-confirm-warning {
+  color: #ef4444 !important;
+  font-size: 0.85rem !important;
+  display: flex !important;
+  align-items: center !important;
+  margin-top: 12px !important;
+}
+
+.delete-confirm-warning::before {
+  content: '⚠️' !important;
+  margin-right: 6px !important;
+}
+
+.delete-confirm-footer {
+  padding: 16px 24px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  border-top: 1px solid #e5e7eb !important;
+  background-color: #f9fafb !important;
+}
+
+.delete-cancel-button {
+  padding: 10px 16px !important;
+  background-color: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  color: #374151 !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.delete-cancel-button:hover {
+  background-color: #f9fafb !important;
+  border-color: #9ca3af !important;
+}
+
+.delete-confirm-button {
+  padding: 10px 16px !important;
+  background-color: #ef4444 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: white !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.delete-confirm-button:hover {
+  background-color: #dc2626 !important;
+}
+
+.delete-confirm-button:disabled {
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 } 
