@@ -180,8 +180,6 @@
   height: 16px !important;
   min-width: 16px !important;
   min-height: 16px !important;
-  max-width: 16px !important;
-  max-height: 16px !important;
   margin-left: 0.5rem !important;
   transition: transform 0.2s ease !important;
 }
@@ -689,9 +687,66 @@
   box-shadow: 0 6px 12px rgba(239, 68, 68, 0.15) !important;
 }
 
-/* Corrigindo elementos SVG grandes não intencionais */
-.everest-page > svg {
+/* Corrigindo SVG indesejado que aparece em tamanho grande - VERSÃO CORRIGIDA */
+/* Substitui as regras muito amplas por regras mais específicas */
+body > svg:not([class]):first-child,
+.everest-page > svg:not([class]):first-child,
+svg[width="298.38"][height="596.75"],
+svg[width="1023"][height="1023"] {
   display: none !important;
+}
+
+/* Estilos específicos para SVGs em componentes da interface */
+.note-actions svg,
+.notes-search-icon svg,
+.notes-add-button svg,
+.note-action-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+}
+
+/* Garantindo que SVGs dentro de elementos específicos tenham tamanho apropriado */
+.everest-tool-footer .access-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  margin-left: 0.5rem !important;
+  transition: transform 0.2s ease !important;
+}
+
+/* Permitindo explicitamente SVGs para tags e categorias */
+.tag-icon svg,
+.categoria-icon svg,
+.tag svg,
+.categoria svg {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  position: static !important;
+  z-index: auto !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Garantir que SVGs em ícones específicos funcionem adequadamente */
+.notes-icon svg, 
+.link-icon svg,
+nav svg,
+.everest-tool-icon svg,
+.header-icon svg {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 /* Estilos melhorados para o modal de notas */
@@ -967,84 +1022,6 @@
   .everest-page .notes-stats-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
-}
-
-/* Eliminação definitiva dos SVGs gigantes indesejados */
-body > svg, 
-main > svg, 
-.everest-page > svg,
-#root > svg,
-[role="graphics-symbol"] > svg,
-div[role="main"] > svg,
-div > svg:not([class]),
-svg[viewBox="0 0 24 20"],
-svg[width="100%"], 
-svg[height="100%"],
-path[d^="M8.59"],
-svg:not([width]),
-svg:not([height]),
-body > path,
-svg[width="298.38"][height="596.75"],
-svg:first-child:not(.note-action-button svg):not(.notes-search-icon svg):not(.notes-add-button svg) {
-  display: none !important;
-  visibility: hidden !important;
-  width: 0 !important;
-  height: 0 !important;
-  position: absolute !important;
-  z-index: -9999 !important;
-  opacity: 0 !important;
-  overflow: hidden !important;
-  pointer-events: none !important;
-  max-width: 0 !important;
-  max-height: 0 !important;
-}
-
-/* Estilo para garantir que os SVGs usados na interface tenham tamanho apropriado */
-.note-actions svg,
-.notes-search-icon svg,
-.notes-add-button svg,
-.note-action-button svg,
-.everest-tool-footer .access-btn svg {
-  width: 16px !important;
-  height: 16px !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
-  max-width: 16px !important;
-  max-height: 16px !important;
-}
-
-/* Regra para garantir que o componente Ferramentas Everest não tenha SVGs indesejados */
-.everest-page a:contains("Ferramentas Everest") + svg,
-a[href="/everest/notes"] + svg,
-a[href^="/everest"] + svg {
-  display: none !important;
-}
-
-/* Regra de emergência para quaisquer SVGs soltos que não foram explicitamente controlados */
-div.everest-page ~ svg,
-body > div > svg:not(.notes-icon svg):not(.notes-search-icon svg):not(.note-action-button svg):not(.notes-add-button svg),
-svg[viewBox="0 0 24 20"],
-svg[role="graphics-symbol"],
-svg:not([class]):not([width]):not([height]) {
-  display: none !important;
-  visibility: hidden !important;
-  width: 0 !important;
-  height: 0 !important;
-  position: absolute !important;
-  opacity: 0 !important;
-  z-index: -9999 !important;
-  overflow: hidden !important;
-  pointer-events: none !important;
-}
-
-/* Garantir que qualquer SVG usado nos componentes tenha tamanho controlado */
-.notes-icon svg, 
-nav svg,
-.everest-page svg {
-  width: auto !important;
-  height: auto !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
 }
 
 /* Estilo para o breadcrumb */
@@ -1369,5 +1346,644 @@ nav svg,
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* Estilos para a página de Links */
+.everest-page .links-header-banner {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+  padding: 2rem !important;
+  margin-bottom: 2rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+}
+
+.everest-page .links-header-decoration {
+  position: absolute !important;
+  top: -35px !important;
+  right: -35px !important;
+  width: 200px !important;
+  height: 200px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%) !important;
+  z-index: 0 !important;
+}
+
+.everest-page .links-header-decoration-2 {
+  position: absolute !important;
+  bottom: -25px !important;
+  left: -25px !important;
+  width: 150px !important;
+  height: 150px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 65%) !important;
+  z-index: 0 !important;
+}
+
+.everest-page .links-header-banner::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 300px !important;
+  height: 300px !important;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%) !important;
+  z-index: 0 !important;
+}
+
+.everest-page .links-icon-container {
+  display: flex !important;
+  align-items: flex-start !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.everest-page .links-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  width: 64px !important;
+  height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.everest-page .links-header-content {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.everest-page .links-header-content h1 {
+  color: white !important;
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.75rem !important;
+  line-height: 1.2 !important;
+}
+
+.everest-page .links-header-content p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 1.1rem !important;
+  line-height: 1.5 !important;
+  max-width: 650px !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.everest-page .links-header-features {
+  display: flex !important;
+  gap: 1.5rem !important;
+  flex-wrap: wrap !important;
+}
+
+.everest-page .links-header-feature {
+  display: flex !important;
+  align-items: center !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 2rem !important;
+  font-size: 0.95rem !important;
+  color: white !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+.everest-page .links-feature-icon {
+  margin-right: 0.5rem !important;
+  font-size: 1.25rem !important;
+}
+
+/* Estilos para barra de busca de links */
+.links-search-bar {
+  position: relative !important;
+  margin-bottom: 1.5rem !important;
+  width: 100% !important;
+}
+
+.links-search-input {
+  width: 100% !important;
+  padding: 0.75rem 1rem 0.75rem 3rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: white !important;
+  font-size: 1rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+}
+
+.links-search-input:focus {
+  outline: none !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+.links-search-icon {
+  position: absolute !important;
+  left: 1rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: #94a3b8 !important;
+}
+
+/* Botão de adicionar link */
+.links-add-button {
+  background: linear-gradient(to right, #10b981, #34d399) !important;
+  color: white !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1.25rem !important;
+  font-weight: 500 !important;
+  font-size: 0.9375rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2) !important;
+}
+
+.links-add-button:hover {
+  background: linear-gradient(to right, #059669, #10b981) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25) !important;
+}
+
+.links-add-button:active {
+  transform: translateY(0) !important;
+}
+
+.links-add-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+}
+
+/* Estado vazio para links */
+.links-empty-state {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 3rem 1.5rem !important;
+  background-color: #f8fafc !important;
+  border-radius: 12px !important;
+  border: 1px dashed #cbd5e1 !important;
+  text-align: center !important;
+}
+
+.links-empty-icon {
+  margin-bottom: 1rem !important;
+  color: #94a3b8 !important;
+  opacity: 0.5 !important;
+  font-size: 3rem !important;
+}
+
+.links-empty-text {
+  color: #64748b !important;
+  margin-bottom: 1.5rem !important;
+  font-size: 1.1rem !important;
+}
+
+.links-empty-button {
+  padding: 0.65rem 1.25rem !important;
+  background-color: #10b981 !important;
+  color: white !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.links-empty-button:hover {
+  background-color: #059669 !important;
+}
+
+/* Estado de carregamento para links */
+.links-loading {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2rem !important;
+  color: #64748b !important;
+}
+
+.links-spinner {
+  margin-bottom: 1rem !important;
+  color: #10b981 !important;
+  animation: spin 1s linear infinite !important;
+  font-size: 2rem !important;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Card de link aprimorado */
+.link-card {
+  position: relative !important;
+  background-color: white !important;
+  border-radius: 10px !important;
+  border-left: 4px solid #10b981 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  padding: 1.5rem !important;
+  padding-right: 5rem !important; /* Espaço para os botões */
+  transition: all 0.2s ease !important;
+  margin-bottom: 1rem !important;
+}
+
+.link-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px) !important;
+}
+
+.link-title {
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  color: #1f2937 !important;
+  margin-bottom: 0.75rem !important;
+  padding-right: 2rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.link-title svg {
+  color: #10b981 !important;
+}
+
+.link-url {
+  color: #10b981 !important;
+  font-size: 0.9rem !important;
+  margin-bottom: 0.75rem !important;
+  word-break: break-all !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  transition: all 0.2s ease !important;
+}
+
+.link-url:hover {
+  color: #059669 !important;
+  text-decoration: underline !important;
+}
+
+.link-description {
+  color: #4b5563 !important;
+  font-size: 0.95rem !important;
+  margin-bottom: 1rem !important;
+  line-height: 1.5 !important;
+  overflow-wrap: break-word !important;
+}
+
+.link-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.link-tag {
+  font-size: 0.75rem !important;
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  background-color: #ecfdf5 !important;
+  color: #059669 !important;
+  font-weight: 500 !important;
+  border: 1px solid #d1fae5 !important;
+  transition: all 0.2s ease !important;
+}
+
+.link-tag:hover {
+  background-color: #d1fae5 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(-1px) !important;
+}
+
+.link-actions {
+  display: flex !important;
+  gap: 10px !important;
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  opacity: 0.8 !important;
+  transition: all 0.2s ease !important;
+}
+
+.link-card:hover .link-actions {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.link-action-button {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 10px !important;
+  background: white !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease-in-out !important;
+  cursor: pointer !important;
+  position: relative !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  margin: 0 2px !important;
+}
+
+.link-edit-button {
+  background-color: #ecfdf5 !important;
+  border: 1px solid #d1fae5 !important;
+}
+
+.link-delete-button {
+  background-color: #fef2f2 !important;
+  border: 1px solid #fee2e2 !important;
+}
+
+.link-action-button svg {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.link-edit-button svg {
+  color: #10b981 !important;
+  fill: #10b981 !important;
+}
+
+.link-delete-button svg {
+  color: #ef4444 !important;
+  fill: #ef4444 !important;
+}
+
+.link-edit-button:hover {
+  background-color: #d1fae5 !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 12px rgba(16, 185, 129, 0.15) !important;
+}
+
+.link-delete-button:hover {
+  background-color: #fee2e2 !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Estilos para o modal de links */
+.link-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+  animation: fadeIn 0.2s ease-out !important;
+}
+
+.link-modal {
+  background-color: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  width: 95% !important;
+  max-width: 600px !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  border: none !important;
+  animation: slideUp 0.3s ease-out !important;
+}
+
+.link-modal-header {
+  background-color: #f8f9fa !important;
+  padding: 16px 20px !important;
+  border-bottom: 1px solid #e9ecef !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.link-modal-title {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin: 0 !important;
+}
+
+.link-modal-close {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e9ecef !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  padding: 0 !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.link-modal-close:hover {
+  background-color: #e9ecef !important;
+}
+
+.link-modal-close::before,
+.link-modal-close::after {
+  content: '' !important;
+  position: absolute !important;
+  width: 16px !important;
+  height: 2px !important;
+  background-color: #6c757d !important;
+  top: 50% !important;
+  left: 50% !important;
+}
+
+.link-modal-close::before {
+  transform: translate(-50%, -50%) rotate(45deg) !important;
+}
+
+.link-modal-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg) !important;
+}
+
+.link-modal-body {
+  padding: 20px !important;
+  flex: 1 !important;
+}
+
+.link-form-group {
+  margin-bottom: 16px !important;
+}
+
+.link-form-label {
+  display: block !important;
+  margin-bottom: 6px !important;
+  font-weight: 500 !important;
+  color: #495057 !important;
+}
+
+.link-form-input,
+.link-form-textarea {
+  width: 100% !important;
+  padding: 10px 12px !important;
+  font-size: 0.9rem !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 4px !important;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+
+.link-form-input:focus,
+.link-form-textarea:focus {
+  border-color: #10b981 !important;
+  outline: 0 !important;
+  box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25) !important;
+}
+
+.link-form-textarea {
+  min-height: 100px !important;
+  resize: vertical !important;
+}
+
+.link-modal-footer {
+  padding: 16px 20px !important;
+  background-color: #f8f9fa !important;
+  border-top: 1px solid #e9ecef !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  border-radius: 0 0 8px 8px !important;
+}
+
+/* Adicionando instruções de atalho no rodapé do modal */
+.link-modal-footer::before {
+  content: 'Atalhos: Ctrl+Enter para salvar, Esc para fechar' !important;
+  font-size: 0.75rem !important;
+  color: #6c757d !important;
+  margin-right: auto !important;
+  align-self: center !important;
+}
+
+.link-cancel-button,
+.link-save-button {
+  padding: 8px 16px !important;
+  font-size: 0.9rem !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.link-cancel-button {
+  background-color: #f8f9fa !important;
+  border: 1px solid #ced4da !important;
+  color: #495057 !important;
+}
+
+.link-cancel-button:hover {
+  background-color: #e9ecef !important;
+}
+
+.link-save-button {
+  background-color: #10b981 !important;
+  border: 1px solid #10b981 !important;
+  color: white !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.link-save-button:hover {
+  background-color: #059669 !important;
+  border-color: #047857 !important;
+}
+
+/* Animações para o modal */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Media queries para responsividade */
+@media (max-width: 768px) {
+  .everest-page .links-header-banner {
+    padding: 1.5rem !important;
+  }
+  
+  .everest-page .links-header-content h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  .everest-page .links-header-content p {
+    font-size: 1rem !important;
+  }
+  
+  .everest-page .links-header-features {
+    gap: 0.75rem !important;
+  }
+  
+  .everest-page .links-icon {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .link-card {
+    padding: 1.25rem !important;
+    padding-right: 4.5rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .everest-page .links-header-content h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  .everest-page .links-icon {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  
+  .links-header-feature {
+    font-size: 0.85rem !important;
+  }
+  
+  .link-actions {
+    top: 8px !important;
+    right: 8px !important;
+  }
+  
+  .link-action-button {
+    width: 36px !important;
+    height: 36px !important;
   }
 } 
