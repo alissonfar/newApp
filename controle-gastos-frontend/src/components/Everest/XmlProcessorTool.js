@@ -27,31 +27,31 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4" 
+      className="xml-modal-overlay" 
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative flex flex-col" 
+        className="xml-modal" 
         onClick={(e) => e.stopPropagation()}
       > 
-        <div className="sticky top-0 bg-gray-100 p-3 border-b flex justify-between items-center z-10 flex-shrink-0">
-          <h3 className="text-lg font-semibold text-purple-800">Detalhes do XML: {summaryData?.originalFilename ?? 'Carregando...'}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        <div className="xml-modal-header">
+          <h3 className="xml-modal-title">Detalhes do XML: {summaryData?.originalFilename ?? 'Carregando...'}</h3>
+          <button onClick={onClose} className="xml-modal-close">&times;</button>
         </div>
 
-        <div className="p-5 space-y-5 overflow-y-auto flex-grow">
+        <div className="xml-modal-body">
           {isLoading && (
-              <div className="flex justify-center items-center p-10">
-                   <FaSpinner className="animate-spin text-purple-600 text-4xl" />
+              <div className="xml-loading">
+                   <FaSpinner className="xml-spinner" />
               </div>
           )}
 
           {!isLoading && !summaryData && (
-              <div className="text-center p-10 text-red-600">Erro ao carregar detalhes.</div>
+              <div className="xml-error">Erro ao carregar detalhes.</div>
           )}
           
           {!isLoading && summaryData && summaryData.processingError && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <div className="xml-error-message" role="alert">
                   <strong className="font-bold">Erro no Processamento:</strong>
                   <span className="block sm:inline"> {summaryData.processingError}</span>
               </div>
@@ -61,9 +61,9 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
               <>
                 {/* Seção de Identificação */}
                 <section>
-                  <h4 className="text-base font-semibold text-purple-700 mb-2 border-b pb-1">Identificação</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-xs">
-                    <div><strong>Chave:</strong> <span className="break-all font-mono">{summaryData.identificacao?.chaveAcesso}</span></div>
+                  <h4 className="xml-section-subtitle">Identificação</h4>
+                  <div className="xml-grid-info">
+                    <div><strong>Chave:</strong> <span className="xml-chave-acesso">{summaryData.identificacao?.chaveAcesso}</span></div>
                     <div><strong>Número:</strong> {summaryData.identificacao?.nNF}</div>
                     <div><strong>Série:</strong> {summaryData.identificacao?.serie}</div>
                     <div><strong>Modelo:</strong> {summaryData.identificacao?.mod}</div>
@@ -76,10 +76,10 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                 </section>
 
                 {/* Seção Emitente e Destinatário lado a lado */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="xml-grid-columns">
                     <section>
-                        <h4 className="text-base font-semibold text-purple-700 mb-2 border-b pb-1">Emitente</h4>
-                        <div className="space-y-1 text-xs">
+                        <h4 className="xml-section-subtitle">Emitente</h4>
+                        <div className="xml-info-list">
                             <div><strong>Nome:</strong> {summaryData.emitente?.nome}</div>
                             <div><strong>Fantasia:</strong> {summaryData.emitente?.nomeFantasia}</div>
                             <div><strong>CNPJ:</strong> {summaryData.emitente?.cnpj}</div>
@@ -92,8 +92,8 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                         </div>
                     </section>
                     <section>
-                        <h4 className="text-base font-semibold text-purple-700 mb-2 border-b pb-1">Destinatário</h4>
-                         <div className="space-y-1 text-xs">
+                        <h4 className="xml-section-subtitle">Destinatário</h4>
+                         <div className="xml-info-list">
                             <div><strong>Nome:</strong> {summaryData.destinatario?.nome}</div>
                             <div><strong>CNPJ/CPF:</strong> {summaryData.destinatario?.cpfCnpj}</div>
                             <div><strong>IE:</strong> {summaryData.destinatario?.ie ?? '-'} (Ind: {summaryData.destinatario?.indIEDest})</div>
@@ -110,36 +110,36 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                 {/* Seção de Itens */}
                 {summaryData.itens && summaryData.itens.length > 0 && (
                   <section>
-                    <h4 className="text-base font-semibold text-purple-700 mb-2 border-b pb-1">Itens ({summaryData.itens.length})</h4>
-                    <div className="overflow-x-auto max-h-60 border rounded">
-                      <table className="min-w-full divide-y divide-gray-200 text-xs">
-                        <thead className="bg-gray-100 sticky top-0">
+                    <h4 className="xml-section-subtitle">Itens ({summaryData.itens.length})</h4>
+                    <div className="xml-table-container">
+                      <table className="xml-table">
+                        <thead>
                           <tr>
-                            <th className="px-2 py-1 text-left font-medium text-gray-600 uppercase tracking-wider">#</th>
-                            <th className="px-2 py-1 text-left font-medium text-gray-600 uppercase tracking-wider">Cód.</th>
-                            <th className="px-2 py-1 text-left font-medium text-gray-600 uppercase tracking-wider">Descrição</th>
-                            <th className="px-2 py-1 text-right font-medium text-gray-600 uppercase tracking-wider">Qtd</th>
-                            <th className="px-2 py-1 text-right font-medium text-gray-600 uppercase tracking-wider">Vl. Unit.</th>
-                            <th className="px-2 py-1 text-right font-medium text-gray-600 uppercase tracking-wider">Vl. Total</th>
-                            <th className="px-2 py-1 text-right font-medium text-gray-600 uppercase tracking-wider">CFOP</th>
-                            <th className="px-2 py-1 text-right font-medium text-gray-600 uppercase tracking-wider">ICMS CST</th>
-                            <th className="px-2 py-1 text-right font-medium text-gray-600 uppercase tracking-wider">IPI CST</th>
-                            <th className="px-2 py-1 text-right font-medium text-gray-600 uppercase tracking-wider">Vl. Trib Aprox.</th>
+                            <th>#</th>
+                            <th>Cód.</th>
+                            <th>Descrição</th>
+                            <th>Qtd</th>
+                            <th>Vl. Unit.</th>
+                            <th>Vl. Total</th>
+                            <th>CFOP</th>
+                            <th>ICMS CST</th>
+                            <th>IPI CST</th>
+                            <th>Vl. Trib Aprox.</th>
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody>
                           {summaryData.itens.map((item, index) => (
-                            <tr key={item.numeroItem || index} className="hover:bg-purple-50">
-                              <td className="px-2 py-1 whitespace-nowrap text-center">{item.numeroItem}</td>
-                              <td className="px-2 py-1 whitespace-nowrap">{item.codigoProduto}</td>
-                              <td className="px-2 py-1 max-w-xs truncate" title={item.descricao}>{item.descricao}</td>
-                              <td className="px-2 py-1 text-right">{item.quantidadeComercial} {item.unidadeComercial}</td>
-                              <td className="px-2 py-1 text-right whitespace-nowrap">{formatCurrency(item.valorUnitarioComercial)}</td>
-                              <td className="px-2 py-1 text-right whitespace-nowrap">{formatCurrency(item.valorTotalBruto)}</td>
-                              <td className="px-2 py-1 text-right">{item.cfop}</td>
-                              <td className="px-2 py-1 text-right">{item.impostos?.icms?.cst ?? '-'}</td>
-                              <td className="px-2 py-1 text-right">{item.impostos?.ipi?.cst ?? '-'}</td>
-                              <td className="px-2 py-1 text-right whitespace-nowrap">{formatCurrency(item.impostos?.vTotTrib)}</td>
+                            <tr key={item.numeroItem || index} className="xml-table-row">
+                              <td>{item.numeroItem}</td>
+                              <td>{item.codigoProduto}</td>
+                              <td className="xml-description" title={item.descricao}>{item.descricao}</td>
+                              <td>{item.quantidadeComercial} {item.unidadeComercial}</td>
+                              <td>{formatCurrency(item.valorUnitarioComercial)}</td>
+                              <td>{formatCurrency(item.valorTotalBruto)}</td>
+                              <td>{item.cfop}</td>
+                              <td>{item.impostos?.icms?.cst ?? '-'}</td>
+                              <td>{item.impostos?.ipi?.cst ?? '-'}</td>
+                              <td>{formatCurrency(item.impostos?.vTotTrib)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -151,17 +151,17 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                  {/* Seção de Pagamentos */}
                 {summaryData.pagamento?.detalhes && summaryData.pagamento.detalhes.length > 0 && (
                    <section>
-                      <h4 className="text-base font-semibold text-purple-700 mb-2 border-b pb-1">Pagamento</h4>
-                       <div className="space-y-1 text-xs">
+                      <h4 className="xml-section-subtitle">Pagamento</h4>
+                       <div className="xml-info-list">
                           {summaryData.pagamento.detalhes.map((pag, index) => (
-                               <div key={index} className="grid grid-cols-3 gap-x-4">
+                               <div key={index} className="xml-payment-item">
                                    <span><strong>Forma:</strong> {pag.descricaoPagamento} [{pag.formaPagamento}]</span>
                                    <span><strong>Valor:</strong> {formatCurrency(pag.valor)}</span>
                                    <span>{pag.indPag === '0' ? 'À Vista' : pag.indPag === '1' ? 'A Prazo' : ''}</span>
                                </div>
                           ))}
                           {summaryData.pagamento.vTroco > 0 && (
-                               <div className="mt-1"><strong>Troco:</strong> {formatCurrency(summaryData.pagamento.vTroco)}</div>
+                               <div className="xml-troco"><strong>Troco:</strong> {formatCurrency(summaryData.pagamento.vTroco)}</div>
                           )}
                       </div>
                    </section>
@@ -170,8 +170,8 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                 {/* Seção de Totais */}
                 {summaryData.totais?.icmsTot && (
                   <section>
-                    <h4 className="text-base font-semibold text-purple-700 mb-2 border-b pb-1">Totais</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                    <h4 className="xml-section-subtitle">Totais</h4>
+                    <div className="xml-grid-info">
                       <div><strong>Vl. Total Produtos:</strong> {formatCurrency(summaryData.totais.icmsTot.vProd)}</div>
                       <div><strong>Vl. Frete:</strong> {formatCurrency(summaryData.totais.icmsTot.vFrete)}</div>
                       <div><strong>Vl. Seguro:</strong> {formatCurrency(summaryData.totais.icmsTot.vSeg)}</div>
@@ -184,8 +184,8 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                       <div><strong>Vl. IPI:</strong> {formatCurrency(summaryData.totais.icmsTot.vIPI)}</div>
                       <div><strong>Vl. PIS:</strong> {formatCurrency(summaryData.totais.icmsTot.vPIS)}</div>
                       <div><strong>Vl. COFINS:</strong> {formatCurrency(summaryData.totais.icmsTot.vCOFINS)}</div>
-                       <div className="font-bold text-sm col-span-full mt-1"><strong>Vl. Total NF:</strong> {formatCurrency(summaryData.totais.icmsTot.vNF)}</div>
-                       <div className="text-gray-600"><strong>Vl. Aprox. Tributos:</strong> {formatCurrency(summaryData.totais.icmsTot.vTotTrib)}</div>
+                       <div className="xml-total-nf"><strong>Vl. Total NF:</strong> {formatCurrency(summaryData.totais.icmsTot.vNF)}</div>
+                       <div className="xml-total-tributos"><strong>Vl. Aprox. Tributos:</strong> {formatCurrency(summaryData.totais.icmsTot.vTotTrib)}</div>
                     </div>
                   </section>
                 )}
@@ -193,8 +193,8 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                  {/* Seção de Transporte */} 
                  {summaryData.transporte && (
                       <section>
-                          <h4 className="text-base font-semibold text-purple-700 mb-2 border-b pb-1">Transporte</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <h4 className="xml-section-subtitle">Transporte</h4>
+                          <div className="xml-grid-info">
                                <div><strong>Modalidade Frete:</strong> {summaryData.transporte.descricaoModFrete} [{summaryData.transporte.modFrete}]</div>
                                {summaryData.transporte.transportadora && (
                                   <div>
@@ -207,9 +207,8 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
                                       <strong>Veículo:</strong> Placa {summaryData.transporte.veiculo.placa ?? 'N/A'} - {summaryData.transporte.veiculo.uf ?? ''}
                                   </div>
                                )}
-                               {/* Add Volume display if needed */} 
                                {summaryData.transporte.volumes && summaryData.transporte.volumes.length > 0 && (
-                                   <div className="md:col-span-2 mt-1"><strong>Volumes:</strong> {summaryData.transporte.volumes.length} volume(s)</div>
+                                   <div className="xml-volumes"><strong>Volumes:</strong> {summaryData.transporte.volumes.length} volume(s)</div>
                                )}
                           </div>
                       </section>

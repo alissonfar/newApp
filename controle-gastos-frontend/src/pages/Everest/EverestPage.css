@@ -3642,5 +3642,250 @@ nav svg,
   border-color: #ef4444 transparent transparent transparent !important;
 }
 
+/* Modal XML */
+.xml-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+  padding: 1rem !important;
+}
+
+.xml-modal {
+  background-color: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  width: 95% !important;
+  max-width: 1000px !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+}
+
+.xml-modal-header {
+  padding: 1rem 1.5rem !important;
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  flex-shrink: 0 !important;
+}
+
+.xml-modal-title {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: #4f46e5 !important;
+  margin: 0 !important;
+}
+
+.xml-modal-close {
+  background: none !important;
+  border: none !important;
+  font-size: 1.5rem !important;
+  color: #6b7280 !important;
+  cursor: pointer !important;
+  padding: 0.25rem !important;
+  transition: color 0.2s ease !important;
+}
+
+.xml-modal-close:hover {
+  color: #1f2937 !important;
+}
+
+.xml-modal-body {
+  padding: 1.5rem !important;
+  overflow-y: auto !important;
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.5rem !important;
+}
+
+/* Seções e Conteúdo */
+.xml-section-subtitle {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #4f46e5 !important;
+  margin-bottom: 0.75rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.xml-grid-info {
+  display: grid !important;
+  grid-template-columns: repeat(1, 1fr) !important;
+  gap: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+}
+
+@media (min-width: 768px) {
+  .xml-grid-info {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .xml-grid-info {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+.xml-grid-columns {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 1.5rem !important;
+}
+
+@media (min-width: 768px) {
+  .xml-grid-columns {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+.xml-info-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+  font-size: 0.875rem !important;
+}
+
+.xml-chave-acesso {
+  font-family: monospace !important;
+  word-break: break-all !important;
+}
+
+/* Tabela de Itens */
+.xml-table-container {
+  overflow-x: auto !important;
+  max-height: 300px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+}
+
+.xml-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 0.875rem !important;
+}
+
+.xml-table thead {
+  background-color: #f3f4f6 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1 !important;
+}
+
+.xml-table th {
+  padding: 0.5rem !important;
+  text-align: left !important;
+  font-weight: 500 !important;
+  color: #4b5563 !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.025em !important;
+}
+
+.xml-table tbody tr {
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.xml-table-row:hover {
+  background-color: #f5f3ff !important;
+}
+
+.xml-table td {
+  padding: 0.5rem !important;
+  text-align: left !important;
+}
+
+.xml-table td:nth-child(4),
+.xml-table td:nth-child(5),
+.xml-table td:nth-child(6),
+.xml-table td:nth-child(7),
+.xml-table td:nth-child(8),
+.xml-table td:nth-child(9),
+.xml-table td:nth-child(10) {
+  text-align: right !important;
+}
+
+.xml-description {
+  max-width: 200px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Outros Elementos */
+.xml-payment-item {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 1rem !important;
+}
+
+.xml-total-nf {
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  margin-top: 0.5rem !important;
+  padding-top: 0.5rem !important;
+  border-top: 1px solid #e5e7eb !important;
+  grid-column: 1 / -1 !important;
+}
+
+.xml-total-tributos {
+  color: #6b7280 !important;
+  grid-column: 1 / -1 !important;
+}
+
+.xml-volumes {
+  grid-column: 1 / -1 !important;
+  margin-top: 0.5rem !important;
+}
+
+.xml-troco {
+  margin-top: 0.5rem !important;
+  font-weight: 500 !important;
+}
+
+/* Estados de Loading/Erro */
+.xml-loading {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 2.5rem !important;
+}
+
+.xml-spinner {
+  animation: spin 1s linear infinite !important;
+  font-size: 2rem !important;
+  color: #4f46e5 !important;
+}
+
+.xml-error {
+  text-align: center !important;
+  padding: 2.5rem !important;
+  color: #ef4444 !important;
+}
+
+.xml-error-message {
+  background-color: #fee2e2 !important;
+  border: 1px solid #fecaca !important;
+  color: #b91c1c !important;
+  padding: 1rem !important;
+  border-radius: 0.375rem !important;
+  position: relative !important;
+}
+
 
   

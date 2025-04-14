@@ -874,6 +874,8 @@
 }
 
 /* Estilos Desktop .main-content */
+/* Comentando esta segunda definição redundante de main-content que está causando o problema com os modais */
+/*
 .main-content {
   flex-grow: 1;
   padding: 1.5rem;
@@ -888,6 +890,7 @@
   margin-left: 72px;
   width: calc(100% - 72px);
 }
+*/
 
 /* Ajustes finos menu colapsado (Desktop) */
 /* ... (regras para .side-menu.desktop.collapsed ...) ... */
