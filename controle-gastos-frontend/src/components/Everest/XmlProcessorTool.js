@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FaUpload, FaSpinner, FaFileCode, FaFileAlt, FaEye, FaExclamationTriangle, FaTimes, FaTrash } from 'react-icons/fa'; // Adicionado FaTrash
+import { createPortal } from 'react-dom';
+import { FaUpload, FaSpinner, FaFileCode, FaFileAlt, FaEye, FaExclamationTriangle, FaTimes, FaTrash, FaSearch } from 'react-icons/fa'; // Adicionado FaTrash e FaSearch
 import { toast } from 'react-toastify';
 import { processarXml, obterSumariosXml, obterSumarioXmlPorId, excluirSumarioXml } from '../../api'; // Adicionado excluirSumarioXml
 
@@ -226,6 +227,8 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
 const XmlProcessorTool = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [summaries, setSummaries] = useState([]); // Lista de resumos para os cards
+  const [filteredSummaries, setFilteredSummaries] = useState([]); // Lista filtrada pelos termos de busca
+  const [searchTerm, setSearchTerm] = useState(''); // Termo de busca
   const [isLoading, setIsLoading] = useState(false); // Loading do processamento
   const [isFetchingList, setIsFetchingList] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
@@ -243,7 +246,16 @@ const XmlProcessorTool = () => {
     setUploadStatus(''); // Limpa status de upload antigo
     try {
       const data = await obterSumariosXml();
-      setSummaries(data || []);
+      // Mapear os dados para garantir que temos as propriedades necessárias
+      const formattedData = (data || []).map(item => ({
+        ...item,
+        // Se esses campos não existirem, definimos como N/A
+        number: item.number || (item.identificacao?.nNF) || 'N/A',
+        serie: item.serie || (item.identificacao?.serie) || 'N/A',
+        model: item.modelo || item.model || (item.identificacao?.mod) || 'N/A'
+      }));
+      setSummaries(formattedData);
+      setFilteredSummaries(formattedData);
     } catch (error) {
       toast.error('Erro ao buscar histórico de XMLs processados.');
       console.error("Erro fetchSummaries:", error);
@@ -255,6 +267,35 @@ const XmlProcessorTool = () => {
   useEffect(() => {
     fetchSummaries();
   }, [fetchSummaries]);
+
+  // --- Efeito para filtrar summaries baseado no termo de busca ---
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredSummaries(summaries);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = summaries.filter(summary => {
+      // Busca em vários campos
+      return (
+        // Nome do arquivo
+        summary.filename?.toLowerCase().includes(term) ||
+        // Chave de acesso
+        summary.key?.toLowerCase().includes(term) ||
+        // Emitente
+        summary.emitter?.toLowerCase().includes(term) ||
+        // Valor (convertido para string)
+        formatCurrency(summary.value)?.toLowerCase().includes(term) ||
+        // Data (formatada)
+        formatDate(summary.date)?.toLowerCase().includes(term) ||
+        // Erro (se existir)
+        summary.error?.toLowerCase().includes(term)
+      );
+    });
+
+    setFilteredSummaries(filtered);
+  }, [searchTerm, summaries]);
 
   // --- Handler para mudança de arquivo --- (Igual antes)
    const handleFileChange = (event) => {
@@ -351,6 +392,11 @@ const XmlProcessorTool = () => {
     }
   };
 
+  // --- Handler para mudança no campo de busca ---
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   return (
     <div className="space-y-6">
       {/* Seção de Upload e Processamento */} 
@@ -392,6 +438,38 @@ const XmlProcessorTool = () => {
                 <FaFileAlt /> Histórico de XMLs Processados
            </h3>
 
+           {/* Campo de Busca */}
+           {!isFetchingList && summaries.length > 0 && (
+             <div className="xml-search-bar">
+               <input
+                 type="text"
+                 placeholder="Buscar por emitente, valor, arquivo, chave..."
+                 value={searchTerm}
+                 onChange={handleSearchChange}
+                 className="xml-search-input"
+               />
+               {searchTerm && (
+                 <button
+                   onClick={() => setSearchTerm('')}
+                   className="xml-search-clear"
+                   title="Limpar busca"
+                 >
+                   <FaTimes />
+                 </button>
+               )}
+               
+               {searchTerm && (
+                 <div className="xml-search-results-info">
+                   {filteredSummaries.length === 0 ? (
+                     <span>Nenhum resultado encontrado para "{searchTerm}"</span>
+                   ) : (
+                     <span>Exibindo {filteredSummaries.length} de {summaries.length} resultados</span>
+                   )}
+                 </div>
+               )}
+             </div>
+           )}
+
            {isFetchingList && (
                 <div className="xml-loading"><FaSpinner className="xml-spinner" /><p>Carregando histórico...</p></div>
            )}
@@ -403,59 +481,122 @@ const XmlProcessorTool = () => {
                 </div>
            )}
 
-           {!isFetchingList && summaries.length > 0 && (
+           {!isFetchingList && filteredSummaries.length === 0 && summaries.length > 0 && (
+             <div className="xml-empty-search">
+               <FaSearch className="xml-empty-search-icon" />
+               <p>Nenhum XML corresponde à sua busca.</p>
+               <button 
+                 onClick={() => setSearchTerm('')}
+                 className="xml-clear-search-button"
+               >
+                 Limpar busca
+               </button>
+             </div>
+           )}
+
+           {!isFetchingList && filteredSummaries.length > 0 && (
                <div className="space-y-3">
-                   {summaries.map((summary) => (
-                       <div key={summary.id} className={`border rounded-md p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-white shadow-sm transition-colors ${summary.error ? 'border-red-300 bg-red-50' : 'hover:bg-purple-50'}`}>
-                           <div className="text-xs flex-grow space-y-1">
-                               <p className="font-medium text-gray-700"><strong>Arquivo:</strong> {summary.filename}</p>
-                               {summary.error ? (
-                                   <p className="text-red-600 font-semibold"><FaExclamationTriangle className="inline mr-1"/> Erro: {summary.error}</p>
-                               ) : (
-                                   <>
-                                      <p><strong>Chave:</strong> <span className="text-gray-600 font-mono text-[10px] break-all">{summary.key}</span></p>
-                                      <p><strong>Valor:</strong> <span className="font-semibold text-purple-700">{formatCurrency(summary.value)}</span> | <strong>Emitente:</strong> {summary.emitter}</p>
-                                   </>
-                               )}
-                               <p className="text-gray-500 text-[10px]">Processado em: {formatDate(summary.date)}</p>
-                           </div>
-                           
-                           {/* Botões de Ação */} 
-                           <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">
-                                {!summary.error && (
-                                    <button
-                                        onClick={() => handleViewDetails(summary.id)}
-                                        className="xml-action-button xml-details-button"
-                                        disabled={isFetchingDetails || isDeleting}
-                                        title="Ver detalhes completos"
-                                    >
-                                       {isFetchingDetails && fetchingDetailId === summary.id ? <FaSpinner className="animate-spin" /> : <FaEye />}
-                                       <span className="action-btn-label">Detalhes</span>
-                                    </button>
-                               )}
-                                <button
-                                    onClick={() => handleDeleteSummary(summary.id, summary.filename)}
-                                    className="xml-action-button xml-delete-button"
-                                    disabled={isDeleting || isFetchingDetails}
-                                    title="Excluir este resumo"
-                                >
-                                    {isDeleting && deletingId === summary.id ? <FaSpinner className="animate-spin" /> : <FaTrash />}
-                                     <span className="action-btn-label">Excluir</span>
-                                </button>
-                           </div>
-                       </div>
+                   {filteredSummaries.map((summary) => (
+                       <div 
+                            key={summary.id} 
+                            className={`xml-history-card ${summary.error ? 'xml-card-error' : ''}`}
+                        >
+                            <div className="xml-card-content">
+                                <div className="xml-card-header">
+                                    <span className="xml-card-title">
+                                        <strong>Arquivo:</strong> {summary.filename}
+                                    </span>
+                                </div>
+                                
+                                {summary.error ? (
+                                    <p className="xml-card-error-message">
+                                        <FaExclamationTriangle className="inline mr-1"/> 
+                                        <span>Erro: {summary.error}</span>
+                                    </p>
+                                ) : (
+                                    <>
+                                        <div className="xml-card-info">
+                                            <div className="xml-card-key">
+                                                <strong>Chave:</strong> 
+                                                <span className="xml-card-key-value">{summary.key}</span>
+                                            </div>
+                                            
+                                            <div className="xml-card-details">
+                                                <div className="xml-card-detail-item">
+                                                    <strong>Número:</strong> <span>{summary.number || summary.identificacao?.nNF || 'N/A'}</span>
+                                                </div>
+                                                <div className="xml-card-detail-item">
+                                                    <strong>Série:</strong> <span>{summary.serie || summary.identificacao?.serie || 'N/A'}</span>
+                                                </div>
+                                                <div className="xml-card-detail-item">
+                                                    <strong>Modelo:</strong> <span>{summary.model || summary.identificacao?.mod || 'N/A'}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="xml-card-values">
+                                                <span className="xml-card-value">
+                                                    <strong>Valor:</strong> 
+                                                    <span className="xml-card-value-number">{formatCurrency(summary.value)}</span>
+                                                </span>
+                                                <span className="xml-card-emitter">
+                                                    <strong>Emitente:</strong> {summary.emitter}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                <div className="xml-card-footer">
+                                    <span className="xml-card-date">
+                                        Processado em: {formatDate(summary.date)}
+                                    </span>
+                                    
+                                    <div className="xml-card-actions">
+                                        {!summary.error && (
+                                            <button
+                                                onClick={() => handleViewDetails(summary.id)}
+                                                className="xml-action-button xml-details-button"
+                                                disabled={isFetchingDetails || isDeleting}
+                                                title="Ver detalhes completos"
+                                            >
+                                                {isFetchingDetails && fetchingDetailId === summary.id ? 
+                                                    <FaSpinner className="animate-spin" /> : 
+                                                    <FaEye />
+                                                }
+                                                <span className="action-btn-label">Detalhes</span>
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => handleDeleteSummary(summary.id, summary.filename)}
+                                            className="xml-action-button xml-delete-button"
+                                            disabled={isDeleting || isFetchingDetails}
+                                            title="Excluir este resumo"
+                                        >
+                                            {isDeleting && deletingId === summary.id ? 
+                                                <FaSpinner className="animate-spin" /> : 
+                                                <FaTrash />
+                                            }
+                                            <span className="action-btn-label">Excluir</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                    ))}
                </div>
            )}
       </div>
 
-      {/* Modal de Detalhes */} 
-      <XmlDetailModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        summaryData={selectedSummaryDetail} // Passa os detalhes buscados
-        isLoading={isFetchingDetails} // Indica se está carregando os detalhes
-      />
+      {/* Modal de Detalhes - Agora usando Portal */}
+      {isModalOpen && createPortal(
+        <XmlDetailModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          summaryData={selectedSummaryDetail}
+          isLoading={isFetchingDetails}
+        />,
+        document.body
+      )}
     </div>
   );
 }
