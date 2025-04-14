@@ -244,7 +244,6 @@ const LinksManager = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="links-search-input"
           />
-          <FaSearch className="links-search-icon" />
         </div>
         <button 
           onClick={handleAddLink}

@@ -154,7 +154,7 @@
 
 /* Estilos para os cards de ferramentas - Melhorados */
 .everest-tool-card {
-  background-color: white !important;
+  background-color: white !important; /* Default */
   border-radius: 1rem !important; /* Bordas mais arredondadas */
   border: 1px solid rgba(59, 130, 246, 0.1) !important;
   padding: 1.75rem !important;
@@ -165,6 +165,23 @@
   flex-direction: column !important;
   position: relative !important;
   overflow: hidden !important;
+}
+
+/* Cores de fundo claras específicas por ferramenta */
+.everest-tool-card[data-tool="notes"] {
+  background-color: #fef2f2 !important; /* Very Light Red */
+}
+.everest-tool-card[data-tool="links"] {
+  background-color: #f0fdfa !important; /* Very Light Green */
+}
+.everest-tool-card[data-tool="ticket-tracker"] {
+  background-color: #fffbeb !important; /* Very Light Orange */
+}
+.everest-tool-card[data-tool="cnpj"] {
+  background-color: #f0f9ff !important; /* Very Light Blue */
+}
+.everest-tool-card[data-tool="xml"] {
+  background-color: #faf5ff !important; /* Very Light Purple */
 }
 
 /* Barra colorida no topo de cada card - cor default azul */
@@ -303,26 +320,26 @@
   color: #d97706 !important;
 }
 
-/* Cor Notes - Verde-azulado */
+/* Cor Notes - Vermelho Carmesim */
 .everest-tool-card[data-tool="notes"] .everest-tool-icon {
-  background-color: rgba(20, 184, 166, 0.1) !important;
+  background-color: rgba(220, 38, 38, 0.1) !important; /* Fundo Ícone Vermelho Transparente */
 }
 
 .everest-tool-card[data-tool="notes"] .everest-tool-icon svg {
-  color: #14b8a6 !important; /* Verde-azulado */
-  fill: #14b8a6 !important;
+  color: #dc2626 !important; /* Ícone Vermelho */
+  fill: #dc2626 !important;
 }
 
 .everest-tool-card[data-tool="notes"]::after {
-  background: linear-gradient(to right, #14b8a6, #2dd4bf) !important;
+  background: linear-gradient(to right, #dc2626, #ef4444) !important; /* Barra Topo Vermelha */
 }
 
 .everest-tool-card[data-tool="notes"]:hover {
-  border-color: rgba(20, 184, 166, 0.4) !important;
+  border-color: rgba(220, 38, 38, 0.4) !important; /* Borda Hover Vermelha */
 }
 
 .everest-tool-card[data-tool="notes"] h3 {
-  color: #0d9488 !important;
+  color: #b91c1c !important; /* Título Vermelho Escuro */
 }
 
 /* Melhorias no footer do card */
@@ -537,7 +554,7 @@
 
 /* Banner header para a página de notas - Versão aprimorada */
 .everest-page .notes-header-banner {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important; /* Gradiente Vermelho */
   border-radius: 0.75rem !important;
   box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
   padding: 2rem !important;
@@ -614,7 +631,7 @@
 .everest-page .notes-icon {
   width: 64px !important;
   height: 64px !important;
-  background-color: rgba(255, 255, 255, 0.15) !important;
+  background-color: rgba(255, 255, 255, 0.15) !important; /* Mantido branco transparente no banner */
   border-radius: 12px !important;
   display: flex !important;
   align-items: center !important;
@@ -701,13 +718,11 @@
 /* Barra de pesquisa e botão de adicionar */
 .everest-page .notes-search-bar {
   position: relative !important;
-  flex-grow: 1 !important;
-  margin-right: 16px !important;
 }
 
 .everest-page .notes-search-input {
   width: 100% !important;
-  padding: 10px 16px !important;
+  padding: 10px 16px !important; /* Removido padding-left maior */
   border: 1px solid #e5e7eb !important;
   border-radius: 4px !important;
   font-size: 14px !important;
@@ -718,40 +733,68 @@
 
 .everest-page .notes-search-input:focus {
   outline: none !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+  border-color: #ef4444 !important; /* Foco Vermelho */
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25) !important; /* Sombra Foco Vermelho */
 }
 
-.everest-page .notes-add-button {
-  padding: 10px 20px !important;
-  background: linear-gradient(to right, #2563eb, #3b82f6) !important;
+.everest-page .notes-add-button-container {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  margin-top: 8px !important;
+}
+
+@media (min-width: 640px) {
+  .notes-add-button-container {
+    width: auto !important;
+    margin-top: 0 !important;
+    margin-left: 12px !important;
+  }
+}
+
+/* Estilo único para o botão de adicionar nota */
+.notes-add-button {
+  padding: 12px 24px !important;
+  background: linear-gradient(to right, #ef4444, #dc2626) !important; /* Gradiente Vermelho */
   color: white !important;
   border: none !important;
-  border-radius: 4px !important;
-  font-weight: 500 !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
-  gap: 0.5rem !important;
-  transition: background-color 0.3s !important;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 3px 6px rgba(220, 38, 38, 0.25) !important; /* Sombra Vermelha */
+  white-space: nowrap !important;
+  width: 100% !important;
+  max-width: 350px !important;
+  margin-top: 1.5rem !important; /* Adicionado espaçamento superior */
+  margin-bottom: 1.5rem !important; /* Adicionado espaçamento inferior */
 }
 
-.everest-page .notes-add-button:hover {
-  background: linear-gradient(to right, #1d4ed8, #2563eb) !important;
+.notes-add-button:hover {
+  background: linear-gradient(to right, #dc2626, #b91c1c) !important; /* Gradiente Vermelho Escuro */
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 8px rgba(220, 38, 38, 0.3) !important; /* Sombra Vermelha Hover */
+}
+
+.notes-add-button:active {
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25) !important;
 }
 
-.everest-page .notes-add-button:active {
-  transform: translateY(0) !important;
+.notes-add-button svg {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
 }
 
-.everest-page .notes-add-button svg {
-  width: 16px !important;
-  height: 16px !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
+@media (min-width: 640px) {
+  .notes-add-button {
+    width: auto !important;
+  }
 }
 
 /* Estado vazio */
@@ -814,7 +857,7 @@
   position: relative !important;
   background-color: white !important;
   border-radius: 10px !important;
-  border-left: 4px solid #3b82f6 !important;
+  border-left: 4px solid #dc2626 !important; /* Borda Esquerda Vermelha */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
   padding: 1.5rem !important;
   padding-right: 5rem !important; /* Espaço para os botões */
@@ -855,15 +898,15 @@
   font-size: 0.75rem !important;
   padding: 4px 10px !important;
   border-radius: 20px !important;
-  background-color: #f3f4f8 !important;
-  color: #4f46e5 !important;
+  background-color: #fee2e2 !important; /* Fundo Tag Vermelho Claro */
+  color: #991b1b !important; /* Texto Tag Vermelho Escuro */
   font-weight: 500 !important;
-  border: 1px solid #e5e7eb !important;
+  border: 1px solid #fecaca !important; /* Borda Tag Vermelho Mais Claro */
   transition: all 0.2s ease !important;
 }
 
 .note-tag:hover {
-  background-color: #eef2ff !important;
+  background-color: #fecaca !important; /* Fundo Tag Vermelho Hover */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
   transform: translateY(-1px) !important;
 }
@@ -1121,9 +1164,9 @@ nav svg,
 
 .note-form-input:focus,
 .note-form-textarea:focus {
-  border-color: #80bdff !important;
+  border-color: #f87171 !important; /* Foco Vermelho Claro Modal */
   outline: 0 !important;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.25) !important; /* Sombra Foco Vermelho Modal */
 }
 
 .note-form-textarea {
@@ -1161,14 +1204,14 @@ nav svg,
 }
 
 .note-save-button {
-  background-color: #007bff !important;
-  border: 1px solid #007bff !important;
+  background-color: #dc2626 !important; /* Botão Salvar Vermelho */
+  border: 1px solid #dc2626 !important; /* Botão Salvar Vermelho */
   color: white !important;
 }
 
 .note-save-button:hover {
-  background-color: #0069d9 !important;
-  border-color: #0062cc !important;
+  background-color: #b91c1c !important; /* Botão Salvar Vermelho Escuro */
+  border-color: #991b1b !important; /* Botão Salvar Vermelho Mais Escuro */
 }
 
 /* Estilos para o componente de estatísticas */
@@ -1198,8 +1241,8 @@ nav svg,
 
 .everest-page .notes-stats-counter {
   font-size: 0.9rem !important;
-  color: #6b7280 !important;
-  background-color: #f3f4f6 !important;
+  color: #991b1b !important; /* Contador Vermelho Escuro */
+  background-color: #fee2e2 !important; /* Fundo Contador Vermelho Claro */
   padding: 0.35rem 0.75rem !important;
   border-radius: 9999px !important;
   font-weight: 500 !important;
@@ -1250,20 +1293,20 @@ nav svg,
   display: flex !important;
   align-items: center !important;
   gap: 0.375rem !important;
-  background-color: #eff6ff !important;
+  background-color: #fee2e2 !important; /* Fundo Top Tag Vermelho Claro */
   padding: 0.4rem 0.75rem !important;
   border-radius: 9999px !important;
   font-size: 0.8rem !important;
 }
 
 .everest-page .notes-top-tag-name {
-  color: #1d4ed8 !important;
+  color: #991b1b !important; /* Nome Top Tag Vermelho Escuro */
   font-weight: 500 !important;
 }
 
 .everest-page .notes-top-tag-count {
-  background-color: #dbeafe !important;
-  color: #1d4ed8 !important;
+  background-color: #fecaca !important; /* Fundo Contagem Top Tag Vermelho Mais Claro */
+  color: #991b1b !important; /* Texto Contagem Top Tag Vermelho Escuro */
   font-weight: 600 !important;
   padding: 0.15rem 0.4rem !important;
   border-radius: 9999px !important;
@@ -1313,22 +1356,22 @@ nav svg,
 .back-button {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
-  padding: 10px 16px !important;
+  gap: 10px !important;
+  padding: 12px 20px !important;
   background: linear-gradient(to right, #e6f0ff, #f0f7ff) !important;
   border: 1px solid #c2d9ff !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   color: #2563eb !important;
-  font-weight: 500 !important;
-  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
   transition: all 0.2s ease !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
 }
 
 .back-button:hover {
   background: linear-gradient(to right, #dbe9ff, #e6f0ff) !important;
   transform: translateX(-3px) !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.15) !important;
 }
 
 .back-button:active {
@@ -1336,10 +1379,10 @@ nav svg,
 }
 
 .back-button svg {
-  width: 16px !important;
-  height: 16px !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
   color: #2563eb !important;
 }
 
@@ -1741,6 +1784,7 @@ nav svg,
   top: 50% !important;
   transform: translateY(-50%) !important;
   color: #94a3b8 !important;
+  display: none !important; /* Adicionado para remover o ícone */
 }
 
 /* Botão de adicionar link */
@@ -1759,6 +1803,7 @@ nav svg,
   cursor: pointer !important;
   white-space: nowrap !important;
   box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2) !important;
+  margin-bottom: 1.5rem !important; /* Adicionado para espaçamento */
 }
 
 .links-add-button:hover {
@@ -2243,12 +2288,12 @@ nav svg,
 /* Estilos para o cabeçalho da página de Tickets */
 .ticket-header-banner {
   position: relative;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); /* Laranja claro */
   border-radius: 1rem;
   padding: 2.5rem 2rem;
   margin-bottom: 2rem;
   overflow: hidden;
-  border: 1px solid #e1e9f8;
+  border: 1px solid #fef3c7;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
@@ -2259,7 +2304,7 @@ nav svg,
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(245, 158, 11, 0.1); /* Laranja transparente */
   z-index: 0;
 }
 
@@ -2270,7 +2315,7 @@ nav svg,
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.07);
+  background: rgba(217, 119, 6, 0.07); /* Laranja escuro transparente */
   z-index: 0;
 }
 
@@ -2286,9 +2331,9 @@ nav svg,
   justify-content: center;
   width: 60px;
   height: 60px;
-  background-color: #3b82f6;
+  background-color: #f59e0b; /* Laranja */
   border-radius: 1rem;
-  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); /* Sombra laranja */
   color: white;
   transition: transform 0.3s ease;
 }
@@ -2305,7 +2350,7 @@ nav svg,
 .ticket-header-content h1 {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #1e40af;
+  color: #92400e; /* Laranja escuro */
   margin-bottom: 0.75rem;
 }
 
@@ -2341,7 +2386,7 @@ nav svg,
 }
 
 .ticket-feature-icon {
-  color: #3b82f6;
+  color: #f59e0b; /* Laranja */
   margin-right: 0.5rem;
 }
 
@@ -2368,8 +2413,8 @@ nav svg,
 
 .ticket-search-input:focus {
   outline: none;
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  border-color: #fbbf24; /* Laranja hover */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25); /* Sombra foco laranja */
 }
 
 .ticket-add-button {
@@ -2378,7 +2423,7 @@ nav svg,
   justify-content: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  background-color: #3b82f6;
+  background-color: #f59e0b; /* Laranja */
   color: white;
   font-size: 0.875rem;
   font-weight: 500;
@@ -2391,14 +2436,14 @@ nav svg,
 }
 
 .ticket-add-button:hover {
-  background-color: #2563eb;
+  background-color: #d97706; /* Laranja escuro */
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); /* Sombra hover laranja */
 }
 
 .ticket-add-button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4); /* Sombra foco laranja */
 }
 
 .ticket-empty-state {
@@ -2427,7 +2472,7 @@ nav svg,
 
 .ticket-empty-button {
   padding: 0.65rem 1.25rem;
-  background-color: #3b82f6;
+  background-color: #f59e0b; /* Laranja */
   color: white;
   font-weight: 500;
   border-radius: 6px;
@@ -2437,7 +2482,7 @@ nav svg,
 }
 
 .ticket-empty-button:hover {
-  background-color: #2563eb;
+  background-color: #d97706; /* Laranja escuro */
 }
 
 .ticket-loading {
@@ -2453,6 +2498,7 @@ nav svg,
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
   animation: spin 1s linear infinite;
+  color: #f59e0b; /* Laranja */
 }
 
 .ticket-table {
@@ -2522,11 +2568,11 @@ nav svg,
 }
 
 .ticket-edit-button {
-  color: #3b82f6;
+  color: #f59e0b; /* Laranja */
 }
 
 .ticket-edit-button:hover {
-  background-color: rgba(59, 130, 246, 0.1);
+  background-color: rgba(245, 158, 11, 0.1); /* Laranja transparente */
 }
 
 .ticket-delete-button {
@@ -2686,7 +2732,7 @@ nav svg,
   font-size: 0.875rem;
   font-weight: 500;
   color: white;
-  background-color: #3b82f6;
+  background-color: #f59e0b; /* Laranja */
   border: none;
   border-radius: 0.375rem;
   cursor: pointer;
@@ -2694,7 +2740,7 @@ nav svg,
 }
 
 .ticket-save-button:hover {
-  background-color: #2563eb;
+  background-color: #d97706; /* Laranja escuro */
 }
 
 /* Animações para o modal */
@@ -3424,7 +3470,7 @@ nav svg,
 }
 
 .everest-tool-card[data-tool="notes"] .everest-tool-footer .access-btn {
-  color: #14b8a6 !important; /* Verde-azulado */
+  color: #dc2626 !important; /* Botão Acessar Vermelho */
 }
 
 /* Proteção específica para SVGs da página de ferramentas principal */
@@ -3464,8 +3510,8 @@ nav svg,
 }
 
 .everest-tool-card[data-tool="notes"] .everest-tool-icon svg {
-  color: #14b8a6 !important; /* Verde-azulado */
-  fill: #14b8a6 !important;
+  color: #dc2626 !important; /* Ícone Vermelho */
+  fill: #dc2626 !important;
 }
 
 /* Garantindo que os ícones da página Everest não sejam afetados por outras páginas */

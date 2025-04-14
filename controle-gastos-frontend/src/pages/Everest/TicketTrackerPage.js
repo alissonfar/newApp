@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaTicketAlt, FaSearch, FaPlus, FaClipboardList, FaInfo, FaExchangeAlt } from 'react-icons/fa';
+import { FaTicketAlt, FaSearch, FaPlus, FaClipboardList, FaInfo, FaExchangeAlt, FaArrowLeft } from 'react-icons/fa';
 import TicketInfoTracker from '../../components/Everest/TicketInfoTracker';
 import './EverestPage.css';
 
@@ -13,6 +13,12 @@ const TicketTrackerPage = () => {
         <span className="mx-2 breadcrumb-separator">›</span>
         <span className="text-blue-600 font-medium breadcrumb-current">Rastreador de Informações</span>
       </nav>
+
+      {/* Botão de voltar */}
+      <Link to="/everest" className="back-button mb-4">
+        <FaArrowLeft />
+        <span>Voltar para Ferramentas</span>
+      </Link>
 
       {/* Banner de cabeçalho estilizado */}
       <div className="ticket-header-banner">

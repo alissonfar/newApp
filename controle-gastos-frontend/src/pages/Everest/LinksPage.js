@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaLink, FaSearch, FaPlus, FaClock, FaBookmark, FaTag } from 'react-icons/fa';
+import { FaLink, FaSearch, FaPlus, FaClock, FaBookmark, FaTag, FaArrowLeft } from 'react-icons/fa';
 import LinksManager from '../../components/Everest/LinksManager';
 import './EverestPage.css';
 
@@ -13,6 +13,12 @@ const LinksPage = () => {
         <span className="mx-2 breadcrumb-separator">›</span>
         <span className="text-blue-600 font-medium breadcrumb-current">Repositório de Links</span>
       </nav>
+
+      {/* Botão de voltar */}
+      <Link to="/everest" className="back-button mb-4">
+        <FaArrowLeft />
+        <span>Voltar para Ferramentas</span>
+      </Link>
 
       {/* Banner de cabeçalho estilizado */}
       <div className="links-header-banner">
