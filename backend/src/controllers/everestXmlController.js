@@ -345,6 +345,36 @@ module.exports = {
              return res.status(400).json({ erro: 'Chave de acesso da NF-e não encontrada ou inválida.' });
         }
 
+        // Verificar se já existe uma nota com esta chave de acesso para este usuário
+        const chaveAcesso = extractedDataResult.identificacao.chaveAcesso;
+        const existingNota = await EverestXmlSummary.findOne({ 
+            'identificacao.chaveAcesso': chaveAcesso,
+            userId: userId 
+        });
+
+        if (existingNota) {
+            fs.unlinkSync(filePath); // Remove arquivo temporário
+            return res.status(409).json({ 
+                erro: 'Nota fiscal já processada anteriormente.',
+                message: 'Esta nota fiscal já foi processada anteriormente.',
+                notaExistente: {
+                    id: existingNota._id,
+                    filename: existingNota.originalFilename,
+                    date: existingNota.createdAt
+                }
+            });
+        }
+
+        // Verificar se a nota existe para outro usuário (apenas para log, não impede o processamento)
+        const existsForOtherUser = await EverestXmlSummary.findOne({
+            'identificacao.chaveAcesso': chaveAcesso,
+            userId: { $ne: userId }
+        });
+
+        if (existsForOtherUser) {
+            console.log(`Nota com chave ${chaveAcesso} já existe para outro usuário mas será salva para o usuário atual.`);
+        }
+
         // Salvar o resumo detalhado no banco
         const newSummary = new EverestXmlSummary({
             userId,
@@ -370,6 +400,42 @@ module.exports = {
         console.error('Erro crítico ao processar XML ou salvar:', error);
         try { fs.unlinkSync(filePath); } catch (e) { console.error('Erro ao remover temp após erro crítico:', e); }
 
+        // Se for erro de chave duplicada
+        if (error.code === 11000 && error.keyPattern && error.keyPattern['identificacao.chaveAcesso']) {
+            const chaveAcesso = error.keyValue['identificacao.chaveAcesso'];
+            
+            // Buscar informações sobre a nota já existente
+            try {
+                const existingNota = await EverestXmlSummary.findOne({ 
+                    'identificacao.chaveAcesso': chaveAcesso 
+                });
+
+                // Se for do mesmo usuário
+                if (existingNota && existingNota.userId.toString() === userId) {
+                    return res.status(409).json({ 
+                        erro: 'Nota fiscal já processada anteriormente.',
+                        message: 'Esta nota fiscal já foi processada anteriormente.',
+                        notaExistente: {
+                            id: existingNota._id,
+                            filename: existingNota.originalFilename,
+                            date: existingNota.createdAt
+                        }
+                    });
+                } else {
+                    // Se for de outro usuário, deveria permitir salvar mas houve um erro
+                    return res.status(500).json({ 
+                        erro: 'Erro ao salvar a nota fiscal.',
+                        message: 'Esta nota já existe para outro usuário e ocorreu um erro ao tentar salvá-la. Tente novamente.'
+                    });
+                }
+            } catch (findError) {
+                console.error('Erro ao buscar nota existente:', findError);
+                return res.status(500).json({ 
+                    erro: 'Erro interno ao verificar duplicidade da nota fiscal.' 
+                });
+            }
+        }
+        
         // Salva registro de erro APENAS se tivermos uma chave (evita duplicados com chave null)
         const potentialChave = errorDataForLog?.identificacao?.chaveAcesso; // Tenta pegar a chave mesmo no erro
         

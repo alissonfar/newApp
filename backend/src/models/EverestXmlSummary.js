@@ -191,7 +191,7 @@ const EverestXmlSummarySchema = new mongoose.Schema({
     indPres: String, // Indicador Presença Comprador
     procEmi: String, // Processo Emissão (0=Aplicativo Contribuinte...)
     verProc: String, // Versão Aplicativo
-    chaveAcesso: { type: String, index: true, unique: true } // Chave de Acesso (44 dígitos)
+    chaveAcesso: { type: String, index: true } // Chave de Acesso (44 dígitos)
   },
   emitente: {
     nome: String,
@@ -229,5 +229,8 @@ const EverestXmlSummarySchema = new mongoose.Schema({
 
 // Índice para consulta eficiente por usuário e data
 EverestXmlSummarySchema.index({ userId: 1, createdAt: -1 });
+
+// Índice composto para garantir unicidade de chave de acesso por usuário
+EverestXmlSummarySchema.index({ userId: 1, 'identificacao.chaveAcesso': 1 }, { unique: true });
 
 module.exports = mongoose.model('EverestXmlSummary', EverestXmlSummarySchema); 
