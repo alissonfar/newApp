@@ -475,4 +475,41 @@ export async function obterSumariosXml() {
   return await resposta.json();
 }
 
+// Obter detalhes de um resumo específico por ID
+export async function obterSumarioXmlPorId(id) {
+  // console.log('[API MOCK] obterSumarioXmlPorId, ID:', id);
+  // await mockApiDelay(500); // Simula um pequeno delay
+  const resposta = await fetch(`${API_BASE}/everest/xml/summaries/${id}`, {
+    headers: getHeaders(false)
+  });
+   if (!resposta.ok) {
+    const erroData = await resposta.json().catch(() => ({ erro: 'Erro ao buscar detalhes do resumo XML.' }));
+    // Adiciona o status code ao erro para tratamento no frontend
+    const error = new Error(erroData.erro || 'Erro ao buscar detalhes do resumo XML');
+    error.status = resposta.status;
+    throw error;
+  }
+  return await resposta.json();
+}
+
+// Excluir um resumo XML específico por ID
+export async function excluirSumarioXml(id) {
+  // console.log('[API] excluirSumarioXml, ID:', id);
+  // await mockApiDelay(400);
+  const resposta = await fetch(`${API_BASE}/everest/xml/summaries/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(false) // DELETE não envia corpo JSON
+  });
+   if (!resposta.ok) {
+    const erroData = await resposta.json().catch(() => ({ erro: 'Erro ao excluir o resumo XML.' }));
+    const error = new Error(erroData.erro || 'Erro ao excluir o resumo XML');
+    error.status = resposta.status;
+    throw error;
+  }
+  // Normalmente DELETE retorna 204 No Content ou uma mensagem de sucesso
+  // Retornamos true ou a mensagem se houver
+  if (resposta.status === 204) return true;
+  return await resposta.json(); 
+}
+
 // Poderia adicionar getSummaryById se necessário

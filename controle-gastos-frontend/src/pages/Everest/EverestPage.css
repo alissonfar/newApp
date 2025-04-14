@@ -3526,4 +3526,121 @@ nav svg,
   max-width: 36px !important;
   max-height: 36px !important;
 }
+
+/* Estilos para botões de ação XML */
+.xml-action-button {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 8px !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease-in-out !important;
+  cursor: pointer !important;
+  position: relative !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  overflow: visible !important; /* Garante que o tooltip seja visível */
+  padding: 0 !important;
+}
+
+.xml-action-button svg {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  display: block !important;
+  margin: 0 auto !important;
+  color: currentColor !important;
+  transition: transform 0.2s ease !important;
+  pointer-events: none !important;
+}
+
+.xml-details-button {
+  /* Cor Roxo */
+  background-color: #faf5ff !important; 
+  border-color: #e9d5ff !important;
+}
+
+.xml-details-button svg {
+  color: #8b5cf6 !important;
+  fill: #8b5cf6 !important;
+}
+
+.xml-details-button:hover {
+  background-color: rgba(139, 92, 246, 0.15) !important; /* Roxo mais forte no hover */
+  transform: translateY(-3px) !important;
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2) !important; /* Sombra roxa */
+}
+
+.xml-delete-button {
+  /* Cor Vermelho */
+  background-color: #fef2f2 !important; 
+  border-color: #fee2e2 !important;
+}
+
+.xml-delete-button svg {
+  color: #ef4444 !important;
+  fill: #ef4444 !important;
+}
+
+.xml-delete-button:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important; /* Vermelho mais forte no hover */
+  transform: translateY(-3px) !important;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2) !important; /* Sombra vermelha */
+}
+
+/* Estilizando os rótulos/tooltips dos botões de ação XML */
+.xml-action-button .action-btn-label {
+  display: none !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  top: -28px !important; /* Ajustado para não ficar tão longe */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background-color: #333 !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 0.7rem !important;
+  white-space: nowrap !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+
+.xml-action-button .action-btn-label::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 50% !important;
+  margin-left: -5px !important;
+  border-width: 5px !important;
+  border-style: solid !important;
+  border-color: #333 transparent transparent transparent !important;
+}
+
+.xml-action-button:hover .action-btn-label {
+  display: block !important;
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(-5px) !important;
+}
+
+/* Cores específicas para os tooltips XML */
+.xml-details-button .action-btn-label {
+  background-color: #8b5cf6 !important; /* Roxo */
+}
+.xml-details-button .action-btn-label::after {
+  border-color: #8b5cf6 transparent transparent transparent !important;
+}
+
+.xml-delete-button .action-btn-label {
+  background-color: #ef4444 !important; /* Vermelho */
+}
+.xml-delete-button .action-btn-label::after {
+  border-color: #ef4444 transparent transparent transparent !important;
+}
+
+
   

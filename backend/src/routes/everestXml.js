@@ -61,7 +61,7 @@ router.get('/summaries', everestXmlController.getSummaries);
 // GET /api/everest/xml/summaries/:id - Obter um resumo específico por ID
 router.get('/summaries/:id', everestXmlController.getSummaryById);
 
-// DELETE /api/everest/xml/summaries/:id - (Opcional) Rota para deletar um resumo
-// router.delete('/summaries/:id', everestXmlController.deleteSummary); // Se implementar delete no controller
+// DELETE /api/everest/xml/summaries/:id - Rota para deletar um resumo
+router.delete('/summaries/:id', everestXmlController.deleteSummary);
 
 module.exports = router; 
