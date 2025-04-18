@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaStickyNote, FaPlus, FaEdit, FaTrash, FaTimes, FaSpinner, FaTag, FaSearch, FaArrowLeft } from 'react-icons/fa';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github.css';
 import { 
   obterNotasEverest, 
   criarNotaEverest, 
@@ -163,6 +166,9 @@ const NoteModal = ({ isOpen, onClose, onSave, note }) => {
               placeholder="Digite o conteúdo da nota..."
               disabled={isSaving}
             ></textarea>
+            <p className="text-xs text-gray-500 mt-1">
+              Estilização com <a href="https://www.markdownguide.org/basic-syntax/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Markdown</a> é suportada.
+            </p>
           </div>
           
           <div className="note-form-group">
@@ -211,40 +217,6 @@ const NotesPage = () => {
   const [error, setError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState(null);
-
-  // Função para remover SVGs indesejados
-  useEffect(() => {
-    const removeLargeSVGs = () => {
-      // Remove SVGs gigantes de acordo com seletores específicos
-      const svgSelectors = [
-        // Seletores mais específicos para SVGs problemáticos
-        'svg[width="298.38"][height="596.75"]',
-        'svg[viewBox="0 0 24 20"]'
-      ];
-
-      svgSelectors.forEach(selector => {
-        document.querySelectorAll(selector).forEach(svg => {
-          if (!svg.closest('.notes-icon, .notes-add-button, .notes-search-icon, .note-action-button, .everest-tool-icon')) {
-            // Oculta o SVG em vez de removê-lo completamente
-            svg.style.display = 'none';
-            svg.style.visibility = 'hidden';
-            svg.style.opacity = '0';
-          }
-        });
-      });
-    };
-
-    // Executa imediatamente
-    removeLargeSVGs();
-
-    // Configura um MutationObserver para continuar removendo conforme a página muda
-    const observer = new MutationObserver(removeLargeSVGs);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
 
   const fetchNotes = async () => {
     setIsLoading(true);
@@ -589,7 +561,18 @@ const NotesPage = () => {
                       style={{ borderLeftColor: borderColor }}
                     >
                       <h3 className="note-card-title">{note.title}</h3>
-                      <p className="note-card-content">{note.content}</p>
+                      {/* Área para renderizar o conteúdo da nota */}
+                      {note.content && (
+                        <div className="note-card-content mt-2 text-sm text-gray-600">
+                          <div className="prose prose-sm max-w-none text-gray-700">
+                            <ReactMarkdown
+                              rehypePlugins={[rehypeHighlight]}
+                            >
+                              {note.content}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
                       
                       {note.tags && note.tags.length > 0 && (
                         <div className="note-tags">
