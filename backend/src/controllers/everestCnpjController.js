@@ -3,6 +3,8 @@ const xlsx = require('xlsx');
 const csv = require('csv-parser');
 const fs = require('fs');
 const stream = require('stream');
+const cnpjProcessor = require('../services/planilhaProcessors/cnpjProcessor');
+const fsPromises = require('fs').promises;
 
 // Função auxiliar para sanitizar CNPJ
 const sanitizeCnpj = (cnpj) => {
@@ -148,6 +150,108 @@ module.exports = {
          return res.status(400).json({ erro: 'Parâmetro de busca inválido.' });
        }
       return res.status(500).json({ erro: 'Erro interno ao consultar CNPJ.' });
+    }
+  },
+
+  /**
+   * @desc    Processa o upload de um arquivo de planilha CNPJ.
+   * @route   POST /api/everest/cnpj/upload
+   * @access  Private (everest, admin)
+   */
+  async uploadCnpjFile(req, res) {
+    if (!req.file) {
+      return res.status(400).json({ sucesso: false, erro: 'Nenhum arquivo enviado.' });
+    }
+
+    const filePath = req.file.path;
+
+    try {
+      console.log(`Controller recebendo arquivo para processamento: ${filePath}`);
+      const resultadoProcessamento = await cnpjProcessor.processarPlanilhaCnpj(filePath);
+
+      if (resultadoProcessamento.sucesso) {
+        return res.status(200).json({
+          sucesso: true,
+          mensagem: 'Planilha processada com sucesso.',
+          detalhes: {
+            emissaoProcessados: resultadoProcessamento.registrosEmissaoProcessados,
+            recebimentoProcessados: resultadoProcessamento.registrosRecebimentoProcessados,
+            avisos: resultadoProcessamento.erros // Renomear para 'avisos' se forem erros não fatais
+          }
+        });
+      } else {
+        // Mesmo que o processamento não seja um sucesso total (ex: abas faltando, erros em linhas), 
+        // pode ter processado algo. Retornar 207 Multi-Status ou manter 400?
+        // Por simplicidade, vamos retornar 400 se houver erros fatais ou nenhuma aba válida.
+        console.error('Falha no processamento da planilha:', resultadoProcessamento.erros);
+        return res.status(400).json({
+          sucesso: false,
+          erro: 'Falha ao processar a planilha.',
+          detalhes: resultadoProcessamento.erros
+        });
+      }
+    } catch (error) {
+      console.error('Erro inesperado no controller de upload:', error);
+      return res.status(500).json({ sucesso: false, erro: 'Erro interno do servidor ao processar o arquivo.' });
+    } finally {
+      // Remover o arquivo temporário após o processamento (sucesso ou falha)
+      try {
+        await fsPromises.unlink(filePath);
+        console.log(`Arquivo temporário ${filePath} removido.`);
+      } catch (unlinkError) {
+        // Logar o erro mas não impedir a resposta ao cliente
+        console.error(`Erro ao remover arquivo temporário ${filePath}:`, unlinkError);
+      }
+    }
+  },
+
+  /**
+   * @desc    Consulta informações de acesso por CNPJ.
+   * @route   GET /api/everest/cnpj/query/:cnpj
+   * @access  Private (everest, admin)
+   */
+  async queryCnpj(req, res) {
+    try {
+      const cnpjParam = req.params.cnpj;
+      if (!cnpjParam) {
+        return res.status(400).json({ sucesso: false, erro: 'Parâmetro CNPJ não fornecido.' });
+      }
+
+      // 1. Limpar CNPJ da consulta (remover não dígitos)
+      const cnpjLimpoConsulta = cnpjParam.replace(/\D/g, '');
+
+      // 2. Preparar CNPJs para busca (tratar zero à esquerda)
+      let cnpjsParaBuscar = [];
+      if (cnpjLimpoConsulta.length === 14) {
+        cnpjsParaBuscar.push(cnpjLimpoConsulta);
+      } else if (cnpjLimpoConsulta.length === 13) {
+        cnpjsParaBuscar.push(cnpjLimpoConsulta); // Busca pelo que foi digitado (sem o zero)
+        cnpjsParaBuscar.push('0' + cnpjLimpoConsulta); // E busca pela versão com zero
+      } else if (cnpjLimpoConsulta.length > 0) {
+          // Se for menor que 13 ou maior que 14 após limpar, provavelmente inválido,
+          // mas podemos tentar buscar mesmo assim pelo valor limpo.
+          cnpjsParaBuscar.push(cnpjLimpoConsulta);
+          // Poderia retornar erro 400 aqui se quisesse ser mais estrito
+          // return res.status(400).json({ sucesso: false, erro: 'CNPJ inválido (não tem 13 ou 14 dígitos após limpeza).' });
+      } else {
+           return res.status(400).json({ sucesso: false, erro: 'CNPJ inválido após limpeza.' });
+      }
+      
+      // 3. Buscar no banco
+      console.log(`Consultando CNPJs: ${cnpjsParaBuscar.join(', ')}`);
+      const resultados = await EverestCnpjAccess.find({
+        cnpj: { $in: cnpjsParaBuscar }
+      }).select('usuario tipoOrigem -_id'); // Seleciona apenas os campos necessários
+
+      console.log(`Resultados encontrados: ${resultados.length}`);
+      // Log para depurar a estrutura EXATA dos resultados ANTES de enviar
+      console.log('Estrutura dos resultados encontrados:', JSON.stringify(resultados, null, 2));
+      
+      return res.status(200).json({ sucesso: true, dados: resultados });
+
+    } catch (error) {
+      console.error('Erro na consulta de CNPJ:', error);
+      return res.status(500).json({ sucesso: false, erro: 'Erro interno do servidor ao consultar CNPJ.' });
     }
   }
 }; 

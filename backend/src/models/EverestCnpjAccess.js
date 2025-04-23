@@ -1,49 +1,30 @@
 const mongoose = require('mongoose');
 
 const EverestCnpjAccessSchema = new mongoose.Schema({
-  cnpj: {
+  cnpj: { // Armazenar SEMPRE sem pontuação (14 dígitos)
     type: String,
-    required: true,
-    unique: true, // Garante que cada CNPJ é único na coleção
-    index: true,   // Index para buscas rápidas
+    required: [true, 'CNPJ é obrigatório'],
     trim: true,
-    // Poderia adicionar validação de formato de CNPJ se necessário
-    match: [/^\d{14}$/, 'CNPJ deve conter 14 dígitos.'] // Validação simples de 14 dígitos
+    index: true // Essencial para busca rápida
   },
-  // Armazenar informações de acesso. Pode ser um objeto ou campos separados.
-  // Exemplo com campos separados:
-  usuarioAcesso: {
+  usuario: {
     type: String,
-    trim: true,
-    default: ''
+    required: [true, 'Usuário é obrigatório'],
+    trim: true
   },
-  infoAdicional: {
+  tipoOrigem: { // Identifica a aba de origem (Ex: EMISSAO, RECEBIMENTO)
     type: String,
-    trim: true,
-    default: ''
+    required: [true, 'Tipo de origem é obrigatório'],
+    enum: ['EMISSAO', 'RECEBIMENTO'], // Ajustar se os nomes das abas forem diferentes
+    index: true
   },
-  // Alternativa: um único campo objeto
-  // accessInfo: {
-  //   type: mongoose.Schema.Types.Mixed, // Permite qualquer estrutura
-  //   default: {}
-  // },
-
-  // Opcional: rastrear quem fez o último upload que afetou este registro
-  // lastUpdatedBy: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: 'Usuario'
-  // },
-}, {
-  timestamps: true // Adiciona createdAt e updatedAt
-});
-
-// Método para sanitizar CNPJ antes de salvar/buscar (remover pontuação)
-// Executado antes de validações
-EverestCnpjAccessSchema.pre('validate', function(next) {
-  if (this.cnpj) {
-    this.cnpj = this.cnpj.replace(/\D/g, ''); // Remove tudo que não for dígito
+  dataUpload: { // Rastreabilidade
+    type: Date,
+    default: Date.now
   }
-  next();
-});
+}, { timestamps: true }); // Adiciona createdAt e updatedAt automaticamente
+
+// Índice único para garantir que um CNPJ não se repita DENTRO DA MESMA ORIGEM
+EverestCnpjAccessSchema.index({ cnpj: 1, tipoOrigem: 1 }, { unique: true });
 
 module.exports = mongoose.model('EverestCnpjAccess', EverestCnpjAccessSchema); 

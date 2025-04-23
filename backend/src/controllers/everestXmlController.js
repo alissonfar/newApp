@@ -470,27 +470,74 @@ module.exports = {
   async getSummaries(req, res) {
     try {
       const userId = req.user.userId;
-      const summaries = await EverestXmlSummary.find(
-          { userId }, // Busca todos, inclusive os com erro para possível visualização
-          // Projeção: Seleciona campos para o card + erro
-          '_id originalFilename createdAt identificacao.chaveAcesso identificacao.nNF totais.icmsTot.vNF emitente.nome destinatario.nome processingError'
-        )
-        .sort({ createdAt: -1 });
+      const { period, dateFrom, dateTo } = req.query; // Adicionar leitura de filtros
 
-      // Mapeia para o formato do card, indicando erro se houver
-      const summarizedList = summaries.map(s => ({
-          id: s._id,
-          filename: s.originalFilename,
-          date: s.createdAt,
-          key: s.identificacao?.chaveAcesso ?? 'N/A',
-          number: s.identificacao?.nNF ?? 'N/A',
-          value: s.totais?.icmsTot?.vNF,
-          emitter: s.emitente?.nome ?? 'N/A',
-          receiver: s.destinatario?.nome ?? 'N/A',
-          error: s.processingError // Passa a mensagem de erro para o frontend
-      }));
+      let filterQuery = { userId };
 
-      return res.json(summarizedList);
+      // --- INÍCIO LÓGICA DE FILTRO DE DATA --- 
+      const dateFilter = {};
+      let hasDateFilter = false;
+
+      if (dateFrom) {
+        const startDate = new Date(dateFrom);
+        if (!isNaN(startDate)) {
+          startDate.setHours(0, 0, 0, 0); // Início do dia
+          dateFilter.$gte = startDate;
+          hasDateFilter = true;
+        }
+      }
+
+      if (dateTo) {
+        const endDate = new Date(dateTo);
+        if (!isNaN(endDate)) {
+          endDate.setHours(23, 59, 59, 999); // Fim do dia
+          dateFilter.$lte = endDate;
+          hasDateFilter = true;
+        }
+      } 
+
+      // Filtrar por Período predefinido (se dateFrom/dateTo não foram usados)
+      if (!hasDateFilter && period) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endOfToday = new Date(today);
+        endOfToday.setHours(23, 59, 59, 999);
+
+        if (period === 'today') {
+          dateFilter.$gte = today;
+          dateFilter.$lte = endOfToday;
+          hasDateFilter = true;
+        } else if (period === 'week') {
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay()); // Vai para o último Domingo
+          dateFilter.$gte = startOfWeek;
+          dateFilter.$lte = new Date(); // Até o momento atual
+          hasDateFilter = true;
+        } else if (period === 'month') {
+          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          dateFilter.$gte = startOfMonth;
+          dateFilter.$lte = new Date(); // Até o momento atual
+          hasDateFilter = true;
+        }
+      }
+
+      if (hasDateFilter) {
+        filterQuery.createdAt = dateFilter;
+      }
+      // --- FIM LÓGICA DE FILTRO DE DATA ---
+      
+      // TODO: Adicionar outros filtros se necessário (ex: por chaveAcesso, emitente.cnpj, etc.)
+      // if (req.query.chave) {
+      //    filterQuery['identificacao.chaveAcesso'] = { $regex: req.query.chave, $options: 'i' };
+      // }
+
+      // Busca os resumos com os filtros aplicados, ordenados pelo mais recente
+      const summaries = await EverestXmlSummary.find(filterQuery)
+        .sort({ createdAt: -1 })
+        // Opcional: Limitar campos retornados para a lista
+        // .select('originalFilename identificacao.nNF identificacao.dhEmi emitente.nome totais.icmsTot.vNF createdAt processingError');
+      
+      return res.json(summaries);
 
     } catch (error) {
       console.error('Erro ao buscar resumos XML:', error);

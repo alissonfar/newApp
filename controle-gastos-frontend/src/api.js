@@ -225,12 +225,17 @@ export async function obterRelatorio() {
 /* ----- Ferramentas Everest ----- */
 
 // --- Notas Everest --- 
-export async function obterNotasEverest(searchTerm = '') {
-  // console.log('[API MOCK] obterNotasEverest, search:', searchTerm);
-  // await mockApiDelay();
-  // TODO: Implementar busca no backend e passar searchTerm como query param
-  const query = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-  const resposta = await fetch(`${API_BASE}/everest/notes${query}`, {
+export async function obterNotasEverest(filters = {}) {
+  // Construir query string a partir do objeto de filtros
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+
+  const resposta = await fetch(`${API_BASE}/everest/notes${queryString ? `?${queryString}` : ''}`, {
     headers: getHeaders(false) // GET não precisa de Content-Type JSON
   });
   if (!resposta.ok) {
@@ -403,42 +408,67 @@ export async function excluirInfoChamado(id) {
   return await resposta.json();
 }
 
-// --- Acesso CNPJ Everest ---
+// --- Ferramenta CNPJ Everest ---
+
 export async function uploadPlanilhaCnpj(formData) {
-  // console.log('[API MOCK] uploadPlanilhaCnpj: FormData recebido (simulado)');
-  // await mockApiDelay(1500);
-  // Para FormData, não definimos Content-Type nos headers
-  const headers = getHeaders(false); // Pega só o Authorization se existir
-  delete headers['Content-Type']; // Garante que não há Content-Type
+  // Nota: Não definir Content-Type manualmente para FormData,
+  // o navegador define com o boundary correto.
+  const headers = getHeaders(false); // Pega o header de Authorization, mas não Content-Type JSON
 
-  const resposta = await fetch(`${API_BASE}/everest/cnpj/upload`, {
-    method: 'POST',
-    headers: headers,
-    body: formData // Envia o FormData diretamente
-  });
+  try {
+    const resposta = await fetch(`${API_BASE}/everest/cnpj/upload`, {
+      method: 'POST',
+      headers: headers,
+      body: formData
+    });
 
-  if (!resposta.ok) {
-    const erroData = await resposta.json().catch(() => ({ erro: 'Erro ao processar planilha.' }));
-    throw new Error(erroData.erro || erroData.details || 'Erro ao enviar planilha CNPJ');
+    const responseData = await resposta.json();
+
+    if (!resposta.ok) {
+      // Lança um erro com a mensagem do backend, se disponível
+      throw new Error(responseData.erro || `Erro no servidor: ${resposta.status}`);
+    }
+    return responseData; // Retorna a resposta completa do backend (com sucesso, mensagem, detalhes)
+
+  } catch (error) {
+    console.error("Erro ao fazer upload da planilha CNPJ:", error);
+    // Propaga o erro para ser tratado no componente
+    throw error; 
   }
-  return await resposta.json();
 }
 
 export async function consultarCnpj(cnpj) {
-  // console.log('[API MOCK] consultarCnpj:', cnpj);
-  // await mockApiDelay(800);
-  // CNPJ já deve estar sanitizado pelo componente, mas backend valida
-  const resposta = await fetch(`${API_BASE}/everest/cnpj/query/${cnpj}`, {
-    headers: getHeaders(false)
-  });
-  if (!resposta.ok) {
-     const erroData = await resposta.json().catch(() => ({ erro: 'Erro ao consultar CNPJ.' }));
-     // Lança o erro para ser pego pelo componente
-     const error = new Error(erroData.erro || 'Erro ao consultar CNPJ');
-     error.status = resposta.status; // Adiciona status ao erro
-     throw error; 
+  if (!cnpj) {
+    throw new Error("CNPJ não pode ser vazio.");
   }
-   return await resposta.json();
+  // Encode o CNPJ para caso ele contenha caracteres especiais (embora não deva)
+  const encodedCnpj = encodeURIComponent(cnpj);
+
+  try {
+    const resposta = await fetch(`${API_BASE}/everest/cnpj/query/${encodedCnpj}`, {
+      method: 'GET',
+      headers: getHeaders(false) // GET não precisa de Content-Type JSON
+    });
+
+    const responseData = await resposta.json();
+
+    if (!resposta.ok) {
+      // Tratar especificamente 404 como "não encontrado" e não como erro crítico?
+      // Por enquanto, lançamos erro genérico para outros status.
+      if (resposta.status === 404) {
+          // Poderíamos retornar algo específico como { sucesso: true, dados: [] } ?
+          // Por enquanto, vamos seguir o backend e esperar que ele retorne sucesso:true com dados vazios.
+      }
+      throw new Error(responseData.erro || `Erro na consulta: ${resposta.status}`);
+    }
+
+    // Espera-se que a resposta seja { sucesso: true, dados: [...] }
+    return responseData;
+
+  } catch (error) {
+    console.error("Erro ao consultar CNPJ:", error);
+    throw error; // Propaga o erro
+  }
 }
 
 // --- Processador XML Everest ---
@@ -462,10 +492,17 @@ export async function processarXml(formData) {
 }
 
 // Obter resumos anteriores
-export async function obterSumariosXml() {
-  // console.log('[API MOCK] obterSumariosXml');
-  // await mockApiDelay();
-  const resposta = await fetch(`${API_BASE}/everest/xml/summaries`, {
+export async function obterSumariosXml(filters = {}) {
+  // Construir query string a partir do objeto de filtros
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+
+  const resposta = await fetch(`${API_BASE}/everest/xml/summaries${queryString ? `?${queryString}` : ''}`, {
     headers: getHeaders(false)
   });
    if (!resposta.ok) {

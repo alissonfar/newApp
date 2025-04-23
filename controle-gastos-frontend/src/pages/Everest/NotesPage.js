@@ -210,6 +210,8 @@ const NoteModal = ({ isOpen, onClose, onSave, note }) => {
 const NotesPage = () => {
   const [notes, setNotes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterTags, setFilterTags] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -222,7 +224,14 @@ const NotesPage = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await obterNotasEverest(); 
+      const filters = {};
+      if (filterTags) {
+        filters.tags = filterTags;
+      }
+      if (filterPeriod) {
+        filters.period = filterPeriod;
+      }
+      const data = await obterNotasEverest(filters); 
       setNotes(data || []);
     } catch (err) {
       console.error("Erro ao buscar notas:", err);
@@ -236,6 +245,16 @@ const NotesPage = () => {
   useEffect(() => {
     fetchNotes();
   }, []);
+
+  useEffect(() => {
+    const initialLoad = filterTags === '' && filterPeriod === '';
+    if (!initialLoad) {
+        const timer = setTimeout(() => {
+             fetchNotes();
+         }, 500);
+         return () => clearTimeout(timer);
+    }
+  }, [filterTags, filterPeriod]);
 
   const handleAddNote = () => {
     setCurrentNote(null);
@@ -531,6 +550,39 @@ const NotesPage = () => {
               <PlusIcon /> Adicionar Nota
             </button>
           </div>
+
+          {/* --- INÍCIO DOS NOVOS FILTROS --- */}
+          <div className="flex flex-col sm:flex-row gap-4 w-full mb-4 sm:mb-0">
+            {/* Filtro por Tags */}
+            <div className="flex-1">
+              <label htmlFor="filter-tags" className="block text-sm font-medium text-gray-700 mb-1">Filtrar por Tags (separadas por vírgula):</label>
+              <input
+                id="filter-tags"
+                type="text"
+                placeholder="Ex: api, bug, importante"
+                value={filterTags}
+                onChange={(e) => setFilterTags(e.target.value)}
+                className="notes-search-input"
+              />
+            </div>
+
+            {/* Filtro por Período */}
+            <div className="flex-1">
+              <label htmlFor="filter-period" className="block text-sm font-medium text-gray-700 mb-1">Filtrar por Período:</label>
+              <select
+                id="filter-period"
+                value={filterPeriod}
+                onChange={(e) => setFilterPeriod(e.target.value)}
+                className="notes-search-input"
+              >
+                <option value="">Qualquer data</option>
+                <option value="today">Hoje</option>
+                <option value="week">Esta Semana</option>
+                <option value="month">Este Mês</option>
+              </select>
+            </div>
+          </div>
+           {/* --- FIM DOS NOVOS FILTROS --- */}
 
           {/* Componente de estatísticas */}
           {!isLoading && !error && notes.length > 0 && <NotesStats />}

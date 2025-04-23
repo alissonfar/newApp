@@ -226,76 +226,83 @@ const XmlDetailModal = ({ summaryData, isOpen, onClose, isLoading }) => {
 // --- Componente Principal ---
 const XmlProcessorTool = () => {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [summaries, setSummaries] = useState([]); // Lista de resumos para os cards
-  const [filteredSummaries, setFilteredSummaries] = useState([]); // Lista filtrada pelos termos de busca
-  const [searchTerm, setSearchTerm] = useState(''); // Termo de busca
-  const [isLoading, setIsLoading] = useState(false); // Loading do processamento
-  const [isFetchingList, setIsFetchingList] = useState(false);
+  const [summaries, setSummaries] = useState([]); // Lista completa de resumos
+  const [filteredSummaries, setFilteredSummaries] = useState([]); // Lista filtrada (busca + filtros de data)
+  const [searchTerm, setSearchTerm] = useState(''); // Termo de busca local
+  const [isLoading, setIsLoading] = useState(false); // Loading do processamento de upload
+  const [isFetchingList, setIsFetchingList] = useState(false); // Loading da lista
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSummaryDetail, setSelectedSummaryDetail] = useState(null);
-  const [fetchingDetailId, setFetchingDetailId] = useState(null); // Para saber qual botão está carregando
-  const [isDeleting, setIsDeleting] = useState(false); // Estado para exclusão
-  const [deletingId, setDeletingId] = useState(null); // ID do item sendo excluído
+  const [fetchingDetailId, setFetchingDetailId] = useState(null); 
+  const [isDeleting, setIsDeleting] = useState(false); 
+  const [deletingId, setDeletingId] = useState(null); 
   const fileInputRef = useRef(null);
 
-  // --- Busca a lista de resumos sumarizados ---
+  // --- Estados para Filtros --- 
+  const [filterPeriod, setFilterPeriod] = useState(''); // '', 'today', 'week', 'month'
+  // Poderíamos adicionar dateFrom e dateTo se quiséssemos um date picker
+
+  // --- Busca a lista de resumos sumarizados com filtros ---
   const fetchSummaries = useCallback(async () => {
     setIsFetchingList(true);
-    setUploadStatus(''); // Limpa status de upload antigo
+    setUploadStatus(''); 
     try {
-      const data = await obterSumariosXml();
-      // Mapear os dados para garantir que temos as propriedades necessárias
-      const formattedData = (data || []).map(item => ({
-        ...item,
-        // Se esses campos não existirem, definimos como N/A
-        number: item.number || (item.identificacao?.nNF) || 'N/A',
-        serie: item.serie || (item.identificacao?.serie) || 'N/A',
-        model: item.modelo || item.model || (item.identificacao?.mod) || 'N/A'
+      // Monta o objeto de filtros para a API
+      const filters = {};
+      if (filterPeriod) filters.period = filterPeriod;
+      // if (filterDateFrom) filters.dateFrom = filterDateFrom; // Se tivéssemos date pickers
+      // if (filterDateTo) filters.dateTo = filterDateTo; 
+
+      const data = await obterSumariosXml(filters); // Passa os filtros
+      const formattedData = (data || []).map(item => ({ // Garante que é array
+        id: item._id,
+        filename: item.originalFilename,
+        date: item.createdAt,
+        key: item.identificacao?.chaveAcesso ?? 'N/A',
+        number: item.identificacao?.nNF ?? 'N/A',
+        value: item.totais?.icmsTot?.vNF,
+        emitter: item.emitente?.nome ?? 'N/A',
+        receiver: item.destinatario?.nome ?? 'N/A',
+        error: item.processingError,
+        // Adiciona outros campos necessários para busca/filtragem
       }));
       setSummaries(formattedData);
-      setFilteredSummaries(formattedData);
+      setFilteredSummaries(formattedData); // Inicializa filtrada com todos
+      setSearchTerm(''); // Limpa busca ao recarregar lista principal
     } catch (error) {
-      toast.error('Erro ao buscar histórico de XMLs processados.');
-      console.error("Erro fetchSummaries:", error);
+      console.error('Erro ao buscar resumos XML:', error);
+      toast.error(`Erro ao buscar histórico: ${error.message}`);
+      setSummaries([]);
+      setFilteredSummaries([]);
     } finally {
       setIsFetchingList(false);
     }
-  }, []);
+  }, [filterPeriod]); // Adiciona filterPeriod como dependência
 
+  // --- Efeito para carregar a lista inicial e quando filtros mudam ---
   useEffect(() => {
     fetchSummaries();
-  }, [fetchSummaries]);
+  }, [fetchSummaries]); // Agora fetchSummaries depende de filterPeriod
 
-  // --- Efeito para filtrar summaries baseado no termo de busca ---
+  // --- Filtragem local baseada no searchTerm ---
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredSummaries(summaries);
-      return;
-    }
-
-    const term = searchTerm.toLowerCase().trim();
-    const filtered = summaries.filter(summary => {
-      // Busca em vários campos
-      return (
-        // Nome do arquivo
-        summary.filename?.toLowerCase().includes(term) ||
-        // Chave de acesso
-        summary.key?.toLowerCase().includes(term) ||
-        // Emitente
-        summary.emitter?.toLowerCase().includes(term) ||
-        // Valor (convertido para string)
-        formatCurrency(summary.value)?.toLowerCase().includes(term) ||
-        // Data (formatada)
-        formatDate(summary.date)?.toLowerCase().includes(term) ||
-        // Erro (se existir)
-        summary.error?.toLowerCase().includes(term)
+    if (!searchTerm) {
+      setFilteredSummaries(summaries); // Se busca vazia, mostra todos (já filtrados pela API)
+    } else {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      const results = summaries.filter(summary => 
+        (summary.filename?.toLowerCase().includes(lowerSearchTerm)) ||
+        (summary.key?.toLowerCase().includes(lowerSearchTerm)) ||
+        (summary.number?.toLowerCase().includes(lowerSearchTerm)) ||
+        (summary.emitter?.toLowerCase().includes(lowerSearchTerm)) ||
+        (summary.receiver?.toLowerCase().includes(lowerSearchTerm)) ||
+        (summary.error?.toLowerCase().includes(lowerSearchTerm))
       );
-    });
-
-    setFilteredSummaries(filtered);
-  }, [searchTerm, summaries]);
+      setFilteredSummaries(results);
+    }
+  }, [searchTerm, summaries]); // Re-filtra quando a busca ou a lista base (summaries) muda
 
   // --- Handler para mudança de arquivo --- (Igual antes)
    const handleFileChange = (event) => {

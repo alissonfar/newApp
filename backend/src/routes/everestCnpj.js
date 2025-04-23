@@ -6,6 +6,7 @@ const fs = require('fs'); // Para criar o diretório se não existir
 const everestCnpjController = require('../controllers/everestCnpjController');
 const { autenticacao } = require('../middlewares/autenticacao');
 const checkRole = require('../middlewares/checkRole');
+const upload = require('../middlewares/multerConfig'); // Middleware Multer
 
 // Diretório para uploads temporários
 const tempUploadDir = path.join(__dirname, '../../uploads/temp');
@@ -42,7 +43,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ 
+const uploadMulter = multer({ 
   storage: storage,
   fileFilter: fileFilter,
   limits: {
@@ -56,11 +57,21 @@ router.use(checkRole(['everest', 'admin']));
 
 // --- Rotas para Consulta CNPJ Everest ---
 
-// POST /api/everest/cnpj/upload - Upload e processamento de planilha
-// O middleware do multer processa o upload antes do controller
-router.post('/upload', upload.single('file'), everestCnpjController.processUpload);
+// @route   POST /api/everest/cnpj/upload
+// @desc    Upload e processamento de planilha CNPJ
+// @access  Private (everest, admin)
+router.post('/upload',
+  checkRole(['everest', 'admin']),
+  uploadMulter.single('file'), // 'file' deve ser o nome do campo no formulário de upload
+  everestCnpjController.uploadCnpjFile
+);
 
-// GET /api/everest/cnpj/query/:cnpj - Consultar informações por CNPJ
-router.get('/query/:cnpj', everestCnpjController.queryByCnpj);
+// @route   GET /api/everest/cnpj/query/:cnpj
+// @desc    Consultar usuário por CNPJ
+// @access  Private (everest, admin)
+router.get('/query/:cnpj',
+  checkRole(['everest', 'admin']),
+  everestCnpjController.queryCnpj
+);
 
 module.exports = router; 
