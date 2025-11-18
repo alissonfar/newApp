@@ -30,11 +30,22 @@ const upload = multer({
         files: 1
     },
     fileFilter: function (req, file, cb) {
-        const filetypes = /json|csv/;
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = filetypes.test(file.mimetype);
+        // Lista de mimetypes permitidos
+        const allowedTypes = [
+            'text/csv',
+            'application/csv',
+            'text/plain', // Alguns sistemas enviam CSV como text/plain
+            'application/json',
+            'text/json'
+        ];
+        
+        // Regex para verificar extensões
+        const allowedExts = /\.json$|\.csv$/i;
+        const extname = allowedExts.test(path.extname(file.originalname));
+        const mimetype = allowedTypes.includes(file.mimetype);
 
-        if (extname && mimetype) {
+        // Aceita se a extensão OU o mimetype for válido
+        if (extname || mimetype) {
             return cb(null, true);
         }
         cb(new Error('Apenas arquivos JSON e CSV são permitidos'));
