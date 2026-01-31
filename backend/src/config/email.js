@@ -11,7 +11,7 @@ const transportador = nodemailer.createTransport({
 // Configurações padrão para os emails
 const configPadrao = {
     from: process.env.EMAIL_FROM || 'Sua Aplicação <noreply@suaaplicacao.com>',
-    siteUrl: process.env.SITE_URL || 'http://localhost:3000'
+    siteUrl: process.env.SITE_URL || 'http://localhost:3004'
 };
 
 // Função para testar a conexão do email

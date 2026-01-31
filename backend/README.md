@@ -22,7 +22,7 @@ JWT_EXPIRES=7d
 EMAIL_USER=seu_email@gmail.com
 EMAIL_PASSWORD=sua_senha_de_app
 EMAIL_FROM=seu_email@gmail.com
-SITE_URL=http://localhost:3000
+SITE_URL=http://localhost:3004
 ```
 
 3. Inicie o servidor:
