@@ -45,6 +45,18 @@ const ShortcutsHelp = ({ open, onClose }) => {
             <span>Remover último pagamento</span>
           </div>
           <div className="shortcut-item">
+            <kbd>Alt</kbd> + <kbd>D</kbd>
+            <span>Focar na Descrição</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Alt</kbd> + <kbd>V</kbd>
+            <span>Focar no Valor Total</span>
+          </div>
+          <div className="shortcut-item">
+            <kbd>Alt</kbd> + <kbd>T</kbd>
+            <span>Focar no Tipo</span>
+          </div>
+          <div className="shortcut-item">
             <kbd>Esc</kbd>
             <span>Fechar modal</span>
           </div>
@@ -89,11 +101,11 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   
   // Adicionar estado para controlar a visibilidade do modal de atalhos
   const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // Estado para mostrar aviso de validação (não-bloqueante)
+  const [showValidationWarning, setShowValidationWarning] = useState(false);
   
-  // Centraliza o campo em foco
-  const handleFocus = (e) => {
-    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
+  // Removido handleFocus - causava scroll excessivo durante navegação rápida por teclado
   
   // Ajustar useEffect para setar data inicial quando não for edição
   useEffect(() => {
@@ -103,6 +115,25 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     // A dependência [transacao] permanece para garantir que execute quando o modo muda
   }, [transacao]);
   
+  // Validação visual em tempo real (não-bloqueante)
+  useEffect(() => {
+    if (!valorTotal || pagamentos.length === 0) {
+      setShowValidationWarning(false);
+      return;
+    }
+
+    const soma = pagamentos.reduce((acc, pag) => {
+      const v = parseFloat(pag.valor || 0);
+      return acc + (isNaN(v) ? 0 : v);
+    }, 0);
+
+    const total = parseFloat(valorTotal || 0);
+    const diferenca = Math.abs(total - soma);
+
+    // Mostra aviso se a diferença for > 0.01 (evita erros de arredondamento)
+    setShowValidationWarning(diferenca > 0.01);
+  }, [valorTotal, pagamentos]);
+
   // Sempre que "transacao" mudar (modo edição), preenche os estados
   useEffect(() => {
     if (transacao) {
@@ -141,8 +172,15 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     setPagamentos([...pagamentos, { pessoa: '', valor: '', paymentTags: {} }]);
   };
   
-  const removePagamento = () => {
-    if (pagamentos.length > 1) {
+  const removePagamento = (index = null) => {
+    if (pagamentos.length <= 1) return;
+
+    if (index !== null && index !== undefined) {
+      // Remove pagamento específico
+      const novosPagamentos = pagamentos.filter((_, i) => i !== index);
+      setPagamentos(novosPagamentos);
+    } else {
+      // Remove o último (comportamento do atalho Alt+R)
       setPagamentos(pagamentos.slice(0, -1));
     }
   };
@@ -165,60 +203,82 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     return parseFloat(valorTotal || 0) === soma;
   };
   
-  // Atalho: Esc para fechar o modal
-  useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
-  
-  // Atalhos de teclado
+  // Atalhos de teclado consolidados
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // ESC para fechar o modal
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
       // CTRL + ESPAÇO para salvar e continuar
       if (e.ctrlKey && e.keyCode === 32) {
         e.preventDefault();
         handleSubmit(new Event('submit'), false);
+        return;
       }
-      
+
       // CTRL + ENTER para salvar e fechar
       if (e.ctrlKey && e.keyCode === 13) {
         e.preventDefault();
         handleSubmit(new Event('submit'), true);
+        return;
       }
 
       // ALT + H para definir data como hoje
       if (e.altKey && e.key.toLowerCase() === 'h') {
         e.preventDefault();
         setHoje();
+        return;
       }
 
       // ALT + Y para definir data como ontem
       if (e.altKey && e.key.toLowerCase() === 'y') {
         e.preventDefault();
         setOntem();
+        return;
       }
 
       // ALT + P para adicionar novo pagamento
       if (e.altKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         addPagamento();
+        return;
       }
 
       // ALT + R para remover último pagamento
       if (e.altKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
         removePagamento();
+        return;
+      }
+
+      // ALT + D para focar na descrição (campo mais usado)
+      if (e.altKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        descricaoRef.current?.focus();
+        return;
+      }
+
+      // ALT + V para focar no valor total
+      if (e.altKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        valorRef.current?.focus();
+        return;
+      }
+
+      // ALT + T para focar no tipo
+      if (e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        tipoRef.current?.focus();
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [tipo, descricao, data, valorTotal, observacao, pagamentos]); // Dependências necessárias para o handleSubmit
+  }, [tipo, descricao, data, valorTotal, observacao, pagamentos, onClose]); // Dependências necessárias
   
   const setHoje = () => {
     setData(getTodayBR());
@@ -283,9 +343,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       if (closeModal) {
         onClose();
       } else {
-        // Limpa o formulário para nova entrada
+        // Limpa o formulário para nova entrada, MAS preserva o tipo (90% dos lançamentos são do mesmo tipo)
+        const tipoAtual = tipo; // Preserva o tipo atual
         set_Id(null);
-        setTipo('gasto');
+        // setTipo('gasto'); // NÃO resetar - mantém o tipo atual
         setDescricao('');
         setData(getTodayBR());
         setValorTotal('');
@@ -293,8 +354,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
         setIsImportada(false);
         setImportacaoId(null);
-        // Foca no primeiro campo
-        descricaoRef.current?.focus();
+        // Foca no primeiro campo (Descrição, já que Tipo raramente muda)
+        setTimeout(() => descricaoRef.current?.focus(), 50);
       }
     } catch (error) {
       console.error('Erro ao salvar transação:', error);
@@ -302,10 +363,14 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     }
   };
   
-  // Foca no campo de tipo quando o componente é montado
+  // Foca no campo apropriado quando o componente é montado
   useEffect(() => {
-    if (tipoRef.current) {
+    // Se está editando, foca no tipo (pode precisar mudar)
+    // Se é nova transação, foca na descrição (mais eficiente para lançamentos repetitivos)
+    if (transacao && tipoRef.current) {
       tipoRef.current.focus();
+    } else if (descricaoRef.current) {
+      descricaoRef.current.focus();
     }
   }, []);
 
@@ -349,7 +414,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 value={tipo}
                 onChange={e => setTipo(e.target.value)}
                 required
-                onFocus={handleFocus}
+                tabIndex={1}
               >
                 <option value="gasto">Gasto</option>
                 <option value="recebivel">Recebível</option>
@@ -362,8 +427,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 value={descricao}
                 onChange={e => setDescricao(e.target.value)}
                 required
-                onFocus={handleFocus}
                 ref={descricaoRef}
+                tabIndex={2}
               />
             </div>
             <div className="form-section">
@@ -373,7 +438,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 value={data}
                 onChange={e => setData(e.target.value)}
                 required
-                onFocus={handleFocus}
+                tabIndex={3}
               />
               <div className="date-shortcuts">
                 <Tooltip title="Alt + H">
@@ -392,9 +457,22 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 value={valorTotal}
                 onChange={handleValorTotalChange}
                 required
-                onFocus={handleFocus}
                 ref={valorRef}
+                tabIndex={4}
+                style={showValidationWarning ? { borderColor: '#ff9800', borderWidth: '2px' } : {}}
               />
+              {showValidationWarning && (
+                <div style={{
+                  color: '#ff9800',
+                  fontSize: '12px',
+                  marginTop: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  ⚠️ Soma dos pagamentos diferente do valor total
+                </div>
+              )}
             </div>
             <div className="form-section">
               <label>Observação:</label>
@@ -403,6 +481,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 onChange={e => setObservacao(e.target.value)}
                 rows="3"
                 placeholder="Adicione uma observação (opcional)"
+                tabIndex={90}
               />
             </div>
           </div>
@@ -418,8 +497,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                       value={pag.pessoa}
                       onChange={e => handlePagamentoChange(index, 'pessoa', e.target.value)}
                       required
-                      onFocus={handleFocus}
-                    />
+                      tabIndex={5 + (index * 10)}
+                          />
                   </div>
                   <div className="form-section">
                     <label>Valor:</label>
@@ -429,8 +508,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                       value={pag.valor}
                       onChange={e => handlePagamentoChange(index, 'valor', e.target.value)}
                       required
-                      onFocus={handleFocus}
-                    />
+                      tabIndex={6 + (index * 10)}
+                          />
                   </div>
 
                   {/* Tags por Categoria */}
@@ -476,23 +555,21 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                               handlePagamentoChange(index, 'paymentTags', newPaymentTags);
                             }}
                             onKeyDown={(e) => {
+                              // Enter seleciona a opção focada
                               if (e.key === 'Enter') {
-                                e.preventDefault();
-                                // Seleciona a opção em foco e fecha o menu
-                                const focusedOption = e.target.getElementsByClassName('option-focused')[0];
-                                if (focusedOption) {
-                                  focusedOption.click();
-                                  // Força o fechamento do menu
-                                  e.target.blur();
-                                  e.target.focus();
-                                }
+                                e.stopPropagation(); // Previne submit do form
+                                // react-select já trata Enter nativamente
                               }
+                              // Tab apenas navega (sem selecionar)
+                              // tabSelectsValue={false} garante que não seleciona
                             }}
+                            // Configurações otimizadas para navegação por teclado
+                            tabIndex={50 + (index * 10) + categorias.indexOf(cat)}
                             blurInputOnSelect={false}
-                            closeMenuOnSelect={true}
-                            tabSelectsOption={false}
+                            closeMenuOnSelect={false}
+                            tabSelectsValue={false}
                             openMenuOnFocus={false}
-                            backspaceRemovesValue={false}
+                            backspaceRemovesValue={true}
                             components={{
                               DropdownIndicator: null, // Remove a setinha do dropdown
                               IndicatorSeparator: null // Remove o separador
@@ -581,6 +658,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
               type="submit"
               className="submit-btn"
               onClick={(e) => handleSubmit(e, true)}
+              tabIndex={91}
             >
               {transacao ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
             </button>
@@ -590,6 +668,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
               type="button"
               className="submit-btn"
               onClick={(e) => handleSubmit(e, false)}
+              tabIndex={92}
             >
               {transacao ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
             </button>
