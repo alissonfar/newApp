@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash } from 'react-icons/fa';
+import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
+import { useData } from '../../context/DataContext';
 import './DetalhesImportacaoPage.css';
 
 const DetalhesImportacaoPage = () => {
@@ -15,6 +16,13 @@ const DetalhesImportacaoPage = () => {
     const [loadingTransacoes, setLoadingTransacoes] = useState(true);
     const [showFormTransacao, setShowFormTransacao] = useState(false);
     const [transacaoEmEdicao, setTransacaoEmEdicao] = useState(null);
+
+    // Estado para controlar quais linhas estão expandidas
+    const [expandedRows, setExpandedRows] = useState(new Set());
+    const [expandirTodas, setExpandirTodas] = useState(false);
+
+    // Obter categorias e tags do contexto para exibir nomes ao invés de IDs
+    const { categorias = [], tags: allTags = [] } = useData();
 
     useEffect(() => {
         carregarDetalhes();
@@ -175,6 +183,18 @@ const DetalhesImportacaoPage = () => {
         }).format(valor);
     };
 
+    // Função auxiliar para obter o nome da tag pelo ID
+    const obterNomeTag = (tagId) => {
+        const tag = allTags.find(t => t._id === tagId);
+        return tag ? tag.nome : tagId;
+    };
+
+    // Função auxiliar para obter o nome da categoria pelo ID
+    const obterNomeCategoria = (categoriaId) => {
+        const categoria = categorias.find(c => c._id === categoriaId);
+        return categoria ? categoria.nome : categoriaId;
+    };
+
     // Verifica se todas as transações foram validadas (não apenas revisadas)
     const todasTransacoesValidadas = transacoes?.every(t => t.status === 'validada');
 
@@ -272,6 +292,27 @@ const DetalhesImportacaoPage = () => {
             console.error('Erro ao finalizar importação:', error);
             toast.error(error.message || 'Erro ao finalizar importação');
         }
+    };
+
+    // Funções para gerenciar expansão das linhas
+    const toggleRow = (transacaoId) => {
+        const newExpandedRows = new Set(expandedRows);
+        if (newExpandedRows.has(transacaoId)) {
+            newExpandedRows.delete(transacaoId);
+        } else {
+            newExpandedRows.add(transacaoId);
+        }
+        setExpandedRows(newExpandedRows);
+    };
+
+    const toggleExpandirTodas = () => {
+        if (expandirTodas) {
+            setExpandedRows(new Set());
+        } else {
+            const allIds = new Set(transacoes.map(t => t.id));
+            setExpandedRows(allIds);
+        }
+        setExpandirTodas(!expandirTodas);
     };
 
     // Função para verificar se a importação pode ser editada
@@ -415,10 +456,28 @@ const DetalhesImportacaoPage = () => {
             </div>
 
             <div className="importacao-card">
-                <h3>Lista de Transações</h3>
+                <div className="lista-header">
+                    <h3>Lista de Transações</h3>
+                    <button
+                        className="btn-expandir-todas"
+                        onClick={toggleExpandirTodas}
+                        title={expandirTodas ? "Recolher todas" : "Expandir todas"}
+                    >
+                        {expandirTodas ? (
+                            <>
+                                <FaChevronRight /> Recolher Todas
+                            </>
+                        ) : (
+                            <>
+                                <FaChevronDown /> Expandir Todas
+                            </>
+                        )}
+                    </button>
+                </div>
                 <table className="transacoes-table">
                     <thead>
                         <tr>
+                            <th style={{ width: '40px' }}></th>
                             <th>Descrição</th>
                             <th>Valor</th>
                             <th>Data</th>
@@ -428,47 +487,151 @@ const DetalhesImportacaoPage = () => {
                     </thead>
                     <tbody>
                         {transacoes.map((transacao) => (
-                            <tr 
-                                key={transacao.id} 
-                                className={`status-${transacao.status}`}
-                            >
-                                <td>{transacao.descricao}</td>
-                                <td>{formatarValor(transacao.valor)}</td>
-                                <td>{formatarData(transacao.data)}</td>
-                                <td>
-                                    <span className={`status-badge ${transacao.status}`}>
-                                        {transacao.status.charAt(0).toUpperCase() + transacao.status.slice(1)}
-                                    </span>
-                                </td>
-                                <td className="acoes-cell">
-                                    {podeEditar(importacao) && (
-                                        <>
-                                            <button
-                                                onClick={() => handleEditarTransacao(transacao)}
-                                                className="btn-acao btn-editar"
-                                                title="Ao editar, a transação voltará para o status 'Revisada'"
-                                            >
-                                                Editar
-                                            </button>
-                                            {transacao.status !== 'validada' && (
-                                                <button
-                                                    onClick={() => handleValidarTransacao(transacao.id)}
-                                                    className="btn-acao btn-validar"
-                                                >
-                                                    Validar
-                                                </button>
+                            <React.Fragment key={transacao.id}>
+                                <tr
+                                    className={`status-${transacao.status}`}
+                                >
+                                    <td className="expand-cell">
+                                        <button
+                                            className="btn-expand"
+                                            onClick={() => toggleRow(transacao.id)}
+                                            title={expandedRows.has(transacao.id) ? "Recolher detalhes" : "Expandir detalhes"}
+                                        >
+                                            {expandedRows.has(transacao.id) ? (
+                                                <FaChevronDown />
+                                            ) : (
+                                                <FaChevronRight />
                                             )}
-                                            <button
-                                                onClick={() => handleExcluirTransacao(transacao.id)}
-                                                className="btn-acao btn-excluir"
-                                                title="Excluir esta transação"
-                                            >
-                                                <FaTrash />
-                                            </button>
-                                        </>
-                                    )}
-                                </td>
-                            </tr>
+                                        </button>
+                                    </td>
+                                    <td>{transacao.descricao}</td>
+                                    <td>{formatarValor(transacao.valor)}</td>
+                                    <td>{formatarData(transacao.data)}</td>
+                                    <td>
+                                        <span className={`status-badge ${transacao.status}`}>
+                                            {transacao.status.charAt(0).toUpperCase() + transacao.status.slice(1)}
+                                        </span>
+                                    </td>
+                                    <td className="acoes-cell">
+                                        {podeEditar(importacao) && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleEditarTransacao(transacao)}
+                                                    className="btn-acao btn-editar"
+                                                    title="Ao editar, a transação voltará para o status 'Revisada'"
+                                                >
+                                                    Editar
+                                                </button>
+                                                {transacao.status !== 'validada' && (
+                                                    <button
+                                                        onClick={() => handleValidarTransacao(transacao.id)}
+                                                        className="btn-acao btn-validar"
+                                                    >
+                                                        Validar
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleExcluirTransacao(transacao.id)}
+                                                    className="btn-acao btn-excluir"
+                                                    title="Excluir esta transação"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+
+                                {/* Linha de resumo expansível */}
+                                {expandedRows.has(transacao.id) && (
+                                    <tr className="resumo-row">
+                                        <td colSpan="6">
+                                            <div className="mini-resumo">
+                                                {/* Tipo da Transação */}
+                                                <div className="resumo-item">
+                                                    <div className="resumo-label">
+                                                        {transacao.tipo === 'gasto' ? <FaArrowDown /> : <FaArrowUp />}
+                                                        <span>Tipo</span>
+                                                    </div>
+                                                    <div className={`resumo-valor tipo-${transacao.tipo}`}>
+                                                        {transacao.tipo === 'gasto' ? 'Gasto' : 'Recebível'}
+                                                    </div>
+                                                </div>
+
+                                                {/* Pessoas */}
+                                                <div className="resumo-item">
+                                                    <div className="resumo-label">
+                                                        <FaUser />
+                                                        <span>Pessoa(s)</span>
+                                                    </div>
+                                                    <div className="resumo-valor">
+                                                        {transacao.pagamentos && transacao.pagamentos.length > 0 ? (
+                                                            transacao.pagamentos.map((pag, index) => (
+                                                                <span key={index} className="pessoa-badge">
+                                                                    {pag.pessoa}
+                                                                    {pag.valor && (
+                                                                        <span className="pessoa-valor">
+                                                                            {formatarValor(pag.valor)}
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="texto-vazio">Nenhuma pessoa atribuída</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Tags */}
+                                                <div className="resumo-item">
+                                                    <div className="resumo-label">
+                                                        <FaTag />
+                                                        <span>Tags</span>
+                                                    </div>
+                                                    <div className="resumo-valor">
+                                                        {transacao.pagamentos && transacao.pagamentos.length > 0 ? (
+                                                            (() => {
+                                                                // Coleta todas as tags de todos os pagamentos
+                                                                const todasAsTags = [];
+                                                                transacao.pagamentos.forEach(pag => {
+                                                                    if (pag.tags && typeof pag.tags === 'object') {
+                                                                        Object.entries(pag.tags).forEach(([categoriaId, tagsList]) => {
+                                                                            if (Array.isArray(tagsList) && tagsList.length > 0) {
+                                                                                const nomeCategoria = obterNomeCategoria(categoriaId);
+                                                                                tagsList.forEach(tagId => {
+                                                                                    const nomeTag = obterNomeTag(tagId);
+                                                                                    todasAsTags.push({
+                                                                                        categoriaId,
+                                                                                        nomeCategoria,
+                                                                                        tagId,
+                                                                                        nomeTag
+                                                                                    });
+                                                                                });
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                });
+
+                                                                return todasAsTags.length > 0 ? (
+                                                                    todasAsTags.map((tag, index) => (
+                                                                        <span key={index} className="tag-badge" title={`${tag.nomeCategoria}: ${tag.nomeTag}`}>
+                                                                            {tag.nomeTag}
+                                                                        </span>
+                                                                    ))
+                                                                ) : (
+                                                                    <span className="texto-vazio">Nenhuma tag atribuída</span>
+                                                                );
+                                                            })()
+                                                        ) : (
+                                                            <span className="texto-vazio">Nenhuma tag atribuída</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </table>
