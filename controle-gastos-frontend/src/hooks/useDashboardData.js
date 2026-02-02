@@ -160,9 +160,10 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
         setProprietarioExibicao(proprietario); // Usa o nome definido nas prefs
       } else {
         setSemDados(false);
-        const transacoesDoProprietario = response.transacoes;
+        // Ordena as transações por data decrescente (mais recentes primeiro)
+        const transacoesDoProprietario = response.transacoes.sort((a, b) => new Date(b.data) - new Date(a.data));
         setTransacoes(transacoesDoProprietario);
-        
+
         // Tenta pegar nome capitalizado do primeiro pagamento encontrado
         const primeiroPagamento = transacoesDoProprietario.flatMap(t => t.pagamentos || []).find(p => p.pessoa);
         const nomeExibicao = primeiroPagamento?.pessoa || proprietario;

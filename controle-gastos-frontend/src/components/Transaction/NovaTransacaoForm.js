@@ -169,7 +169,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   };
   
   const addPagamento = () => {
-    setPagamentos([...pagamentos, { pessoa: '', valor: '', paymentTags: {} }]);
+    setPagamentos([...pagamentos, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
   };
   
   const removePagamento = (index = null) => {

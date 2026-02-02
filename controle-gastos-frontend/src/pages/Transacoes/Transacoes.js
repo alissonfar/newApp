@@ -1,5 +1,5 @@
 // src/pages/Transacoes/Transacoes.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';                     // Import SweetAlert2 para confirmações
 import { toast } from 'react-toastify';             // Import Toastify para mensagens
@@ -7,9 +7,12 @@ import { obterTransacoes, excluirTransacao } from '../../api';
 import TransactionCard from '../../components/Transaction/TransactionCard';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
+import { AuthContext } from '../../context/AuthContext';
 import './Transacoes.css';
 
 const Transacoes = () => {
+  const { usuario } = useContext(AuthContext);
+  const proprietario = usuario?.preferencias?.proprietario || '';
   const [transacoes, setTransacoes] = useState([]);
   const [filteredTransacoes, setFilteredTransacoes] = useState([]);
 
@@ -234,6 +237,7 @@ const Transacoes = () => {
             transacao={editingTransacao}
             onSuccess={handleSuccess}
             onClose={handleCloseModal}
+            proprietarioPadrao={proprietario}
           />
         </ModalTransacao>
       )}

@@ -49,6 +49,11 @@ const Home = () => {
   const [novaNota, setNovaNota] = useState('');
   const [calendarDate, setCalendarDate] = useState(new Date());
 
+  // Novos estados para filtros e busca
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [buscaTransacao, setBuscaTransacao] = useState('');
+  const [transacaoDuplicar, setTransacaoDuplicar] = useState(null);
+
   const proprietario = usuario?.preferencias?.proprietario || '';
   const usuarioCarregado = !carregandoUsuario;
 
@@ -130,6 +135,42 @@ const Home = () => {
     navigate('/transacoes');
   };
 
+  const handleDuplicarTransacao = (transacao) => {
+    setTransacaoDuplicar(transacao);
+    setModalOpen(true);
+  };
+
+  // Filtrar transações para exibição
+  const transacoesFiltradas = transacoes.filter(t => {
+    const matchTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
+    const matchBusca = !buscaTransacao ||
+      t.descricao.toLowerCase().includes(buscaTransacao.toLowerCase()) ||
+      t.pagamentos?.some(p => p.pessoa?.toLowerCase().includes(buscaTransacao.toLowerCase()));
+    return matchTipo && matchBusca;
+  });
+
+  // Calcular estatísticas adicionais
+  const getDiasNoMes = () => {
+    const hoje = new Date();
+    return new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+  };
+
+  const getDiasDecorridos = () => {
+    return new Date().getDate();
+  };
+
+  const mediaDiariaGastos = resumoPeriodo.totalGastos / (getDiasDecorridos() || 1);
+  const projecaoMes = mediaDiariaGastos * getDiasNoMes();
+
+  // Taxa de economia: percentual do que você economizou em relação ao que recebeu
+  // Se recebeu R$ 100 e gastou R$ 30, economizou 70%
+  // Se recebeu R$ 100 e gastou R$ 120, teve déficit de -20%
+  const taxaEconomia = resumoPeriodo.totalRecebiveis > 0
+    ? ((resumoPeriodo.saldo / resumoPeriodo.totalRecebiveis) * 100)
+    : 0;
+
+  const mediaDiariaRecebiveis = resumoPeriodo.totalRecebiveis / (getDiasDecorridos() || 1);
+
   return (
     <div className="home-container p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
       <div className="dashboard-header mb-6">
@@ -191,7 +232,7 @@ const Home = () => {
         )}
 
         {!carregandoUsuario && !semProprietario && !semDados && (
-          <div className="resumo-cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="resumo-cards-glass grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {carregandoDados ? (
               <div className="col-span-full carregando-container flex items-center justify-center p-6 bg-white rounded-lg shadow">
                 <FaSpinner className="spinner text-blue-500 mr-2" />
@@ -199,17 +240,58 @@ const Home = () => {
               </div>
             ) : (
               <>
-                <div className="resumo-card recebiveis bg-green-100 p-4 rounded-lg shadow hover:shadow-md transition-shadow">
-                  <h3 className="text-sm font-semibold text-green-800 mb-1">Recebíveis ({periodoSelecionado.replace('Atual', ' Atuais').replace('Passado', ' Passado')})</h3>
-                  <p className="text-xl font-bold text-green-900">R$ {resumoPeriodo.totalRecebiveis.toFixed(2)}</p>
+                <div className="glass-card recebiveis">
+                  <div className="card-icon">💰</div>
+                  <div className="card-content">
+                    <h3 className="card-title">Recebíveis</h3>
+                    <p className="card-value">R$ {resumoPeriodo.totalRecebiveis.toFixed(2)}</p>
+                    <div className="card-divider"></div>
+                    <p className="card-detail">
+                      <span className="detail-label">Média diária</span>
+                      <span className="detail-value">R$ {mediaDiariaRecebiveis.toFixed(2)}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="resumo-card gastos bg-red-100 p-4 rounded-lg shadow hover:shadow-md transition-shadow">
-                  <h3 className="text-sm font-semibold text-red-800 mb-1">Gastos ({periodoSelecionado.replace('Atual', ' Atuais').replace('Passado', ' Passado')})</h3>
-                  <p className="text-xl font-bold text-red-900">R$ {resumoPeriodo.totalGastos.toFixed(2)}</p>
+
+                <div className="glass-card gastos">
+                  <div className="card-icon">💸</div>
+                  <div className="card-content">
+                    <h3 className="card-title">Gastos</h3>
+                    <p className="card-value">R$ {resumoPeriodo.totalGastos.toFixed(2)}</p>
+                    <div className="card-divider"></div>
+                    <p className="card-detail">
+                      <span className="detail-label">Média diária</span>
+                      <span className="detail-value">R$ {mediaDiariaGastos.toFixed(2)}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="resumo-card saldo bg-blue-100 p-4 rounded-lg shadow hover:shadow-md transition-shadow">
-                  <h3 className="text-sm font-semibold text-blue-800 mb-1">Saldo ({periodoSelecionado.replace('Atual', ' Atuais').replace('Passado', ' Passado')})</h3>
-                  <p className="text-xl font-bold text-blue-900">R$ {resumoPeriodo.saldo.toFixed(2)}</p>
+
+                <div className="glass-card saldo">
+                  <div className="card-icon">{resumoPeriodo.saldo >= 0 ? '✅' : '⚠️'}</div>
+                  <div className="card-content">
+                    <h3 className="card-title">Saldo do Período</h3>
+                    <p className="card-value">R$ {resumoPeriodo.saldo.toFixed(2)}</p>
+                    <div className="card-divider"></div>
+                    <p className="card-detail">
+                      <span className="detail-label">{taxaEconomia >= 0 ? 'Economia' : 'Déficit'}</span>
+                      <span className={`detail-value ${taxaEconomia >= 0 ? 'positive' : 'negative'}`}>
+                        {taxaEconomia >= 0 ? '+' : ''}{taxaEconomia.toFixed(1)}%
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="glass-card projecao">
+                  <div className="card-icon">📊</div>
+                  <div className="card-content">
+                    <h3 className="card-title">Projeção Mensal</h3>
+                    <p className="card-value">R$ {projecaoMes.toFixed(2)}</p>
+                    <div className="card-divider"></div>
+                    <p className="card-detail">
+                      <span className="detail-label">Progresso</span>
+                      <span className="detail-value">{getDiasDecorridos()}/{getDiasNoMes()} dias</span>
+                    </p>
+                  </div>
                 </div>
               </>
             )}
@@ -268,21 +350,93 @@ const Home = () => {
             </section>
 
             <section className="dashboard-section ultimas-transacoes bg-white p-4 rounded-lg shadow">
-              <h2 className="text-lg font-semibold text-gray-700 mb-3">Últimas 5 Transações</h2>
-              <div className="transacoes-lista space-y-3">
-                {transacoes.slice(0, 5).map((t, index) => (
-                  <div key={index} className={`transacao-item flex justify-between items-center p-3 rounded border-l-4 ${t.tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}>
-                    <div className="transacao-info">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-lg font-semibold text-gray-700">Últimas Transações</h2>
+              </div>
+
+              {/* Busca e Filtros */}
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="Buscar por descrição ou pessoa..."
+                  value={buscaTransacao}
+                  onChange={(e) => setBuscaTransacao(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFiltroTipo('todos')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      filtroTipo === 'todos'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => setFiltroTipo('gasto')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      filtroTipo === 'gasto'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Gastos
+                  </button>
+                  <button
+                    onClick={() => setFiltroTipo('recebivel')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      filtroTipo === 'recebivel'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Recebíveis
+                  </button>
+                </div>
+              </div>
+
+              <div className="transacoes-lista space-y-3 max-h-96 overflow-y-auto">
+                {transacoesFiltradas.slice(0, 10).map((t, index) => (
+                  <div key={index} className={`transacao-item flex justify-between items-center p-3 rounded border-l-4 group ${t.tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}>
+                    <div className="transacao-info flex-1">
                       <strong className="text-sm text-gray-800 block">{t.descricao}</strong>
                       <span className="text-xs text-gray-500">{new Date(t.data).toLocaleDateString()}</span>
+                      {t.pagamentos && t.pagamentos.length > 0 && (
+                        <span className="text-xs text-gray-600 block mt-1">
+                          {t.pagamentos.map(p => p.pessoa).join(', ')}
+                        </span>
+                      )}
                     </div>
-                    <div className={`transacao-valor font-medium text-sm ${t.tipo === 'gasto' ? 'text-red-600' : 'text-green-600'}`}>
-                      {t.tipo === 'gasto' ? '-' : '+'} R$ {t.valor.toFixed(2)}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleDuplicarTransacao(t)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
+                        title="Duplicar transação"
+                      >
+                        <FaPlus className="text-blue-600 text-xs" />
+                      </button>
+                      <div className={`transacao-valor font-medium text-sm ${t.tipo === 'gasto' ? 'text-red-600' : 'text-green-600'}`}>
+                        {t.tipo === 'gasto' ? '-' : '+'} R$ {t.valor.toFixed(2)}
+                      </div>
                     </div>
                   </div>
                 ))}
-                {transacoes.length === 0 && !carregandoDados && (
-                  <p className="text-sm text-gray-500 text-center py-4">Nenhuma transação encontrada.</p>
+                {transacoesFiltradas.length === 0 && !carregandoDados && (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    {buscaTransacao || filtroTipo !== 'todos'
+                      ? 'Nenhuma transação encontrada com os filtros aplicados.'
+                      : 'Nenhuma transação encontrada.'}
+                  </p>
+                )}
+                {transacoesFiltradas.length > 10 && (
+                  <button
+                    onClick={handleVerTransacoes}
+                    className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Ver todas as {transacoesFiltradas.length} transações →
+                  </button>
                 )}
               </div>
             </section>
@@ -332,14 +486,26 @@ const Home = () => {
       )}
 
       {modalOpen && (
-        <ModalTransacao onClose={() => setModalOpen(false)}>
+        <ModalTransacao onClose={() => {
+          setModalOpen(false);
+          setTransacaoDuplicar(null);
+        }}>
           <NovaTransacaoForm
             onSuccess={() => {
               setModalOpen(false);
+              setTransacaoDuplicar(null);
               fetchTransacoes();
             }}
-            onClose={() => setModalOpen(false)}
+            onClose={() => {
+              setModalOpen(false);
+              setTransacaoDuplicar(null);
+            }}
             proprietarioPadrao={proprietario}
+            transacao={transacaoDuplicar ? {
+              ...transacaoDuplicar,
+              _id: null, // Remove ID para criar nova
+              data: getTodayBR() // Atualiza para hoje
+            } : null}
           />
         </ModalTransacao>
       )}

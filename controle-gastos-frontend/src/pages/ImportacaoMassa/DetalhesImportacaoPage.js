@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
 import { useData } from '../../context/DataContext';
+import { AuthContext } from '../../context/AuthContext';
 import './DetalhesImportacaoPage.css';
 
 const DetalhesImportacaoPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { usuario } = useContext(AuthContext);
+    const proprietario = usuario?.preferencias?.proprietario || '';
     const [importacao, setImportacao] = useState(null);
     const [transacoes, setTransacoes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -647,6 +650,7 @@ const DetalhesImportacaoPage = () => {
                                 setShowFormTransacao(false);
                                 setTransacaoEmEdicao(null);
                             }}
+                            proprietarioPadrao={proprietario}
                         />
                     </div>
                 </div>
