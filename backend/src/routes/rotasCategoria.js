@@ -15,6 +15,10 @@ router.get('/:id', controladorCategoria.obterCategoriaPorId);
 // Criar uma nova categoria
 router.post('/', controladorCategoria.criarCategoria);
 
+// Ativar/Inativar categoria (rotas específicas antes do PUT genérico)
+router.put('/:id/ativar', controladorCategoria.ativarCategoria);
+router.put('/:id/inativar', controladorCategoria.inativarCategoria);
+
 // Atualizar uma categoria
 router.put('/:id', controladorCategoria.atualizarCategoria);
 

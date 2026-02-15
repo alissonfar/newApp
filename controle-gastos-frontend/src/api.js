@@ -21,8 +21,9 @@ function getHeaders(isJson = true) {
 }
 
 /* ----- Categorias ----- */
-export async function obterCategorias() {
-  const resposta = await fetch(`${API_BASE}/categorias`, {
+export async function obterCategorias(incluirInativas = false) {
+  const query = incluirInativas ? '?incluirInativas=true' : '';
+  const resposta = await fetch(`${API_BASE}/categorias${query}`, {
     headers: getHeaders(false)
   });
   const dados = await resposta.json();
@@ -31,6 +32,30 @@ export async function obterCategorias() {
     ...cat,
     codigo: cat._id
   }));
+}
+
+export async function ativarCategoria(codigo) {
+  const resposta = await fetch(`${API_BASE}/categorias/${codigo}/ativar`, {
+    method: 'PUT',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) {
+    throw new Error(dados.erro || 'Erro ao ativar categoria.');
+  }
+  return { ...dados, codigo: dados._id };
+}
+
+export async function inativarCategoria(codigo) {
+  const resposta = await fetch(`${API_BASE}/categorias/${codigo}/inativar`, {
+    method: 'PUT',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) {
+    throw new Error(dados.erro || 'Erro ao inativar categoria.');
+  }
+  return { ...dados, codigo: dados._id };
 }
 
 export async function criarCategoria(categoria) {

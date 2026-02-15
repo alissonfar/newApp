@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { toast } from 'react-toastify';  // [NOVO] para exibir mensagens de erro/aviso/sucesso
-import { obterTransacoes } from '../../api.js';
+import { obterTransacoes, obterCategorias } from '../../api.js';
 import { useData } from '../../context/DataContext';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF } from '../../utils/export/exportPDF';
@@ -28,8 +28,26 @@ const Relatorio = () => {
   // Resultado final após filtros/busca/ordenação
   const [filteredRows, setFilteredRows] = useState([]);
 
-  // Obter categorias e tags do Contexto
-  const { categorias, tags, loadingData: loadingContextData, errorData: errorContextData } = useData();
+  // Obter tags do Contexto; categorias com inativas para exibir histórico
+  const { tags, loadingData: loadingContextData, errorData: errorContextData } = useData();
+  const [categorias, setCategorias] = useState([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(true);
+  const [errorCategorias, setErrorCategorias] = useState(null);
+
+  // Carregar categorias (incluindo inativas) para exibição no relatório
+  useEffect(() => {
+    async function loadCategorias() {
+      try {
+        const cats = await obterCategorias(true);
+        setCategorias(cats);
+      } catch (e) {
+        setErrorCategorias(e);
+      } finally {
+        setLoadingCategorias(false);
+      }
+    }
+    loadCategorias();
+  }, []);
 
   // Estado local para loading das transações
   const [loadingTransactions, setLoadingTransactions] = useState(true);
@@ -468,12 +486,12 @@ const Relatorio = () => {
   };
 
   // Adicionar tratamento para loading/erro geral
-  if (loadingContextData || loadingTransactions) {
+  if (loadingContextData || loadingTransactions || loadingCategorias) {
     return <div className="relatorio-loading">Carregando dados do relatório...</div>; // Mensagem unificada
   }
 
-  if (errorContextData || errorTransactions) {
-    return <div className="relatorio-error">Erro ao carregar dados. {errorContextData?.message || errorTransactions?.message}. Tente recarregar a página.</div>;
+  if (errorContextData || errorTransactions || errorCategorias) {
+    return <div className="relatorio-error">Erro ao carregar dados. {(errorContextData || errorTransactions || errorCategorias)?.message}. Tente recarregar a página.</div>;
   }
 
   return (

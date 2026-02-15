@@ -1,17 +1,38 @@
 // src/components/Tag/TagManagement.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';     
 import Swal from 'sweetalert2';            
 import { useData } from '../../context/DataContext';
-import { criarTag, atualizarTag, excluirTag, criarCategoria, atualizarCategoria, excluirCategoria } from '../../api.js';
+import { obterCategorias, criarTag, atualizarTag, excluirTag, criarCategoria, atualizarCategoria, excluirCategoria, ativarCategoria, inativarCategoria } from '../../api.js';
 import IconSelector from './IconSelector';
 import IconRenderer from '../shared/IconRenderer';
 import ColorPicker from './ColorPicker';
 import './TagManagement.css';
 
 const TagManagement = () => {
-  const { categorias, tags, loadingData, errorData, refreshData } = useData();
+  const { tags, loadingData, errorData, refreshData } = useData();
+  const [categorias, setCategorias] = useState([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(true);
+  const [errorCategorias, setErrorCategorias] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const fetchCategorias = useCallback(async () => {
+    setLoadingCategorias(true);
+    setErrorCategorias(null);
+    try {
+      const cats = await obterCategorias(true);
+      setCategorias(cats);
+    } catch (error) {
+      setErrorCategorias(error);
+      toast.error('Falha ao carregar categorias.');
+    } finally {
+      setLoadingCategorias(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategorias();
+  }, [fetchCategorias]);
 
   // Estados para nova tag
   const [novoTagNome, setNovoTagNome] = useState('');
@@ -40,10 +61,10 @@ const TagManagement = () => {
   const [editCatIcone, setEditCatIcone] = useState('folder');
 
   useEffect(() => {
-    if (!loadingData && !errorData && categorias.length > 0 && !selectedCategory) {
+    if (!loadingCategorias && !errorCategorias && categorias.length > 0 && !selectedCategory) {
       setSelectedCategory(categorias[0]);
     }
-  }, [loadingData, errorData, categorias, selectedCategory]);
+  }, [loadingCategorias, errorCategorias, categorias, selectedCategory]);
 
   // Filtra as tags com base na categoria selecionada
   const filteredTags = selectedCategory
@@ -192,6 +213,7 @@ const TagManagement = () => {
       setNovoCatDescricao('');
       setNovoCatCor('#000000');
       setNovoCatIcone('folder');
+      await fetchCategorias();
       await refreshData();
       toast.success('Categoria criada com sucesso!');
     } catch (error) {
@@ -226,12 +248,52 @@ const TagManagement = () => {
       setEditCatDescricao('');
       setEditCatCor('#000000');
       setEditCatIcone('folder');
+      await fetchCategorias();
       await refreshData();
       toast.success('Categoria atualizada com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar categoria:', error);
       toast.error('Erro ao atualizar categoria.');
     }
+  };
+
+  const handleAtivarCategoria = async (codigo, e) => {
+    e?.stopPropagation();
+    try {
+      await ativarCategoria(codigo);
+      await fetchCategorias();
+      await refreshData();
+      toast.success('Categoria ativada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao ativar categoria:', error);
+      toast.error('Erro ao ativar categoria.');
+    }
+  };
+
+  const handleInativarCategoria = async (codigo, e) => {
+    e?.stopPropagation();
+    Swal.fire({
+      title: 'Inativar categoria?',
+      text: 'A categoria não aparecerá nos modais de transação, mas o histórico será preservado.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, inativar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await inativarCategoria(codigo);
+          await fetchCategorias();
+          await refreshData();
+          toast.success('Categoria inativada com sucesso!');
+        } catch (error) {
+          console.error('Erro ao inativar categoria:', error);
+          toast.error('Erro ao inativar categoria.');
+        }
+      }
+    });
   };
 
   const handleExcluirCategoria = async (codigo) => {
@@ -251,6 +313,7 @@ const TagManagement = () => {
           if (selectedCategory && selectedCategory.codigo === codigo) {
             setSelectedCategory(null);
           }
+          await fetchCategorias();
           await refreshData();
           toast.success('Categoria excluída com sucesso!');
         } catch (error) {
@@ -261,11 +324,11 @@ const TagManagement = () => {
     });
   };
 
-  if (loadingData) {
+  if (loadingData || loadingCategorias) {
     return <div>Carregando categorias e tags...</div>;
   }
 
-  if (errorData) {
+  if (errorData || errorCategorias) {
     return <div>Erro ao carregar dados. Tente recarregar a página.</div>;
   }
 
@@ -281,7 +344,7 @@ const TagManagement = () => {
               {categorias.map(cat => (
                 <li
                   key={cat.codigo}
-                  className={selectedCategory && cat.codigo === selectedCategory.codigo ? 'selected' : ''}
+                  className={`${selectedCategory && cat.codigo === selectedCategory.codigo ? 'selected' : ''} ${cat.ativo === false ? 'categoria-inativa' : ''}`}
                   onClick={() => setSelectedCategory(cat)}
                 >
                   <div className="categoria-item">
@@ -289,8 +352,16 @@ const TagManagement = () => {
                       <IconRenderer nome={cat.icone} size={24} cor={cat.cor} />
                     </div>
                     <span>{cat.nome}</span>
+                    {cat.ativo === false && (
+                      <span className="badge-inativa">Inativa</span>
+                    )}
                   </div>
-                  <div className="acoes-categoria">
+                  <div className="acoes-categoria" onClick={e => e.stopPropagation()}>
+                    {cat.ativo !== false ? (
+                      <button onClick={(e) => handleInativarCategoria(cat.codigo, e)}>Inativar</button>
+                    ) : (
+                      <button onClick={(e) => handleAtivarCategoria(cat.codigo, e)}>Ativar</button>
+                    )}
                     <button onClick={() => handleEditarCategoria(cat)}>Editar</button>
                     <button onClick={() => handleExcluirCategoria(cat.codigo)}>Excluir</button>
                   </div>

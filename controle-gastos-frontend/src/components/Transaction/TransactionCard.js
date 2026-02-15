@@ -8,12 +8,12 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
   const [categorias, setCategorias] = useState([]);
   const [tags, setTags] = useState([]);
 
-  // Carrega categorias e tags
+  // Carrega categorias (incluindo inativas) e tags para exibir histórico
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [categoriasData, tagsData] = await Promise.all([
-          obterCategorias(),
+          obterCategorias(true),
           obterTags()
         ]);
         setCategorias(categoriasData);

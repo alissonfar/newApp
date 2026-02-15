@@ -10,10 +10,12 @@ exports.obterTodasCategorias = async (req, res) => {
       sort: { nome: 1 } // Opcional: ordenar por nome
     };
     
-    // Filtro: apenas categorias ativas do usuário autenticado
+    // Filtro: categorias do usuário autenticado
+    // Inclui inativas apenas quando incluirInativas=true (ex: TagManagement, exibição histórico)
+    const incluirInativas = req.query.incluirInativas === 'true';
     const query = {
       usuario: req.userId,
-      ativo: true
+      ...(incluirInativas ? {} : { ativo: true })
     };
 
     // Usa paginate em vez de find
@@ -69,14 +71,13 @@ exports.criarCategoria = async (req, res) => {
 
 exports.atualizarCategoria = async (req, res) => {
   try {
-    // Busca a categoria pertencente ao usuário autenticado
+    // Busca a categoria (ativa ou inativa) pertencente ao usuário autenticado
     const categoria = await Categoria.findOne({ 
       $or: [
         { _id: req.params.id },
         { codigo: req.params.id }
       ],
-      usuario: req.userId,
-      ativo: true
+      usuario: req.userId
     });
     if (!categoria) return res.status(404).json({ erro: 'Categoria não encontrada.' });
 
@@ -113,5 +114,48 @@ exports.excluirCategoria = async (req, res) => {
     res.json({ mensagem: 'Categoria removida com sucesso.' });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao excluir categoria.', detalhe: error.message });
+  }
+};
+
+exports.ativarCategoria = async (req, res) => {
+  try {
+    // Busca categoria (ativa ou inativa) pertencente ao usuário
+    const categoria = await Categoria.findOne({ 
+      $or: [
+        { _id: req.params.id },
+        { codigo: req.params.id }
+      ],
+      usuario: req.userId
+    });
+    if (!categoria) return res.status(404).json({ erro: 'Categoria não encontrada.' });
+    
+    categoria.ativo = true;
+    await categoria.save();
+    
+    res.json(categoria);
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao ativar categoria.', detalhe: error.message });
+  }
+};
+
+exports.inativarCategoria = async (req, res) => {
+  try {
+    // Busca categoria ativa pertencente ao usuário
+    const categoria = await Categoria.findOne({ 
+      $or: [
+        { _id: req.params.id },
+        { codigo: req.params.id }
+      ],
+      usuario: req.userId,
+      ativo: true
+    });
+    if (!categoria) return res.status(404).json({ erro: 'Categoria não encontrada.' });
+    
+    categoria.ativo = false;
+    await categoria.save();
+    
+    res.json(categoria);
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao inativar categoria.', detalhe: error.message });
   }
 };

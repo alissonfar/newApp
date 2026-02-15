@@ -5,6 +5,7 @@ import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash, FaChevronDown, FaChe
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
 import { useData } from '../../context/DataContext';
+import { obterCategorias } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import './DetalhesImportacaoPage.css';
 
@@ -25,8 +26,21 @@ const DetalhesImportacaoPage = () => {
     const [expandirTodas, setExpandirTodas] = useState(false);
     const [duplicando, setDuplicando] = useState(false);
 
-    // Obter categorias e tags do contexto para exibir nomes ao invés de IDs
-    const { categorias = [], tags: allTags = [] } = useData();
+    // Obter tags do contexto; categorias (incluindo inativas) para exibir nomes no histórico
+    const { tags: allTags = [] } = useData();
+    const [categorias, setCategorias] = useState([]);
+
+    useEffect(() => {
+        async function loadCategorias() {
+            try {
+                const cats = await obterCategorias(true);
+                setCategorias(cats);
+            } catch (e) {
+                console.error('Erro ao carregar categorias:', e);
+            }
+        }
+        loadCategorias();
+    }, []);
 
     useEffect(() => {
         carregarDetalhes();
