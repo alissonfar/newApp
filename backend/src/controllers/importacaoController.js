@@ -13,10 +13,21 @@ class ImportacaoController {
                 return res.status(400).json({ erro: 'Nenhum arquivo foi enviado' });
             }
 
-            const { descricao } = req.body;
+            const { descricao, tagsPadrao: tagsPadraoRaw } = req.body;
             if (!descricao) {
                 console.error('[Importação] Erro: Descrição não fornecida');
                 return res.status(400).json({ erro: 'Descrição é obrigatória' });
+            }
+
+            // Parse tagsPadrao se vier como JSON string (FormData envia strings)
+            let tagsPadrao = {};
+            if (tagsPadraoRaw) {
+                try {
+                    tagsPadrao = typeof tagsPadraoRaw === 'string' ? JSON.parse(tagsPadraoRaw) : tagsPadraoRaw;
+                    if (typeof tagsPadrao !== 'object' || tagsPadrao === null) tagsPadrao = {};
+                } catch {
+                    tagsPadrao = {};
+                }
             }
 
             const usuario = req.userId;
@@ -27,7 +38,8 @@ class ImportacaoController {
                 nomeArquivo: arquivo.originalname,
                 tamanho: arquivo.size,
                 tipo: arquivo.mimetype,
-                usuario
+                usuario,
+                tagsPadrao: Object.keys(tagsPadrao || {}).length > 0 ? tagsPadrao : undefined
             });
 
             // Cria o registro da importação
@@ -36,7 +48,8 @@ class ImportacaoController {
                 usuario,
                 nomeArquivo: arquivo.originalname,
                 caminhoArquivo: arquivo.path,
-                status: 'pendente'
+                status: 'pendente',
+                tagsPadrao
             });
 
             await importacao.save();

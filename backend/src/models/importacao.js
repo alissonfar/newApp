@@ -39,6 +39,10 @@ const ImportacaoSchema = new mongoose.Schema({
     mensagem: String,
     dados: mongoose.Schema.Types.Mixed
   }],
+  tagsPadrao: {
+    type: Object,
+    default: {}
+  },
   usuario: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Usuario', 

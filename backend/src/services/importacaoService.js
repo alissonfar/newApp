@@ -4,6 +4,27 @@ const csv = require('csv-parse');
 const Importacao = require('../models/importacao');
 const TransacaoImportada = require('../models/transacaoImportada');
 
+/**
+ * Mescla tagsPadrao da importação em cada pagamento, sem duplicar.
+ * @param {Array} pagamentos - Array de { pessoa, valor, tags }
+ * @param {Object} tagsPadrao - { [categoriaId]: [tagId, tagId, ...] }
+ * @returns {Array} Pagamentos com tags mescladas
+ */
+function mergeTagsPadrao(pagamentos, tagsPadrao) {
+  if (!tagsPadrao || typeof tagsPadrao !== 'object' || Object.keys(tagsPadrao).length === 0) {
+    return pagamentos;
+  }
+  return pagamentos.map((p) => {
+    const tagsAtuais = p.tags && typeof p.tags === 'object' ? { ...p.tags } : {};
+    Object.keys(tagsPadrao).forEach((catId) => {
+      const tagsNovas = Array.isArray(tagsPadrao[catId]) ? tagsPadrao[catId] : [];
+      const existentes = Array.isArray(tagsAtuais[catId]) ? tagsAtuais[catId] : [];
+      tagsAtuais[catId] = [...new Set([...existentes.map(String), ...tagsNovas.map(String)])];
+    });
+    return { ...p, tags: tagsAtuais };
+  });
+}
+
 class ImportacaoService {
   constructor() {
     this.validadorTransacao = require('./validadorTransacaoService');
@@ -302,11 +323,18 @@ class ImportacaoService {
       }
 
       // Processa cada transação
-      console.log('[DEBUG] Iniciando processamento das transações');
+      const tagsPadrao = importacao.tagsPadrao || {};
+      console.log('[DEBUG] Iniciando processamento das transações', Object.keys(tagsPadrao).length > 0 ? '(com tags padrão)' : '');
       const resultados = await Promise.all(
         transacoes.map(async (transacao) => {
           try {
             console.log('[DEBUG] Processando transação:', transacao);
+            const pagamentosBase = transacao.pagamentos || [{
+              pessoa: 'Titular',
+              valor: transacao.valor,
+              tags: {}
+            }];
+            const pagamentosComTags = mergeTagsPadrao(pagamentosBase, tagsPadrao);
             const transacaoImportada = new TransacaoImportada({
               data: transacao.data, // A data já está com horário 12:00
               tipo: transacao.tipo,
@@ -316,11 +344,7 @@ class ImportacaoService {
               importacao: importacaoId,
               usuario: importacao.usuario,
               dadosOriginais: transacao,
-              pagamentos: transacao.pagamentos || [{
-                pessoa: 'Titular',
-                valor: transacao.valor,
-                tags: {}
-              }]
+              pagamentos: pagamentosComTags
             });
 
             await transacaoImportada.validate();
