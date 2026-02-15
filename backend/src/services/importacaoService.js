@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const csv = require('csv-parse');
+const mongoose = require('mongoose');
 const Importacao = require('../models/importacao');
 const TransacaoImportada = require('../models/transacaoImportada');
 
@@ -405,6 +406,101 @@ class ImportacaoService {
       }
 
       throw erro;
+    }
+  }
+
+  /**
+   * Duplica uma importação existente com todas as suas transações.
+   * @param {string} importacaoId - ID da importação original
+   * @param {string} usuarioId - ID do usuário
+   * @returns {Promise<import('mongoose').Document>} Nova importação criada
+   */
+  static async duplicarImportacao(importacaoId, usuarioId) {
+    const STATUS_PERMITIDOS = ['validado', 'finalizada', 'estornada', 'erro'];
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const importacaoOriginal = await Importacao.findOne({
+        _id: importacaoId,
+        usuario: usuarioId
+      }).session(session);
+
+      if (!importacaoOriginal) {
+        throw new Error('Importação não encontrada.');
+      }
+
+      if (!STATUS_PERMITIDOS.includes(importacaoOriginal.status)) {
+        throw new Error(
+          `Não é possível duplicar uma importação com status "${importacaoOriginal.status}". ` +
+          'Duplicação permitida apenas para: validado, finalizada, estornada ou erro.'
+        );
+      }
+
+      const transacoes = await TransacaoImportada.find({
+        importacao: importacaoId,
+        usuario: usuarioId
+      })
+        .lean()
+        .session(session);
+
+      if (!transacoes.length) {
+        throw new Error('Não há transações para duplicar nesta importação.');
+      }
+
+      const novaImportacao = new Importacao({
+        descricao: `Cópia de ${importacaoOriginal.descricao}`,
+        nomeArquivo: `Cópia de ${importacaoOriginal.nomeArquivo}`,
+        caminhoArquivo: 'duplicacao/sem-arquivo',
+        status: 'validado',
+        totalProcessado: 0,
+        totalSucesso: 0,
+        totalErro: 0,
+        erro: null,
+        erros: [],
+        tagsPadrao: importacaoOriginal.tagsPadrao || {},
+        usuario: usuarioId
+      });
+
+      await novaImportacao.save({ session });
+
+      const transacoesMapeadas = transacoes.map((t) => {
+        const pagamentos = (t.pagamentos || []).map((p) => ({
+          pessoa: p.pessoa,
+          valor: p.valor,
+          tags: p.tags || {}
+        }));
+        return {
+          importacao: novaImportacao._id,
+          usuario: usuarioId,
+          descricao: t.descricao,
+          valor: t.valor,
+          data: t.data,
+          tipo: t.tipo,
+          categoria: t.categoria,
+          pagamentos: pagamentos.length ? pagamentos : [{ pessoa: 'Titular', valor: t.valor, tags: {} }],
+          observacao: t.observacao || '',
+          dadosOriginais: t.dadosOriginais || { ...t },
+          status: 'pendente',
+          erro: null
+        };
+      });
+
+      await TransacaoImportada.insertMany(transacoesMapeadas, { session });
+
+      novaImportacao.totalProcessado = transacoesMapeadas.length;
+      novaImportacao.totalSucesso = transacoesMapeadas.length;
+      novaImportacao.totalErro = 0;
+      await novaImportacao.save({ session });
+
+      await session.commitTransaction();
+
+      return novaImportacao;
+    } catch (erro) {
+      await session.abortTransaction();
+      throw erro;
+    } finally {
+      session.endSession();
     }
   }
 

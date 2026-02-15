@@ -220,6 +220,38 @@
   background-color: var(--cor-sucesso-escura);
 }
 
+.btn-duplicar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--cor-secundaria);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-duplicar:hover:not(:disabled) {
+  background-color: var(--cor-secundaria-escura, #495057);
+}
+
+.btn-duplicar:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-duplicar .spinner-inline {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .btn-finalizar {
   background-color: var(--cor-sucesso);
   color: white;
@@ -298,6 +330,7 @@
     flex-direction: column;
   }
 
+  .btn-duplicar,
   .btn-finalizar,
   .btn-estornar {
     width: 100%;

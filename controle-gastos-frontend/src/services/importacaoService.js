@@ -170,6 +170,17 @@ const importacaoService = {
     } catch (error) {
       throw new Error('Erro ao estornar importação: ' + error.message);
     }
+  },
+
+  // Duplicar importação
+  duplicarImportacao: async (importacaoId) => {
+    try {
+      const response = await api.post(`/importacoes/${importacaoId}/duplicate`);
+      return response.data;
+    } catch (error) {
+      const mensagem = error.response?.data?.erro || error.message;
+      throw new Error(mensagem);
+    }
   }
 };
 

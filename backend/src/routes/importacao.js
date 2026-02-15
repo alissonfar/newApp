@@ -59,6 +59,7 @@ router.use(autenticacao);
 router.post('/', upload.single('arquivo'), ImportacaoController.criar);
 router.get('/', ImportacaoController.listar);
 router.get('/:id', ImportacaoController.obterDetalhes);
+router.post('/:id/duplicate', ImportacaoController.duplicar);
 router.delete('/:id', ImportacaoController.excluir);
 router.put('/:id/finalizar', ImportacaoController.finalizarImportacao);
 router.put('/:id/estornar', ImportacaoController.estornarImportacao);

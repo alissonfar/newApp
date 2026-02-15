@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
 import { useData } from '../../context/DataContext';
@@ -23,6 +23,7 @@ const DetalhesImportacaoPage = () => {
     // Estado para controlar quais linhas estão expandidas
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [expandirTodas, setExpandirTodas] = useState(false);
+    const [duplicando, setDuplicando] = useState(false);
 
     // Obter categorias e tags do contexto para exibir nomes ao invés de IDs
     const { categorias = [], tags: allTags = [] } = useData();
@@ -334,6 +335,26 @@ const DetalhesImportacaoPage = () => {
         return importacao.status === 'finalizada';
     };
 
+    // Função para verificar se a importação pode ser duplicada
+    const podeDuplicar = (importacao) => {
+        return ['validado', 'finalizada', 'estornada', 'erro'].includes(importacao.status);
+    };
+
+    // Função para duplicar importação
+    const handleDuplicarImportacao = async () => {
+        try {
+            setDuplicando(true);
+            const novaImportacao = await importacaoService.duplicarImportacao(id);
+            toast.success('Importação duplicada com sucesso!');
+            navigate(`/importacao/${novaImportacao.id || novaImportacao._id}`);
+        } catch (error) {
+            console.error('Erro ao duplicar importação:', error);
+            toast.error(error.message || 'Erro ao duplicar importação');
+        } finally {
+            setDuplicando(false);
+        }
+    };
+
     // Função para estornar importação
     const handleEstornarImportacao = async () => {
         const mensagemConfirmacao = (
@@ -439,6 +460,26 @@ const DetalhesImportacaoPage = () => {
                 </div>
 
                 <div className="acoes-principais">
+                    {podeDuplicar(importacao) && (
+                        <button
+                            className="btn-duplicar"
+                            onClick={handleDuplicarImportacao}
+                            disabled={duplicando}
+                            title="Criar uma cópia desta importação com todas as transações"
+                        >
+                            {duplicando ? (
+                                <>
+                                    <FaSpinner className="spinner-inline" />
+                                    Duplicando...
+                                </>
+                            ) : (
+                                <>
+                                    <FaCopy />
+                                    Duplicar
+                                </>
+                            )}
+                        </button>
+                    )}
                     {podeFinalizar(importacao) && (
                         <button
                             className="btn-finalizar"

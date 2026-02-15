@@ -159,6 +159,26 @@ class ImportacaoController {
         }
     }
 
+    static async duplicar(req, res) {
+        try {
+            const { id } = req.params;
+            const usuarioId = req.userId;
+
+            const novaImportacao = await ImportacaoService.duplicarImportacao(id, usuarioId);
+
+            return res.status(201).json(novaImportacao);
+        } catch (erro) {
+            console.error('[Importação] Erro ao duplicar importação:', erro);
+            if (erro.message === 'Importação não encontrada.') {
+                return res.status(404).json({ erro: erro.message });
+            }
+            if (erro.message.includes('Não é possível duplicar') || erro.message.includes('Não há transações')) {
+                return res.status(400).json({ erro: erro.message });
+            }
+            return res.status(500).json({ erro: 'Erro ao duplicar importação.' });
+        }
+    }
+
     static async excluir(req, res) {
         try {
             const { id } = req.params;
