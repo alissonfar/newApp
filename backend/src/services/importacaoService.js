@@ -4,6 +4,7 @@ const csv = require('csv-parse');
 const mongoose = require('mongoose');
 const Importacao = require('../models/importacao');
 const TransacaoImportada = require('../models/transacaoImportada');
+const Usuario = require('../models/usuarios');
 
 /**
  * Mescla tagsPadrao da importação em cada pagamento, sem duplicar.
@@ -293,6 +294,12 @@ class ImportacaoService {
       importacao.status = 'processando';
       await importacao.save();
 
+      // Busca o proprietário padrão das preferências do usuário
+      const usuario = await Usuario.findById(importacao.usuario)
+        .select('preferencias.proprietario')
+        .lean();
+      const proprietarioPadrao = usuario?.preferencias?.proprietario?.trim() || 'Titular';
+
       // Lê o arquivo
       const conteudoArquivo = await fs.readFile(importacao.caminhoArquivo, 'utf8');
       let transacoes;
@@ -330,11 +337,20 @@ class ImportacaoService {
         transacoes.map(async (transacao) => {
           try {
             console.log('[DEBUG] Processando transação:', transacao);
-            const pagamentosBase = transacao.pagamentos || [{
-              pessoa: 'Titular',
+            let pagamentosBase = transacao.pagamentos || [{
+              pessoa: proprietarioPadrao,
               valor: transacao.valor,
               tags: {}
             }];
+            // Aplicar proprietário padrão quando o primeiro pagamento tem "Titular" ou valor genérico
+            if (pagamentosBase.length > 0) {
+              const primeiraPessoa = pagamentosBase[0].pessoa;
+              const ehGenerico = !primeiraPessoa?.trim() ||
+                primeiraPessoa.toLowerCase() === 'titular';
+              if (ehGenerico) {
+                pagamentosBase[0] = { ...pagamentosBase[0], pessoa: proprietarioPadrao };
+              }
+            }
             const pagamentosComTags = mergeTagsPadrao(pagamentosBase, tagsPadrao);
             const transacaoImportada = new TransacaoImportada({
               data: transacao.data, // A data já está com horário 12:00
