@@ -14,7 +14,9 @@ const transacaoImportadaController = {
         usuario: req.userId
       };
 
-      if (req.query.status) {
+      if (req.query.status_not) {
+        query.status = { $ne: req.query.status_not };
+      } else if (req.query.status) {
         query.status = req.query.status;
       }
 

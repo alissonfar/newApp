@@ -25,6 +25,7 @@ const DetalhesImportacaoPage = () => {
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [expandirTodas, setExpandirTodas] = useState(false);
     const [duplicando, setDuplicando] = useState(false);
+    const [abaAtiva, setAbaAtiva] = useState('novas'); // 'novas' | 'ja_importadas'
 
     // Obter tags do contexto; categorias (incluindo inativas) para exibir nomes no histórico
     const { tags: allTags = [] } = useData();
@@ -51,7 +52,7 @@ const DetalhesImportacaoPage = () => {
             setLoading(true);
             const dados = await importacaoService.obterImportacao(id);
             setImportacao(dados);
-            await carregarTransacoes();
+            await carregarTransacoes(abaAtiva, dados);
         } catch (error) {
             console.error('Erro ao carregar detalhes da importação:', error);
             toast.error('Erro ao carregar detalhes da importação');
@@ -61,10 +62,16 @@ const DetalhesImportacaoPage = () => {
         }
     };
 
-    const carregarTransacoes = async () => {
+    const carregarTransacoes = async (aba = abaAtiva, importacaoRef = null) => {
+        const imp = importacaoRef || importacao;
         try {
             setLoadingTransacoes(true);
-            const response = await importacaoService.listarTransacoes(id, 1, 1000);
+            const options = {};
+            if (imp?.tipoImportacao === 'complementar') {
+                if (aba === 'novas') options.status_not = 'ja_importada';
+                else if (aba === 'ja_importadas') options.status = 'ja_importada';
+            }
+            const response = await importacaoService.listarTransacoes(id, 1, 1000, options);
             setTransacoes(response.items || []);
         } catch (error) {
             console.error('Erro ao carregar transações:', error);
@@ -72,6 +79,11 @@ const DetalhesImportacaoPage = () => {
         } finally {
             setLoadingTransacoes(false);
         }
+    };
+
+    const handleTrocarAba = (aba) => {
+        setAbaAtiva(aba);
+        carregarTransacoes(aba, importacao);
     };
 
     const handleValidarTransacao = async (transacaoId) => {
@@ -213,8 +225,14 @@ const DetalhesImportacaoPage = () => {
         return categoria ? categoria.nome : categoriaId;
     };
 
-    // Verifica se todas as transações foram validadas (não apenas revisadas)
-    const todasTransacoesValidadas = transacoes?.every(t => t.status === 'validada');
+    // Para importação complementar: pode finalizar se houver pelo menos uma validada
+    // Para importação normal: pode finalizar se todas as transações (exceto ja_importada) forem validadas
+    const temTransacoesValidadas = importacao?.estatisticas?.transacoesSucesso > 0;
+    const transacoesNaoJaImportadas = transacoes?.filter(t => t.status !== 'ja_importada') || [];
+    const todasNovasValidadas = transacoesNaoJaImportadas.length > 0 &&
+        transacoesNaoJaImportadas.every(t => t.status === 'validada' || t.status === 'erro');
+    const podeFinalizarImportacao = importacao?.status !== 'finalizada' &&
+        (importacao?.tipoImportacao === 'complementar' ? temTransacoesValidadas : todasNovasValidadas);
 
     // Função para mostrar confirmação customizada
     const mostrarConfirmacao = (mensagem, tipo) => {
@@ -339,10 +357,7 @@ const DetalhesImportacaoPage = () => {
     };
 
     // Função para verificar se a importação pode ser finalizada
-    const podeFinalizar = (importacao) => {
-        const todasValidadas = transacoes?.every(t => t.status === 'validada');
-        return importacao.status !== 'finalizada' && todasValidadas;
-    };
+    const podeFinalizar = (imp) => podeFinalizarImportacao && imp?.status !== 'finalizada';
 
     // Função para verificar se a importação pode ser estornada
     const podeEstornar = (importacao) => {
@@ -443,7 +458,7 @@ const DetalhesImportacaoPage = () => {
                     </div>
                     <div className="info-item">
                         <label>Total de Transações</label>
-                        <span>{transacoes.length}</span>
+                        <span>{importacao?.estatisticas?.totalTransacoes ?? transacoes.length}</span>
                     </div>
                     <div className="info-item">
                         <label>Valor Total</label>
@@ -453,10 +468,15 @@ const DetalhesImportacaoPage = () => {
 
                 <div className="resumo-status">
                     <h3>Resumo do Status</h3>
+                    {importacao?.tipoImportacao === 'complementar' && (
+                        <p className="resumo-complementar">
+                            {importacao?.estatisticas?.transacoesNovas ?? 0} novas, {importacao?.estatisticas?.transacoesJaImportadas ?? 0} já importadas
+                        </p>
+                    )}
                     <div className="status-grid">
                         <div className="status-card validadas">
                             <label>Validadas</label>
-                            <span>{transacoes.filter(t => t.status === 'validada').length}</span>
+                            <span>{importacao?.estatisticas?.transacoesSucesso ?? transacoes.filter(t => t.status === 'validada').length}</span>
                         </div>
                         <div className="status-card pendentes">
                             <label>Pendentes</label>
@@ -470,6 +490,12 @@ const DetalhesImportacaoPage = () => {
                             <label>Com Erro</label>
                             <span>{transacoes.filter(t => t.status === 'erro').length}</span>
                         </div>
+                        {importacao?.tipoImportacao === 'complementar' && (
+                            <div className="status-card ja-importadas">
+                                <label>Já Importadas</label>
+                                <span>{importacao?.estatisticas?.transacoesJaImportadas ?? 0}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -516,11 +542,28 @@ const DetalhesImportacaoPage = () => {
             <div className="importacao-card">
                 <div className="lista-header">
                     <h3>Lista de Transações</h3>
-                    <button
-                        className="btn-expandir-todas"
-                        onClick={toggleExpandirTodas}
-                        title={expandirTodas ? "Recolher todas" : "Expandir todas"}
-                    >
+                    <div className="lista-header-actions">
+                        {importacao?.tipoImportacao === 'complementar' && (
+                            <div className="abas-transacoes">
+                                <button
+                                    className={`aba-btn ${abaAtiva === 'novas' ? 'ativa' : ''}`}
+                                    onClick={() => handleTrocarAba('novas')}
+                                >
+                                    Transações Novas
+                                </button>
+                                <button
+                                    className={`aba-btn ${abaAtiva === 'ja_importadas' ? 'ativa' : ''}`}
+                                    onClick={() => handleTrocarAba('ja_importadas')}
+                                >
+                                    Já Importadas
+                                </button>
+                            </div>
+                        )}
+                        <button
+                            className="btn-expandir-todas"
+                            onClick={toggleExpandirTodas}
+                            title={expandirTodas ? "Recolher todas" : "Expandir todas"}
+                        >
                         {expandirTodas ? (
                             <>
                                 <FaChevronRight /> Recolher Todas
@@ -530,7 +573,8 @@ const DetalhesImportacaoPage = () => {
                                 <FaChevronDown /> Expandir Todas
                             </>
                         )}
-                    </button>
+                        </button>
+                    </div>
                 </div>
                 <table className="transacoes-table">
                     <thead>
@@ -567,7 +611,7 @@ const DetalhesImportacaoPage = () => {
                                     <td>{formatarData(transacao.data)}</td>
                                     <td>
                                         <span className={`status-badge ${transacao.status}`}>
-                                            {transacao.status.charAt(0).toUpperCase() + transacao.status.slice(1)}
+                                            {transacao.status === 'ja_importada' ? 'Já Importada' : transacao.status.charAt(0).toUpperCase() + transacao.status.slice(1)}
                                         </span>
                                     </td>
                                     <td className="acoes-cell">
@@ -584,8 +628,9 @@ const DetalhesImportacaoPage = () => {
                                                     <button
                                                         onClick={() => handleValidarTransacao(transacao.id)}
                                                         className="btn-acao btn-validar"
+                                                        title={transacao.status === 'ja_importada' ? 'Validar para forçar duplicação' : 'Validar'}
                                                     >
-                                                        Validar
+                                                        {transacao.status === 'ja_importada' ? 'Validar (duplicar)' : 'Validar'}
                                                     </button>
                                                 )}
                                                 <button

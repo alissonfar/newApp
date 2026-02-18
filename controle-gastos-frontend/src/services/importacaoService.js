@@ -46,9 +46,13 @@ const importacaoService = {
   },
 
   // Listar transações de uma importação
-  listarTransacoes: async (importacaoId, page = 1, limit = 10) => {
+  // Opções: { page, limit, status, status_not } - status_not exclui transações com esse status (ex: 'ja_importada')
+  listarTransacoes: async (importacaoId, page = 1, limit = 1000, options = {}) => {
     try {
-      const response = await api.get(`/importacoes/${importacaoId}/transacoes?page=${page}&limit=${limit}`);
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (options.status) params.append('status', options.status);
+      if (options.status_not) params.append('status_not', options.status_not);
+      const response = await api.get(`/importacoes/${importacaoId}/transacoes?${params.toString()}`);
       return response.data;
     } catch (error) {
       throw new Error('Erro ao listar transações da importação: ' + error.message);

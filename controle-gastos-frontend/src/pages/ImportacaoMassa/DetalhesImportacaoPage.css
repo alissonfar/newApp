@@ -144,6 +144,9 @@
 .status-card.pendentes { border-left: 4px solid var(--cor-aviso); }
 .status-card.processadas { border-left: 4px solid var(--cor-info); }
 .status-card.erro { border-left: 4px solid var(--cor-erro); }
+.status-card.ja-importadas { border-left: 4px solid var(--cor-secundaria); }
+
+.status-card.ja-importadas span { color: var(--cor-secundaria); }
 
 .status-card label {
   display: block;
@@ -433,6 +436,19 @@
   background-color: #fff;
 }
 
+.status-badge.ja_importada {
+  background-color: var(--cor-secundaria);
+  color: white;
+}
+
+.status-badge.ja_importada::before {
+  background-color: #fff;
+}
+
+.transacoes-table tr.status-ja_importada {
+  background-color: rgba(108, 117, 125, 0.08);
+}
+
 /* Ajuste na tabela para os status */
 .transacoes-table td .status-badge {
   font-size: 0.75rem;
@@ -640,12 +656,56 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.lista-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .lista-header h3 {
     margin: 0;
     font-size: 1.25rem;
     color: var(--cor-texto);
+}
+
+.resumo-complementar {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: var(--cor-secundaria);
+    font-weight: 500;
+}
+
+.abas-transacoes {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.aba-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    background: var(--cor-fundo);
+    color: var(--cor-texto);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.aba-btn:hover {
+    background: var(--cor-secundaria);
+    color: white;
+    border-color: var(--cor-secundaria);
+}
+
+.aba-btn.ativa {
+    background: var(--cor-secundaria);
+    color: white;
+    border-color: var(--cor-secundaria);
 }
 
 .btn-expandir-todas {

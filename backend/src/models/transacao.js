@@ -15,7 +15,10 @@ const TransacaoSchema = new mongoose.Schema({
   observacao: { type: String, required: false },
   pagamentos: { type: [PagamentoSchema], required: true },
   status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' },
-  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true }
+  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+  deduplicationKey: { type: String, sparse: true }
 });
+
+TransacaoSchema.index({ usuario: 1, deduplicationKey: 1 }, { sparse: true });
 
 module.exports = mongoose.model('Transacao', TransacaoSchema);

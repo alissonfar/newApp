@@ -13,11 +13,13 @@ class ImportacaoController {
                 return res.status(400).json({ erro: 'Nenhum arquivo foi enviado' });
             }
 
-            const { descricao, tagsPadrao: tagsPadraoRaw } = req.body;
+            const { descricao, tagsPadrao: tagsPadraoRaw, tipoImportacao: tipoImportacaoRaw } = req.body;
             if (!descricao) {
                 console.error('[Importação] Erro: Descrição não fornecida');
                 return res.status(400).json({ erro: 'Descrição é obrigatória' });
             }
+
+            const tipoImportacao = (tipoImportacaoRaw === 'complementar') ? 'complementar' : 'normal';
 
             // Parse tagsPadrao se vier como JSON string (FormData envia strings)
             let tagsPadrao = {};
@@ -49,7 +51,8 @@ class ImportacaoController {
                 nomeArquivo: arquivo.originalname,
                 caminhoArquivo: arquivo.path,
                 status: 'pendente',
-                tagsPadrao
+                tagsPadrao,
+                tipoImportacao
             });
 
             await importacao.save();
@@ -136,18 +139,23 @@ class ImportacaoController {
             }
 
             // Busca estatísticas das transações
-            const [totalTransacoes, transacoesSucesso, transacoesErro] = await Promise.all([
+            const [totalTransacoes, transacoesSucesso, transacoesErro, transacoesJaImportadas] = await Promise.all([
                 TransacaoImportada.countDocuments({ importacao: id }),
                 TransacaoImportada.countDocuments({ importacao: id, status: 'validada' }),
-                TransacaoImportada.countDocuments({ importacao: id, status: 'erro' })
+                TransacaoImportada.countDocuments({ importacao: id, status: 'erro' }),
+                TransacaoImportada.countDocuments({ importacao: id, status: 'ja_importada' })
             ]);
+
+            const transacoesNovas = totalTransacoes - transacoesJaImportadas;
 
             const resultado = {
                 ...importacao.toJSON(),
                 estatisticas: {
                     totalTransacoes,
                     transacoesSucesso,
-                    transacoesErro
+                    transacoesErro,
+                    transacoesNovas,
+                    transacoesJaImportadas
                 }
             };
 
@@ -244,7 +252,7 @@ class ImportacaoController {
                 return res.status(400).json({ erro: 'Não há transações validadas para finalizar.' });
             }
 
-            // Criar as transações reais
+            // Criar as transações reais com deduplicationKey e vínculo transacaoCriada
             const transacoesReais = transacoesImportadas.map(ti => ({
                 tipo: ti.tipo,
                 descricao: ti.descricao,
@@ -258,21 +266,23 @@ class ImportacaoController {
                         valor: ti.valor,
                         tags: {}
                     }],
-                usuario: ti.usuario
+                usuario: ti.usuario,
+                deduplicationKey: ti.deduplicationKey || null
             }));
 
-            // Salvar todas as transações no banco
-            await Transacao.insertMany(transacoesReais);
+            const transacoesCriadas = await Transacao.insertMany(transacoesReais);
+
+            // Atualizar TransacaoImportada com status e transacaoCriada
+            for (let i = 0; i < transacoesImportadas.length; i++) {
+                await TransacaoImportada.updateOne(
+                    { _id: transacoesImportadas[i]._id },
+                    { $set: { status: 'processada', transacaoCriada: transacoesCriadas[i]._id } }
+                );
+            }
 
             // Atualizar status da importação
             importacao.status = 'finalizada';
             await importacao.save();
-
-            // Atualizar status das transações importadas
-            await TransacaoImportada.updateMany(
-                { importacao: importacao._id, status: 'validada' },
-                { $set: { status: 'processada' } }
-            );
 
             res.json({ 
                 mensagem: 'Importação finalizada com sucesso',
@@ -306,18 +316,25 @@ class ImportacaoController {
                 return res.status(400).json({ erro: 'Não há transações para estornar.' });
             }
 
-            // Estornar todas as transações reais
+            // Estornar transações reais: por transacaoCriada (preciso) ou fallback por descricao/valor/data
             for (const transacaoImportada of transacoesImportadas) {
-                await Transacao.updateMany(
-                    {
-                        descricao: transacaoImportada.descricao,
-                        valor: transacaoImportada.valor,
-                        data: transacaoImportada.data,
-                        usuario: transacaoImportada.usuario,
-                        status: 'ativo'
-                    },
-                    { $set: { status: 'estornado' } }
-                );
+                if (transacaoImportada.transacaoCriada) {
+                    await Transacao.updateOne(
+                        { _id: transacaoImportada.transacaoCriada, status: 'ativo' },
+                        { $set: { status: 'estornado' } }
+                    );
+                } else {
+                    await Transacao.updateMany(
+                        {
+                            descricao: transacaoImportada.descricao,
+                            valor: transacaoImportada.valor,
+                            data: transacaoImportada.data,
+                            usuario: transacaoImportada.usuario,
+                            status: 'ativo'
+                        },
+                        { $set: { status: 'estornado' } }
+                    );
+                }
             }
 
             // Atualizar status da importação

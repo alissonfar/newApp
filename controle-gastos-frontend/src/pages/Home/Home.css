@@ -1,6 +1,6 @@
 /* src/pages/Home/Home.css */
 .home-container {
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
   background: #f5f7fa;
@@ -9,13 +9,13 @@
 
 /* Header e Cards de Resumo */
 .dashboard-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .dashboard-header h1 {
   font-family: var(--fonte-titulos);
   font-size: 2rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   color: #2c3e50;
   font-weight: 700;
 }
@@ -57,17 +57,33 @@
 .resumo-card.gastos p { color: var(--cor-erro); }
 .resumo-card.saldo p { color: var(--cor-primaria); }
 
-/* Glassmorphism Cards */
+/* Separador: controles de período → cards de resumo */
 .resumo-cards-glass {
   display: grid;
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 1024px) {
+  .resumo-cards-glass {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .resumo-cards-glass {
+    grid-template-columns: 1fr;
+  }
 }
 
 .glass-card {
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
-  padding: 1.75rem;
+  padding: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -107,8 +123,8 @@
 }
 
 .card-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  margin-bottom: 0.375rem;
   display: inline-block;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
 }
@@ -118,18 +134,18 @@
 }
 
 .card-title {
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
   color: #6b7280;
 }
 
 .card-value {
-  font-size: 1.875rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.375rem;
   color: #1f2937;
   line-height: 1.2;
 }
@@ -153,14 +169,14 @@
 .card-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
-  margin: 1rem 0;
+  margin: 0.375rem 0;
 }
 
 .card-detail {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   color: #6b7280;
 }
 
@@ -168,12 +184,12 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  font-size: 0.75rem;
+  font-size: 0.625rem;
 }
 
 .detail-value {
   font-weight: 700;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #1f2937;
 }
 
@@ -195,31 +211,41 @@
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
-  gap: 2rem;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #d1d5db;
 }
 
 /* Seções do Dashboard */
 .dashboard-section {
   background: white;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border: 1px solid #e5e7eb;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
+}
+
+/* Separadores visuais entre seções do dashboard - mais espaçados e visíveis */
+.dashboard-section + .dashboard-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #d1d5db;
 }
 
 .dashboard-section h2 {
   font-family: var(--fonte-titulos);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   color: var(--cor-texto-principal);
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 /* Atalhos */
 .atalhos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
 }
 
 .atalho-btn {
@@ -227,7 +253,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1rem;
   background: var(--cor-fundo);
   border: none;
   border-radius: 8px;
@@ -242,8 +268,8 @@
 }
 
 .atalho-btn svg {
-  font-size: 1.5rem;
-  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
   color: var(--cor-primaria);
 }
 
@@ -258,10 +284,9 @@
   color: var(--cor-primaria-hover);
 }
 
-/* Gráfico */
+/* Gráfico - altura controlada por Tailwind (h-52 md:h-64) */
 .grafico-container {
-  height: 300px;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 /* Últimas Transações */
@@ -275,7 +300,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 0.5rem 0.75rem;
   background: var(--cor-fundo);
   border-radius: 8px;
   transition: transform 0.2s;
@@ -316,7 +341,7 @@
   border: 1px solid var(--cor-borda);
   border-radius: 8px;
   font-family: var(--fonte-corpo);
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 .react-calendar button {
@@ -335,7 +360,7 @@
 
 .react-calendar__navigation {
   display: flex;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .react-calendar__navigation button {
@@ -403,7 +428,7 @@
 .nova-nota-form {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .nova-nota-form input {
@@ -431,14 +456,14 @@
 .notas-lista {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-height: 300px;
+  gap: 0.5rem;
+  max-height: 220px;
   overflow-y: auto;
 }
 
 .nota-item {
   position: relative;
-  padding: 1rem;
+  padding: 0.75rem;
   background: var(--cor-fundo);
   border-radius: 8px;
   border-left: 4px solid var(--cor-primaria);
@@ -506,10 +531,6 @@
 
   .resumo-cards {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-
-  .resumo-cards-glass {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
 }
 

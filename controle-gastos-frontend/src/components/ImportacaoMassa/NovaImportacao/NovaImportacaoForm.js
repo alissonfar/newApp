@@ -17,6 +17,7 @@ const NovaImportacaoForm = () => {
   const [tipoArquivo, setTipoArquivo] = useState('json');
   const [arquivo, setArquivo] = useState(null);
   const [tagsPadrao, setTagsPadrao] = useState({});
+  const [tipoImportacaoComplementar, setTipoImportacaoComplementar] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -51,6 +52,9 @@ const NovaImportacaoForm = () => {
       );
       if (Object.keys(tagsParaEnviar).length > 0) {
         formData.append('tagsPadrao', JSON.stringify(tagsParaEnviar));
+      }
+      if (tipoImportacaoComplementar) {
+        formData.append('tipoImportacao', 'complementar');
       }
 
       // Criar nova importação com o arquivo
@@ -92,6 +96,21 @@ const NovaImportacaoForm = () => {
             disabled={loading}
             required
           />
+        </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={tipoImportacaoComplementar}
+              onChange={(e) => setTipoImportacaoComplementar(e.target.checked)}
+              disabled={loading}
+            />
+            <span>Importação complementar (evitar duplicatas)</span>
+          </label>
+          <p className="form-hint">
+            Ao marcar, o sistema identificará transações já importadas e importará apenas as novas.
+          </p>
         </div>
 
         <div className="form-group">

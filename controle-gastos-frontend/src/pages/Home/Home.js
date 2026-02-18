@@ -172,9 +172,9 @@ const Home = () => {
   const mediaDiariaRecebiveis = resumoPeriodo.totalRecebiveis / (getDiasDecorridos() || 1);
 
   return (
-    <div className="home-container p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
-      <div className="dashboard-header mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+    <div className="home-container p-4 md:p-5 lg:p-6 bg-gray-50 min-h-screen">
+      <div className="dashboard-header mb-5">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
           Dashboard {proprietarioExibicao ? `- ${proprietarioExibicao}` : ''}
         </h1>
         
@@ -203,7 +203,7 @@ const Home = () => {
         )}
         
         {!carregandoUsuario && !semProprietario && !semDados && (
-          <div className="periodo-controles mb-4 flex flex-wrap gap-2">
+          <div className="periodo-controles mb-3 flex flex-wrap gap-2">
             <button 
               onClick={() => setPeriodoSelecionado('semanaAtual')}
               className={`btn-periodo ${periodoSelecionado === 'semanaAtual' ? 'ativo' : ''}`}
@@ -232,7 +232,7 @@ const Home = () => {
         )}
 
         {!carregandoUsuario && !semProprietario && !semDados && (
-          <div className="resumo-cards-glass grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="resumo-cards-glass mb-5">
             {carregandoDados ? (
               <div className="col-span-full carregando-container flex items-center justify-center p-6 bg-white rounded-lg shadow">
                 <FaSpinner className="spinner text-blue-500 mr-2" />
@@ -303,7 +303,7 @@ const Home = () => {
         <div className="dashboard-grid grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="dashboard-column lg:col-span-2 flex flex-col gap-6">
             <section className="dashboard-section atalhos bg-white p-4 rounded-lg shadow">
-              <h2 className="text-lg font-semibold text-gray-700 mb-3">Atalhos</h2>
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">Atalhos</h2>
               <div className="atalhos-grid grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <button className="atalho-btn nova-transacao" onClick={handleNovaTransacao}>
                   <FaPlus />
@@ -321,8 +321,8 @@ const Home = () => {
             </section>
 
             <section className="dashboard-section grafico bg-white p-4 rounded-lg shadow">
-              <h2 className="text-lg font-semibold text-gray-700 mb-3">Evolução Financeira (Últimos 6 Meses)</h2>
-              <div className="grafico-container h-64 md:h-80">
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">Evolução Financeira (Últimos 6 Meses)</h2>
+              <div className="grafico-container h-52 md:h-64">
                 <Line 
                   data={dadosGrafico}
                   options={{
@@ -397,9 +397,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="transacoes-lista space-y-3 max-h-96 overflow-y-auto">
+              <div className="transacoes-lista space-y-3 max-h-72 overflow-y-auto">
                 {transacoesFiltradas.slice(0, 10).map((t, index) => (
-                  <div key={index} className={`transacao-item flex justify-between items-center p-3 rounded border-l-4 group ${t.tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}>
+                  <div key={index} className={`transacao-item flex justify-between items-center py-2 px-3 rounded border-l-4 group ${t.tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}>
                     <div className="transacao-info flex-1">
                       <strong className="text-sm text-gray-800 block">{t.descricao}</strong>
                       <span className="text-xs text-gray-500">{new Date(t.data).toLocaleDateString()}</span>
@@ -444,7 +444,7 @@ const Home = () => {
 
           <div className="dashboard-column lg:col-span-1 flex flex-col gap-6">
             <section className="dashboard-section calendario bg-white p-4 rounded-lg shadow">
-              <h2 className="text-lg font-semibold text-gray-700 mb-3">Calendário</h2>
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">Calendário</h2>
               <Calendar
                 onChange={setCalendarDate}
                 onClickDay={handleDayClick}
@@ -455,8 +455,8 @@ const Home = () => {
             </section>
 
             <section className="dashboard-section notas bg-white p-4 rounded-lg shadow">
-              <h2 className="text-lg font-semibold text-gray-700 mb-3">Notas Rápidas</h2>
-              <form onSubmit={adicionarNota} className="nova-nota-form flex gap-2 mb-3">
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">Notas Rápidas</h2>
+              <form onSubmit={adicionarNota} className="nova-nota-form flex gap-2 mb-2">
                 <input
                   type="text"
                   value={novaNota}
@@ -468,7 +468,7 @@ const Home = () => {
                   <FaRegStickyNote />
                 </button>
               </form>
-              <div className="notas-lista max-h-48 overflow-y-auto space-y-2 pr-2">
+              <div className="notas-lista overflow-y-auto space-y-2 pr-2">
                 {notas.length === 0 && <p className="text-sm text-gray-400 text-center py-2">Nenhuma nota ainda.</p>}
                 {notas.map(nota => (
                   <div key={nota.id} className="nota-item bg-yellow-50 p-2 rounded border border-yellow-200 flex justify-between items-start">

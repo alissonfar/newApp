@@ -35,7 +35,7 @@ const TransacaoImportadaSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    enum: ['pendente', 'revisada', 'validada', 'erro'],
+    enum: ['pendente', 'revisada', 'validada', 'erro', 'ja_importada', 'processada', 'estornada'],
     default: 'pendente'
   },
   erro: { 
@@ -53,6 +53,15 @@ const TransacaoImportadaSchema = new mongoose.Schema({
   dadosOriginais: { 
     type: mongoose.Schema.Types.Mixed,
     required: true
+  },
+  deduplicationKey: { 
+    type: String,
+    default: null
+  },
+  transacaoCriada: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Transacao',
+    default: null
   },
   usuario: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -82,6 +91,7 @@ TransacaoImportadaSchema.pre('save', function(next) {
 
 // Índices
 TransacaoImportadaSchema.index({ importacao: 1, status: 1 });
+TransacaoImportadaSchema.index({ importacao: 1, status: 1, deduplicationKey: 1 });
 TransacaoImportadaSchema.index({ usuario: 1 });
 TransacaoImportadaSchema.index({ data: -1 });
 

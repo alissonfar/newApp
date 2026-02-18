@@ -1,9 +1,11 @@
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 const csv = require('csv-parse');
 const mongoose = require('mongoose');
 const Importacao = require('../models/importacao');
 const TransacaoImportada = require('../models/transacaoImportada');
+const Transacao = require('../models/transacao');
 const Usuario = require('../models/usuarios');
 
 /**
@@ -25,6 +27,100 @@ function mergeTagsPadrao(pagamentos, tagsPadrao) {
     });
     return { ...p, tags: tagsAtuais };
   });
+}
+
+/**
+ * Normaliza descrição para chave de deduplicação.
+ * @param {string} descricao
+ * @returns {string}
+ */
+function normalizarDescricao(descricao) {
+  if (!descricao || typeof descricao !== 'string') return '';
+  return descricao
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Formata data para YYYY-MM-DD (evita timezone).
+ * @param {Date} data
+ * @returns {string}
+ */
+function formatarDataISO(data) {
+  if (!data) return '';
+  const d = new Date(data);
+  const ano = d.getUTCFullYear();
+  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dia = String(d.getUTCDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+/**
+ * Gera chave determinística para deduplicação.
+ * Fórmula: SHA256(usuarioId | descricao_normalizada | valor | data_iso | tipo | identificador)
+ * @param {string} usuarioId
+ * @param {Object} dados - { descricao, valor, data, tipo, identificador }
+ * @returns {string}
+ */
+function gerarDeduplicationKey(usuarioId, dados) {
+  const descricao = normalizarDescricao(dados.descricao || '');
+  const valor = Math.abs(parseFloat(dados.valor) || 0).toFixed(2);
+  const data = formatarDataISO(dados.data);
+  const tipo = (dados.tipo === 'recebivel' ? 'recebivel' : 'gasto');
+  const identificador = (dados.identificador || '').trim();
+  const composicao = `${usuarioId}|${descricao}|${valor}|${data}|${tipo}|${identificador}`;
+  return crypto.createHash('sha256').update(composicao).digest('hex');
+}
+
+/**
+ * Classifica transações parseadas em novas vs já importadas.
+ * @param {Array} transacoesParseadas - Array retornado por parseCSV
+ * @param {string} usuarioId
+ * @returns {Promise<{ novas: Array, jaImportadas: Array }>}
+ */
+async function classificarTransacoes(transacoesParseadas, usuarioId) {
+  const novas = [];
+  const jaImportadas = [];
+
+  for (const transacao of transacoesParseadas) {
+    const key = gerarDeduplicationKey(usuarioId, transacao);
+
+    // Busca por deduplicationKey (transações novas)
+    let existe = await Transacao.findOne({
+      usuario: usuarioId,
+      deduplicationKey: key,
+      status: 'ativo'
+    }).lean();
+
+    // Fallback: transações antigas sem deduplicationKey
+    if (!existe) {
+      const valorAbs = Math.abs(parseFloat(transacao.valor) || 0);
+      const dataObj = new Date(transacao.data);
+      const startOfDay = new Date(Date.UTC(dataObj.getUTCFullYear(), dataObj.getUTCMonth(), dataObj.getUTCDate(), 0, 0, 0, 0));
+      const endOfDay = new Date(Date.UTC(dataObj.getUTCFullYear(), dataObj.getUTCMonth(), dataObj.getUTCDate(), 23, 59, 59, 999));
+      const descricaoEscaped = (transacao.descricao || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      existe = await Transacao.findOne({
+        usuario: usuarioId,
+        $or: [{ deduplicationKey: null }, { deduplicationKey: { $exists: false } }],
+        status: 'ativo',
+        valor: valorAbs,
+        data: { $gte: startOfDay, $lte: endOfDay },
+        descricao: new RegExp(`^\\s*${descricaoEscaped}\\s*$`, 'i')
+      }).lean();
+    }
+
+    if (existe) {
+      jaImportadas.push({ ...transacao, deduplicationKey: key });
+    } else {
+      novas.push({ ...transacao, deduplicationKey: key });
+    }
+  }
+
+  return { novas, jaImportadas };
 }
 
 class ImportacaoService {
@@ -330,16 +426,32 @@ class ImportacaoService {
         throw new Error('Formato de arquivo não suportado');
       }
 
+      // Importação complementar: classifica em novas vs já importadas
+      let transacoesParaProcessar = transacoes;
+      if (importacao.tipoImportacao === 'complementar') {
+        console.log('[DEBUG] Importação complementar: classificando transações');
+        const { novas, jaImportadas } = await classificarTransacoes(transacoes, importacao.usuario.toString());
+        transacoesParaProcessar = novas.map(t => ({ ...t, _statusComplementar: 'pendente' }))
+          .concat(jaImportadas.map(t => ({ ...t, _statusComplementar: 'ja_importada' })));
+        console.log('[DEBUG] Classificação:', { novas: novas.length, jaImportadas: jaImportadas.length });
+      }
+
       // Processa cada transação
       const tagsPadrao = importacao.tagsPadrao || {};
       console.log('[DEBUG] Iniciando processamento das transações', Object.keys(tagsPadrao).length > 0 ? '(com tags padrão)' : '');
       const resultados = await Promise.all(
-        transacoes.map(async (transacao) => {
+        transacoesParaProcessar.map(async (transacao) => {
           try {
-            console.log('[DEBUG] Processando transação:', transacao);
-            let pagamentosBase = transacao.pagamentos || [{
+            const statusInicial = transacao._statusComplementar || 'pendente';
+            const transacaoBase = { ...transacao };
+            delete transacaoBase._statusComplementar;
+            delete transacaoBase.deduplicationKey;
+            const dedupKey = transacao.deduplicationKey || gerarDeduplicationKey(importacao.usuario.toString(), transacaoBase);
+
+            console.log('[DEBUG] Processando transação:', transacaoBase);
+            let pagamentosBase = transacaoBase.pagamentos || [{
               pessoa: proprietarioPadrao,
-              valor: transacao.valor,
+              valor: transacaoBase.valor,
               tags: {}
             }];
             // Aplicar proprietário padrão quando o primeiro pagamento tem "Titular" ou valor genérico
@@ -353,15 +465,17 @@ class ImportacaoService {
             }
             const pagamentosComTags = mergeTagsPadrao(pagamentosBase, tagsPadrao);
             const transacaoImportada = new TransacaoImportada({
-              data: transacao.data, // A data já está com horário 12:00
-              tipo: transacao.tipo,
-              valor: transacao.valor,
-              descricao: transacao.descricao,
-              categoria: transacao.categoria,
+              data: transacaoBase.data, // A data já está com horário 12:00
+              tipo: transacaoBase.tipo,
+              valor: transacaoBase.valor,
+              descricao: transacaoBase.descricao,
+              categoria: transacaoBase.categoria,
               importacao: importacaoId,
               usuario: importacao.usuario,
-              dadosOriginais: transacao,
-              pagamentos: pagamentosComTags
+              dadosOriginais: transacaoBase,
+              pagamentos: pagamentosComTags,
+              status: statusInicial,
+              deduplicationKey: dedupKey
             });
 
             await transacaoImportada.validate();

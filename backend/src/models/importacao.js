@@ -43,6 +43,11 @@ const ImportacaoSchema = new mongoose.Schema({
     type: Object,
     default: {}
   },
+  tipoImportacao: {
+    type: String,
+    enum: ['normal', 'complementar'],
+    default: 'normal'
+  },
   usuario: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Usuario', 
