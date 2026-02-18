@@ -138,15 +138,17 @@ class ImportacaoController {
                 return res.status(404).json({ erro: 'Importação não encontrada' });
             }
 
-            // Busca estatísticas das transações
-            const [totalTransacoes, transacoesSucesso, transacoesErro, transacoesJaImportadas] = await Promise.all([
-                TransacaoImportada.countDocuments({ importacao: id }),
+            // Busca estatísticas das transações (exclui ignoradas do total exibido)
+            const [totalTransacoes, transacoesSucesso, transacoesErro, transacoesJaImportadas, transacoesIgnoradas] = await Promise.all([
+                TransacaoImportada.countDocuments({ importacao: id, status: { $ne: 'ignorada' } }),
                 TransacaoImportada.countDocuments({ importacao: id, status: 'validada' }),
                 TransacaoImportada.countDocuments({ importacao: id, status: 'erro' }),
-                TransacaoImportada.countDocuments({ importacao: id, status: 'ja_importada' })
+                TransacaoImportada.countDocuments({ importacao: id, status: 'ja_importada' }),
+                TransacaoImportada.countDocuments({ importacao: id, status: 'ignorada' })
             ]);
 
             const transacoesNovas = totalTransacoes - transacoesJaImportadas;
+            const totalIgnoradasNaImportacao = (importacao.totalIgnoradas || 0) + transacoesIgnoradas;
 
             const resultado = {
                 ...importacao.toJSON(),
@@ -155,7 +157,9 @@ class ImportacaoController {
                     transacoesSucesso,
                     transacoesErro,
                     transacoesNovas,
-                    transacoesJaImportadas
+                    transacoesJaImportadas,
+                    transacoesIgnoradas,
+                    totalIgnoradas: totalIgnoradasNaImportacao
                 }
             };
 

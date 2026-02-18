@@ -26,6 +26,8 @@ const DetalhesImportacaoPage = () => {
     const [expandirTodas, setExpandirTodas] = useState(false);
     const [duplicando, setDuplicando] = useState(false);
     const [abaAtiva, setAbaAtiva] = useState('novas'); // 'novas' | 'ja_importadas'
+    const [selecionados, setSelecionados] = useState(new Set());
+    const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
 
     // Obter tags do contexto; categorias (incluindo inativas) para exibir nomes no histórico
     const { tags: allTags = [] } = useData();
@@ -68,7 +70,7 @@ const DetalhesImportacaoPage = () => {
             setLoadingTransacoes(true);
             const options = {};
             if (imp?.tipoImportacao === 'complementar') {
-                if (aba === 'novas') options.status_not = 'ja_importada';
+                if (aba === 'novas') options.status_not = 'ja_importada'; // Backend também exclui ignorada
                 else if (aba === 'ja_importadas') options.status = 'ja_importada';
             }
             const response = await importacaoService.listarTransacoes(id, 1, 1000, options);
@@ -83,7 +85,52 @@ const DetalhesImportacaoPage = () => {
 
     const handleTrocarAba = (aba) => {
         setAbaAtiva(aba);
+        setSelecionados(new Set());
         carregarTransacoes(aba, importacao);
+    };
+
+    const toggleSelecao = (transacaoId) => {
+        setSelecionados(prev => {
+            const next = new Set(prev);
+            if (next.has(transacaoId)) next.delete(transacaoId);
+            else next.add(transacaoId);
+            return next;
+        });
+    };
+
+    const toggleSelecionarTodas = () => {
+        if (selecionados.size === transacoes.length) {
+            setSelecionados(new Set());
+        } else {
+            setSelecionados(new Set(transacoes.map(t => t.id)));
+        }
+    };
+
+    const handleAcaoMassa = async (acao) => {
+        const ids = Array.from(selecionados);
+        if (ids.length === 0) {
+            toast.warn('Selecione pelo menos uma transação.');
+            return;
+        }
+        const mensagem = acao === 'ignorar'
+            ? `Ignorar ${ids.length} transação(ões)? Elas não reaparecerão em importações futuras.`
+            : `Validar ${ids.length} transação(ões)?`;
+        const confirmado = await mostrarConfirmacao(mensagem, acao === 'ignorar' ? 'excluir' : 'finalizar');
+        if (!confirmado) return;
+        try {
+            setExecutandoAcaoMassa(true);
+            const resultado = await importacaoService.acoesMassa(ids, acao);
+            toast.success(`${resultado.sucessos} transação(ões) processada(s) com sucesso.`);
+            if (resultado.erros > 0) {
+                toast.warn(`${resultado.erros} transação(ões) não puderam ser processadas.`);
+            }
+            setSelecionados(new Set());
+            await carregarDetalhes();
+        } catch (error) {
+            toast.error(error.message || 'Erro ao executar ação em massa.');
+        } finally {
+            setExecutandoAcaoMassa(false);
+        }
     };
 
     const handleValidarTransacao = async (transacaoId) => {
@@ -283,8 +330,8 @@ const DetalhesImportacaoPage = () => {
     const handleExcluirTransacao = async (transacaoId) => {
         const mensagemConfirmacao = (
             <div>
-                <p>Tem certeza que deseja excluir esta transação importada?</p>
-                <p>Esta ação não pode ser desfeita.</p>
+                <p>Tem certeza que deseja ignorar esta transação?</p>
+                <p>Ela não reaparecerá em importações complementares futuras.</p>
             </div>
         );
 
@@ -293,7 +340,7 @@ const DetalhesImportacaoPage = () => {
 
         try {
             await importacaoService.excluirTransacao(transacaoId);
-            toast.success('Transação excluída com sucesso!');
+            toast.success('Transação ignorada com sucesso!');
             // Remove a transação do estado local para atualizar a UI imediatamente
             setTransacoes(prevTransacoes => prevTransacoes.filter(t => t.id !== transacaoId));
             // Opcional: recarregar detalhes para atualizar contadores, se necessário
@@ -471,6 +518,9 @@ const DetalhesImportacaoPage = () => {
                     {importacao?.tipoImportacao === 'complementar' && (
                         <p className="resumo-complementar">
                             {importacao?.estatisticas?.transacoesNovas ?? 0} novas, {importacao?.estatisticas?.transacoesJaImportadas ?? 0} já importadas
+                            {(importacao?.estatisticas?.totalIgnoradas ?? 0) > 0 && (
+                                <span>, {importacao.estatisticas.totalIgnoradas} ignoradas (não exibidas)</span>
+                            )}
                         </p>
                     )}
                     <div className="status-grid">
@@ -576,9 +626,47 @@ const DetalhesImportacaoPage = () => {
                         </button>
                     </div>
                 </div>
+                {selecionados.size > 0 && podeEditar(importacao) && (
+                    <div className="barra-acoes-massa">
+                        <span className="contador-selecionados">{selecionados.size} selecionada(s)</span>
+                        <div className="botoes-acoes-massa">
+                            <button
+                                className="btn-acao-massa btn-validar"
+                                onClick={() => handleAcaoMassa('validar')}
+                                disabled={executandoAcaoMassa}
+                            >
+                                Validar
+                            </button>
+                            <button
+                                className="btn-acao-massa btn-ignorar"
+                                onClick={() => handleAcaoMassa('ignorar')}
+                                disabled={executandoAcaoMassa}
+                                title="Ignorar - não reaparecerão em importações futuras"
+                            >
+                                Ignorar
+                            </button>
+                            <button
+                                className="btn-acao-massa btn-limpar"
+                                onClick={() => setSelecionados(new Set())}
+                            >
+                                Limpar seleção
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <table className="transacoes-table">
                     <thead>
                         <tr>
+                            {podeEditar(importacao) && (
+                                <th style={{ width: '40px' }} className="th-checkbox">
+                                    <input
+                                        type="checkbox"
+                                        checked={transacoes.length > 0 && selecionados.size === transacoes.length}
+                                        onChange={toggleSelecionarTodas}
+                                        title="Selecionar todas"
+                                    />
+                                </th>
+                            )}
                             <th style={{ width: '40px' }}></th>
                             <th>Descrição</th>
                             <th>Valor</th>
@@ -593,6 +681,17 @@ const DetalhesImportacaoPage = () => {
                                 <tr
                                     className={`status-${transacao.status}`}
                                 >
+                                    {podeEditar(importacao) && (
+                                        <td className="checkbox-cell">
+                                            {['pendente', 'revisada', 'erro', 'ja_importada'].includes(transacao.status) && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selecionados.has(transacao.id)}
+                                                    onChange={() => toggleSelecao(transacao.id)}
+                                                />
+                                            )}
+                                        </td>
+                                    )}
                                     <td className="expand-cell">
                                         <button
                                             className="btn-expand"
@@ -636,7 +735,7 @@ const DetalhesImportacaoPage = () => {
                                                 <button
                                                     onClick={() => handleExcluirTransacao(transacao.id)}
                                                     className="btn-acao btn-excluir"
-                                                    title="Excluir esta transação"
+                                                    title="Ignorar - não reaparecerá em importações futuras"
                                                 >
                                                     <FaTrash />
                                                 </button>
@@ -648,7 +747,7 @@ const DetalhesImportacaoPage = () => {
                                 {/* Linha de resumo expansível */}
                                 {expandedRows.has(transacao.id) && (
                                     <tr className="resumo-row">
-                                        <td colSpan="6">
+                                        <td colSpan={podeEditar(importacao) ? 7 : 6}>
                                             <div className="mini-resumo">
                                                 {/* Tipo da Transação */}
                                                 <div className="resumo-item">

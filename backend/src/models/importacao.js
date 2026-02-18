@@ -31,6 +31,10 @@ const ImportacaoSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   },
+  totalIgnoradas: {
+    type: Number,
+    default: 0
+  },
   erro: {
     type: String,
     default: null

@@ -35,7 +35,7 @@ const TransacaoImportadaSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    enum: ['pendente', 'revisada', 'validada', 'erro', 'ja_importada', 'processada', 'estornada'],
+    enum: ['pendente', 'revisada', 'validada', 'erro', 'ja_importada', 'processada', 'estornada', 'ignorada'],
     default: 'pendente'
   },
   erro: { 
@@ -93,6 +93,7 @@ TransacaoImportadaSchema.pre('save', function(next) {
 TransacaoImportadaSchema.index({ importacao: 1, status: 1 });
 TransacaoImportadaSchema.index({ importacao: 1, status: 1, deduplicationKey: 1 });
 TransacaoImportadaSchema.index({ usuario: 1 });
+TransacaoImportadaSchema.index({ usuario: 1, deduplicationKey: 1, status: 1 });
 TransacaoImportadaSchema.index({ data: -1 });
 
 module.exports = mongoose.model('TransacaoImportada', TransacaoImportadaSchema); 

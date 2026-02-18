@@ -76,34 +76,35 @@ function gerarDeduplicationKey(usuarioId, dados) {
 }
 
 /**
- * Classifica transações parseadas em novas vs já importadas.
+ * Classifica transações parseadas em novas, já importadas e já ignoradas.
  * @param {Array} transacoesParseadas - Array retornado por parseCSV
  * @param {string} usuarioId
- * @returns {Promise<{ novas: Array, jaImportadas: Array }>}
+ * @returns {Promise<{ novas: Array, jaImportadas: Array, jaIgnoradas: Array }>}
  */
 async function classificarTransacoes(transacoesParseadas, usuarioId) {
   const novas = [];
   const jaImportadas = [];
+  const jaIgnoradas = [];
 
   for (const transacao of transacoesParseadas) {
     const key = gerarDeduplicationKey(usuarioId, transacao);
 
-    // Busca por deduplicationKey (transações novas)
-    let existe = await Transacao.findOne({
+    // 1. Busca Transacao ativa (já importada)
+    let existeTransacao = await Transacao.findOne({
       usuario: usuarioId,
       deduplicationKey: key,
       status: 'ativo'
     }).lean();
 
     // Fallback: transações antigas sem deduplicationKey
-    if (!existe) {
+    if (!existeTransacao) {
       const valorAbs = Math.abs(parseFloat(transacao.valor) || 0);
       const dataObj = new Date(transacao.data);
       const startOfDay = new Date(Date.UTC(dataObj.getUTCFullYear(), dataObj.getUTCMonth(), dataObj.getUTCDate(), 0, 0, 0, 0));
       const endOfDay = new Date(Date.UTC(dataObj.getUTCFullYear(), dataObj.getUTCMonth(), dataObj.getUTCDate(), 23, 59, 59, 999));
       const descricaoEscaped = (transacao.descricao || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-      existe = await Transacao.findOne({
+      existeTransacao = await Transacao.findOne({
         usuario: usuarioId,
         $or: [{ deduplicationKey: null }, { deduplicationKey: { $exists: false } }],
         status: 'ativo',
@@ -113,14 +114,44 @@ async function classificarTransacoes(transacoesParseadas, usuarioId) {
       }).lean();
     }
 
-    if (existe) {
+    if (existeTransacao) {
       jaImportadas.push({ ...transacao, deduplicationKey: key });
+      continue;
+    }
+
+    // 2. Busca TransacaoImportada ignorada (decisão anterior do usuário)
+    let existeIgnorada = await TransacaoImportada.findOne({
+      usuario: usuarioId,
+      deduplicationKey: key,
+      status: 'ignorada'
+    }).lean();
+
+    // Fallback: TransacaoImportada ignorada sem deduplicationKey
+    if (!existeIgnorada) {
+      const valorAbs = Math.abs(parseFloat(transacao.valor) || 0);
+      const dataObj = new Date(transacao.data);
+      const startOfDay = new Date(Date.UTC(dataObj.getUTCFullYear(), dataObj.getUTCMonth(), dataObj.getUTCDate(), 0, 0, 0, 0));
+      const endOfDay = new Date(Date.UTC(dataObj.getUTCFullYear(), dataObj.getUTCMonth(), dataObj.getUTCDate(), 23, 59, 59, 999));
+      const descricaoEscaped = (transacao.descricao || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      existeIgnorada = await TransacaoImportada.findOne({
+        usuario: usuarioId,
+        status: 'ignorada',
+        $or: [{ deduplicationKey: null }, { deduplicationKey: { $exists: false } }],
+        valor: valorAbs,
+        data: { $gte: startOfDay, $lte: endOfDay },
+        descricao: new RegExp(`^\\s*${descricaoEscaped}\\s*$`, 'i')
+      }).lean();
+    }
+
+    if (existeIgnorada) {
+      jaIgnoradas.push({ ...transacao, deduplicationKey: key });
     } else {
       novas.push({ ...transacao, deduplicationKey: key });
     }
   }
 
-  return { novas, jaImportadas };
+  return { novas, jaImportadas, jaIgnoradas };
 }
 
 class ImportacaoService {
@@ -426,14 +457,16 @@ class ImportacaoService {
         throw new Error('Formato de arquivo não suportado');
       }
 
-      // Importação complementar: classifica em novas vs já importadas
+      // Importação complementar: classifica em novas, já importadas e já ignoradas
       let transacoesParaProcessar = transacoes;
+      let totalIgnoradas = 0;
       if (importacao.tipoImportacao === 'complementar') {
         console.log('[DEBUG] Importação complementar: classificando transações');
-        const { novas, jaImportadas } = await classificarTransacoes(transacoes, importacao.usuario.toString());
+        const { novas, jaImportadas, jaIgnoradas } = await classificarTransacoes(transacoes, importacao.usuario.toString());
         transacoesParaProcessar = novas.map(t => ({ ...t, _statusComplementar: 'pendente' }))
           .concat(jaImportadas.map(t => ({ ...t, _statusComplementar: 'ja_importada' })));
-        console.log('[DEBUG] Classificação:', { novas: novas.length, jaImportadas: jaImportadas.length });
+        totalIgnoradas = jaIgnoradas.length;
+        console.log('[DEBUG] Classificação:', { novas: novas.length, jaImportadas: jaImportadas.length, jaIgnoradas: totalIgnoradas });
       }
 
       // Processa cada transação
@@ -506,6 +539,7 @@ class ImportacaoService {
       importacao.totalProcessado = resultados.length;
       importacao.totalSucesso = sucessos;
       importacao.totalErro = falhas;
+      importacao.totalIgnoradas = totalIgnoradas;
       importacao.status = falhas > 0 ? 'erro' : 'validado';
       importacao.erros = resultados
         .filter(r => !r.sucesso)
@@ -718,4 +752,5 @@ class ImportacaoService {
   }
 }
 
+ImportacaoService.gerarDeduplicationKey = gerarDeduplicationKey;
 module.exports = ImportacaoService; 

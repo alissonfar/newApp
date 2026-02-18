@@ -137,7 +137,18 @@ const importacaoService = {
     }
   },
 
-  // Excluir uma transação importada
+  // Ações em massa
+  acoesMassa: async (ids, acao) => {
+    try {
+      const response = await api.post('/importacoes/transacoes/acoes-massa', { ids, acao });
+      return response.data;
+    } catch (error) {
+      const mensagem = error.response?.data?.erro || error.message;
+      throw new Error(mensagem);
+    }
+  },
+
+  // Excluir uma transação importada (marca como ignorada)
   excluirTransacao: async (transacaoId) => {
     try {
       // A rota correta é /importacoes/transacoes/:id

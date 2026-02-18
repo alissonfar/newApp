@@ -708,6 +708,81 @@
     border-color: var(--cor-secundaria);
 }
 
+.barra-acoes-massa {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.contador-selecionados {
+    font-weight: 600;
+    color: var(--cor-texto);
+}
+
+.botoes-acoes-massa {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-acao-massa {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-acao-massa.btn-validar {
+    background: var(--cor-sucesso);
+    color: white;
+}
+
+.btn-acao-massa.btn-validar:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.btn-acao-massa.btn-ignorar {
+    background: var(--cor-aviso);
+    color: #000;
+}
+
+.btn-acao-massa.btn-ignorar:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.btn-acao-massa.btn-limpar {
+    background: transparent;
+    color: var(--cor-texto);
+    border: 1px solid var(--cor-borda);
+}
+
+.btn-acao-massa.btn-limpar:hover {
+    background: var(--cor-fundo);
+}
+
+.btn-acao-massa:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.th-checkbox,
+.checkbox-cell {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.th-checkbox input,
+.checkbox-cell input {
+    cursor: pointer;
+}
+
 .btn-expandir-todas {
     display: flex;
     align-items: center;

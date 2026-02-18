@@ -66,6 +66,7 @@ router.put('/:id/estornar', ImportacaoController.estornarImportacao);
 
 // Rotas de Transações Importadas
 router.get('/:importacaoId/transacoes', transacaoImportadaController.listarTransacoes);
+router.post('/transacoes/acoes-massa', transacaoImportadaController.acoesMassa);
 router.put('/transacoes/:id', transacaoImportadaController.atualizarTransacao);
 router.post('/transacoes/:id/validar', transacaoImportadaController.validarTransacao);
 router.post('/transacoes/:id/erro', transacaoImportadaController.marcarErro);

@@ -1,5 +1,6 @@
 const TransacaoImportada = require('../models/transacaoImportada');
 const Transacao = require('../models/transacao');
+const ImportacaoService = require('../services/importacaoService');
 
 const transacaoImportadaController = {
   // Listar transações de uma importação
@@ -15,9 +16,11 @@ const transacaoImportadaController = {
       };
 
       if (req.query.status_not) {
-        query.status = { $ne: req.query.status_not };
+        query.status = { $nin: [req.query.status_not, 'ignorada'] };
       } else if (req.query.status) {
         query.status = req.query.status;
+      } else {
+        query.status = { $ne: 'ignorada' };
       }
 
       const [transacoes, total] = await Promise.all([
@@ -250,24 +253,117 @@ const transacaoImportadaController = {
     }
   },
 
-  // Excluir transação importada
+  // Excluir transação importada (marca como ignorada para persistir decisão)
   async excluirTransacao(req, res) {
     try {
-      const transacaoExcluida = await TransacaoImportada.findOneAndDelete({
+      const transacao = await TransacaoImportada.findOne({
         _id: req.params.id,
         usuario: req.userId
       });
 
-      if (!transacaoExcluida) {
+      if (!transacao) {
         return res.status(404).json({ erro: 'Transação importada não encontrada ou não pertence ao usuário.' });
       }
 
-      // Retorna 204 No Content para indicar sucesso na exclusão sem corpo de resposta
-      res.sendStatus(204);
+      // Não pode ignorar se já validada, processada ou ja_importada
+      const statusBloqueados = ['validada', 'processada', 'ja_importada', 'ignorada'];
+      if (statusBloqueados.includes(transacao.status)) {
+        return res.status(400).json({
+          erro: `Não é possível ignorar transação com status "${transacao.status}".`
+        });
+      }
 
+      // Garantir deduplicationKey para deduplicação futura
+      let dedupKey = transacao.deduplicationKey;
+      if (!dedupKey) {
+        dedupKey = ImportacaoService.gerarDeduplicationKey(req.userId.toString(), {
+          descricao: transacao.descricao,
+          valor: transacao.valor,
+          data: transacao.data,
+          tipo: transacao.tipo,
+          identificador: transacao.dadosOriginais?.identificador
+        });
+      }
+
+      await TransacaoImportada.updateOne(
+        { _id: req.params.id, usuario: req.userId },
+        { $set: { status: 'ignorada', deduplicationKey: dedupKey } }
+      );
+
+      res.sendStatus(204);
     } catch (error) {
       console.error('[TransacaoImportada] Erro ao excluir transação:', error);
       res.status(500).json({ erro: 'Erro interno ao excluir transação importada.' });
+    }
+  },
+
+  // Ações em massa
+  async acoesMassa(req, res) {
+    try {
+      const { ids, acao } = req.body;
+      const usuarioId = req.userId;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ erro: 'Lista de IDs inválida.' });
+      }
+      if (!['ignorar', 'validar'].includes(acao)) {
+        return res.status(400).json({ erro: 'Ação inválida. Use "ignorar" ou "validar".' });
+      }
+
+      const transacoes = await TransacaoImportada.find({
+        _id: { $in: ids },
+        usuario: usuarioId
+      });
+
+      const STATUS_PODE_IGNORAR = ['pendente', 'revisada', 'erro'];
+      const STATUS_PODE_VALIDAR = ['pendente', 'revisada', 'ja_importada'];
+
+      const resultados = [];
+      for (const transacao of transacoes) {
+        try {
+          if (acao === 'ignorar') {
+            if (!STATUS_PODE_IGNORAR.includes(transacao.status)) {
+              resultados.push({ id: transacao._id, sucesso: false, erro: `Status "${transacao.status}" não permite ignorar` });
+              continue;
+            }
+            let dedupKey = transacao.deduplicationKey;
+            if (!dedupKey) {
+              dedupKey = ImportacaoService.gerarDeduplicationKey(usuarioId.toString(), {
+                descricao: transacao.descricao,
+                valor: transacao.valor,
+                data: transacao.data,
+                tipo: transacao.tipo,
+                identificador: transacao.dadosOriginais?.identificador
+              });
+            }
+            await TransacaoImportada.updateOne(
+              { _id: transacao._id },
+              { $set: { status: 'ignorada', deduplicationKey: dedupKey } }
+            );
+            resultados.push({ id: transacao._id, sucesso: true });
+          } else if (acao === 'validar') {
+            if (!STATUS_PODE_VALIDAR.includes(transacao.status)) {
+              resultados.push({ id: transacao._id, sucesso: false, erro: `Status "${transacao.status}" não permite validar` });
+              continue;
+            }
+            transacao.status = 'validada';
+            await transacao.save();
+            resultados.push({ id: transacao._id, sucesso: true });
+          }
+        } catch (erro) {
+          resultados.push({ id: transacao._id, sucesso: false, erro: erro.message });
+        }
+      }
+
+      res.json({
+        total: resultados.length,
+        sucessos: resultados.filter(r => r.sucesso).length,
+        erros: resultados.filter(r => !r.sucesso).length,
+        resultados
+      });
+    } catch (error) {
+      console.error('[TransacaoImportada] Erro em ações em massa:', error);
+      res.status(500).json({ erro: 'Erro ao executar ações em massa.' });
     }
   }
 };
