@@ -42,6 +42,8 @@ const everestLinksRoutes = require('./routes/everestLinks');
 const everestTicketInfoRoutes = require('./routes/everestTicketInfo');
 const everestCnpjRoutes = require('./routes/everestCnpj');
 const everestXmlRoutes = require('./routes/everestXml');
+const rotasRelatorio = require('./routes/rotasRelatorio');
+const rotasModeloRelatorio = require('./routes/rotasModeloRelatorio');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
@@ -57,6 +59,8 @@ app.use('/api/everest/links', everestLinksRoutes);
 app.use('/api/everest/ticketinfo', everestTicketInfoRoutes);
 app.use('/api/everest/cnpj', everestCnpjRoutes);
 app.use('/api/everest/xml', everestXmlRoutes);
+app.use('/api/reports', rotasRelatorio);
+app.use('/api/modelos-relatorio', rotasModeloRelatorio);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {

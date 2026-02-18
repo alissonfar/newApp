@@ -17,12 +17,12 @@ const styles = StyleSheet.create({
   },
 });
 
-const ReportDocument = ({ data, filterDetails, summaryInfo, categorias, tags }) => (
+const ReportDocument = ({ data, filterDetails, summaryInfo, categorias, tags, templateUsed }) => (
   <Document>
     <Page size="A4" orientation="landscape" style={styles.page}>
       <ReportHeader />
       <ReportFilters filterDetails={filterDetails} />
-      <ReportSummary summaryInfo={summaryInfo} />
+      <ReportSummary summaryInfo={summaryInfo} templateUsed={templateUsed} />
       <ReportTable 
         data={data} 
         categorias={categorias} 

@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaTools } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaCog, FaFileImport, FaClipboardList, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaTools, FaFileAlt } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -73,6 +73,7 @@ const MainLayout = ({ children }) => {
   const menuItems = [
     { name: 'Home', path: '/', icon: <FaHome /> },
     { name: 'Relatórios', path: '/relatorio', icon: <FaChartLine /> },
+    { name: 'Modelos de Relatório', path: '/modelos-relatorio', icon: <FaFileAlt /> },
     { name: 'Insights', path: '/insights', icon: <FaLightbulb /> },
     { 
       name: 'Transações', 

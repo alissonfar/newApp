@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useContext } from 'react';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
-import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, atualizarTransacao, criarTransacao } from '../../api.js';
+import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, atualizarTransacao, criarTransacao, gerarRelatorioAvancado, listarTemplatesRelatorio } from '../../api.js';
 import { useData } from '../../context/DataContext';
 import { AuthContext } from '../../context/AuthContext';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
@@ -78,7 +78,10 @@ const Relatorio = () => {
   const [dataFim, setDataFim] = useState('');
   const [selectedTipo, setSelectedTipo] = useState('both');
   const [selectedPessoas, setSelectedPessoas] = useState([]);
+  const [excludePessoas, setExcludePessoas] = useState([]);
   const [tagFilters, setTagFilters] = useState({});
+  const [selectedTemplate, setSelectedTemplate] = useState('simples');
+  const [reportTemplates, setReportTemplates] = useState([]);
 
   const [summaryInfo, setSummaryInfo] = useState({
     totalTransactions: 0,
@@ -135,6 +138,18 @@ const Relatorio = () => {
     loadPessoas();
   }, []);
 
+  useEffect(() => {
+    async function loadTemplates() {
+      try {
+        const templates = await listarTemplatesRelatorio();
+        setReportTemplates(templates);
+      } catch (e) {
+        console.warn('Erro ao carregar templates de relatório:', e);
+      }
+    }
+    loadTemplates();
+  }, []);
+
   const buildTagsFilter = useCallback(() => {
     const filter = {};
     Object.entries(tagFilters || {}).forEach(([catId, tagIds]) => {
@@ -153,6 +168,7 @@ const Relatorio = () => {
       const dFim = override.dataFim !== undefined ? override.dataFim : dataFim;
       const tipo = override.selectedTipo !== undefined ? override.selectedTipo : selectedTipo;
       const pessoas = override.selectedPessoas !== undefined ? override.selectedPessoas : selectedPessoas;
+      const excluir = override.excludePessoas !== undefined ? override.excludePessoas : excludePessoas;
       const tagsF = override.tagFilters !== undefined ? override.tagFilters : tagFilters;
       const search = override.searchTerm !== undefined ? override.searchTerm : searchTerm;
       const sortCol = override.sortColumn !== undefined ? override.sortColumn : sortColumn;
@@ -170,6 +186,7 @@ const Relatorio = () => {
         dataFim: dFim || undefined,
         tipo: tipo !== 'both' ? tipo : undefined,
         pessoas: pessoas?.length ? pessoas : undefined,
+        excludePessoas: excluir?.length ? excluir : undefined,
         tagsFilter: Object.keys(tagsFilterObj).length ? tagsFilterObj : undefined,
         search: (search || '').trim() || undefined,
         sortBy: sortCol || 'data',
@@ -201,7 +218,7 @@ const Relatorio = () => {
     } finally {
       setLoadingTransactions(false);
     }
-  }, [dataInicio, dataFim, selectedTipo, selectedPessoas, tagFilters, searchTerm, sortColumn, sortDirection]);
+  }, [dataInicio, dataFim, selectedTipo, selectedPessoas, excludePessoas, tagFilters, searchTerm, sortColumn, sortDirection]);
 
   useEffect(() => {
     if (!loadingCategorias) {
@@ -286,50 +303,69 @@ const Relatorio = () => {
 
   const handleExport = async () => {
     try {
-      const exportParams = {
+      const filters = {
         dataInicio: dataInicio || undefined,
         dataFim: dataFim || undefined,
         tipo: selectedTipo !== 'both' ? selectedTipo : undefined,
         pessoas: selectedPessoas.length ? selectedPessoas : undefined,
+        excludePessoas: excludePessoas.length ? excludePessoas : undefined,
         tagsFilter: buildTagsFilter(),
         search: searchTerm.trim() || undefined,
         sortBy: sortColumn || 'data',
         sortDir: sortDirection || 'desc'
       };
-      const res = await obterTransacoesExport(exportParams);
-      const normalizedRows = flattenTransactions(res.transacoes || []).map(row => ({
-        ...row,
-        tipo: row.tipo?.toLowerCase(),
-        data: row.data || row.dataPai,
-        descricao: row.descricao || row.descricaoPai,
-        valorPagamento: row.valorPagamento || row.valor,
-        pessoa: row.pessoa || '-',
-        tagsPagamento: row.tagsPagamento || {}
-      }));
 
-      const filterDetails = {
-        dataInicio,
-        dataFim,
-        selectedTipo,
-        selectedPessoas,
-        tagFilters
-      };
+      let normalizedRows;
+      let filterDetails;
+      let exportSummary;
+      let templateUsed = selectedTemplate;
 
-      const exportSummary = {
-        ...summaryInfo,
-        totalTransactions: normalizedRows.length,
-        totalValue: normalizedRows.reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
-        totalPeople: new Set(normalizedRows.map(r => r.pessoa).filter(Boolean)).size,
-        averagePerPerson: (() => {
-          const people = new Set(normalizedRows.map(r => r.pessoa).filter(Boolean)).size;
-          const total = normalizedRows.reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0);
-          return people > 0 ? (total / people).toFixed(2) : '0.00';
-        })(),
-        totalGastos: normalizedRows.filter(r => r.tipo === 'gasto').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
-        totalRecebiveis: normalizedRows.filter(r => r.tipo === 'recebivel').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
-        netValue: (normalizedRows.filter(r => r.tipo === 'recebivel').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0) -
-          normalizedRows.filter(r => r.tipo === 'gasto').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0)).toFixed(2)
-      };
+      if (selectedTemplate !== 'simples') {
+        const result = await gerarRelatorioAvancado({
+          templateId: selectedTemplate,
+          filters,
+          format: 'json'
+        });
+        normalizedRows = (result.rows || []).map(row => ({
+          ...row,
+          tipo: row.tipo?.toLowerCase(),
+          data: row.data || row.dataPai,
+          descricao: row.descricao || row.descricaoPai,
+          valorPagamento: row.valorPagamento ?? row.valor,
+          pessoa: row.pessoa || '-',
+          tagsPagamento: row.tagsPagamento || {}
+        }));
+        filterDetails = result.filterDetails || { dataInicio, dataFim, selectedTipo, selectedPessoas, excludePessoas, tagFilters };
+        exportSummary = result.summary || {};
+        templateUsed = result.templateUsed || selectedTemplate;
+      } else {
+        const res = await obterTransacoesExport(filters);
+        normalizedRows = flattenTransactions(res.transacoes || []).map(row => ({
+          ...row,
+          tipo: row.tipo?.toLowerCase(),
+          data: row.data || row.dataPai,
+          descricao: row.descricao || row.descricaoPai,
+          valorPagamento: row.valorPagamento || row.valor,
+          pessoa: row.pessoa || '-',
+          tagsPagamento: row.tagsPagamento || {}
+        }));
+        filterDetails = { dataInicio, dataFim, selectedTipo, selectedPessoas, excludePessoas, tagFilters };
+        exportSummary = {
+          ...summaryInfo,
+          totalTransactions: normalizedRows.length,
+          totalValue: normalizedRows.reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
+          totalPeople: new Set(normalizedRows.map(r => r.pessoa).filter(Boolean)).size,
+          averagePerPerson: (() => {
+            const people = new Set(normalizedRows.map(r => r.pessoa).filter(Boolean)).size;
+            const total = normalizedRows.reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0);
+            return people > 0 ? (total / people).toFixed(2) : '0.00';
+          })(),
+          totalGastos: normalizedRows.filter(r => r.tipo === 'gasto').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
+          totalRecebiveis: normalizedRows.filter(r => r.tipo === 'recebivel').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
+          netValue: (normalizedRows.filter(r => r.tipo === 'recebivel').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0) -
+            normalizedRows.filter(r => r.tipo === 'gasto').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0)).toFixed(2)
+        };
+      }
 
       if (exportFormat === 'csv') {
         exportDataToCSV(
@@ -349,7 +385,8 @@ const Relatorio = () => {
           exportSummary,
           categorias,
           tags,
-          'relatorio.pdf'
+          'relatorio.pdf',
+          templateUsed
         );
         toast.success('Relatório exportado como PDF!');
       }
@@ -366,6 +403,7 @@ const Relatorio = () => {
     setDataFim('');
     setSelectedTipo('both');
     setSelectedPessoas([]);
+    setExcludePessoas([]);
     setTagFilters(resetTagFilters);
     setQuickRange('');
     setSearchTerm('');
@@ -377,6 +415,7 @@ const Relatorio = () => {
       dataFim: '',
       selectedTipo: 'both',
       selectedPessoas: [],
+      excludePessoas: [],
       tagFilters: resetTagFilters,
       searchTerm: '',
       sortColumn: 'data',
@@ -518,8 +557,7 @@ const Relatorio = () => {
             <h4>Transação</h4>
             <div className="filter-row">
               <div className="filter-group">
-                <label>Pessoas (Pagamento):</label>
-                {/* Substituído o <select multiple> pelo React-Select */}
+                <label>Pessoas (incluir):</label>
                 <Select
                   isMulti
                   options={pessoasOptions}
@@ -530,6 +568,21 @@ const Relatorio = () => {
                   }}
                   classNamePrefix="mySelect"
                   placeholder="Selecione pessoas..."
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>Excluir pessoas:</label>
+                <Select
+                  isMulti
+                  options={pessoasOptions}
+                  value={excludePessoas.map(p => ({ value: p, label: p }))}
+                  onChange={(selectedOptions) => {
+                    const values = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
+                    setExcludePessoas(values);
+                  }}
+                  classNamePrefix="mySelect"
+                  placeholder="Excluir pessoas..."
                 />
               </div>
 
@@ -631,7 +684,32 @@ const Relatorio = () => {
             </div>
           </div>
 
-          {/* Seção 4: Pesquisa & Ordenação */}
+          {/* Seção 4: Modelo de Relatório */}
+          <div className="filter-section">
+            <h4>Modelo de Relatório</h4>
+            <div className="filter-row">
+              <div className="filter-group">
+                <label>Template:</label>
+                <select
+                  value={selectedTemplate}
+                  onChange={e => setSelectedTemplate(e.target.value)}
+                >
+                  {reportTemplates.length > 0 ? (
+                    reportTemplates.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="simples">Relatório Simples</option>
+                      <option value="devedor">Relatório de Devedor</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Seção 5: Pesquisa & Ordenação */}
           <div className="filter-section">
             <h4>Pesquisa & Ordenação</h4>
             <div className="filter-row">
@@ -667,7 +745,7 @@ const Relatorio = () => {
             </div>
           </div>
 
-          {/* Seção 5: Botões (Filtrar, Limpar, Nova Transação e Exportar) */}
+          {/* Seção 6: Botões (Filtrar, Limpar, Nova Transação e Exportar) */}
           <div className="filter-section filter-actions">
             <button onClick={applyFilters}>Filtrar/Buscar/Ordenar</button>
             <button onClick={handleClearFilters} style={{ marginLeft: '10px' }}>
@@ -706,21 +784,36 @@ const Relatorio = () => {
                 onClose={handleExportClose}
               >
                 <MenuItem disabled>
-                  <span style={{ color: '#666', fontSize: '14px', fontWeight: 'bold' }}>
-                    Escolha o formato
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ color: '#666', fontSize: '14px', fontWeight: 'bold' }}>
+                      Escolha o formato
+                    </span>
+                    <span style={{ color: '#999', fontSize: '11px', fontWeight: 'normal' }}>
+                      Template: {reportTemplates.find(t => t.id === selectedTemplate)?.name || (selectedTemplate === 'devedor' ? 'Relatório de Devedor' : 'Relatório Simples')}
+                    </span>
+                  </div>
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={() => handleExportNow('pdf')}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <PdfIcon style={{ color: '#f44336' }} />
-                    <span>Exportar como PDF</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <PdfIcon style={{ color: '#f44336' }} />
+                      <span>Exportar como PDF</span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#666', marginLeft: '32px' }}>
+                      {selectedTemplate === 'devedor' ? 'Com regras de débito (Total Bruto, Pago, Devido)' : 'Soma direta de valores'}
+                    </span>
                   </div>
                 </MenuItem>
                 <MenuItem onClick={() => handleExportNow('csv')}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CsvIcon style={{ color: '#4caf50' }} />
-                    <span>Exportar como CSV</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CsvIcon style={{ color: '#4caf50' }} />
+                      <span>Exportar como CSV</span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#666', marginLeft: '32px' }}>
+                      {selectedTemplate === 'devedor' ? 'Dados com regras aplicadas por tag' : 'Exportação padrão'}
+                    </span>
                   </div>
                 </MenuItem>
               </Menu>

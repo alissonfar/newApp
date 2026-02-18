@@ -61,13 +61,15 @@ const styles = StyleSheet.create({
 
 const formatCurrency = (value) => {
   if (value === undefined || value === null) return 'R$ 0,00';
-  return value.toLocaleString('pt-BR', {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return (isNaN(num) ? 0 : num).toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL'
   });
 };
 
-const ReportSummary = ({ summaryInfo }) => {
+const ReportSummary = ({ summaryInfo, templateUsed }) => {
+  const isDevedor = templateUsed === 'devedor' || (summaryInfo && 'totalBruto' in summaryInfo && 'totalDevido' in summaryInfo);
   const {
     totalTransactions = 0,
     totalValue = 0,
@@ -75,8 +77,69 @@ const ReportSummary = ({ summaryInfo }) => {
     averagePerPerson = 0,
     totalGastos = 0,
     totalRecebiveis = 0,
-    netValue = 0
+    netValue = 0,
+    totalBruto = 0,
+    totalPago = 0,
+    totalDevido = 0,
+    totalRows = 0
   } = summaryInfo;
+
+  if (isDevedor) {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.title}>Resumo - Relatório de Devedor</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <View style={styles.tableCol}>
+              <Text style={[styles.text, styles.bold]}>Total Bruto</Text>
+            </View>
+            <View style={styles.tableColValue}>
+              <Text style={styles.valueText}>{formatCurrency(totalBruto)}</Text>
+            </View>
+          </View>
+          <View style={[styles.tableRow, styles.tableRowEven]}>
+            <View style={styles.tableCol}>
+              <Text style={[styles.text, styles.bold]}>Total Pago</Text>
+            </View>
+            <View style={styles.tableColValue}>
+              <Text style={[styles.valueText, styles.positive]}>{formatCurrency(totalPago)}</Text>
+            </View>
+          </View>
+          <View style={styles.tableRow}>
+            <View style={styles.tableCol}>
+              <Text style={[styles.text, styles.bold]}>Total Devido</Text>
+            </View>
+            <View style={styles.tableColValue}>
+              <Text
+                style={[
+                  styles.valueText,
+                  parseFloat(totalDevido) >= 0 ? styles.positive : styles.negative
+                ]}
+              >
+                {formatCurrency(totalDevido)}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.tableRow, styles.tableRowEven]}>
+            <View style={styles.tableCol}>
+              <Text style={[styles.text, styles.bold]}>Registros</Text>
+            </View>
+            <View style={styles.tableColValue}>
+              <Text style={styles.valueText}>{totalRows}</Text>
+            </View>
+          </View>
+          <View style={styles.tableRow}>
+            <View style={styles.tableCol}>
+              <Text style={[styles.text, styles.bold]}>Pessoas</Text>
+            </View>
+            <View style={styles.tableColValue}>
+              <Text style={styles.valueText}>{totalPeople}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.section}>

@@ -5,7 +5,12 @@ const mongoose = require('mongoose');
 function buildMatchStage(req) {
   const match = { status: 'ativo', usuario: new mongoose.Types.ObjectId(req.userId) };
 
-  if (req.query.pessoas) {
+  if (req.query.excludePessoas) {
+    const exclude = Array.isArray(req.query.excludePessoas) ? req.query.excludePessoas : [req.query.excludePessoas];
+    if (exclude.length > 0) {
+      match['pagamentos.pessoa'] = { $nin: exclude };
+    }
+  } else if (req.query.pessoas) {
     const pessoas = Array.isArray(req.query.pessoas) ? req.query.pessoas : [req.query.pessoas];
     if (pessoas.length > 0) {
       match['pagamentos.pessoa'] = { $in: pessoas };

@@ -210,6 +210,9 @@ export async function obterTransacoesPaginadas(params = {}) {
   if (params.pessoas?.length) {
     params.pessoas.forEach(p => q.append('pessoas', p));
   }
+  if (params.excludePessoas?.length) {
+    params.excludePessoas.forEach(p => q.append('excludePessoas', p));
+  }
   if (params.tagsFilter && Object.keys(params.tagsFilter).length > 0) {
     q.set('tagsFilter', JSON.stringify(params.tagsFilter));
   }
@@ -253,6 +256,9 @@ export async function obterTransacoesExport(params = {}) {
   if (params.pessoas?.length) {
     params.pessoas.forEach(p => q.append('pessoas', p));
   }
+  if (params.excludePessoas?.length) {
+    params.excludePessoas.forEach(p => q.append('excludePessoas', p));
+  }
   if (params.tagsFilter && Object.keys(params.tagsFilter).length > 0) {
     q.set('tagsFilter', JSON.stringify(params.tagsFilter));
   }
@@ -264,6 +270,81 @@ export async function obterTransacoesExport(params = {}) {
   if (dados.transacoes) {
     dados.transacoes = dados.transacoes.map(t => ({ ...t, id: t._id }));
   }
+  return dados;
+}
+
+export async function gerarRelatorioAvancado(params = {}) {
+  const resposta = await fetch(`${API_BASE}/reports/advanced`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      templateId: params.templateId || 'simples',
+      filters: params.filters || {},
+      format: params.format || 'json'
+    })
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return dados;
+}
+
+export async function listarTemplatesRelatorio() {
+  const resposta = await fetch(`${API_BASE}/reports/templates`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return dados.templates || [];
+}
+
+/* ----- Modelos de Relatório ----- */
+export async function listarModelosRelatorio() {
+  const resposta = await fetch(`${API_BASE}/modelos-relatorio`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function obterModeloRelatorio(id) {
+  const resposta = await fetch(`${API_BASE}/modelos-relatorio/${id}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return dados;
+}
+
+export async function criarModeloRelatorio(modelo) {
+  const resposta = await fetch(`${API_BASE}/modelos-relatorio`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(modelo)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return dados;
+}
+
+export async function atualizarModeloRelatorio(id, modelo) {
+  const resposta = await fetch(`${API_BASE}/modelos-relatorio/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(modelo)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return dados;
+}
+
+export async function excluirModeloRelatorio(id) {
+  const resposta = await fetch(`${API_BASE}/modelos-relatorio/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
   return dados;
 }
 

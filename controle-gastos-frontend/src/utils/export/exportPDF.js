@@ -7,7 +7,8 @@ export const exportDataToPDF = async (
   summaryInfo = {},
   categorias = [],
   tags = [],
-  filename = 'relatorio.pdf'
+  filename = 'relatorio.pdf',
+  templateUsed = 'simples'
 ) => {
   try {
     if (!data || data.length === 0) {
@@ -23,6 +24,7 @@ export const exportDataToPDF = async (
         summaryInfo={summaryInfo}
         categorias={categorias}
         tags={tags}
+        templateUsed={templateUsed}
       />
     ).toBlob();
 

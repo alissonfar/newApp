@@ -16,6 +16,7 @@ import Registro from './pages/Registro/Registro';
 import Profile from './pages/Profile/Profile';
 import HowToUse from './pages/HowToUse/HowToUse';
 import Regras from './pages/Regras';
+import ModelosRelatorio from './pages/ModelosRelatorio/ModelosRelatorio';
 import VerificarEmail from './pages/VerificarEmail/VerificarEmail';
 import EmailNaoVerificado from './pages/EmailNaoVerificado/EmailNaoVerificado';
 import EsqueciSenha from './pages/EsqueciSenha/EsqueciSenha';
@@ -154,6 +155,16 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <Regras />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/modelos-relatorio"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <ModelosRelatorio />
                     </MainLayout>
                   </PrivateRoute>
                 }
