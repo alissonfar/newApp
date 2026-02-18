@@ -1,5 +1,6 @@
 // src/components/Tag/TagManagement.js
 import React, { useEffect, useState, useCallback } from 'react';
+import { FaEdit, FaTrash, FaBan, FaCheckCircle } from 'react-icons/fa';
 import { toast } from 'react-toastify';     
 import Swal from 'sweetalert2';            
 import { useData } from '../../context/DataContext';
@@ -349,21 +350,36 @@ const TagManagement = () => {
                 >
                   <div className="categoria-item">
                     <div className="icone-preview" style={{ color: cat.cor }}>
-                      <IconRenderer nome={cat.icone} size={24} cor={cat.cor} />
+                      <IconRenderer nome={cat.icone} size={28} cor={cat.cor} />
                     </div>
-                    <span>{cat.nome}</span>
-                    {cat.ativo === false && (
-                      <span className="badge-inativa">Inativa</span>
-                    )}
+                    <div className="categoria-item-content">
+                      <div className="categoria-item-header">
+                        <span className="categoria-nome">{cat.nome}</span>
+                        <span className={cat.ativo === false ? 'badge-inativa' : 'badge-ativa'}>
+                          {cat.ativo === false ? 'Inativa' : 'Ativa'}
+                        </span>
+                      </div>
+                      {cat.descricao && (
+                        <span className="categoria-descricao">{cat.descricao}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="acoes-categoria" onClick={e => e.stopPropagation()}>
                     {cat.ativo !== false ? (
-                      <button onClick={(e) => handleInativarCategoria(cat.codigo, e)}>Inativar</button>
+                      <button className="btn-warning" title="Inativar" onClick={(e) => handleInativarCategoria(cat.codigo, e)}>
+                        <FaBan size={14} /> Inativar
+                      </button>
                     ) : (
-                      <button onClick={(e) => handleAtivarCategoria(cat.codigo, e)}>Ativar</button>
+                      <button className="btn-success" title="Ativar" onClick={(e) => handleAtivarCategoria(cat.codigo, e)}>
+                        <FaCheckCircle size={14} /> Ativar
+                      </button>
                     )}
-                    <button onClick={() => handleEditarCategoria(cat)}>Editar</button>
-                    <button onClick={() => handleExcluirCategoria(cat.codigo)}>Excluir</button>
+                    <button className="btn-editar" title="Editar" onClick={() => handleEditarCategoria(cat)}>
+                      <FaEdit size={14} /> Editar
+                    </button>
+                    <button className="btn-danger" title="Excluir" onClick={() => handleExcluirCategoria(cat.codigo)}>
+                      <FaTrash size={14} /> Excluir
+                    </button>
                   </div>
                 </li>
               ))}
@@ -535,16 +551,22 @@ const TagManagement = () => {
                         <div className="view-tag">
                           <div className="tag-item">
                             <div className="icone-preview" style={{ color: tag.cor }}>
-                              <IconRenderer nome={tag.icone} size={24} cor={tag.cor} />
+                              <IconRenderer nome={tag.icone} size={28} cor={tag.cor} />
                             </div>
-                            <span>
-                              <strong>{tag.nome}</strong>
-                              {tag.descricao && ` - ${tag.descricao}`}
-                            </span>
+                            <div className="tag-item-content">
+                              <span className="tag-nome">{tag.nome}</span>
+                              {tag.descricao && (
+                                <span className="tag-descricao">{tag.descricao}</span>
+                              )}
+                            </div>
                           </div>
                           <div className="acoes-tag">
-                            <button onClick={() => handleEditarTag(tag)}>Editar</button>
-                            <button onClick={() => handleExcluirTag(tag.codigo)}>Excluir</button>
+                            <button className="btn-editar" title="Editar" onClick={() => handleEditarTag(tag)}>
+                              <FaEdit size={14} /> Editar
+                            </button>
+                            <button className="btn-danger" title="Excluir" onClick={() => handleExcluirTag(tag.codigo)}>
+                              <FaTrash size={14} /> Excluir
+                            </button>
                           </div>
                         </div>
                       )}

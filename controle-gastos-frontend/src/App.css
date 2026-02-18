@@ -25,6 +25,8 @@
   --cor-sucesso: #4CAF50; /* Verde */
   --cor-erro: #F44336; /* Vermelho */
   --cor-alerta: #FFC107; /* Amarelo */
+  --cor-primaria-clara: #E3F2FD; /* Azul muito claro */
+  --cor-branca: #ffffff;
   
   /* Efeitos */
   --sombra-card: 0 2px 4px rgba(0, 0, 0, 0.1),
