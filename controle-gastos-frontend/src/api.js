@@ -182,19 +182,87 @@ export async function loginUsuario({ email, senha }) {
 
 /* ----- Transações ----- */
 export async function obterTransacoes(params = {}) {
-  // Adiciona o parâmetro proprietario na query string se estiver definido
   const query = new URLSearchParams(params).toString();
   const resposta = await fetch(`${API_BASE}/transacoes?${query}`, {
     headers: getHeaders(false)
   });
   const dados = await resposta.json();
 
-  // Mapeia _id para id
   if (dados.transacoes) {
     dados.transacoes = dados.transacoes.map(t => ({
       ...t,
       id: t._id,
     }));
+  }
+  return dados;
+}
+
+export async function obterTransacoesPaginadas(params = {}) {
+  const q = new URLSearchParams();
+  if (params.page != null) q.set('page', params.page);
+  if (params.limit != null) q.set('limit', params.limit);
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  if (params.tipo) q.set('tipo', params.tipo);
+  if (params.search) q.set('search', params.search);
+  if (params.sortBy) q.set('sortBy', params.sortBy);
+  if (params.sortDir) q.set('sortDir', params.sortDir);
+  if (params.pessoas?.length) {
+    params.pessoas.forEach(p => q.append('pessoas', p));
+  }
+  if (params.tagsFilter && Object.keys(params.tagsFilter).length > 0) {
+    q.set('tagsFilter', JSON.stringify(params.tagsFilter));
+  }
+  const resposta = await fetch(`${API_BASE}/transacoes?${q.toString()}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  if (dados.data) {
+    dados.data = dados.data.map(t => ({ ...t, id: t._id }));
+  }
+  return dados;
+}
+
+export async function obterTransacaoPorId(id) {
+  const resposta = await fetch(`${API_BASE}/transacoes/${id}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return dados._id ? { ...dados, id: dados._id } : dados;
+}
+
+export async function obterPessoasDistintas() {
+  const resposta = await fetch(`${API_BASE}/transacoes/distinct-pessoas`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  return dados.pessoas || [];
+}
+
+export async function obterTransacoesExport(params = {}) {
+  const q = new URLSearchParams();
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  if (params.tipo) q.set('tipo', params.tipo);
+  if (params.search) q.set('search', params.search);
+  if (params.sortBy) q.set('sortBy', params.sortBy);
+  if (params.sortDir) q.set('sortDir', params.sortDir);
+  if (params.pessoas?.length) {
+    params.pessoas.forEach(p => q.append('pessoas', p));
+  }
+  if (params.tagsFilter && Object.keys(params.tagsFilter).length > 0) {
+    q.set('tagsFilter', JSON.stringify(params.tagsFilter));
+  }
+  const resposta = await fetch(`${API_BASE}/transacoes/export?${q.toString()}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error(dados.erro);
+  if (dados.transacoes) {
+    dados.transacoes = dados.transacoes.map(t => ({ ...t, id: t._id }));
   }
   return dados;
 }

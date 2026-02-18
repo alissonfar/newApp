@@ -20,5 +20,7 @@ const TransacaoSchema = new mongoose.Schema({
 });
 
 TransacaoSchema.index({ usuario: 1, deduplicationKey: 1 }, { sparse: true });
+TransacaoSchema.index({ usuario: 1, status: 1, data: -1 });
+TransacaoSchema.index({ usuario: 1, 'pagamentos.pessoa': 1 });
 
 module.exports = mongoose.model('Transacao', TransacaoSchema);

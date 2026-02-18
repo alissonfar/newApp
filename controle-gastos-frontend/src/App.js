@@ -1,12 +1,11 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import Home from './pages/Home/Home';
 import Relatorio from './pages/Relatorio/Relatorio';
-import Transacoes from './pages/Transacoes/Transacoes';
 import NovaImportacaoPage from './pages/ImportacaoMassa/NovaImportacaoPage';
 import GerenciamentoImportacoesPage from './pages/ImportacaoMassa/GerenciamentoImportacoesPage';
 import DetalhesImportacaoPage from './pages/ImportacaoMassa/DetalhesImportacaoPage';
@@ -78,16 +77,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/transacoes"
-                element={
-                  <PrivateRoute>
-                    <MainLayout>
-                      <Transacoes />
-                    </MainLayout>
-                  </PrivateRoute>
-                }
-              />
+              <Route path="/transacoes" element={<Navigate to="/relatorio" replace />} />
               <Route
                 path="/importacao"
                 element={

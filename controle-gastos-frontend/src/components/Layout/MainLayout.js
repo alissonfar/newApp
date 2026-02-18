@@ -81,7 +81,6 @@ const MainLayout = ({ children }) => {
       hasSubmenu: true,
       key: 'transacoes',
       submenu: [
-        { name: 'Listar Transações', path: '/transacoes', icon: <FaClipboardList />, isSubItem: true },
         { name: 'Importação em Massa', path: '/importacao', icon: <FaFileImport />, isSubItem: true }
       ]
     },

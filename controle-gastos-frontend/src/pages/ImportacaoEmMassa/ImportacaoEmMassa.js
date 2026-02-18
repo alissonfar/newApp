@@ -12,7 +12,7 @@ const ImportacaoEmMassa = () => {
   // Handler para quando a importação for concluída com sucesso
   const handleImportacaoSuccess = () => {
     toast.success('Transações importadas com sucesso!');
-    navigate('/transacoes'); // Redireciona para a página de transações após sucesso
+    navigate('/relatorio'); // Redireciona para a página de transações após sucesso
   };
 
   return (

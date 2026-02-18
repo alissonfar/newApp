@@ -10,6 +10,12 @@ router.use(autenticacao);
 // Listar todas as transações
 router.get('/', controladorTransacao.obterTodasTransacoes);
 
+// Exportar transações (filtros na query, sem paginação)
+router.get('/export', controladorTransacao.obterTransacoesExport);
+
+// Pessoas distintas (para filtros)
+router.get('/distinct-pessoas', controladorTransacao.obterPessoasDistintas);
+
 // Obter uma transação por ID
 router.get('/:id', controladorTransacao.obterTransacaoPorId);
 

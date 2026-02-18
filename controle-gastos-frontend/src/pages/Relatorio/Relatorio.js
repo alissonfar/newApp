@@ -1,9 +1,13 @@
 // src/pages/Relatorio/Relatorio.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import Select from 'react-select';
-import { toast } from 'react-toastify';  // [NOVO] para exibir mensagens de erro/aviso/sucesso
-import { obterTransacoes, obterCategorias } from '../../api.js';
+import Swal from 'sweetalert2';
+import { toast } from 'react-toastify';
+import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, atualizarTransacao, criarTransacao } from '../../api.js';
 import { useData } from '../../context/DataContext';
+import { AuthContext } from '../../context/AuthContext';
+import ModalTransacao from '../../components/Modal/ModalTransacao';
+import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF } from '../../utils/export/exportPDF';
 import IconRenderer from '../../components/shared/IconRenderer';
@@ -22,24 +26,94 @@ import {
 } from '@mui/icons-material';
 import { getCurrentDateBR, formatDateBR } from '../../utils/dateUtils';
 
-const Relatorio = () => {
-  // Array achatado com base em pai + pagamentos
-  const [allPayments, setAllPayments] = useState([]);
-  // Resultado final após filtros/busca/ordenação
-  const [filteredRows, setFilteredRows] = useState([]);
+const PAGE_SIZE = 50;
 
-  // Obter tags do Contexto; categorias com inativas para exibir histórico
+function flattenTransactions(transArray) {
+  const flattened = [];
+  (transArray || []).forEach((tr) => {
+    const id = tr.id || tr._id;
+    if (!tr.pagamentos || tr.pagamentos.length === 0) {
+      flattened.push({
+        id,
+        data: tr.data,
+        tipo: tr.tipo,
+        descricao: tr.descricao,
+        valor: tr.valor,
+        pessoa: null,
+        valorPagamento: 0,
+        tagsPagamento: {}
+      });
+    } else {
+      tr.pagamentos.forEach((p) => {
+        flattened.push({
+          id,
+          data: tr.data,
+          tipo: tr.tipo,
+          descricao: tr.descricao,
+          valor: tr.valor,
+          pessoa: p.pessoa,
+          valorPagamento: p.valor,
+          tagsPagamento: p.tags || {}
+        });
+      });
+    }
+  });
+  return flattened;
+}
+
+const Relatorio = () => {
+  const { usuario } = useContext(AuthContext);
+  const proprietario = usuario?.preferencias?.proprietario || '';
+  const [filteredRows, setFilteredRows] = useState([]);
   const { tags, loadingData: loadingContextData, errorData: errorContextData } = useData();
   const [categorias, setCategorias] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(true);
   const [errorCategorias, setErrorCategorias] = useState(null);
+  const [pessoasOptions, setPessoasOptions] = useState([]);
 
-  // Carregar categorias (incluindo inativas) para exibição no relatório
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [errorTransactions, setErrorTransactions] = useState(null);
+
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+  const [selectedTipo, setSelectedTipo] = useState('both');
+  const [selectedPessoas, setSelectedPessoas] = useState([]);
+  const [tagFilters, setTagFilters] = useState({});
+
+  const [summaryInfo, setSummaryInfo] = useState({
+    totalTransactions: 0,
+    totalValue: '0.00',
+    totalPeople: 0,
+    averagePerPerson: '0.00',
+    totalGastos: '0.00',
+    totalRecebiveis: '0.00',
+    netValue: '0.00'
+  });
+
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [quickRange, setQuickRange] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState('data');
+  const [sortDirection, setSortDirection] = useState('desc');
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+
+  const [editingTransacao, setEditingTransacao] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isCreate, setIsCreate] = useState(false);
+
   useEffect(() => {
     async function loadCategorias() {
       try {
         const cats = await obterCategorias(true);
         setCategorias(cats);
+        const initTagFilters = {};
+        cats.forEach(cat => { initTagFilters[cat._id] = []; });
+        setTagFilters(prev => Object.keys(prev).length ? prev : initTagFilters);
       } catch (e) {
         setErrorCategorias(e);
       } finally {
@@ -49,119 +123,91 @@ const Relatorio = () => {
     loadCategorias();
   }, []);
 
-  // Estado local para loading das transações
-  const [loadingTransactions, setLoadingTransactions] = useState(true);
-  const [errorTransactions, setErrorTransactions] = useState(null);
-
-  // Filtros
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
-  const [selectedTipo, setSelectedTipo] = useState('both');
-  const [selectedPessoas, setSelectedPessoas] = useState([]);
-  const [tagFilters, setTagFilters] = useState({});
-
-  // Sumário
-  const [summaryInfo, setSummaryInfo] = useState({});
-
-  // Exportação (AGORA POR PADRÃO PDF)
-  const [exportFormat, setExportFormat] = useState('pdf');
-
-  // Seleção rápida de datas
-  const [quickRange, setQuickRange] = useState('');
-
-  // Busca e Ordenação
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortColumn, setSortColumn] = useState('');
-  const [sortDirection, setSortDirection] = useState('asc');
-
-  const [exportAnchorEl, setExportAnchorEl] = useState(null);
-
-  // 1) Carregamento inicial - Agora apenas transações
   useEffect(() => {
-    async function fetchTransactions() {
-      setLoadingTransactions(true);
-      setErrorTransactions(null);
+    async function loadPessoas() {
       try {
-        const transData = await obterTransacoes();
-        const transArray = transData.transacoes || [];
-
-        // Criar registros para cada pagamento
-        const flattened = [];
-        transArray.forEach((tr) => {
-          if (!tr.pagamentos || tr.pagamentos.length === 0) {
-            flattened.push({
-              id: tr.id,
-              data: tr.data,
-              tipo: tr.tipo,
-              descricao: tr.descricao,
-              valor: tr.valor,
-              pessoa: null,
-              valorPagamento: 0,
-              tagsPagamento: {}
-            });
-          } else {
-            tr.pagamentos.forEach((p) => {
-              flattened.push({
-                id: tr.id,
-                data: tr.data,
-                tipo: tr.tipo,
-                descricao: tr.descricao,
-                valor: tr.valor,
-                pessoa: p.pessoa,
-                valorPagamento: p.valor,
-                tagsPagamento: p.tags || {}
-              });
-            });
-          }
-        });
-
-        setAllPayments(flattened);
-
-        // REMOVER carregamento de categorias e tags daqui
-        /*
-        const cats = await obterCategorias();
-        setCategorias(cats);
-        const initTagFilters = {};
-        cats.forEach(cat => {
-          initTagFilters[cat.nome] = [];
-        });
-        setTagFilters(initTagFilters);
-
-        const tgs = await obterTags();
-        setTags(tgs);
-        */
-
-      } catch (error) {
-        console.error('Erro ao carregar transações para relatório:', error);
-        toast.error('Erro ao carregar transações para relatório.');
-        setErrorTransactions(error);
-      } finally {
-        setLoadingTransactions(false);
+        const pessoas = await obterPessoasDistintas();
+        setPessoasOptions(pessoas.map(p => ({ value: p, label: p })));
+      } catch (e) {
+        console.warn('Erro ao carregar pessoas:', e);
       }
     }
-    fetchTransactions();
-  }, []); // Dependência vazia, carrega transações uma vez
+    loadPessoas();
+  }, []);
 
-  // Inicializar filtros de tag quando as categorias carregarem do contexto
-  useEffect(() => {
-    if (categorias.length > 0) {
-      const initTagFilters = {};
-      categorias.forEach(cat => {
-        // Usar _id da categoria como chave é mais robusto
-        initTagFilters[cat._id] = []; 
-      });
-      setTagFilters(initTagFilters);
-    }
-  }, [categorias]); // Depende das categorias do contexto
-
-  // Função para extrair pessoas únicas
-  const distinctPessoas = (rows) => {
-    const setP = new Set();
-    rows.forEach(row => {
-      if (row.pessoa) setP.add(row.pessoa);
+  const buildTagsFilter = useCallback(() => {
+    const filter = {};
+    Object.entries(tagFilters || {}).forEach(([catId, tagIds]) => {
+      if (Array.isArray(tagIds) && tagIds.length > 0) {
+        filter[catId] = tagIds;
+      }
     });
-    return Array.from(setP);
-  };
+    return filter;
+  }, [tagFilters]);
+
+  const fetchData = useCallback(async (pageNum = 1, override = {}) => {
+    setLoadingTransactions(true);
+    setErrorTransactions(null);
+    try {
+      const dInicio = override.dataInicio !== undefined ? override.dataInicio : dataInicio;
+      const dFim = override.dataFim !== undefined ? override.dataFim : dataFim;
+      const tipo = override.selectedTipo !== undefined ? override.selectedTipo : selectedTipo;
+      const pessoas = override.selectedPessoas !== undefined ? override.selectedPessoas : selectedPessoas;
+      const tagsF = override.tagFilters !== undefined ? override.tagFilters : tagFilters;
+      const search = override.searchTerm !== undefined ? override.searchTerm : searchTerm;
+      const sortCol = override.sortColumn !== undefined ? override.sortColumn : sortColumn;
+      const sortDir = override.sortDirection !== undefined ? override.sortDirection : sortDirection;
+
+      const tagsFilterObj = {};
+      Object.entries(tagsF || {}).forEach(([catId, tagIds]) => {
+        if (Array.isArray(tagIds) && tagIds.length > 0) tagsFilterObj[catId] = tagIds;
+      });
+
+      const params = {
+        page: pageNum,
+        limit: PAGE_SIZE,
+        dataInicio: dInicio || undefined,
+        dataFim: dFim || undefined,
+        tipo: tipo !== 'both' ? tipo : undefined,
+        pessoas: pessoas?.length ? pessoas : undefined,
+        tagsFilter: Object.keys(tagsFilterObj).length ? tagsFilterObj : undefined,
+        search: (search || '').trim() || undefined,
+        sortBy: sortCol || 'data',
+        sortDir: sortDir || 'desc'
+      };
+      const res = await obterTransacoesPaginadas(params);
+      const flattened = flattenTransactions(res.data);
+      setFilteredRows(flattened);
+      setPage(res.page || 1);
+      setTotalPages(res.totalPages || 1);
+      setTotal(res.total || 0);
+      if (res.summary) {
+        const peopleCount = res.summary.totalPeople ?? 0;
+        const avg = peopleCount > 0 ? (parseFloat(res.summary.totalValue || 0) / peopleCount).toFixed(2) : '0.00';
+        setSummaryInfo({
+          totalTransactions: res.summary.totalRows ?? 0,
+          totalValue: res.summary.totalValue ?? '0.00',
+          totalPeople: peopleCount,
+          averagePerPerson: avg,
+          totalGastos: res.summary.totalGastos ?? '0.00',
+          totalRecebiveis: res.summary.totalRecebiveis ?? '0.00',
+          netValue: res.summary.netValue ?? '0.00'
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar transações:', error);
+      toast.error('Erro ao carregar transações para relatório.');
+      setErrorTransactions(error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }, [dataInicio, dataFim, selectedTipo, selectedPessoas, tagFilters, searchTerm, sortColumn, sortDirection]);
+
+  useEffect(() => {
+    if (!loadingCategorias) {
+      fetchData(1);
+    }
+  }, [loadingCategorias]);
 
   // Agrupa as tags por categoria (para exibir nos filtros)
   // Esta lógica agora usa `categorias` e `tags` do contexto
@@ -233,239 +279,162 @@ const Relatorio = () => {
     setDataFim(toStringDate(end));
   };
 
-  // 2) Função principal de FILTRO + BUSCA + ORDENAÇÃO
   const applyFilters = () => {
-    let result = [...allPayments];
-
-
-    // Filtro por data (pai)
-    if (dataInicio) {
-      result = result.filter(row => {
-        const [fullDate] = row.data.split('T');
-        return fullDate >= dataInicio;
-      });
-    }
-    if (dataFim) {
-      result = result.filter(row => {
-        const [fullDate] = row.data.split('T');
-        return fullDate <= dataFim;
-      });
-    }
-
-    // Filtro por tipo
-    if (selectedTipo !== 'both') {
-      result = result.filter(row => row.tipo.toLowerCase() === selectedTipo);
-    }
-
-    // Filtro por pessoas
-    if (selectedPessoas.length > 0) {
-      result = result.filter(row => row.pessoa && selectedPessoas.includes(row.pessoa));
-    }
-
-    // Filtro por tags (pagamento)
-    Object.entries(tagFilters).forEach(([categoriaId, selectedTags]) => {
-
-
-      if (selectedTags && selectedTags.length > 0) {
-        result = result.filter(row => {
-          // Converte as tags antigas (que usam nome) para o novo formato
-          const pagTags = {};
-          Object.entries(row.tagsPagamento || {}).forEach(([catName, tagIds]) => {
-
-            // Procura a categoria pelo nome ou ID
-            const categoria = categorias.find(c => 
-              c.nome === catName || c._id === catName
-            );
-
-            if (categoria) {
-              // Garante que tagIds seja sempre um array de IDs
-              const normalizedTagIds = tagIds.map(tagId => {
-                // Se for um nome de tag, encontra o ID correspondente
-                if (typeof tagId === 'string' && !tagId.match(/^[0-9a-fA-F]{24}$/)) {
-                  const tag = tags.find(t => t.nome === tagId);
-                  return tag ? tag._id : tagId;
-                }
-                return tagId;
-              });
-              
-              pagTags[categoria._id] = normalizedTagIds;
-            }
-          });
-
-          // Verifica se as tags selecionadas estão presentes
-          const pagTagsForCategory = pagTags[categoriaId] || [];
-          
-
-
-          return selectedTags.some(selectedTagId => 
-            pagTagsForCategory.includes(selectedTagId)
-          );
-        });
-
-
-
-      }
-    });
-
-    // Busca
-    if (searchTerm.trim() !== '') {
-      const lower = searchTerm.toLowerCase();
-      result = result.filter(row => {
-        const descMatch = row.descricao?.toLowerCase().includes(lower);
-        const pessoaMatch = row.pessoa?.toLowerCase().includes(lower);
-        return descMatch || pessoaMatch;
-      });
-    }
-
-    // Ordenação
-    if (sortColumn) {
-      result.sort((a, b) => {
-        let valA = a[sortColumn];
-        let valB = b[sortColumn];
-
-        // Comparar datas
-        if (sortColumn === 'data') {
-          const [fullA] = (valA || '').split('T');
-          const [fullB] = (valB || '').split('T');
-          return sortDirection === 'asc'
-            ? fullA.localeCompare(fullB)
-            : fullB.localeCompare(fullA);
-        }
-        // Comparar números
-        else if (sortColumn === 'valorPagamento') {
-          const numA = parseFloat(valA) || 0;
-          const numB = parseFloat(valB) || 0;
-          return sortDirection === 'asc' ? numA - numB : numB - numA;
-        }
-        // Comparar strings
-        else {
-          valA = (valA || '').toString().toLowerCase();
-          valB = (valB || '').toString().toLowerCase();
-          if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-          if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-          return 0;
-        }
-      });
-    }
-
-    setFilteredRows(result);
-
+    setPage(1);
+    fetchData(1);
   };
 
-  // 3) Recalcula o sumário quando filteredRows muda
-  useEffect(() => {
-    const totalTransactions = filteredRows.length;
-    const totalValueNumber = filteredRows.reduce(
-      (acc, row) => acc + parseFloat(row.valorPagamento || 0),
-      0
-    );
-    const totalValue = totalValueNumber.toFixed(2);
-
-    const people = distinctPessoas(filteredRows);
-    const averagePerPerson = people.length > 0
-      ? (totalValueNumber / people.length).toFixed(2)
-      : '0.00';
-
-    // Gastos x Recebíveis
-    const totalGastosNumber = filteredRows
-      .filter(row => row.tipo.toLowerCase() === 'gasto')
-      .reduce((acc, row) => acc + parseFloat(row.valorPagamento || 0), 0);
-    const totalRecebiveisNumber = filteredRows
-      .filter(row => row.tipo.toLowerCase() === 'recebivel')
-      .reduce((acc, row) => acc + parseFloat(row.valorPagamento || 0), 0);
-
-    const totalGastos = totalGastosNumber.toFixed(2);
-    const totalRecebiveis = totalRecebiveisNumber.toFixed(2);
-    const netValue = (totalRecebiveisNumber - totalGastosNumber).toFixed(2);
-
-    setSummaryInfo({
-      totalTransactions,
-      totalValue,
-      totalPeople: people.length,
-      averagePerPerson,
-      totalGastos,
-      totalRecebiveis,
-      netValue
-    });
-  }, [filteredRows]);
-
-  // 4) Exportação
   const handleExport = async () => {
-    // Logs para debug
+    try {
+      const exportParams = {
+        dataInicio: dataInicio || undefined,
+        dataFim: dataFim || undefined,
+        tipo: selectedTipo !== 'both' ? selectedTipo : undefined,
+        pessoas: selectedPessoas.length ? selectedPessoas : undefined,
+        tagsFilter: buildTagsFilter(),
+        search: searchTerm.trim() || undefined,
+        sortBy: sortColumn || 'data',
+        sortDir: sortDirection || 'desc'
+      };
+      const res = await obterTransacoesExport(exportParams);
+      const normalizedRows = flattenTransactions(res.transacoes || []).map(row => ({
+        ...row,
+        tipo: row.tipo?.toLowerCase(),
+        data: row.data || row.dataPai,
+        descricao: row.descricao || row.descricaoPai,
+        valorPagamento: row.valorPagamento || row.valor,
+        pessoa: row.pessoa || '-',
+        tagsPagamento: row.tagsPagamento || {}
+      }));
 
+      const filterDetails = {
+        dataInicio,
+        dataFim,
+        selectedTipo,
+        selectedPessoas,
+        tagFilters
+      };
 
-    // Normaliza os dados antes de exportar
-    const normalizedRows = filteredRows.map(row => ({
-      ...row,
-      tipo: row.tipo?.toLowerCase(),
-      data: row.data || row.dataPai,
-      descricao: row.descricao || row.descricaoPai,
-      valorPagamento: row.valorPagamento || row.valor,
-      pessoa: row.pessoa || '-',
-      tagsPagamento: row.tagsPagamento || {}
-    }));
+      const exportSummary = {
+        ...summaryInfo,
+        totalTransactions: normalizedRows.length,
+        totalValue: normalizedRows.reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
+        totalPeople: new Set(normalizedRows.map(r => r.pessoa).filter(Boolean)).size,
+        averagePerPerson: (() => {
+          const people = new Set(normalizedRows.map(r => r.pessoa).filter(Boolean)).size;
+          const total = normalizedRows.reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0);
+          return people > 0 ? (total / people).toFixed(2) : '0.00';
+        })(),
+        totalGastos: normalizedRows.filter(r => r.tipo === 'gasto').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
+        totalRecebiveis: normalizedRows.filter(r => r.tipo === 'recebivel').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0).toFixed(2),
+        netValue: (normalizedRows.filter(r => r.tipo === 'recebivel').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0) -
+          normalizedRows.filter(r => r.tipo === 'gasto').reduce((a, r) => a + parseFloat(r.valorPagamento || 0), 0)).toFixed(2)
+      };
 
-    const filterDetails = {
-      dataInicio,
-      dataFim,
-      selectedTipo,
-      selectedPessoas,
-      tagFilters
-    };
-
-    if (exportFormat === 'csv') {
-      exportDataToCSV(
-        normalizedRows, 
-        'relatorio.csv',
-        {
-          customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'],
-          formatDates: true,
-          formatCurrency: true
-        }
-      );
-      toast.success('Relatório exportado como CSV!');
-    } else {
-      // Padrão PDF
-      try {
+      if (exportFormat === 'csv') {
+        exportDataToCSV(
+          normalizedRows,
+          'relatorio.csv',
+          {
+            customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'],
+            formatDates: true,
+            formatCurrency: true
+          }
+        );
+        toast.success('Relatório exportado como CSV!');
+      } else {
         await exportDataToPDF(
           normalizedRows,
-          filterDetails, 
-          summaryInfo,
+          filterDetails,
+          exportSummary,
           categorias,
           tags,
           'relatorio.pdf'
         );
         toast.success('Relatório exportado como PDF!');
-      } catch (error) {
-        console.error('Erro ao exportar PDF:', error);
-        toast.error('Erro ao exportar o relatório. Tente novamente.');
       }
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar o relatório. Tente novamente.');
     }
   };
 
-  // 5) Limpar Filtros
   const handleClearFilters = () => {
+    const resetTagFilters = {};
+    categorias.forEach(cat => { resetTagFilters[cat._id] = []; });
     setDataInicio('');
     setDataFim('');
     setSelectedTipo('both');
     setSelectedPessoas([]);
-    // Resetar tags
-    const resetTagFilters = {};
-    categorias.forEach(cat => {
-      resetTagFilters[cat._id] = [];
-    });
     setTagFilters(resetTagFilters);
-
     setQuickRange('');
     setSearchTerm('');
-    setSortColumn('');
-    setSortDirection('asc');
-
-    // Se quiser já aplicar e mostrar tudo:
-    setFilteredRows(allPayments);
+    setSortColumn('data');
+    setSortDirection('desc');
+    setPage(1);
+    fetchData(1, {
+      dataInicio: '',
+      dataFim: '',
+      selectedTipo: 'both',
+      selectedPessoas: [],
+      tagFilters: resetTagFilters,
+      searchTerm: '',
+      sortColumn: 'data',
+      sortDirection: 'desc'
+    });
   };
 
   // Funções para o menu de exportação
+  const handleEdit = async (row) => {
+    try {
+      const transacao = await obterTransacaoPorId(row.id);
+      setEditingTransacao(transacao);
+      setIsCreate(false);
+      setModalOpen(true);
+    } catch (error) {
+      toast.error('Erro ao carregar transação para edição.');
+    }
+  };
+
+  const handleDelete = async (row) => {
+    const result = await Swal.fire({
+      title: 'Tem certeza que deseja excluir esta transação?',
+      text: 'Esta ação não poderá ser desfeita.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, excluir!',
+      cancelButtonText: 'Cancelar'
+    });
+    if (result.isConfirmed) {
+      try {
+        await excluirTransacao(row.id);
+        toast.success('Transação excluída com sucesso!');
+        fetchData(page);
+      } catch (error) {
+        toast.error('Erro ao excluir transação.');
+      }
+    }
+  };
+
+  const handleCreate = () => {
+    setEditingTransacao(null);
+    setIsCreate(true);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setEditingTransacao(null);
+    setModalOpen(false);
+    setIsCreate(false);
+  };
+
+  const handleSuccess = () => {
+    handleCloseModal();
+    fetchData(page);
+  };
+
   const handleExportClick = (event) => {
     setExportAnchorEl(event.currentTarget);
   };
@@ -553,7 +522,7 @@ const Relatorio = () => {
                 {/* Substituído o <select multiple> pelo React-Select */}
                 <Select
                   isMulti
-                  options={distinctPessoas(allPayments).map(p => ({ value: p, label: p }))}
+                  options={pessoasOptions}
                   value={selectedPessoas.map(p => ({ value: p, label: p }))}
                   onChange={(selectedOptions) => {
                     const values = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
@@ -698,11 +667,14 @@ const Relatorio = () => {
             </div>
           </div>
 
-          {/* Seção 5: Botões (Filtrar, Limpar e Exportar) */}
+          {/* Seção 5: Botões (Filtrar, Limpar, Nova Transação e Exportar) */}
           <div className="filter-section filter-actions">
             <button onClick={applyFilters}>Filtrar/Buscar/Ordenar</button>
             <button onClick={handleClearFilters} style={{ marginLeft: '10px' }}>
               Limpar Filtros
+            </button>
+            <button onClick={handleCreate} style={{ marginLeft: '10px', background: '#4caf50', color: 'white' }}>
+              + Nova Transação
             </button>
 
             <div className="export-group">
@@ -804,7 +776,7 @@ const Relatorio = () => {
       </div> {/* fim da top-section */}
 
       <div className="relatorio-results">
-        <h3>Resultados ({filteredRows.length})</h3>
+        <h3>Resultados ({filteredRows.length} desta página, {total} no total)</h3>
         {filteredRows.length > 0 ? (
           <div className="table-container">
             <table className="relatorio-table">
@@ -816,6 +788,7 @@ const Relatorio = () => {
                   <th>Valor (Pagamento)</th>
                   <th>Tipo</th>
                   <th>Tags (Pagamento)</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -871,6 +844,10 @@ const Relatorio = () => {
                           });
                         })}
                       </td>
+                      <td>
+                        <button onClick={() => handleEdit(row)} title="Editar" style={{ marginRight: '8px', padding: '4px 8px', cursor: 'pointer' }}>✏️ Editar</button>
+                        <button onClick={() => handleDelete(row)} title="Excluir" style={{ padding: '4px 8px', cursor: 'pointer', color: '#d33' }}>🗑️ Excluir</button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -880,7 +857,35 @@ const Relatorio = () => {
         ) : (
           <p>Nenhum registro encontrado.</p>
         )}
+        {totalPages > 1 && (
+          <div className="relatorio-pagination" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              disabled={page <= 1}
+              onClick={() => { setPage(p => p - 1); fetchData(page - 1); }}
+            >
+              Anterior
+            </button>
+            <span>Página {page} de {totalPages}</span>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => { setPage(p => p + 1); fetchData(page + 1); }}
+            >
+              Próxima
+            </button>
+          </div>
+        )}
       </div>
+
+      {modalOpen && (
+        <ModalTransacao onClose={handleCloseModal}>
+          <NovaTransacaoForm
+            transacao={editingTransacao}
+            onSuccess={handleSuccess}
+            onClose={handleCloseModal}
+            proprietarioPadrao={proprietario}
+          />
+        </ModalTransacao>
+      )}
     </div>
   );
 };

@@ -132,7 +132,7 @@ const Home = () => {
   };
 
   const handleVerTransacoes = () => {
-    navigate('/transacoes');
+    navigate('/relatorio');
   };
 
   const handleDuplicarTransacao = (transacao) => {
