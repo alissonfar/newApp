@@ -1,5 +1,6 @@
 // src/pages/ModelosRelatorio/ModelosRelatorio.js
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import {
@@ -12,15 +13,22 @@ import { useData } from '../../context/DataContext';
 import './ModelosRelatorio.css';
 
 const EFFECT_OPTIONS = [
-  { value: '', label: 'Padrão (somar)' },
-  { value: 'add', label: 'Somar' },
-  { value: 'subtract', label: 'Subtrair' },
-  { value: 'ignore', label: 'Ignorar' }
+  { value: '', label: '— Não configurar' },
+  { value: 'subtract', label: 'Subtrair do total' },
+  { value: 'ignore', label: 'Ignorar linha' }
 ];
 
-const AGGREGATION_OPTIONS = [
-  { value: 'default', label: 'Padrão (Total, Gastos, Recebíveis, Saldo)' },
-  { value: 'devedor', label: 'Devedor (Total Bruto, Pago, Devido)' }
+const AGGREGATION_CARDS = [
+  {
+    value: 'default',
+    title: 'Padrão',
+    desc: 'Total, Gastos, Recebíveis, Saldo'
+  },
+  {
+    value: 'devedor',
+    title: 'Devedor',
+    desc: 'Total Bruto, Pago, Devido'
+  }
 ];
 
 const ModelosRelatorio = () => {
@@ -28,6 +36,7 @@ const ModelosRelatorio = () => {
   const [modelos, setModelos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalStep, setModalStep] = useState(1);
   const [editingModelo, setEditingModelo] = useState(null);
   const [form, setForm] = useState({
     nome: '',
@@ -48,6 +57,14 @@ const ModelosRelatorio = () => {
     }, {});
   }, [tags, categorias]);
 
+  const tagsOrdenados = useMemo(() => {
+    const list = [];
+    Object.entries(tagsPorCategoria).forEach(([, { nome, tags: catTags }]) => {
+      catTags.forEach(tag => list.push({ ...tag, categoriaNome: nome }));
+    });
+    return list;
+  }, [tagsPorCategoria]);
+
   useEffect(() => {
     loadModelos();
   }, []);
@@ -66,11 +83,15 @@ const ModelosRelatorio = () => {
   };
 
   const openModal = (modelo = null) => {
+    setModalStep(1);
     if (modelo) {
       const regrasPorTag = {};
       (modelo.regras || []).forEach(r => {
         const tagId = r.tag?._id || r.tag;
-        if (tagId) regrasPorTag[tagId] = r.effect || '';
+        if (tagId) {
+          const effect = r.effect;
+          regrasPorTag[tagId] = effect === 'add' ? '' : effect;
+        }
       });
       setForm({
         nome: modelo.nome,
@@ -93,7 +114,16 @@ const ModelosRelatorio = () => {
 
   const closeModal = () => {
     setModalOpen(false);
+    setModalStep(1);
     setEditingModelo(null);
+  };
+
+  const nextStep = () => {
+    if (!form.nome?.trim()) {
+      toast.error('Nome é obrigatório.');
+      return;
+    }
+    setModalStep(2);
   };
 
   const handleRegraChange = (tagId, effect) => {
@@ -108,18 +138,20 @@ const ModelosRelatorio = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (modalStep === 1) {
+      nextStep();
+      return;
+    }
     if (!form.nome?.trim()) {
       toast.error('Nome é obrigatório.');
       return;
     }
     const regras = [];
-    Object.entries(tagsPorCategoria).forEach(([, { tags: catTags }]) => {
-      catTags.forEach(tag => {
-        const effect = form.regrasPorTag[tag._id];
-        if (effect && effect !== '') {
-          regras.push({ tag: tag._id, effect });
-        }
-      });
+    tagsOrdenados.forEach(tag => {
+      const effect = form.regrasPorTag[tag._id];
+      if (effect && effect !== '') {
+        regras.push({ tag: tag._id, effect });
+      }
     });
 
     try {
@@ -182,7 +214,7 @@ const ModelosRelatorio = () => {
       <div className="modelos-relatorio-header">
         <h2>Modelos de Relatório</h2>
         <p className="modelos-relatorio-desc">
-          Configure quais tags somam, subtraem ou são ignoradas em cada modelo. Depois selecione o modelo na página de Relatórios.
+          Defina como cada tag afeta os totais. Tags não configuradas entram como soma. Depois selecione o modelo na página de Relatórios.
         </p>
         <button className="modelos-relatorio-btn-novo" onClick={() => openModal()}>
           + Novo Modelo
@@ -224,85 +256,137 @@ const ModelosRelatorio = () => {
       {modalOpen && (
         <div className="modelos-relatorio-modal-overlay" onClick={closeModal}>
           <div className="modelos-relatorio-modal" onClick={e => e.stopPropagation()}>
-            <h3>{editingModelo ? 'Editar Modelo' : 'Novo Modelo'}</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="modelos-relatorio-form-group">
-                <label>Nome *</label>
-                <input
-                  type="text"
-                  value={form.nome}
-                  onChange={e => setForm(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Ex: Relatório de Débitos"
-                  required
-                />
-              </div>
-              <div className="modelos-relatorio-form-group">
-                <label>Descrição</label>
-                <textarea
-                  value={form.descricao}
-                  onChange={e => setForm(prev => ({ ...prev, descricao: e.target.value }))}
-                  placeholder="Descrição opcional"
-                  rows={2}
-                />
-              </div>
-              <div className="modelos-relatorio-form-group">
-                <label>Tipo de Agregação</label>
-                <select
-                  value={form.aggregation}
-                  onChange={e => setForm(prev => ({ ...prev, aggregation: e.target.value }))}
-                >
-                  {AGGREGATION_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="modelos-relatorio-modal-header">
+              <h3>{editingModelo ? 'Editar Modelo' : 'Novo Modelo'}</h3>
+              <span className="modelos-relatorio-step-indicator">Etapa {modalStep} de 2</span>
+            </div>
 
-              <div className="modelos-relatorio-regras-section">
-                <h4>Regras por Tag</h4>
-                <p className="modelos-relatorio-regras-hint">
-                  Defina o efeito de cada tag no cálculo. Padrão = soma o valor. Ordem = prioridade (primeira que bater).
-                </p>
-                {Object.entries(tagsPorCategoria).map(([catId, { nome, tags: catTags }]) => (
-                  <div key={catId} className="modelos-relatorio-categoria-block">
-                    <h5>{nome}</h5>
-                    <div className="modelos-relatorio-tags-grid">
-                      {catTags.map(tag => (
-                        <div key={tag._id} className="modelos-relatorio-tag-row">
-                          <span
-                            className="modelos-relatorio-tag-chip"
-                            style={{
-                              backgroundColor: `${tag.cor || '#ccc'}20`,
-                              color: tag.cor || '#666',
-                              border: `1px solid ${tag.cor || '#ccc'}`
-                            }}
-                          >
-                            {tag.nome}
-                          </span>
-                          <select
-                            value={form.regrasPorTag[tag._id] || ''}
-                            onChange={e => handleRegraChange(tag._id, e.target.value)}
-                          >
-                            {EFFECT_OPTIONS.map(o => (
-                              <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
-                          </select>
-                        </div>
+            <form onSubmit={handleSubmit}>
+              {modalStep === 1 ? (
+                <>
+                  <div className="modelos-relatorio-form-group">
+                    <label>Nome *</label>
+                    <input
+                      type="text"
+                      value={form.nome}
+                      onChange={e => setForm(prev => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Ex: Relatório de Débitos"
+                      required
+                    />
+                  </div>
+                  <div className="modelos-relatorio-form-group">
+                    <label>Descrição</label>
+                    <textarea
+                      value={form.descricao}
+                      onChange={e => setForm(prev => ({ ...prev, descricao: e.target.value }))}
+                      placeholder="Descrição opcional"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="modelos-relatorio-form-group">
+                    <label>Qual resumo o relatório vai mostrar?</label>
+                    <div className="modelos-relatorio-aggregation-cards">
+                      {AGGREGATION_CARDS.map(card => (
+                        <button
+                          key={card.value}
+                          type="button"
+                          className={`modelos-relatorio-aggregation-card ${form.aggregation === card.value ? 'selected' : ''}`}
+                          onClick={() => setForm(prev => ({ ...prev, aggregation: card.value }))}
+                        >
+                          <span className="modelos-relatorio-card-title">{card.title}</span>
+                          <span className="modelos-relatorio-card-desc">{card.desc}</span>
+                        </button>
                       ))}
                     </div>
+                    {form.aggregation === 'devedor' && (
+                      <p className="modelos-relatorio-devedor-hint">
+                        Dica: para débitos, marque a tag PAGO como "Subtrair" e CANCELADO como "Ignorar".
+                      </p>
+                    )}
                   </div>
-                ))}
-                {Object.keys(tagsPorCategoria).length === 0 && (
-                  <p className="modelos-relatorio-no-tags">Crie categorias e tags em "Gerenciar Tags" primeiro.</p>
-                )}
-              </div>
+                </>
+              ) : (
+                <div className="modelos-relatorio-regras-section">
+                  <h4>Regras por tag</h4>
+                  <p className="modelos-relatorio-regras-hint">
+                    Defina como cada tag afeta os totais. Tags não configuradas entram como soma.
+                  </p>
+                  {tagsOrdenados.length > 0 ? (
+                    <div className="modelos-relatorio-regras-table-wrap">
+                      <table className="modelos-relatorio-regras-table">
+                        <thead>
+                          <tr>
+                            <th>Tag</th>
+                            <th>Categoria</th>
+                            <th>Efeito no cálculo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tagsOrdenados.map(tag => (
+                            <tr key={tag._id}>
+                              <td>
+                                <span
+                                  className="modelos-relatorio-tag-chip"
+                                  style={{
+                                    backgroundColor: `${tag.cor || '#ccc'}20`,
+                                    color: tag.cor || '#666',
+                                    border: `1px solid ${tag.cor || '#ccc'}`
+                                  }}
+                                >
+                                  {tag.nome}
+                                </span>
+                              </td>
+                              <td className="modelos-relatorio-categoria-cell">{tag.categoriaNome}</td>
+                              <td>
+                                <select
+                                  value={form.regrasPorTag[tag._id] || ''}
+                                  onChange={e => handleRegraChange(tag._id, e.target.value)}
+                                  className="modelos-relatorio-effect-select"
+                                >
+                                  {EFFECT_OPTIONS.map(o => (
+                                    <option key={o.value || 'empty'} value={o.value}>{o.label}</option>
+                                  ))}
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="modelos-relatorio-no-tags">
+                      <p>Crie tags em Gerenciar Tags primeiro. Depois volte para configurar as regras.</p>
+                      <Link to="/tags" className="modelos-relatorio-link-tags" onClick={closeModal}>
+                        Ir para Gerenciar Tags
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="modelos-relatorio-modal-actions">
-                <button type="button" className="modelos-relatorio-btn-cancel" onClick={closeModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className="modelos-relatorio-btn-save">
-                  {editingModelo ? 'Salvar' : 'Criar'}
-                </button>
+                {modalStep === 1 ? (
+                  <>
+                    <button type="button" className="modelos-relatorio-btn-cancel" onClick={closeModal}>
+                      Cancelar
+                    </button>
+                    <button type="button" className="modelos-relatorio-btn-save" onClick={nextStep}>
+                      Próximo: Definir regras
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="modelos-relatorio-btn-back" onClick={() => setModalStep(1)}>
+                      Voltar
+                    </button>
+                    <button type="button" className="modelos-relatorio-btn-cancel" onClick={closeModal}>
+                      Cancelar
+                    </button>
+                    <button type="submit" className="modelos-relatorio-btn-save">
+                      {editingModelo ? 'Salvar' : 'Criar'}
+                    </button>
+                  </>
+                )}
               </div>
             </form>
           </div>
