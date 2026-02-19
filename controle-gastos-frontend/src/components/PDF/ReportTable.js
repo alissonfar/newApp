@@ -1,117 +1,173 @@
 import React from 'react';
 import { View, Text, StyleSheet } from '@react-pdf/renderer';
+import { colors, typography, spacing } from './theme';
 
 const styles = StyleSheet.create({
   table: {
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    marginVertical: 10,
+    marginVertical: spacing.md,
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottomColor: '#bdc3c7',
+    alignItems: 'flex-start',
+    borderBottomColor: colors.neutral[200],
     borderBottomWidth: 1,
-    minHeight: 24,
+    minHeight: 26,
     flexGrow: 0,
     flexShrink: 0,
   },
   tableHeader: {
-    backgroundColor: '#2980b9',
+    backgroundColor: colors.primary,
   },
   tableCell: {
-    padding: 4,
-    borderRightColor: '#bdc3c7',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRightColor: colors.neutral[200],
     borderRightWidth: 1,
   },
   headerCell: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 10,
     fontWeight: 'bold',
     textAlign: 'center',
   },
   cell: {
-    fontSize: 9,
+    fontSize: typography.body.fontSize,
     textAlign: 'left',
-    padding: 4,
+    lineHeight: 1.35,
   },
-  // Larguras das colunas
-  indexCell: { 
+  indexCell: {
     width: '5%',
     textAlign: 'center',
   },
-  dateCell: { 
+  dateCell: {
     width: '12%',
     textAlign: 'center',
   },
-  typeCell: { 
+  typeCell: {
     width: '10%',
     textAlign: 'center',
   },
-  descriptionCell: { 
+  descriptionCell: {
     width: '25%',
+    minWidth: 0,
   },
-  personCell: { 
+  personCell: {
     width: '15%',
   },
-  valueCell: { 
+  valueCell: {
     width: '13%',
     textAlign: 'right',
   },
-  tagsCell: { 
+  tagsCell: {
     width: '20%',
-    borderRightWidth: 0, // Última coluna não tem borda direita
+    minWidth: 0,
+    borderRightWidth: 0,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
-  // Cores específicas
-  expenseText: { 
-    color: '#e74c3c',
+  tagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginRight: 4,
+    marginBottom: 2,
   },
-  incomeText: { 
-    color: '#27ae60',
+  tagBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 4,
+  },
+  tagBadgeText: {
+    fontSize: typography.small.fontSize,
+  },
+  expenseText: {
+    color: colors.danger,
+  },
+  incomeText: {
+    color: colors.success,
   },
   evenRow: {
-    backgroundColor: '#f5f6fa',
-  }
+    backgroundColor: colors.neutral[50],
+  },
 });
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
   try {
-    const [fullDate] = dateStr.split('T');
+    const [fullDate] = String(dateStr).split('T');
     const [year, month, day] = fullDate.split('-');
     return `${day}/${month}/${year}`;
-  } catch (error) {
-    console.error('Erro ao formatar data:', error);
+  } catch {
     return dateStr;
   }
+};
+
+const truncate = (str, maxLen) => {
+  if (!str || str.length <= maxLen) return str || '-';
+  return str.slice(0, maxLen).trim() + '...';
 };
 
 const ReportTable = ({ data, categorias = [], tags = [] }) => {
   const formatValue = (value, type) => {
     const formattedValue = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
     }).format(Math.abs(value));
-    
+
     return type === 'DESPESA' ? `- ${formattedValue}` : formattedValue;
   };
 
-  const getTagNames = (tagIds) => {
-    if (!tagIds || !Array.isArray(tagIds) || !tags || !Array.isArray(tags)) return '-';
-    return tagIds
-      .map(tagId => tags.find(t => t.id === tagId)?.nome)
-      .filter(Boolean)
-      .join(', ') || '-';
-  };
+  const getTagBadges = (item) => {
+    const tagsPagamento = item.tagsPagamento || {};
+    const badges = [];
 
-  const getCategoryName = (categoryId) => {
-    if (!categoryId || !categorias || !Array.isArray(categorias)) return '-';
-    return categorias.find(c => c.id === categoryId)?.nome || '-';
+    Object.entries(tagsPagamento).forEach(([catId, tagIds]) => {
+      const categoria = categorias.find(
+        (c) => c._id === catId || c.nome === catId
+      );
+      if (!categoria || !tagIds || !Array.isArray(tagIds)) return;
+
+      tagIds.forEach((tagId) => {
+        const tag = tags.find((t) => t._id === tagId || t.nome === tagId);
+        if (!tag) return;
+
+        const cor = tag.cor || categoria.cor || '#64748b';
+        const label = `${categoria.nome}: ${tag.nome}`;
+
+        badges.push(
+          <View
+            key={`${catId}-${tagId}`}
+            style={[
+              styles.tagBadge,
+              {
+                backgroundColor: `${cor}20`,
+                borderWidth: 1,
+                borderColor: cor,
+              },
+            ]}
+          >
+            <View
+              style={[styles.tagBadgeDot, { backgroundColor: cor }]}
+            />
+            <Text style={[styles.tagBadgeText, { color: cor }]}>
+              {truncate(label, 45)}
+            </Text>
+          </View>
+        );
+      });
+    });
+
+    return badges;
   };
 
   return (
     <View style={styles.table}>
-      {/* Cabeçalho */}
       <View style={[styles.tableRow, styles.tableHeader]}>
         <View style={[styles.tableCell, styles.indexCell]}>
           <Text style={styles.headerCell}>#</Text>
@@ -136,12 +192,11 @@ const ReportTable = ({ data, categorias = [], tags = [] }) => {
         </View>
       </View>
 
-      {/* Linhas de dados */}
       {data.map((item, index) => (
-        <View key={index} style={[
-          styles.tableRow,
-          index % 2 === 1 && styles.evenRow
-        ]}>
+        <View
+          key={index}
+          style={[styles.tableRow, index % 2 === 1 && styles.evenRow]}
+        >
           <View style={[styles.tableCell, styles.indexCell]}>
             <Text style={styles.cell}>{index + 1}</Text>
           </View>
@@ -149,47 +204,41 @@ const ReportTable = ({ data, categorias = [], tags = [] }) => {
             <Text style={styles.cell}>{formatDate(item.data)}</Text>
           </View>
           <View style={[styles.tableCell, styles.typeCell]}>
-            <Text style={[
-              styles.cell,
-              item.tipo === 'gasto' ? styles.expenseText : styles.incomeText
-            ]}>
+            <Text
+              style={[
+                styles.cell,
+                item.tipo === 'gasto' ? styles.expenseText : styles.incomeText,
+              ]}
+            >
               {item.tipo === 'gasto' ? 'GASTO' : 'RECEBÍVEL'}
             </Text>
           </View>
-          <View style={[styles.tableCell, styles.descriptionCell]}>
-            <Text style={styles.cell}>{item.descricao || '-'}</Text>
+            <View style={[styles.tableCell, styles.descriptionCell]}>
+            <Text style={styles.cell}>
+              {truncate(item.descricao, 90)}
+            </Text>
           </View>
           <View style={[styles.tableCell, styles.personCell]}>
             <Text style={styles.cell}>{item.pessoa || '-'}</Text>
           </View>
           <View style={[styles.tableCell, styles.valueCell]}>
-            <Text style={[
-              styles.cell,
-              item.tipo === 'gasto' ? styles.expenseText : styles.incomeText
-            ]}>
-              {formatValue(item.valorPagamento, item.tipo === 'gasto' ? 'DESPESA' : 'RECEITA')}
+            <Text
+              style={[
+                styles.cell,
+                item.tipo === 'gasto' ? styles.expenseText : styles.incomeText,
+              ]}
+            >
+              {formatValue(
+                item.valorPagamento,
+                item.tipo === 'gasto' ? 'DESPESA' : 'RECEITA'
+              )}
             </Text>
           </View>
-          <View style={[styles.tableCell, styles.tagsCell]}>
-            <Text style={styles.cell}>
-              {Object.entries(item.tagsPagamento || {})
-                .map(([catId, tagIds]) => {
-                  const categoria = categorias.find(c => c._id === catId || c.nome === catId);
-                  if (!categoria) return null;
-
-                  const tagsTexto = tagIds
-                    .map(tagId => {
-                      const tag = tags.find(t => t._id === tagId || t.nome === tagId);
-                      return tag ? tag.nome : null;
-                    })
-                    .filter(Boolean)
-                    .join(', ');
-
-                  return tagsTexto ? `${categoria.nome}: ${tagsTexto}` : null;
-                })
-                .filter(Boolean)
-                .join(' | ') || '-'}
-            </Text>
+            <View style={[styles.tableCell, styles.tagsCell]}>
+            {(() => {
+              const badges = getTagBadges(item);
+              return badges.length > 0 ? badges : <Text style={styles.cell}>-</Text>;
+            })()}
           </View>
         </View>
       ))}
@@ -197,4 +246,4 @@ const ReportTable = ({ data, categorias = [], tags = [] }) => {
   );
 };
 
-export default ReportTable; 
+export default ReportTable;

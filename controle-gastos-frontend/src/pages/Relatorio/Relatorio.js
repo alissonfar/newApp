@@ -335,7 +335,17 @@ const Relatorio = () => {
           pessoa: row.pessoa || '-',
           tagsPagamento: row.tagsPagamento || {}
         }));
-        filterDetails = result.filterDetails || { dataInicio, dataFim, selectedTipo, selectedPessoas, excludePessoas, tagFilters };
+        filterDetails = result.filterDetails || {
+          dataInicio,
+          dataFim,
+          selectedTipo,
+          selectedPessoas,
+          pessoas: selectedPessoas,
+          tipo: selectedTipo !== 'both' ? selectedTipo : undefined,
+          excludePessoas,
+          tagFilters,
+          tagsFilter: buildTagsFilter(),
+        };
         exportSummary = result.summary || {};
         templateUsed = result.templateUsed || selectedTemplate;
       } else {
