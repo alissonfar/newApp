@@ -9,7 +9,7 @@ import { AuthContext } from '../../context/AuthContext';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import { exportDataToCSV } from '../../utils/export/exportData';
-import { exportDataToPDF } from '../../utils/export/exportPDF';
+import { exportDataToPDF, buildReportFilename } from '../../utils/export/exportPDF';
 import IconRenderer from '../../components/shared/IconRenderer';
 import './Relatorio.css';
 import { 
@@ -377,10 +377,12 @@ const Relatorio = () => {
         };
       }
 
+      const filename = buildReportFilename(filterDetails, exportFormat === 'csv' ? 'csv' : 'pdf', categorias, tags);
+
       if (exportFormat === 'csv') {
         exportDataToCSV(
           normalizedRows,
-          'relatorio.csv',
+          filename,
           {
             customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'],
             formatDates: true,
@@ -395,7 +397,7 @@ const Relatorio = () => {
           exportSummary,
           categorias,
           tags,
-          'relatorio.pdf',
+          filename,
           templateUsed
         );
         toast.success('Relatório exportado como PDF!');
