@@ -27,7 +27,17 @@ export async function obterCategorias(incluirInativas = false) {
     headers: getHeaders(false)
   });
   const dados = await resposta.json();
-  // Mapeia _id para codigo para manter compatibilidade
+
+  if (!resposta.ok) {
+    console.error("Resposta inválida em obterCategorias:", resposta.status, dados);
+    throw new Error(dados?.erro || `Erro ${resposta.status} ao obter categorias.`);
+  }
+
+  if (!Array.isArray(dados)) {
+    console.error("Formato inesperado em obterCategorias:", typeof dados, dados);
+    return [];
+  }
+
   return dados.map(cat => ({
     ...cat,
     codigo: cat._id
@@ -108,7 +118,17 @@ export async function obterTags() {
     headers: getHeaders(false)
   });
   const dados = await resposta.json();
-  // Mapeia _id para codigo para manter compatibilidade
+
+  if (!resposta.ok) {
+    console.error("Resposta inválida em obterTags:", resposta.status, dados);
+    throw new Error(dados?.erro || `Erro ${resposta.status} ao obter tags.`);
+  }
+
+  if (!Array.isArray(dados)) {
+    console.error("Formato inesperado em obterTags:", typeof dados, dados);
+    return [];
+  }
+
   return dados.map(tag => ({
     ...tag,
     codigo: tag._id
@@ -188,7 +208,12 @@ export async function obterTransacoes(params = {}) {
   });
   const dados = await resposta.json();
 
-  if (dados.transacoes) {
+  if (!resposta.ok || dados?.erro) {
+    console.error("Resposta inválida em obterTransacoes:", resposta.status, dados);
+    throw new Error(dados?.erro || `Erro ${resposta.status} ao obter transações.`);
+  }
+
+  if (Array.isArray(dados.transacoes)) {
     dados.transacoes = dados.transacoes.map(t => ({
       ...t,
       id: t._id,
@@ -220,8 +245,13 @@ export async function obterTransacoesPaginadas(params = {}) {
     headers: getHeaders(false)
   });
   const dados = await resposta.json();
-  if (dados.erro) throw new Error(dados.erro);
-  if (dados.data) {
+
+  if (!resposta.ok || dados?.erro) {
+    console.error("Resposta inválida em obterTransacoesPaginadas:", resposta.status, dados);
+    throw new Error(dados?.erro || `Erro ${resposta.status} ao obter transações.`);
+  }
+
+  if (Array.isArray(dados.data)) {
     dados.data = dados.data.map(t => ({ ...t, id: t._id }));
   }
   return dados;
@@ -266,8 +296,13 @@ export async function obterTransacoesExport(params = {}) {
     headers: getHeaders(false)
   });
   const dados = await resposta.json();
-  if (dados.erro) throw new Error(dados.erro);
-  if (dados.transacoes) {
+
+  if (!resposta.ok || dados?.erro) {
+    console.error("Resposta inválida em obterTransacoesExport:", resposta.status, dados);
+    throw new Error(dados?.erro || `Erro ${resposta.status} ao exportar transações.`);
+  }
+
+  if (Array.isArray(dados.transacoes)) {
     dados.transacoes = dados.transacoes.map(t => ({ ...t, id: t._id }));
   }
   return dados;

@@ -1,22 +1,31 @@
 // src/context/DataContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { obterCategorias, obterTags } from '../api'; // Ajuste o caminho conforme necessário
+import { obterCategorias, obterTags } from '../api';
 import { toast } from 'react-toastify';
+import { AuthContext } from './AuthContext';
 
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
+  const { token } = useContext(AuthContext);
   const [categorias, setCategorias] = useState([]);
   const [tags, setTags] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState(null);
 
   useEffect(() => {
+    if (!token) {
+      setCategorias([]);
+      setTags([]);
+      setErrorData(null);
+      setLoadingData(false);
+      return;
+    }
+
     const fetchData = async () => {
       setLoadingData(true);
       setErrorData(null);
       try {
-        // Usar Promise.all para buscar em paralelo
         const [cats, tgs] = await Promise.all([
           obterCategorias(),
           obterTags()
@@ -33,8 +42,7 @@ export const DataProvider = ({ children }) => {
     };
 
     fetchData();
-    // O array de dependências vazio [] garante que isso rode apenas uma vez na montagem
-  }, []);
+  }, [token]);
 
   const refreshData = async () => {
     setLoadingData(true);

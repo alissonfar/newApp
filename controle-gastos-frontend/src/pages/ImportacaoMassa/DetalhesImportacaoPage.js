@@ -25,7 +25,7 @@ const DetalhesImportacaoPage = () => {
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [expandirTodas, setExpandirTodas] = useState(false);
     const [duplicando, setDuplicando] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState('novas'); // 'novas' | 'ja_importadas'
+    const [abaAtiva, setAbaAtiva] = useState('novas'); // 'novas' | 'ja_importadas' | 'ignoradas'
     const [selecionados, setSelecionados] = useState(new Set());
     const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
 
@@ -69,7 +69,9 @@ const DetalhesImportacaoPage = () => {
         try {
             setLoadingTransacoes(true);
             const options = {};
-            if (imp?.tipoImportacao === 'complementar') {
+            if (aba === 'ignoradas') {
+                options.status = 'ignorada';
+            } else if (imp?.tipoImportacao === 'complementar') {
                 if (aba === 'novas') options.status_not = 'ja_importada'; // Backend também exclui ignorada
                 else if (aba === 'ja_importadas') options.status = 'ja_importada';
             }
@@ -137,7 +139,7 @@ const DetalhesImportacaoPage = () => {
         try {
             await importacaoService.validarTransacao(id, transacaoId);
             toast.success('Transação validada com sucesso');
-            await carregarTransacoes(); // Recarrega a lista
+            await carregarDetalhes();
         } catch (error) {
             console.error('Erro ao validar transação:', error);
             toast.error('Erro ao validar transação');
@@ -236,7 +238,7 @@ const DetalhesImportacaoPage = () => {
             
             toast.success('Transação atualizada com sucesso!');
             setShowFormTransacao(false);
-            carregarTransacoes();
+            await carregarDetalhes();
         } catch (error) {
             console.error('[DEBUG] Erro ao atualizar transação:', error);
             toast.error(error.message || 'Erro ao atualizar transação.');
@@ -341,9 +343,6 @@ const DetalhesImportacaoPage = () => {
         try {
             await importacaoService.excluirTransacao(transacaoId);
             toast.success('Transação ignorada com sucesso!');
-            // Remove a transação do estado local para atualizar a UI imediatamente
-            setTransacoes(prevTransacoes => prevTransacoes.filter(t => t.id !== transacaoId));
-            // Opcional: recarregar detalhes para atualizar contadores, se necessário
             await carregarDetalhes();
         } catch (error) {
             console.error('Erro ao excluir transação:', error);
@@ -519,7 +518,7 @@ const DetalhesImportacaoPage = () => {
                         <p className="resumo-complementar">
                             {importacao?.estatisticas?.transacoesNovas ?? 0} novas, {importacao?.estatisticas?.transacoesJaImportadas ?? 0} já importadas
                             {(importacao?.estatisticas?.totalIgnoradas ?? 0) > 0 && (
-                                <span>, {importacao.estatisticas.totalIgnoradas} ignoradas (não exibidas)</span>
+                                <span>, {importacao.estatisticas.totalIgnoradas} ignoradas</span>
                             )}
                         </p>
                     )}
@@ -593,20 +592,30 @@ const DetalhesImportacaoPage = () => {
                 <div className="lista-header">
                     <h3>Lista de Transações</h3>
                     <div className="lista-header-actions">
-                        {importacao?.tipoImportacao === 'complementar' && (
+                        {(importacao?.tipoImportacao === 'complementar' || (importacao?.estatisticas?.totalIgnoradas ?? 0) > 0) && (
                             <div className="abas-transacoes">
                                 <button
                                     className={`aba-btn ${abaAtiva === 'novas' ? 'ativa' : ''}`}
                                     onClick={() => handleTrocarAba('novas')}
                                 >
-                                    Transações Novas
+                                    {importacao?.tipoImportacao === 'complementar' ? 'Transações Novas' : 'Transações'}
                                 </button>
-                                <button
-                                    className={`aba-btn ${abaAtiva === 'ja_importadas' ? 'ativa' : ''}`}
-                                    onClick={() => handleTrocarAba('ja_importadas')}
-                                >
-                                    Já Importadas
-                                </button>
+                                {importacao?.tipoImportacao === 'complementar' && (
+                                    <button
+                                        className={`aba-btn ${abaAtiva === 'ja_importadas' ? 'ativa' : ''}`}
+                                        onClick={() => handleTrocarAba('ja_importadas')}
+                                    >
+                                        Já Importadas
+                                    </button>
+                                )}
+                                {(importacao?.estatisticas?.totalIgnoradas ?? 0) > 0 && (
+                                    <button
+                                        className={`aba-btn ${abaAtiva === 'ignoradas' ? 'ativa' : ''}`}
+                                        onClick={() => handleTrocarAba('ignoradas')}
+                                    >
+                                        Ignoradas
+                                    </button>
+                                )}
                             </div>
                         )}
                         <button
@@ -626,7 +635,7 @@ const DetalhesImportacaoPage = () => {
                         </button>
                     </div>
                 </div>
-                {selecionados.size > 0 && podeEditar(importacao) && (
+                {selecionados.size > 0 && podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
                     <div className="barra-acoes-massa">
                         <span className="contador-selecionados">{selecionados.size} selecionada(s)</span>
                         <div className="botoes-acoes-massa">
@@ -657,7 +666,7 @@ const DetalhesImportacaoPage = () => {
                 <table className="transacoes-table">
                     <thead>
                         <tr>
-                            {podeEditar(importacao) && (
+                            {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
                                 <th style={{ width: '40px' }} className="th-checkbox">
                                     <input
                                         type="checkbox"
@@ -681,7 +690,7 @@ const DetalhesImportacaoPage = () => {
                                 <tr
                                     className={`status-${transacao.status}`}
                                 >
-                                    {podeEditar(importacao) && (
+                                    {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
                                         <td className="checkbox-cell">
                                             {['pendente', 'revisada', 'erro', 'ja_importada'].includes(transacao.status) && (
                                                 <input
@@ -714,7 +723,7 @@ const DetalhesImportacaoPage = () => {
                                         </span>
                                     </td>
                                     <td className="acoes-cell">
-                                        {podeEditar(importacao) && (
+                                        {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
                                             <>
                                                 <button
                                                     onClick={() => handleEditarTransacao(transacao)}
@@ -747,7 +756,7 @@ const DetalhesImportacaoPage = () => {
                                 {/* Linha de resumo expansível */}
                                 {expandedRows.has(transacao.id) && (
                                     <tr className="resumo-row">
-                                        <td colSpan={podeEditar(importacao) ? 7 : 6}>
+                                        <td colSpan={podeEditar(importacao) && abaAtiva !== 'ignoradas' ? 7 : 6}>
                                             <div className="mini-resumo">
                                                 {/* Tipo da Transação */}
                                                 <div className="resumo-item">
