@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -77,7 +77,8 @@ const MainLayout = ({ children }) => {
       hasSubmenu: true,
       key: 'transacoes',
       submenu: [
-        { name: 'Importação em Massa', path: '/importacao', icon: <FaFileImport />, isSubItem: true }
+        { name: 'Importação em Massa', path: '/importacao', icon: <FaFileImport />, isSubItem: true },
+        { name: 'Recebimentos', path: '/recebimentos', icon: <FaHandHoldingUsd />, isSubItem: true }
       ]
     },
     { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },

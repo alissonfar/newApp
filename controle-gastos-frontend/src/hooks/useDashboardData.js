@@ -65,7 +65,10 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
       if (t.tipo === 'gasto') {
         acc.totalGastos += valorConsiderado;
       } else {
-        acc.totalRecebiveis += valorConsiderado;
+        // Excluir recebimentos de conciliação (settlementAsSource) — não são receita real
+        if (!t.settlementAsSource) {
+          acc.totalRecebiveis += valorConsiderado;
+        }
       }
       return acc;
     }, { totalGastos: 0, totalRecebiveis: 0 });
@@ -99,8 +102,8 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
         }, 0);
 
       const recebiveisMes = transacoesMesGrafico
-        .filter(t => t.tipo === 'recebivel')
-         .reduce((acc, t) => {
+        .filter(t => t.tipo === 'recebivel' && !t.settlementAsSource)
+        .reduce((acc, t) => {
             const pagamentoProprietario = t.pagamentos?.find(p => p.pessoa && p.pessoa.toLowerCase() === proprietarioAtual.toLowerCase());
             return acc + (pagamentoProprietario?.valor ?? t.valor);
         }, 0);

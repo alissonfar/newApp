@@ -452,3 +452,64 @@ export async function obterRelatorio() {
   return await resposta.json();
 }
 
+/* ----- Settlements (Conciliação de Recebimentos) ----- */
+export async function listarSettlements(params = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', params.page);
+  if (params.limit) q.set('limit', params.limit);
+  const resposta = await fetch(`${API_BASE}/settlements?${q.toString()}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar conciliações.');
+  return dados;
+}
+
+export async function listarRecebimentosDisponiveis(params = {}) {
+  const q = new URLSearchParams();
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  const resposta = await fetch(`${API_BASE}/settlements/recebimentos-disponiveis?${q.toString()}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar recebimentos.');
+  return dados.transacoes || [];
+}
+
+export async function listarPendentes(params = {}) {
+  const q = new URLSearchParams();
+  if (params.pessoa) q.set('pessoa', params.pessoa);
+  if (params.pessoas?.length) params.pessoas.forEach(p => q.append('pessoas', p));
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  if (params.excludeTransactionId) q.set('excludeTransactionId', params.excludeTransactionId);
+  const resposta = await fetch(`${API_BASE}/settlements/pendentes?${q.toString()}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar pendentes.');
+  return dados.transacoes || [];
+}
+
+export async function criarSettlement(dados) {
+  const resposta = await fetch(`${API_BASE}/settlements`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(dados)
+  });
+  const dadosResposta = await resposta.json();
+  if (!resposta.ok || dadosResposta?.erro) throw new Error(dadosResposta?.erro || 'Erro ao criar conciliação.');
+  return dadosResposta;
+}
+
+export async function excluirSettlement(id) {
+  const resposta = await fetch(`${API_BASE}/settlements/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao excluir conciliação.');
+  return dados;
+}
+
