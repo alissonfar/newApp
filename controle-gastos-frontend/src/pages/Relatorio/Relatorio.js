@@ -193,7 +193,15 @@ const Relatorio = () => {
         sortDir: sortDir || 'desc'
       };
       const res = await obterTransacoesPaginadas(params);
-      const flattened = flattenTransactions(res.data);
+      let flattened = flattenTransactions(res.data);
+      if (pessoas?.length > 0) {
+        const pessoasList = pessoas.map(p => (typeof p === 'object' && p?.value != null) ? p.value : p);
+        flattened = flattened.filter(row =>
+          row.pessoa && pessoasList.some(p =>
+            String(p).toLowerCase() === String(row.pessoa).toLowerCase()
+          )
+        );
+      }
       setFilteredRows(flattened);
       setPage(res.page || 1);
       setTotalPages(res.totalPages || 1);

@@ -17,16 +17,14 @@ function buildMatchFromFilters(filters, userId) {
     usuario: new mongoose.Types.ObjectId(userId)
   };
 
-  // Pessoas: include ($in) ou exclude ($nin)
+  // Pessoas: include ($in), exclude ($nin) ou proprietario (regex). Prioridade: exclude > pessoas > proprietario
   if (filters.excludePessoas && (Array.isArray(filters.excludePessoas) ? filters.excludePessoas.length > 0 : filters.excludePessoas)) {
     const exclude = Array.isArray(filters.excludePessoas) ? filters.excludePessoas : [filters.excludePessoas];
     match['pagamentos.pessoa'] = { $nin: exclude };
   } else if (filters.pessoas && (Array.isArray(filters.pessoas) ? filters.pessoas.length > 0 : filters.pessoas)) {
     const pessoas = Array.isArray(filters.pessoas) ? filters.pessoas : [filters.pessoas];
     match['pagamentos.pessoa'] = { $in: pessoas };
-  }
-
-  if (filters.proprietario) {
+  } else if (filters.proprietario) {
     match['pagamentos.pessoa'] = new RegExp('^' + filters.proprietario + '$', 'i');
   }
 
@@ -84,20 +82,38 @@ function buildSortFromFilters(filters) {
 
 /**
  * Busca transações filtradas do banco.
+ * Quando filtro pessoas está ativo, projeta apenas os pagamentos que batem com o filtro.
  * @param {Object} filters
  * @param {string} userId
  * @returns {Promise<Array>} transações
  */
 async function fetchFilteredTransactions(filters, userId) {
-  const matchStage = buildMatchFromFilters(filters || {}, userId);
-  const sortStage = buildSortFromFilters(filters || {});
+  const f = filters || {};
+  const matchStage = buildMatchFromFilters(f, userId);
+  const sortStage = buildSortFromFilters(f);
 
-  const transacoes = await Transacao.aggregate([
-    { $match: matchStage },
-    { $sort: sortStage },
-    { $limit: MAX_EXPORT }
-  ]);
+  const pessoasFilter = !f.excludePessoas && f.pessoas
+    ? (Array.isArray(f.pessoas) ? f.pessoas : [f.pessoas]).filter(Boolean)
+    : null;
 
+  const pipeline = [{ $match: matchStage }];
+  if (pessoasFilter && pessoasFilter.length > 0) {
+    pipeline.push({
+      $addFields: {
+        pagamentos: {
+          $filter: {
+            input: { $ifNull: ['$pagamentos', []] },
+            as: 'p',
+            cond: { $in: ['$$p.pessoa', pessoasFilter] }
+          }
+        }
+      }
+    });
+    pipeline.push({ $match: { $expr: { $gt: [{ $size: '$pagamentos' }, 0] } } });
+  }
+  pipeline.push({ $sort: sortStage }, { $limit: MAX_EXPORT });
+
+  const transacoes = await Transacao.aggregate(pipeline);
   return transacoes;
 }
 

@@ -55,7 +55,7 @@ async function generateReport({ templateId, filters, userId }) {
 
   const tags = await Tag.find({ usuario: userId, ativo: true }).lean();
 
-  const rows = processWithRules(transacoes, template.rules, tags);
+  const rows = processWithRules(transacoes, template.rules, tags, filters);
 
   const summary = aggregate(rows, template.aggregation);
 

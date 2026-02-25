@@ -90,55 +90,80 @@ exports.obterTodasTransacoes = async (req, res) => {
     const sortStage = buildSortStage(req);
     const skip = (page - 1) * limit;
 
-    const result = await Transacao.aggregate([
-      { $match: matchStage },
-      {
-        $facet: {
-          data: [
-            { $sort: sortStage },
-            { $skip: skip },
-            { $limit: limit }
-          ],
-          count: [{ $count: 'total' }],
-          summary: [
-            { $unwind: { path: '$pagamentos', preserveNullAndEmptyArrays: true } },
-            {
-              $group: {
-                _id: null,
-                totalRows: { $sum: 1 },
-                totalValue: { $sum: { $ifNull: ['$pagamentos.valor', 0] } },
-                totalGastos: {
-                  $sum: { $cond: [{ $eq: ['$tipo', 'gasto'] }, { $ifNull: ['$pagamentos.valor', 0] }, 0] }
-                },
-                totalRecebiveis: {
-                  $sum: { $cond: [{ $eq: ['$tipo', 'recebivel'] }, { $ifNull: ['$pagamentos.valor', 0] }, 0] }
-                },
-                peopleSet: {
-                  $addToSet: {
-                    $cond: [
-                      { $and: [{ $ne: ['$pagamentos.pessoa', null] }, { $ne: ['$pagamentos.pessoa', ''] }] },
-                      '$pagamentos.pessoa',
-                      '$$REMOVE'
-                    ]
-                  }
-                }
-              }
-            },
-            {
-              $project: {
-                _id: 0,
-                totalRows: 1,
-                totalValue: 1,
-                totalGastos: 1,
-                totalRecebiveis: 1,
-                netValue: { $subtract: ['$totalRecebiveis', '$totalGastos'] },
-                totalPeople: { $size: { $ifNull: ['$peopleSet', []] } }
-              }
+    // Quando filtro por pessoas está ativo: projetar apenas pagamentos que batem com o filtro
+    const pessoasFilter = !req.query.excludePessoas && req.query.pessoas
+      ? (Array.isArray(req.query.pessoas) ? req.query.pessoas : [req.query.pessoas]).filter(Boolean)
+      : null;
+
+    const pipeline = [{ $match: matchStage }];
+
+    if (pessoasFilter && pessoasFilter.length > 0) {
+      pipeline.push({
+        $addFields: {
+          pagamentos: {
+            $filter: {
+              input: { $ifNull: ['$pagamentos', []] },
+              as: 'p',
+              cond: { $in: ['$$p.pessoa', pessoasFilter] }
             }
-          ]
+          }
+        }
+      });
+      pipeline.push({ $match: { $expr: { $gt: [{ $size: '$pagamentos' }, 0] } } });
+    }
+
+    const dataBranch = [{ $sort: sortStage }, { $skip: skip }, { $limit: limit }];
+    const summaryStages = [
+      { $unwind: { path: '$pagamentos', preserveNullAndEmptyArrays: true } }
+    ];
+    if (pessoasFilter && pessoasFilter.length > 0) {
+      summaryStages.push({ $match: { 'pagamentos.pessoa': { $in: pessoasFilter } } });
+    }
+    summaryStages.push(
+      {
+        $group: {
+          _id: null,
+          totalRows: { $sum: 1 },
+          totalValue: { $sum: { $ifNull: ['$pagamentos.valor', 0] } },
+          totalGastos: {
+            $sum: { $cond: [{ $eq: ['$tipo', 'gasto'] }, { $ifNull: ['$pagamentos.valor', 0] }, 0] }
+          },
+          totalRecebiveis: {
+            $sum: { $cond: [{ $eq: ['$tipo', 'recebivel'] }, { $ifNull: ['$pagamentos.valor', 0] }, 0] }
+          },
+          peopleSet: {
+            $addToSet: {
+              $cond: [
+                { $and: [{ $ne: ['$pagamentos.pessoa', null] }, { $ne: ['$pagamentos.pessoa', ''] }] },
+                '$pagamentos.pessoa',
+                '$$REMOVE'
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalRows: 1,
+          totalValue: 1,
+          totalGastos: 1,
+          totalRecebiveis: 1,
+          netValue: { $subtract: ['$totalRecebiveis', '$totalGastos'] },
+          totalPeople: { $size: { $ifNull: ['$peopleSet', []] } }
         }
       }
-    ]);
+    );
+
+    pipeline.push({
+      $facet: {
+        data: [...dataBranch],
+        count: [{ $count: 'total' }],
+        summary: summaryStages
+      }
+    });
+
+    const result = await Transacao.aggregate(pipeline);
 
     const countDoc = result[0].count[0];
     const total = countDoc ? countDoc.total : 0;
@@ -191,11 +216,29 @@ exports.obterTransacoesExport = async (req, res) => {
     const matchStage = buildMatchStage(req);
     const sortStage = buildSortStage(req);
     const MAX_EXPORT = 50000;
-    const transacoes = await Transacao.aggregate([
-      { $match: matchStage },
-      { $sort: sortStage },
-      { $limit: MAX_EXPORT }
-    ]);
+
+    const pessoasFilter = !req.query.excludePessoas && req.query.pessoas
+      ? (Array.isArray(req.query.pessoas) ? req.query.pessoas : [req.query.pessoas]).filter(Boolean)
+      : null;
+
+    const exportPipeline = [{ $match: matchStage }];
+    if (pessoasFilter && pessoasFilter.length > 0) {
+      exportPipeline.push({
+        $addFields: {
+          pagamentos: {
+            $filter: {
+              input: { $ifNull: ['$pagamentos', []] },
+              as: 'p',
+              cond: { $in: ['$$p.pessoa', pessoasFilter] }
+            }
+          }
+        }
+      });
+      exportPipeline.push({ $match: { $expr: { $gt: [{ $size: '$pagamentos' }, 0] } } });
+    }
+    exportPipeline.push({ $sort: sortStage }, { $limit: MAX_EXPORT });
+
+    const transacoes = await Transacao.aggregate(exportPipeline);
     res.json({ transacoes });
   } catch (error) {
     console.error('Erro ao exportar transações:', error);

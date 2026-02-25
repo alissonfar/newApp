@@ -121,10 +121,19 @@ function applyRules(rows, rules, tags) {
  * @param {Array} transacoes
  * @param {Array} rules
  * @param {Array} tags
+ * @param {Object} [filters] - filtros opcionais; quando filters.pessoas existe, filtra linhas por pessoa
  * @returns {Array} rows com effect
  */
-function processWithRules(transacoes, rules, tags) {
-  const flattened = flattenTransactions(transacoes);
+function processWithRules(transacoes, rules, tags, filters) {
+  let flattened = flattenTransactions(transacoes);
+  if (filters?.pessoas && (Array.isArray(filters.pessoas) ? filters.pessoas.length > 0 : filters.pessoas)) {
+    const pessoasList = Array.isArray(filters.pessoas) ? filters.pessoas : [filters.pessoas];
+    flattened = flattened.filter(row =>
+      row.pessoa && pessoasList.some(p =>
+        String(p).toLowerCase() === String(row.pessoa).toLowerCase()
+      )
+    );
+  }
   if (!rules || rules.length === 0) {
     return flattened.map((r) => ({ ...r, effect: TagEffect.ADD }));
   }
