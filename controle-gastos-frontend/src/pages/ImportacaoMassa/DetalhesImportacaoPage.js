@@ -160,6 +160,15 @@ const DetalhesImportacaoPage = () => {
             return;
         }
 
+        // Para parcelamento: detectar se valor é total ou parcela (1 linha = total, N linhas = parcela)
+        let valorEhTotalNaImportacao = true;
+        if (transacao.isInstallment && transacao.installmentGroupId && transacao.installmentTotal >= 2) {
+            const mesmoGrupo = transacoes.filter(t =>
+                t.installmentGroupId && String(t.installmentGroupId) === String(transacao.installmentGroupId)
+            );
+            valorEhTotalNaImportacao = mesmoGrupo.length < transacao.installmentTotal;
+        }
+
         // Converter a transação importada para o formato esperado pelo NovaTransacaoForm
         const transacaoFormatada = {
             _id: transacao.id || transacao._id,
@@ -180,7 +189,13 @@ const DetalhesImportacaoPage = () => {
                     pessoa: 'Eu',
                     valor: transacao.valor,
                     tags: {}
-                }]
+                }],
+            isInstallment: transacao.isInstallment || false,
+            installmentTotal: transacao.installmentTotal,
+            installmentNumber: transacao.installmentNumber,
+            installmentIntervalMonths: transacao.installmentIntervalMonths,
+            installmentIntervalDays: transacao.installmentIntervalDays,
+            valorEhTotalNaImportacao
         };
         
         // Log da transação após formatação
@@ -859,6 +874,7 @@ const DetalhesImportacaoPage = () => {
                                 setTransacaoEmEdicao(null);
                             }}
                             proprietarioPadrao={proprietario}
+                            mostrarParcelamentoEmEdicao={true}
                         />
                     </div>
                 </div>

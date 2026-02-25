@@ -409,6 +409,27 @@ export async function excluirTransacao(id) {
   return await resposta.json();
 }
 
+export async function estornarParcelamento(installmentGroupId) {
+  const resposta = await fetch(`${API_BASE}/transacoes/parcelamento/${installmentGroupId}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  return await resposta.json();
+}
+
+export async function obterPreviewParcelas({ totalAmount, totalInstallments, intervalInDays, startDate }) {
+  const params = new URLSearchParams({
+    totalAmount: String(totalAmount || 0),
+    totalInstallments: String(totalInstallments || 2),
+    intervalInDays: String(intervalInDays || 30),
+    startDate: startDate || new Date().toISOString().split('T')[0]
+  });
+  const resposta = await fetch(`${API_BASE}/transacoes/preview-parcelas?${params}`, {
+    headers: getHeaders(false)
+  });
+  return await resposta.json();
+}
+
 // Função para registrar transações em massa
 export const registrarTransacoesEmMassa = async (transacoes) => {
   try {

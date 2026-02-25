@@ -5,11 +5,11 @@ import Select from 'react-select'; // Import do React-Select
 import { toast } from 'react-toastify'; // Import do toast do React Toastify
 import { Tooltip, IconButton } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { criarTransacao, atualizarTransacao } from '../../api';
+import { criarTransacao, atualizarTransacao, obterPreviewParcelas } from '../../api';
 import { useData } from '../../context/DataContext';
 import IconRenderer from '../shared/IconRenderer';
 import './NovaTransacaoForm.css';
-import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils';
+import { getTodayBR, getYesterdayBR, toISOStringBR, formatDateBR } from '../../utils/dateUtils';
 
 // Componente do Modal de Atalhos
 const ShortcutsHelp = ({ open, onClose }) => {
@@ -67,7 +67,7 @@ const ShortcutsHelp = ({ open, onClose }) => {
   );
 };
 
-const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '' }) => {
+const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '', mostrarParcelamentoEmEdicao = false }) => {
   // Estados dos dados gerais
   const [_id, set_Id] = useState(transacao?._id);
   const [tipo, setTipo] = useState(transacao ? transacao.tipo : 'gasto');
@@ -79,6 +79,12 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   // Novo estado para identificar se é uma transação importada
   const [isImportada, setIsImportada] = useState(transacao?.importacao ? true : false);
   const [importacaoId, setImportacaoId] = useState(transacao?.importacao || null);
+  
+  // Parcelamento (apenas para nova transação, não edição)
+  const [isParcelado, setIsParcelado] = useState(false);
+  const [totalParcelas, setTotalParcelas] = useState('2');
+  const [intervaloDias, setIntervaloDias] = useState('30');
+  const [previewParcelas, setPreviewParcelas] = useState(null);
   
   // Pagamentos: usamos paymentTags para manipulação (mapeando p.tags do backend)
   const [pagamentos, setPagamentos] = useState(
@@ -115,6 +121,63 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     // A dependência [transacao] permanece para garantir que execute quando o modo muda
   }, [transacao]);
   
+  // Quando parcelado, manter único pagamento com valor = valorTotal
+  useEffect(() => {
+    if (isParcelado && !transacao) {
+      const pessoa = pagamentos[0]?.pessoa || proprietarioPadrao || '';
+      const tags = pagamentos[0]?.paymentTags || {};
+      setPagamentos([{ pessoa, valor: valorTotal || '', paymentTags: tags }]);
+    }
+  }, [isParcelado]);
+
+  // Preview de parcelas (debounce 300ms) - funciona em criação e em edição (modal de importação)
+  useEffect(() => {
+    const deveMostrarPreview = isParcelado && (!transacao || mostrarParcelamentoEmEdicao);
+    if (!deveMostrarPreview) {
+      setPreviewParcelas(null);
+      return;
+    }
+    const numParcelas = parseInt(totalParcelas, 10) || 2;
+    const intervalDays = parseInt(intervaloDias, 10) || 30;
+    const valorParcelaOuTotal = parseFloat(valorTotal) || 0;
+    // Na importação: 1 linha = valor é total; N linhas = valor é parcela. No manual: valor é sempre total.
+    const valorEhParcela = transacao?.valorEhTotalNaImportacao === false;
+    const valorTotalParaPreview = (transacao && transacao.isInstallment && valorEhParcela)
+      ? valorParcelaOuTotal * numParcelas
+      : valorParcelaOuTotal;
+    // Ao editar parcela: data é da parcela atual; calcular data inicial (1ª parcela)
+    let startDateParaPreview = data;
+    if (transacao && transacao.isInstallment && transacao.installmentNumber > 1 && data) {
+      const [y, m, d] = data.split('-').map(Number);
+      const dataParcelaAtual = new Date(Date.UTC(y, m - 1, d, 12, 0, 0, 0));
+      const diffDias = (transacao.installmentNumber - 1) * intervalDays;
+      dataParcelaAtual.setUTCDate(dataParcelaAtual.getUTCDate() - diffDias);
+      startDateParaPreview = dataParcelaAtual.toISOString().split('T')[0];
+    }
+    if (numParcelas < 2 || intervalDays < 1 || valorTotalParaPreview <= 0 || !data) {
+      setPreviewParcelas(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const resultado = await obterPreviewParcelas({
+          totalAmount: valorTotalParaPreview,
+          totalInstallments: numParcelas,
+          intervalInDays: intervalDays,
+          startDate: startDateParaPreview
+        });
+        if (resultado.erro) {
+          setPreviewParcelas(null);
+        } else {
+          setPreviewParcelas(resultado);
+        }
+      } catch {
+        setPreviewParcelas(null);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isParcelado, totalParcelas, intervaloDias, valorTotal, data, transacao, mostrarParcelamentoEmEdicao]);
+
   // Validação visual em tempo real (não-bloqueante)
   useEffect(() => {
     if (!valorTotal || pagamentos.length === 0) {
@@ -157,6 +220,15 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         setPagamentos(pagamentosProcessados);
       } else {
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
+      }
+      if (transacao.isInstallment && transacao.installmentTotal) {
+        setIsParcelado(true);
+        setTotalParcelas(String(transacao.installmentTotal));
+        setIntervaloDias(String(transacao.installmentIntervalDays || transacao.installmentIntervalMonths * 30 || 30));
+      } else {
+        setIsParcelado(false);
+        setTotalParcelas('2');
+        setIntervaloDias('30');
       }
     }
   }, [transacao, proprietarioPadrao]);
@@ -297,6 +369,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     }
     
     try {
+      const numParcelas = parseInt(totalParcelas, 10) || 2;
+      const intervalDays = parseInt(intervaloDias, 10) || 30;
+      const parcelasValidas = numParcelas >= 2 && numParcelas <= 60;
+      const intervaloValido = intervalDays >= 1 && intervalDays <= 365;
+      const ehParcelado = isParcelado && !transacao && parcelasValidas && intervaloValido;
+      const ehParceladoNaEdicao = mostrarParcelamentoEmEdicao && isParcelado && parcelasValidas && intervaloValido;
+
       const transacaoData = {
         _id,
         tipo,
@@ -310,6 +389,12 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           tags: p.paymentTags
         }))
       };
+
+      if (ehParcelado || ehParceladoNaEdicao) {
+        transacaoData.isInstallment = true;
+        transacaoData.totalInstallments = numParcelas;
+        transacaoData.installmentIntervalDays = parseInt(intervaloDias, 10) || 30;
+      }
 
       let response;
 
@@ -337,6 +422,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         response = await criarTransacao(transacaoData);
       }
 
+      if (response?.erro) {
+        throw new Error(response.erro);
+      }
+
       // Chama o callback de sucesso com a resposta
       await onSuccess(response);
 
@@ -354,6 +443,9 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
         setIsImportada(false);
         setImportacaoId(null);
+        setIsParcelado(false);
+        setTotalParcelas('2');
+        setIntervaloDias('30');
         // Foca no primeiro campo (Descrição, já que Tipo raramente muda)
         setTimeout(() => descricaoRef.current?.focus(), 50);
       }
@@ -474,6 +566,75 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 </div>
               )}
             </div>
+            {(!transacao || mostrarParcelamentoEmEdicao) && (
+              <div className="form-section parcelamento-section">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={isParcelado}
+                    onChange={(e) => setIsParcelado(e.target.checked)}
+                    tabIndex={41}
+                  />
+                  {' '}Parcelado?
+                </label>
+                {isParcelado && (
+                  <div className="parcelamento-campos">
+                    <div className="form-section">
+                      <label>Quantidade de parcelas:</label>
+                      <input
+                        type="number"
+                        min="2"
+                        max="60"
+                        value={totalParcelas}
+                        onChange={(e) => setTotalParcelas(e.target.value)}
+                        tabIndex={42}
+                      />
+                    </div>
+                    <div className="form-section">
+                      <label>Intervalo (dias):</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={intervaloDias}
+                        onChange={(e) => setIntervaloDias(e.target.value)}
+                        tabIndex={43}
+                      />
+                    </div>
+                  </div>
+                )}
+                {previewParcelas && previewParcelas.parcelas && previewParcelas.parcelas.length > 0 && (
+                  <div className="preview-parcelas-section">
+                    <h4>Preview das parcelas</h4>
+                    <div className="preview-parcelas-table-wrapper">
+                      <table className="preview-parcelas-table">
+                        <thead>
+                          <tr>
+                            <th>Parcela</th>
+                            <th>Data</th>
+                            <th>Valor</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewParcelas.parcelas.map((p) => (
+                            <tr key={p.installmentNumber}>
+                              <td>{p.installmentNumber}/{previewParcelas.parcelas.length}</td>
+                              <td>{formatDateBR(p.date)}</td>
+                              <td>R$ {parseFloat(p.value).toFixed(2).replace('.', ',')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="preview-parcelas-resumo">
+                      <p><strong>Valor total:</strong> R$ {parseFloat(previewParcelas.valorTotal || 0).toFixed(2).replace('.', ',')}</p>
+                      <p><strong>Intervalo:</strong> {previewParcelas.intervalInDays} dias</p>
+                      <p><strong>Data inicial:</strong> {formatDateBR(previewParcelas.startDate)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="form-section">
               <label>Observação:</label>
               <textarea
@@ -502,14 +663,18 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                   </div>
                   <div className="form-section">
                     <label>Valor:</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={pag.valor}
-                      onChange={e => handlePagamentoChange(index, 'valor', e.target.value)}
-                      required
-                      tabIndex={6 + (index * 10)}
-                          />
+                    {isParcelado ? (
+                      <span className="parcela-valor-info">Será dividido em {totalParcelas} parcelas</span>
+                    ) : (
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={pag.valor}
+                        onChange={e => handlePagamentoChange(index, 'valor', e.target.value)}
+                        required
+                        tabIndex={6 + (index * 10)}
+                      />
+                    )}
                   </div>
 
                   {/* Tags por Categoria */}
@@ -638,17 +803,21 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                     })}
                   </div>
 
-                  <button type="button" onClick={() => removePagamento(index)}>
-                    Remover Pagamento
-                  </button>
+                  {!isParcelado && (
+                    <button type="button" onClick={() => removePagamento(index)}>
+                      Remover Pagamento
+                    </button>
+                  )}
                   <hr />
                 </div>
               ))}
-              <Tooltip title="Alt + P">
-                <button type="button" onClick={addPagamento}>
-                  Adicionar Pagamento
-                </button>
-              </Tooltip>
+              {!isParcelado && (
+                <Tooltip title="Alt + P">
+                  <button type="button" onClick={addPagamento}>
+                    Adicionar Pagamento
+                  </button>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>

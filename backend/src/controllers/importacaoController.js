@@ -1,9 +1,11 @@
 const path = require('path');
 const fs = require('fs').promises;
+const mongoose = require('mongoose');
 const Importacao = require('../models/importacao');
 const TransacaoImportada = require('../models/transacaoImportada');
 const ImportacaoService = require('../services/importacaoService');
 const Transacao = require('../models/transacao');
+const installmentUtils = require('../utils/installmentUtils');
 
 class ImportacaoController {
     static async criar(req, res) {
@@ -256,37 +258,128 @@ class ImportacaoController {
                 return res.status(400).json({ erro: 'Não há transações validadas para finalizar.' });
             }
 
-            // Criar as transações reais com deduplicationKey e vínculo transacaoCriada
-            const transacoesReais = transacoesImportadas.map(ti => ({
-                tipo: ti.tipo,
-                descricao: ti.descricao,
-                valor: ti.valor,
-                data: ti.data,
-                observacao: ti.observacao || `Importado via importação #${ti.importacao}`,
-                pagamentos: ti.pagamentos && ti.pagamentos.length > 0 
-                    ? ti.pagamentos
-                    : [{
-                        pessoa: 'Importação Automática',
-                        valor: ti.valor,
-                        tags: {}
-                    }],
-                usuario: ti.usuario,
-                deduplicationKey: ti.deduplicationKey || null
-            }));
+            // Agrupar parcelas por installmentGroupId para detectar se precisa expandir
+            const gruposParcelados = new Map(); // installmentGroupId -> [ti, ti, ...]
+            const avulsas = []; // transações não parceladas
 
-            const transacoesCriadas = await Transacao.insertMany(transacoesReais);
-
-            // Atualizar TransacaoImportada com status e transacaoCriada
-            for (let i = 0; i < transacoesImportadas.length; i++) {
-                await TransacaoImportada.updateOne(
-                    { _id: transacoesImportadas[i]._id },
-                    { $set: { status: 'processada', transacaoCriada: transacoesCriadas[i]._id } }
-                );
+            for (const ti of transacoesImportadas) {
+                if (ti.isInstallment && ti.installmentTotal >= 2) {
+                    const key = (ti.installmentGroupId || ti._id).toString();
+                    if (!gruposParcelados.has(key)) gruposParcelados.set(key, []);
+                    gruposParcelados.get(key).push(ti);
+                } else {
+                    avulsas.push(ti);
+                }
             }
 
-            // Atualizar status da importação
-            importacao.status = 'finalizada';
-            await importacao.save();
+            const transacoesReais = [];
+            const mapeamentoTiParaTransacao = []; // [{ ti, transacaoIndex }] para saber qual Transacao vincular a cada ti
+
+            const montarTransacao = (ti, valor, data, installmentNumber, installmentTotal, installmentGroupId, intervalDays, dedupKeyOverride) => {
+                const pagamentos = ti.pagamentos && ti.pagamentos.length > 0
+                    ? ti.pagamentos.map(p => {
+                        const base = p.toObject ? p.toObject() : (typeof p === 'object' ? { ...p } : { pessoa: 'Importação Automática', tags: {} });
+                        return { pessoa: base.pessoa || 'Importação Automática', valor, tags: base.tags || {} };
+                    })
+                    : [{ pessoa: 'Importação Automática', valor, tags: {} }];
+                return {
+                    tipo: ti.tipo,
+                    descricao: ti.descricao,
+                    valor,
+                    data,
+                    observacao: ti.observacao || `Importado via importação #${ti.importacao}`,
+                    pagamentos,
+                    usuario: ti.usuario,
+                    deduplicationKey: dedupKeyOverride != null ? dedupKeyOverride : (ti.deduplicationKey || null),
+                    isInstallment: !!installmentGroupId,
+                    installmentGroupId: installmentGroupId || null,
+                    installmentNumber: installmentNumber != null ? installmentNumber : null,
+                    installmentTotal: installmentTotal != null ? installmentTotal : null,
+                    installmentIntervalMonths: null,
+                    installmentIntervalDays: intervalDays != null ? intervalDays : null
+                };
+            };
+
+            // Processar grupos parcelados: expandir se 1 linha representa o total
+            for (const [, grupo] of gruposParcelados) {
+                const totalInstallments = grupo[0].installmentTotal || grupo.length;
+                const intervalDays = grupo[0].installmentIntervalDays != null
+                    ? grupo[0].installmentIntervalDays
+                    : (grupo[0].installmentIntervalMonths != null ? grupo[0].installmentIntervalMonths * 30 : 30);
+                const installmentGroupId = grupo[0].installmentGroupId || new mongoose.Types.ObjectId();
+
+                if (grupo.length < totalInstallments) {
+                    // Precisa expandir: 1 linha com valor total -> N transações
+                    const ti = grupo[0];
+                    const valorTotal = Math.abs(parseFloat(ti.valor) || 0);
+                    const dataStr = ti.data instanceof Date ? ti.data.toISOString().split('T')[0] : String(ti.data).split('T')[0];
+                    const resultado = installmentUtils.generateInstallments({
+                        totalAmount: valorTotal,
+                        totalInstallments,
+                        intervalInDays: intervalDays,
+                        startDate: dataStr
+                    });
+                    if (resultado.erro) {
+                        throw new Error(`Erro ao expandir parcelamento: ${resultado.erro}`);
+                    }
+                    const baseIndex = transacoesReais.length;
+                    const usuarioStr = ti.usuario.toString();
+                    for (const p of resultado.parcelas) {
+                        const dataParcela = new Date(p.date + 'T12:00:00.000Z');
+                        const dedupKey = ImportacaoService.gerarDeduplicationKey(usuarioStr, {
+                            descricao: ti.descricao,
+                            valor: p.value,
+                            data: dataParcela,
+                            tipo: ti.tipo,
+                            identificador: ti.dadosOriginais?.identificador,
+                            installmentGroupId: installmentGroupId.toString(),
+                            installmentNumber: p.installmentNumber
+                        });
+                        transacoesReais.push(montarTransacao(ti, p.value, dataParcela, p.installmentNumber, totalInstallments, installmentGroupId, intervalDays, dedupKey));
+                    }
+                    mapeamentoTiParaTransacao.push({ ti, transacaoIndex: baseIndex });
+                } else {
+                    // Já expandido: 1 linha por parcela
+                    for (const ti of grupo) {
+                        const dataVal = ti.data instanceof Date ? ti.data : new Date(ti.data);
+                        transacoesReais.push(montarTransacao(
+                            ti, ti.valor, dataVal,
+                            ti.installmentNumber, ti.installmentTotal, installmentGroupId, intervalDays
+                        ));
+                        mapeamentoTiParaTransacao.push({ ti, transacaoIndex: transacoesReais.length - 1 });
+                    }
+                }
+            }
+
+            // Processar transações avulsas (não parceladas)
+            for (const ti of avulsas) {
+                const dataVal = ti.data instanceof Date ? ti.data : new Date(ti.data);
+                transacoesReais.push(montarTransacao(ti, ti.valor, dataVal, null, null, null, null));
+                mapeamentoTiParaTransacao.push({ ti, transacaoIndex: transacoesReais.length - 1 });
+            }
+
+            const session = await mongoose.startSession();
+            session.startTransaction();
+            try {
+                const transacoesCriadas = await Transacao.insertMany(transacoesReais, { session });
+
+                for (const { ti, transacaoIndex } of mapeamentoTiParaTransacao) {
+                    await TransacaoImportada.updateOne(
+                        { _id: ti._id },
+                        { $set: { status: 'processada', transacaoCriada: transacoesCriadas[transacaoIndex]._id } },
+                        { session }
+                    );
+                }
+
+                importacao.status = 'finalizada';
+                await importacao.save({ session });
+                await session.commitTransaction();
+            } catch (err) {
+                await session.abortTransaction();
+                throw err;
+            } finally {
+                session.endSession();
+            }
 
             res.json({ 
                 mensagem: 'Importação finalizada com sucesso',

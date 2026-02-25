@@ -21,3 +21,8 @@ yarn-error.log*
 # Outras pastas temporárias/geradas
 coverage/
 backupMongoDB.txt
+
+# Backups e arquivos temporários de restore
+backend/backups/*.gz
+backend/backups/*.json
+backend/tmp/

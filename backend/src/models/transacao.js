@@ -16,10 +16,18 @@ const TransacaoSchema = new mongoose.Schema({
   pagamentos: { type: [PagamentoSchema], required: true },
   status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' },
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-  deduplicationKey: { type: String, sparse: true }
+  deduplicationKey: { type: String, sparse: true },
+  // Parcelamento - campos opcionais (null = transação avulsa)
+  isInstallment: { type: Boolean, default: false },
+  installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  installmentNumber: { type: Number, default: null },
+  installmentTotal: { type: Number, default: null },
+  installmentIntervalMonths: { type: Number, default: null },
+  installmentIntervalDays: { type: Number, default: null }
 });
 
 TransacaoSchema.index({ usuario: 1, deduplicationKey: 1 }, { sparse: true });
+TransacaoSchema.index({ usuario: 1, installmentGroupId: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, status: 1, data: -1 });
 TransacaoSchema.index({ usuario: 1, 'pagamentos.pessoa': 1 });
 

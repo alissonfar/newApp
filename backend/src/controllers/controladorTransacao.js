@@ -213,24 +213,116 @@ exports.obterTransacaoPorId = async (req, res) => {
   }
 };
 
+const installmentUtils = require('../utils/installmentUtils');
+
+exports.previewParcelas = async (req, res) => {
+  try {
+    const { totalAmount, totalInstallments, intervalInDays, startDate } = req.query;
+    const resultado = installmentUtils.generateInstallments({
+      totalAmount: parseFloat(totalAmount) || 0,
+      totalInstallments: parseInt(totalInstallments, 10) || 2,
+      intervalInDays: parseInt(intervalInDays, 10) || 30,
+      startDate: startDate || new Date().toISOString().split('T')[0]
+    });
+    if (resultado.erro) {
+      return res.status(400).json({ erro: resultado.erro });
+    }
+    res.json(resultado);
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao gerar preview.', detalhe: error.message });
+  }
+};
+
 exports.criarTransacao = async (req, res) => {
-  const { tipo, descricao, valor, data, pagamentos, observacao } = req.body;
+  const { tipo, descricao, valor, data, pagamentos, observacao, isInstallment, totalInstallments, installmentIntervalDays, installmentIntervalMonths } = req.body;
   if (!tipo || !descricao || !valor || !data || !pagamentos) {
     return res.status(400).json({ erro: 'Os campos obrigatórios são: tipo, descricao, valor, data e pagamentos.' });
   }
+
+  const numParcelas = parseInt(totalInstallments, 10) || 1;
+  const ehParcelado = isInstallment === true && numParcelas > 1;
+  // Priorizar intervalInDays; fallback para meses (retrocompatibilidade)
+  const intervalDays = req.body.installmentIntervalDays != null
+    ? parseInt(req.body.installmentIntervalDays, 10)
+    : (parseInt(installmentIntervalMonths, 10) || 1) * 30;
+
   try {
-    // Cria transação vinculada ao usuário autenticado
-    const novaTransacao = new Transacao({
-      tipo,
-      descricao,
-      valor,
-      data,
-      pagamentos,
-      observacao,
-      usuario: req.userId
+    if (!ehParcelado) {
+      // Fluxo atual: transação única
+      const novaTransacao = new Transacao({
+        tipo,
+        descricao,
+        valor,
+        data,
+        pagamentos,
+        observacao,
+        usuario: req.userId
+      });
+      await novaTransacao.save();
+      return res.status(201).json(novaTransacao);
+    }
+
+    if (intervalDays < 1) {
+      return res.status(400).json({ erro: 'Intervalo em dias deve ser >= 1.' });
+    }
+
+    const valorTotal = Math.abs(parseFloat(valor) || 0);
+    const resultado = installmentUtils.generateInstallments({
+      totalAmount: valorTotal,
+      totalInstallments: numParcelas,
+      intervalInDays: intervalDays,
+      startDate: data
     });
-    await novaTransacao.save();
-    res.status(201).json(novaTransacao);
+
+    if (resultado.erro) {
+      return res.status(400).json({ erro: resultado.erro });
+    }
+
+    // Fluxo parcelado: criar N transações em sessão atômica
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const installmentGroupId = new mongoose.Types.ObjectId();
+
+      const pagamentoBase = Array.isArray(pagamentos) && pagamentos.length > 0
+        ? pagamentos[0]
+        : { pessoa: 'Titular', valor: 0, tags: {} };
+      const pessoaBase = pagamentoBase.pessoa || 'Titular';
+      const tagsBase = pagamentoBase.tags || {};
+
+      const transacoesParaInserir = resultado.parcelas.map((p) => {
+        const dataParcela = new Date(p.date + 'T12:00:00.000Z');
+        return {
+          tipo,
+          descricao,
+          valor: p.value,
+          data: dataParcela,
+          pagamentos: [{ pessoa: pessoaBase, valor: p.value, tags: tagsBase }],
+          observacao: observacao || '',
+          usuario: req.userId,
+          isInstallment: true,
+          installmentGroupId,
+          installmentNumber: p.installmentNumber,
+          installmentTotal: numParcelas,
+          installmentIntervalDays: intervalDays
+        };
+      });
+
+      const transacoesCriadas = await Transacao.insertMany(transacoesParaInserir, { session });
+      await session.commitTransaction();
+
+      res.status(201).json({
+        transacoes: transacoesCriadas,
+        totalParcelas: transacoesCriadas.length,
+        installmentGroupId
+      });
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
+    }
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao criar transação.', detalhe: error.message });
   }
@@ -263,6 +355,25 @@ exports.excluirTransacao = async (req, res) => {
     res.json({ mensagem: 'Transação estornada com sucesso.', transacao });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao excluir transação.', detalhe: error.message });
+  }
+};
+
+exports.estornarParcelamento = async (req, res) => {
+  try {
+    const { installmentGroupId } = req.params;
+    const resultado = await Transacao.updateMany(
+      { usuario: req.userId, installmentGroupId, status: 'ativo' },
+      { $set: { status: 'estornado' } }
+    );
+    if (resultado.modifiedCount === 0) {
+      return res.status(404).json({ erro: 'Nenhuma parcela ativa encontrada para este parcelamento.' });
+    }
+    res.json({
+      mensagem: `${resultado.modifiedCount} parcela(s) estornada(s) com sucesso.`,
+      totalEstornadas: resultado.modifiedCount
+    });
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao estornar parcelamento.', detalhe: error.message });
   }
 };
 

@@ -63,6 +63,13 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     ref: 'Transacao',
     default: null
   },
+  // Parcelamento (para importação já expandida)
+  isInstallment: { type: Boolean, default: false },
+  installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  installmentNumber: { type: Number, default: null },
+  installmentTotal: { type: Number, default: null },
+  installmentIntervalMonths: { type: Number, default: null },
+  installmentIntervalDays: { type: Number, default: null },
   usuario: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Usuario', 
@@ -80,6 +87,29 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     }
   }
 });
+
+// Converte para formato Transacao (para criar transação real)
+TransacaoImportadaSchema.methods.paraTransacao = function() {
+  const pagamentos = this.pagamentos && this.pagamentos.length > 0
+    ? this.pagamentos
+    : [{ pessoa: 'Titular', valor: this.valor, tags: {} }];
+  return {
+    tipo: this.tipo,
+    descricao: this.descricao,
+    valor: this.valor,
+    data: this.data,
+    observacao: this.observacao || '',
+    pagamentos,
+    usuario: this.usuario,
+    deduplicationKey: this.deduplicationKey || undefined,
+    isInstallment: this.isInstallment || false,
+    installmentGroupId: this.installmentGroupId || undefined,
+    installmentNumber: this.installmentNumber,
+    installmentTotal: this.installmentTotal,
+    installmentIntervalMonths: this.installmentIntervalMonths,
+    installmentIntervalDays: this.installmentIntervalDays
+  };
+};
 
 // Middleware para validar valor
 TransacaoImportadaSchema.pre('save', function(next) {

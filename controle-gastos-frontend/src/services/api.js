@@ -104,6 +104,25 @@ export const loginUsuario = async (dados) => {
 
 export default api;
 
+// Funções de API para backup (admin)
+export const backupApi = {
+  gerar: async () => {
+    const response = await api.post('/admin/backup');
+    return response.data;
+  },
+  listar: async (page = 1, limit = 20) => {
+    const response = await api.get(`/admin/backups?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+  download: async (filename) => {
+    const encoded = encodeURIComponent(filename);
+    const response = await api.get(`/admin/backups/${encoded}/download`, {
+      responseType: 'blob'
+    });
+    return response;
+  }
+};
+
 // Funções de API para importação
 export const importacaoApi = {
   // Criar nova importação

@@ -1,6 +1,7 @@
 import React from 'react';
-import UserList from './UserList'; // Componente para listar usuários
-import './AdminDashboard.css'; // Arquivo CSS para estilos
+import UserList from './UserList';
+import BackupManagement from './BackupManagement';
+import './AdminDashboard.css';
 
 function AdminDashboard() {
   return (
@@ -11,7 +12,7 @@ function AdminDashboard() {
           <h2>Gerenciamento de Usuários</h2>
           <UserList />
         </section>
-        {/* Outras seções de administração podem ser adicionadas aqui no futuro */}
+        <BackupManagement />
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCard.css';
 import { obterCategorias, obterTags } from '../../api';
 
-const TransactionCard = ({ transacao, onEdit, onDelete }) => {
+const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }) => {
   const [categorias, setCategorias] = useState([]);
   const [tags, setTags] = useState([]);
 
@@ -70,7 +70,12 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
               <><FaArrowUp /> Recebível</>
             )}
           </span>
-          <h3>{transacao.descricao}</h3>
+          <h3>
+            {transacao.descricao}
+            {transacao.isInstallment && transacao.installmentNumber != null && transacao.installmentTotal != null && (
+              <span className="parcela-badge">Parcela {transacao.installmentNumber}/{transacao.installmentTotal}</span>
+            )}
+          </h3>
         </div>
         <div className="card-value">
           R$ {parseFloat(transacao.valor).toFixed(2)}
@@ -141,7 +146,16 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
         <button className="action-btn edit-btn" onClick={() => onEdit(transacao)}>
           <FaEdit /> Editar
         </button>
-        <button className="action-btn delete-btn" onClick={() => onDelete(transacao.id)}>
+        {transacao.isInstallment && transacao.installmentGroupId && onEstornarParcelamento && (
+          <button
+            className="action-btn parcelamento-btn"
+            onClick={() => onEstornarParcelamento(transacao.installmentGroupId)}
+            title="Estornar todas as parcelas"
+          >
+            <FaTrash /> Estornar parcelamento
+          </button>
+        )}
+        <button className="action-btn delete-btn" onClick={() => onDelete(transacao.id || transacao._id)}>
           <FaTrash /> Excluir
         </button>
       </div>

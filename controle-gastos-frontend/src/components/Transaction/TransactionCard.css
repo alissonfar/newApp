@@ -29,6 +29,19 @@
   margin: 0;
   font-size: 1.1rem;
   color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.parcela-badge {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .tipo-badge {
@@ -168,6 +181,17 @@
   background-color: var(--cor-erro) !important;
   color: #FFFFFF !important;
   border: 1px solid var(--cor-erro) !important;
+}
+
+.parcelamento-btn {
+  background-color: #ff9800 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #f57c00 !important;
+}
+
+.parcelamento-btn:hover {
+  background-color: #f57c00 !important;
+  border-color: #e65100 !important;
 }
 
 .delete-btn:hover {

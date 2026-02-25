@@ -16,6 +16,9 @@ router.get('/export', controladorTransacao.obterTransacoesExport);
 // Pessoas distintas (para filtros)
 router.get('/distinct-pessoas', controladorTransacao.obterPessoasDistintas);
 
+// Preview de parcelas (antes de criar)
+router.get('/preview-parcelas', controladorTransacao.previewParcelas);
+
 // Obter uma transação por ID
 router.get('/:id', controladorTransacao.obterTransacaoPorId);
 
@@ -24,6 +27,9 @@ router.post('/', controladorTransacao.criarTransacao);
 
 // Atualizar uma transação
 router.put('/:id', controladorTransacao.atualizarTransacao);
+
+// Estornar parcelamento inteiro
+router.delete('/parcelamento/:installmentGroupId', controladorTransacao.estornarParcelamento);
 
 // "Excluir" (estornar) uma transação
 router.delete('/:id', controladorTransacao.excluirTransacao);

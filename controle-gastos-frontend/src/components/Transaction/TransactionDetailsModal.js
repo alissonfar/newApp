@@ -19,6 +19,9 @@ const TransactionDetailsModal = ({ transacao, onClose }) => {
         <div className="details-section">
           <h3>Informações Gerais</h3>
           <p><strong>Descrição:</strong> {transacao.descricao}</p>
+          {transacao.isInstallment && transacao.installmentNumber != null && transacao.installmentTotal != null && (
+            <p><strong>Parcela:</strong> {transacao.installmentNumber} de {transacao.installmentTotal}</p>
+          )}
           <p><strong>Data:</strong> {formattedDate}</p>
           <p><strong>Tipo:</strong> {transacao.tipo}</p>
           <p><strong>Valor Total:</strong> R${formattedValue}</p>

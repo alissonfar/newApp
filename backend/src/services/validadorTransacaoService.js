@@ -58,10 +58,11 @@ class ValidadorTransacaoService {
       throw new Error('O valor deve ser maior que zero');
     }
 
-    // Validar data não futura
+    // Validar data não futura (exceto parcelas, que podem ter datas futuras)
     const data = new Date(dados.data);
     const hoje = new Date();
-    if (data > hoje) {
+    const ehParcela = dados.isInstallment === true || dados.installmentGroupId != null;
+    if (!ehParcela && data > hoje) {
       throw new Error('A data não pode ser futura');
     }
 

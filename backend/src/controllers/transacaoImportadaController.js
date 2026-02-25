@@ -1,6 +1,7 @@
 const TransacaoImportada = require('../models/transacaoImportada');
 const Transacao = require('../models/transacao');
 const ImportacaoService = require('../services/importacaoService');
+const mongoose = require('mongoose');
 
 const transacaoImportadaController = {
   // Listar transações de uma importação
@@ -69,7 +70,7 @@ const transacaoImportadaController = {
         dadosOriginais: transacao.dadosOriginais
       });
 
-      // Campos permitidos para atualização
+      // Campos permitidos para atualização (installment* tratados separadamente abaixo)
       const camposPermitidos = ['descricao', 'valor', 'data', 'tipo', 'observacao', 'pagamentos'];
       
       // Atualiza apenas os campos permitidos que foram enviados
@@ -111,6 +112,30 @@ const transacaoImportadaController = {
           }
         }
       });
+
+      // Quando marcar como parcelado na edição, gerar installmentGroupId e installmentNumber se necessário
+      if (req.body.isInstallment === true) {
+        transacao.isInstallment = true;
+        transacao.installmentTotal = req.body.totalInstallments != null ? parseInt(req.body.totalInstallments, 10) : transacao.installmentTotal;
+        // Priorizar installmentIntervalDays; fallback para installmentIntervalMonths * 30
+        const intervalDays = req.body.installmentIntervalDays != null ? parseInt(req.body.installmentIntervalDays, 10) : null;
+        const intervalMonths = req.body.installmentIntervalMonths != null ? parseInt(req.body.installmentIntervalMonths, 10) : null;
+        transacao.installmentIntervalDays = (intervalDays != null && intervalDays >= 1) ? intervalDays : (transacao.installmentIntervalDays || (transacao.installmentIntervalMonths != null ? transacao.installmentIntervalMonths * 30 : 30));
+        transacao.installmentIntervalMonths = intervalMonths != null ? intervalMonths : transacao.installmentIntervalMonths;
+        if (!transacao.installmentGroupId) {
+          transacao.installmentGroupId = new mongoose.Types.ObjectId();
+        }
+        if (transacao.installmentNumber == null) {
+          transacao.installmentNumber = 1;
+        }
+      } else {
+        transacao.isInstallment = false;
+        transacao.installmentGroupId = null;
+        transacao.installmentNumber = null;
+        transacao.installmentTotal = null;
+        transacao.installmentIntervalMonths = null;
+        transacao.installmentIntervalDays = null;
+      }
 
       // Atualiza também os dadosOriginais para manter consistência
       transacao.dadosOriginais = {

@@ -60,9 +60,9 @@ function formatarDataISO(data) {
 
 /**
  * Gera chave determinística para deduplicação.
- * Fórmula: SHA256(usuarioId | descricao_normalizada | valor | data_iso | tipo | identificador)
+ * Fórmula: SHA256(usuarioId | descricao_normalizada | valor | data_iso | tipo | identificador [| installmentGroupId | installmentNumber])
  * @param {string} usuarioId
- * @param {Object} dados - { descricao, valor, data, tipo, identificador }
+ * @param {Object} dados - { descricao, valor, data, tipo, identificador, installmentGroupId, installmentNumber }
  * @returns {string}
  */
 function gerarDeduplicationKey(usuarioId, dados) {
@@ -71,7 +71,10 @@ function gerarDeduplicationKey(usuarioId, dados) {
   const data = formatarDataISO(dados.data);
   const tipo = (dados.tipo === 'recebivel' ? 'recebivel' : 'gasto');
   const identificador = (dados.identificador || '').trim();
-  const composicao = `${usuarioId}|${descricao}|${valor}|${data}|${tipo}|${identificador}`;
+  let composicao = `${usuarioId}|${descricao}|${valor}|${data}|${tipo}|${identificador}`;
+  if (dados.installmentGroupId && dados.installmentNumber != null) {
+    composicao += `|${String(dados.installmentGroupId)}|${dados.installmentNumber}`;
+  }
   return crypto.createHash('sha256').update(composicao).digest('hex');
 }
 
@@ -508,7 +511,13 @@ class ImportacaoService {
               dadosOriginais: transacaoBase,
               pagamentos: pagamentosComTags,
               status: statusInicial,
-              deduplicationKey: dedupKey
+              deduplicationKey: dedupKey,
+              isInstallment: transacaoBase.isInstallment || false,
+              installmentGroupId: transacaoBase.installmentGroupId || null,
+              installmentNumber: transacaoBase.installmentNumber != null ? transacaoBase.installmentNumber : null,
+              installmentTotal: transacaoBase.installmentTotal != null ? transacaoBase.installmentTotal : null,
+              installmentIntervalMonths: transacaoBase.installmentIntervalMonths != null ? transacaoBase.installmentIntervalMonths : null,
+              installmentIntervalDays: transacaoBase.installmentIntervalDays != null ? transacaoBase.installmentIntervalDays : (transacaoBase.installmentIntervalMonths != null ? transacaoBase.installmentIntervalMonths * 30 : null)
             });
 
             await transacaoImportada.validate();
@@ -646,7 +655,13 @@ class ImportacaoService {
           observacao: t.observacao || '',
           dadosOriginais: t.dadosOriginais || { ...t },
           status: 'pendente',
-          erro: null
+          erro: null,
+          isInstallment: t.isInstallment || false,
+          installmentGroupId: t.installmentGroupId || null,
+          installmentNumber: t.installmentNumber != null ? t.installmentNumber : null,
+          installmentTotal: t.installmentTotal != null ? t.installmentTotal : null,
+          installmentIntervalMonths: t.installmentIntervalMonths != null ? t.installmentIntervalMonths : null,
+          installmentIntervalDays: t.installmentIntervalDays != null ? t.installmentIntervalDays : (t.installmentIntervalMonths != null ? t.installmentIntervalMonths * 30 : null)
         };
       });
 
@@ -732,8 +747,19 @@ class ImportacaoService {
           observacao = `Importado do Extrato Nubank - ID: ${identificador}`;
         }
 
+        // Colunas opcionais para parcelamento (Grupo, Parcela, TotalParcelas)
+        let grupo = registro['Grupo'] || registro['installmentGroupId'] || null;
+        const parcelaNum = registro['Parcela'] != null ? parseInt(registro['Parcela'], 10) : null;
+        const totalParcelas = registro['TotalParcelas'] != null ? parseInt(registro['TotalParcelas'], 10) : null;
+        const isInstallment = grupo != null && parcelaNum != null && totalParcelas != null;
+        // Se grupo não for ObjectId válido (24 hex), gera um a partir do hash para consistência
+        if (isInstallment && grupo && typeof grupo === 'string' && !/^[a-fA-F0-9]{24}$/.test(grupo)) {
+          const hash = crypto.createHash('md5').update(grupo).digest('hex');
+          grupo = hash.substring(0, 24);
+        }
+
         // Monta o objeto no mesmo formato que o JSON espera
-        return {
+        const obj = {
           descricao,
           valor,
           data,
@@ -748,6 +774,16 @@ class ImportacaoService {
             tags: {}
           }]
         };
+        if (isInstallment) {
+          obj.isInstallment = true;
+          obj.installmentGroupId = grupo;
+          obj.installmentNumber = parcelaNum;
+          obj.installmentTotal = totalParcelas;
+          // Coluna opcional IntervaloDias; default 30 dias quando parcelado
+          const intervalDias = registro['IntervaloDias'] != null ? parseInt(registro['IntervaloDias'], 10) : null;
+          obj.installmentIntervalDays = (intervalDias != null && intervalDias >= 1) ? intervalDias : 30;
+        }
+        return obj;
       });
   }
 }

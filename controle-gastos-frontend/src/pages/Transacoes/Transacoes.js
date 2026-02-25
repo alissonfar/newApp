@@ -3,7 +3,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';                     // Import SweetAlert2 para confirmações
 import { toast } from 'react-toastify';             // Import Toastify para mensagens
-import { obterTransacoes, excluirTransacao } from '../../api';
+import { obterTransacoes, excluirTransacao, estornarParcelamento } from '../../api';
 import TransactionCard from '../../components/Transaction/TransactionCard';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
@@ -153,6 +153,31 @@ const Transacoes = () => {
     carregarTransacoes();
   };
 
+  // Estornar parcelamento inteiro
+  const handleEstornarParcelamento = async (installmentGroupId) => {
+    Swal.fire({
+      title: 'Estornar parcelamento inteiro?',
+      text: 'Todas as parcelas deste grupo serão estornadas.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, estornar todas',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await estornarParcelamento(installmentGroupId);
+          toast.success('Parcelamento estornado com sucesso!');
+          carregarTransacoes();
+        } catch (error) {
+          console.error('Erro ao estornar parcelamento:', error);
+          toast.error(error?.erro || 'Erro ao estornar parcelamento.');
+        }
+      }
+    });
+  };
+
   // Excluir transação utilizando SweetAlert2 para confirmação e Toastify para feedback
   const handleDelete = async (id) => {
     Swal.fire({
@@ -220,10 +245,11 @@ const Transacoes = () => {
         {filteredTransacoes.length > 0 ? (
           filteredTransacoes.map((tr) => (
             <TransactionCard
-              key={tr.id}
+              key={tr.id || tr._id}
               transacao={tr}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onEstornarParcelamento={handleEstornarParcelamento}
             />
           ))
         ) : (
