@@ -102,7 +102,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   // Refs para focar e rolagem
   const tipoRef = useRef(null);
   const descricaoRef = useRef(null);
-  const dataRef = useRef(null);
   const valorRef = useRef(null);
   
   // Adicionar estado para controlar a visibilidade do modal de atalhos
@@ -121,14 +120,18 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     // A dependência [transacao] permanece para garantir que execute quando o modo muda
   }, [transacao]);
   
-  // Quando parcelado, manter único pagamento com valor = valorTotal
+  // Quando parcelado, manter único pagamento com valor = valorTotal (só atualiza quando necessário para evitar loop)
   useEffect(() => {
     if (isParcelado && !transacao) {
-      const pessoa = pagamentos[0]?.pessoa || proprietarioPadrao || '';
-      const tags = pagamentos[0]?.paymentTags || {};
-      setPagamentos([{ pessoa, valor: valorTotal || '', paymentTags: tags }]);
+      const current = pagamentos[0];
+      const expectedValor = valorTotal || '';
+      if (!current || String(current.valor) !== String(expectedValor)) {
+        const pessoa = current?.pessoa || proprietarioPadrao || '';
+        const tags = current?.paymentTags || {};
+        setPagamentos([{ pessoa, valor: expectedValor, paymentTags: tags }]);
+      }
     }
-  }, [isParcelado]);
+  }, [isParcelado, transacao, pagamentos, valorTotal, proprietarioPadrao]);
 
   // Preview de parcelas (debounce 300ms) - funciona em criação e em edição (modal de importação)
   useEffect(() => {
@@ -275,72 +278,56 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     return parseFloat(valorTotal || 0) === soma;
   };
   
+  // Ref para handleSubmit (evita dependência instável no useEffect de atalhos)
+  const handleSubmitRef = useRef(null);
+
   // Atalhos de teclado consolidados
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // ESC para fechar o modal
       if (e.key === 'Escape') {
         onClose();
         return;
       }
-
-      // CTRL + ESPAÇO para salvar e continuar
       if (e.ctrlKey && e.keyCode === 32) {
         e.preventDefault();
-        handleSubmit(new Event('submit'), false);
+        handleSubmitRef.current?.(new Event('submit'), false);
         return;
       }
-
-      // CTRL + ENTER para salvar e fechar
       if (e.ctrlKey && e.keyCode === 13) {
         e.preventDefault();
-        handleSubmit(new Event('submit'), true);
+        handleSubmitRef.current?.(new Event('submit'), true);
         return;
       }
-
-      // ALT + H para definir data como hoje
       if (e.altKey && e.key.toLowerCase() === 'h') {
         e.preventDefault();
-        setHoje();
+        setData(getTodayBR());
         return;
       }
-
-      // ALT + Y para definir data como ontem
       if (e.altKey && e.key.toLowerCase() === 'y') {
         e.preventDefault();
-        setOntem();
+        setData(getYesterdayBR());
         return;
       }
-
-      // ALT + P para adicionar novo pagamento
       if (e.altKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
-        addPagamento();
+        setPagamentos(prev => [...prev, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
         return;
       }
-
-      // ALT + R para remover último pagamento
       if (e.altKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
-        removePagamento();
+        setPagamentos(prev => (prev.length <= 1 ? prev : prev.slice(0, -1)));
         return;
       }
-
-      // ALT + D para focar na descrição (campo mais usado)
       if (e.altKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         descricaoRef.current?.focus();
         return;
       }
-
-      // ALT + V para focar no valor total
       if (e.altKey && e.key.toLowerCase() === 'v') {
         e.preventDefault();
         valorRef.current?.focus();
         return;
       }
-
-      // ALT + T para focar no tipo
       if (e.altKey && e.key.toLowerCase() === 't') {
         e.preventDefault();
         tipoRef.current?.focus();
@@ -350,7 +337,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [tipo, descricao, data, valorTotal, observacao, pagamentos, onClose]); // Dependências necessárias
+  }, [onClose, proprietarioPadrao]);
   
   const setHoje = () => {
     setData(getTodayBR());
@@ -362,7 +349,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
 
   const handleSubmit = async (e, closeModal = true) => {
     e.preventDefault();
-    
+
     if (!validatePagamentos()) {
       toast.error('A soma dos pagamentos deve ser igual ao valor total da transação.');
       return;
@@ -402,12 +389,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       if (isImportada && importacaoId) {
         // Importa o serviço de importação dinamicamente para evitar dependência circular
         const { default: importacaoService } = await import('../../services/importacaoService');
-        
-        console.log('[DEBUG] Atualizando transação importada:', {
-          importacaoId,
-          transacaoId: _id,
-          dados: transacaoData
-        });
 
         response = await importacaoService.atualizarTransacao(
           importacaoId,
@@ -432,8 +413,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       if (closeModal) {
         onClose();
       } else {
-        // Limpa o formulário para nova entrada, MAS preserva o tipo (90% dos lançamentos são do mesmo tipo)
-        const tipoAtual = tipo; // Preserva o tipo atual
+        // Limpa o formulário para nova entrada, preservando o tipo (90% dos lançamentos são do mesmo tipo)
         set_Id(null);
         // setTipo('gasto'); // NÃO resetar - mantém o tipo atual
         setDescricao('');
@@ -454,8 +434,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       toast.error(error.message || 'Erro ao salvar transação.');
     }
   };
-  
-  // Foca no campo apropriado quando o componente é montado
+
+  handleSubmitRef.current = handleSubmit;
+
+  // Foca no campo apropriado quando o componente é montado ou transação muda
   useEffect(() => {
     // Se está editando, foca no tipo (pode precisar mudar)
     // Se é nova transação, foca na descrição (mais eficiente para lançamentos repetitivos)
@@ -464,7 +446,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     } else if (descricaoRef.current) {
       descricaoRef.current.focus();
     }
-  }, []);
+  }, [transacao]);
 
   // Adicionar tratamento para loading e erro dos dados do contexto
   if (loadingData) {

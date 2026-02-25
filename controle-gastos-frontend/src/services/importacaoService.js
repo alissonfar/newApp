@@ -84,16 +84,6 @@ const importacaoService = {
   // Atualizar uma transação
   atualizarTransacao: async (importacaoId, transacaoId, dados) => {
     try {
-      // Log dos dados que serão enviados para o backend
-      console.log('[DEBUG] Enviando requisição de atualização:', {
-        importacaoId,
-        transacaoId,
-        dados: {
-          _id: dados._id,
-          pagamentos: dados.pagamentos
-        }
-      });
-
       if (!importacaoId) {
         throw new Error('ID da importação é obrigatório');
       }
@@ -107,16 +97,10 @@ const importacaoService = {
         ...dados,
         importacao: importacaoId
       });
-      
-      // Log da resposta do backend
-      console.log('[DEBUG] Resposta do backend:', {
-        _id: response.data._id,
-        pagamentos: response.data.pagamentos
-      });
 
       return response.data;
     } catch (error) {
-      console.error('[DEBUG] Erro na requisição de atualização:', {
+      console.error('Erro na requisição de atualização:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data
@@ -151,12 +135,11 @@ const importacaoService = {
   // Excluir uma transação importada (marca como ignorada)
   excluirTransacao: async (transacaoId) => {
     try {
-      // A rota correta é /importacoes/transacoes/:id
-      const response = await api.delete(`/importacoes/transacoes/${transacaoId}`);
-      // O backend retorna 204 No Content em caso de sucesso, então não há dados no response.data
+      // A rota correta é /importacoes/transacoes/:id - backend retorna 204 No Content em sucesso
+      await api.delete(`/importacoes/transacoes/${transacaoId}`);
       return { sucesso: true };
     } catch (error) {
-      console.error('[DEBUG] Erro ao excluir transação:', {
+      console.error('Erro ao excluir transação:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data

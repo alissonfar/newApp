@@ -1,5 +1,5 @@
 // src/components/Tag/TagManagement.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { FaEdit, FaTrash, FaBan, FaCheckCircle } from 'react-icons/fa';
 import { toast } from 'react-toastify';     
 import Swal from 'sweetalert2';            
@@ -67,23 +67,17 @@ const TagManagement = () => {
     }
   }, [loadingCategorias, errorCategorias, categorias, selectedCategory]);
 
-  // Filtra as tags com base na categoria selecionada
-  const filteredTags = selectedCategory
-    ? tags.filter(tag => {
-        // Verifica se a tag.categoria é um ID ou nome
-        if (typeof tag.categoria === 'string') {
-          // Se for string, pode ser ID ou nome
-          return tag.categoria === selectedCategory._id || tag.categoria === selectedCategory.nome;
-        }
-        // Se for objeto, compara o _id
-        return tag.categoria._id === selectedCategory._id;
-      })
-    : [];
-
-  // [LOGS] Adicionais para entender o que está acontecendo
-  useEffect(() => {
-   
-  }, [selectedCategory, filteredTags]);
+  // Filtra as tags com base na categoria selecionada (useMemo evita recálculo desnecessário e problemas de deps no useEffect)
+  const filteredTags = useMemo(() => {
+    if (!selectedCategory) return [];
+    return tags.filter(tag => {
+      // Verifica se a tag.categoria é um ID ou nome
+      if (typeof tag.categoria === 'string') {
+        return tag.categoria === selectedCategory._id || tag.categoria === selectedCategory.nome;
+      }
+      return tag.categoria._id === selectedCategory._id;
+    });
+  }, [selectedCategory, tags]);
 
   // Função para verificar se o nome da tag já existe
   const nomeTagDuplicado = (nome, categoria, codigo = null) => {
@@ -204,7 +198,7 @@ const TagManagement = () => {
       return;
     }
     try {
-      const novaCategoria = await criarCategoria({
+      await criarCategoria({
         nome: novoCatNome.trim(),
         descricao: novoCatDescricao.trim(),
         cor: novoCatCor,

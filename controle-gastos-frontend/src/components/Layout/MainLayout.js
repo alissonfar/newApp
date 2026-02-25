@@ -59,11 +59,6 @@ const MainLayout = ({ children }) => {
     }));
   };
 
-  // Função para verificar se um item está ativo
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
   // Função para verificar se o item pai deve ser destacado
   const isParentActive = (submenuPaths) => {
     return submenuPaths.some(path => location.pathname === path);
@@ -229,9 +224,11 @@ const MainLayout = ({ children }) => {
                 >
                   {item.hasSubmenu ? (
                     <>
-                      <a href="#" 
+                      <button
+                        type="button"
                         onClick={(e) => toggleSubmenu(item.key, e)}
                         className="menu-item with-submenu"
+                        aria-expanded={expandedMenus[item.key]}
                       >
                         <span className="menu-icon">{item.icon}</span>
                          {/* Oculta texto se colapsado no desktop */}
@@ -243,7 +240,7 @@ const MainLayout = ({ children }) => {
                             </span>
                           </>
                         )}
-                      </a>
+                      </button>
                       {/* Mostra submenu se expandido E (não colapsado OU for mobile) */}
                       {expandedMenus[item.key] && (!isMenuCollapsed || isMobile) && (
                         <ul className="submenu">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { verificarEmail, reenviarVerificacaoEmail } from '../../services/api';
 import { Container, Paper, Typography, Button, Box, TextField, CircularProgress } from '@mui/material';
@@ -16,7 +16,7 @@ const VerificarEmail = () => {
   const [mensagemReenvio, setMensagemReenvio] = useState('');
   const [tipoMensagemReenvio, setTipoMensagemReenvio] = useState('info');
 
-  const verificar = async () => {
+  const verificar = useCallback(async () => {
     try {
       const response = await verificarEmail(token);
       setMensagem(response.mensagem || 'Email verificado com sucesso!');
@@ -28,7 +28,7 @@ const VerificarEmail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   const handleReenviarEmail = async (e) => {
     e.preventDefault();
@@ -56,7 +56,7 @@ const VerificarEmail = () => {
     if (token) {
       verificar();
     }
-  }, [token]);
+  }, [token, verificar]);
 
   return (
     <Container maxWidth="sm">

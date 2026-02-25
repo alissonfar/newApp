@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useContext } from 'react';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
-import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, atualizarTransacao, criarTransacao, gerarRelatorioAvancado, listarTemplatesRelatorio } from '../../api.js';
+import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, gerarRelatorioAvancado, listarTemplatesRelatorio } from '../../api.js';
 import { useData } from '../../context/DataContext';
 import { AuthContext } from '../../context/AuthContext';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
@@ -15,8 +15,6 @@ import './Relatorio.css';
 import { 
   Menu, 
   MenuItem,
-  ListItemIcon,
-  ListItemText,
   Divider
 } from '@mui/material';
 import { 
@@ -107,7 +105,7 @@ const Relatorio = () => {
 
   const [editingTransacao, setEditingTransacao] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [isCreate, setIsCreate] = useState(false);
+  const [, setIsCreate] = useState(false);
 
   useEffect(() => {
     async function loadCategorias() {
@@ -232,7 +230,7 @@ const Relatorio = () => {
     if (!loadingCategorias) {
       fetchData(1);
     }
-  }, [loadingCategorias]);
+  }, [loadingCategorias, fetchData]);
 
   // Agrupa as tags por categoria (para exibir nos filtros)
   // Esta lógica agora usa `categorias` e `tags` do contexto
@@ -502,11 +500,6 @@ const Relatorio = () => {
     setExportAnchorEl(null);
   };
 
-  const handleExportFormat = (format) => {
-    setExportFormat(format);
-    handleExportClose();
-  };
-
   const handleExportNow = async (format) => {
     setExportFormat(format);
     await handleExport();
@@ -672,7 +665,7 @@ const Relatorio = () => {
                     )}
                     components={{ 
                       MultiValueLabel: (props) => {
-                        const { label, cor, icone } = props.data;
+                        const { cor, icone } = props.data;
                         return (
                           <span 
                             className="tag-chip-like"

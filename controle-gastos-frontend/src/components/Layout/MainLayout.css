@@ -204,6 +204,16 @@
   padding-right: 0.75rem;
 }
 
+/* Reset para botão do submenu (acessibilidade - substitui <a href="#">) */
+button.menu-item.with-submenu {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  width: 100%;
+  text-align: left;
+}
+
 .submenu-arrow {
   font-size: 0.75rem;
   transition: transform 0.2s ease;

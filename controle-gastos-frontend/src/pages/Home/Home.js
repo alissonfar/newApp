@@ -14,14 +14,12 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { obterTransacoes } from '../../api';
-import { toast } from 'react-toastify';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import DayDetailModal from '../../components/Modal/DayDetailModal';
 import { AuthContext } from '../../context/AuthContext';
 import './Home.css';
-import { getCurrentDateBR, formatDateBR, toISOStringBR, getTodayBR } from '../../utils/dateUtils';
+import { formatDateBR, getTodayBR } from '../../utils/dateUtils';
 import useDashboardData from '../../hooks/useDashboardData';
 
 // Registrar componentes do Chart.js

@@ -1,5 +1,5 @@
 // src/pages/Profile/Profile.js
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { FaUser, FaEnvelope, FaPhone, FaBriefcase, FaBuilding, FaCalendar, 
          FaLinkedin, FaTwitter, FaInstagram, FaMoon, FaSun, FaBell, FaDollarSign,
@@ -44,25 +44,25 @@ function Profile() {
     proprietario: usuario?.preferencias?.proprietario || ''
   });
 
-  useEffect(() => {
-    carregarPerfil();
-  }, []);
-
-  const carregarPerfil = async () => {
+  const carregarPerfil = useCallback(async () => {
     try {
       const response = await api.get('/usuarios/perfil');
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         ...response.data,
-        dataNascimento: response.data.dataNascimento ? 
+        dataNascimento: response.data.dataNascimento ?
           new Date(response.data.dataNascimento).toISOString().split('T')[0] : ''
-      });
-      setPreferencias(response.data.preferencias || preferencias);
+      }));
+      setPreferencias(prev => response.data.preferencias || prev);
       setUsuario(response.data);
     } catch (error) {
       toast.error('Erro ao carregar perfil');
     }
-  };
+  }, [setUsuario]);
+
+  useEffect(() => {
+    carregarPerfil();
+  }, [carregarPerfil]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaSpinner, FaEdit, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy } from 'react-icons/fa';
+import { FaSpinner, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
 import { useData } from '../../context/DataContext';
@@ -17,7 +17,6 @@ const DetalhesImportacaoPage = () => {
     const [importacao, setImportacao] = useState(null);
     const [transacoes, setTransacoes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [loadingTransacoes, setLoadingTransacoes] = useState(true);
     const [showFormTransacao, setShowFormTransacao] = useState(false);
     const [transacaoEmEdicao, setTransacaoEmEdicao] = useState(null);
 
@@ -45,16 +44,20 @@ const DetalhesImportacaoPage = () => {
         loadCategorias();
     }, []);
 
-    useEffect(() => {
-        carregarDetalhes();
-    }, [id]);
-
-    const carregarDetalhes = async () => {
+    const carregarDetalhes = useCallback(async () => {
         try {
             setLoading(true);
             const dados = await importacaoService.obterImportacao(id);
             setImportacao(dados);
-            await carregarTransacoes(abaAtiva, dados);
+            const options = {};
+            if (abaAtiva === 'ignoradas') {
+                options.status = 'ignorada';
+            } else if (dados?.tipoImportacao === 'complementar') {
+                if (abaAtiva === 'novas') options.status_not = 'ja_importada';
+                else if (abaAtiva === 'ja_importadas') options.status = 'ja_importada';
+            }
+            const response = await importacaoService.listarTransacoes(id, 1, 1000, options);
+            setTransacoes(response.items || []);
         } catch (error) {
             console.error('Erro ao carregar detalhes da importação:', error);
             toast.error('Erro ao carregar detalhes da importação');
@@ -62,12 +65,15 @@ const DetalhesImportacaoPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, abaAtiva, navigate]);
+
+    useEffect(() => {
+        carregarDetalhes();
+    }, [carregarDetalhes]);
 
     const carregarTransacoes = async (aba = abaAtiva, importacaoRef = null) => {
         const imp = importacaoRef || importacao;
         try {
-            setLoadingTransacoes(true);
             const options = {};
             if (aba === 'ignoradas') {
                 options.status = 'ignorada';
@@ -80,8 +86,6 @@ const DetalhesImportacaoPage = () => {
         } catch (error) {
             console.error('Erro ao carregar transações:', error);
             toast.error('Erro ao carregar transações');
-        } finally {
-            setLoadingTransacoes(false);
         }
     };
 
@@ -147,13 +151,6 @@ const DetalhesImportacaoPage = () => {
     };
 
     const handleEditarTransacao = (transacao) => {
-        // Log da transação recebida para edição
-        console.log('[DEBUG] Transação recebida para edição:', {
-            id: transacao.id || transacao._id,
-            pagamentos: transacao.pagamentos,
-            tags: transacao.tags
-        });
-        
         if (!transacao.importacao) {
             console.error('[DEBUG] ID da importação não encontrado na transação');
             toast.error('Erro ao editar: ID da importação não encontrado');
@@ -198,31 +195,12 @@ const DetalhesImportacaoPage = () => {
             valorEhTotalNaImportacao
         };
         
-        // Log da transação após formatação
-        console.log('[DEBUG] Transação formatada para edição:', {
-            _id: transacaoFormatada._id,
-            pagamentos: transacaoFormatada.pagamentos
-        });
-        
         setTransacaoEmEdicao(transacaoFormatada);
         setShowFormTransacao(true);
     };
 
     const handleSaveTransacao = async (transacaoEditada) => {
         try {
-            // Log dos dados antes da atualização
-            console.log('[DEBUG] Dados para atualização:', {
-                transacaoEmEdicao: {
-                    _id: transacaoEmEdicao?._id,
-                    pagamentos: transacaoEmEdicao?.pagamentos
-                },
-                transacaoEditada: {
-                    _id: transacaoEditada._id,
-                    pagamentos: transacaoEditada.pagamentos
-                },
-                importacaoId: id
-            });
-
             // Garantindo que temos o ID da importação
             const importacaoId = id || transacaoEmEdicao?.importacao;
             
@@ -237,14 +215,6 @@ const DetalhesImportacaoPage = () => {
                 status: 'revisada' // Força o status para 'revisada' após qualquer edição
             };
 
-            // Log dos dados finais que serão enviados para o backend
-            console.log('[DEBUG] Dados finais para atualização:', {
-                _id: dadosAtualizados._id,
-                importacaoId,
-                pagamentos: dadosAtualizados.pagamentos,
-                status: dadosAtualizados.status
-            });
-            
             await importacaoService.atualizarTransacao(
                 importacaoId,
                 transacaoEditada._id || transacaoEditada.id,
@@ -255,7 +225,7 @@ const DetalhesImportacaoPage = () => {
             setShowFormTransacao(false);
             await carregarDetalhes();
         } catch (error) {
-            console.error('[DEBUG] Erro ao atualizar transação:', error);
+            console.error('Erro ao atualizar transação:', error);
             toast.error(error.message || 'Erro ao atualizar transação.');
         }
     };

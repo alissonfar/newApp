@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
-import { colors, typography, spacing } from './theme';
+import { colors, spacing } from './theme';
 
 const formatDateBR = (dateStr) => {
   if (!dateStr) return '-';

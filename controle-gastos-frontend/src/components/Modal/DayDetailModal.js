@@ -10,7 +10,6 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Divider from '@mui/material/Divider'; // Para substituir a borda
 import Paper from '@mui/material/Paper'; // Para os itens da lista
 
 // Estilo para o Box central do Modal MUI
