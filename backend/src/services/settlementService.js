@@ -87,11 +87,11 @@ async function criar(dados, usuarioId) {
       _id: { $in: appliedTransactionIds },
       usuario: usuarioId,
       status: 'ativo',
-      tipo: 'recebivel'
+      tipo: 'gasto'
     }).session(session);
 
     if (transacoesAlvo.length !== appliedTransactionIds.length) {
-      throw new Error('Uma ou mais transações não foram encontradas ou não são recebíveis ativos.');
+      throw new Error('Uma ou mais transações não foram encontradas ou não são gastos ativos.');
     }
 
     const jaQuitadas = await Settlement.find({
@@ -270,7 +270,8 @@ async function listarRecebimentosDisponiveis(usuarioId, filtros = {}) {
 }
 
 /**
- * Lista transações recebíveis pendentes (não quitadas) para um filtro.
+ * Lista transações de gastos pendentes (não quitadas) para um filtro.
+ * São gastos que foram pagos por terceiros e que serão marcados como quitados.
  * @param {Object} filtros.excludeTransactionId - ID da transação a excluir (ex: recebimento selecionado)
  */
 async function listarPendentes(usuarioId, filtros = {}) {
@@ -286,7 +287,7 @@ async function listarPendentes(usuarioId, filtros = {}) {
   const match = {
     usuario: new mongoose.Types.ObjectId(usuarioId),
     status: 'ativo',
-    tipo: 'recebivel'
+    tipo: 'gasto'
   };
 
   if (filtros.pessoa) {

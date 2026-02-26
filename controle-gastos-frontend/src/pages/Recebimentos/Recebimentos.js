@@ -259,8 +259,8 @@ const Recebimentos = () => {
               </section>
 
               <section className="recebimentos-secao">
-                <h2>3. Selecione as transações a quitar</h2>
-                <p className="dica">Filtre por pessoa e período. Marque as dívidas que serão quitadas com este recebimento.</p>
+                <h2>3. Selecione os gastos a quitar</h2>
+                <p className="dica">Filtre por pessoa e período. Marque os gastos (dívidas pagas por terceiros) que serão quitados com este recebimento.</p>
                 <div className="filtros-row">
                   <select
                     value={filtroPessoa}
@@ -274,9 +274,9 @@ const Recebimentos = () => {
                 </div>
                 <div className="lista-pendentes">
                   {loadingPendentes ? (
-                    <p>Carregando pendentes...</p>
+                    <p>Carregando gastos pendentes...</p>
                   ) : pendentes.length === 0 ? (
-                    <p className="sem-dados">Nenhuma transação pendente para o filtro.</p>
+                    <p className="sem-dados">Nenhum gasto pendente para o filtro.</p>
                   ) : (
                     <table className="tabela-pendentes">
                       <thead>
