@@ -16,7 +16,8 @@ import Registro from './pages/Registro/Registro';
 import Profile from './pages/Profile/Profile';
 import HowToUse from './pages/HowToUse/HowToUse';
 import ModelosRelatorio from './pages/ModelosRelatorio/ModelosRelatorio';
-import Recebimentos from './pages/Recebimentos/Recebimentos';
+import NovaConciliacaoPage from './pages/Recebimentos/NovaConciliacaoPage';
+import HistoricoRecebimentosPage from './pages/Recebimentos/HistoricoRecebimentosPage';
 import VerificarEmail from './pages/VerificarEmail/VerificarEmail';
 import EmailNaoVerificado from './pages/EmailNaoVerificado/EmailNaoVerificado';
 import EsqueciSenha from './pages/EsqueciSenha/EsqueciSenha';
@@ -150,12 +151,23 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route path="/recebimentos" element={<Navigate to="/recebimentos/novo" replace />} />
               <Route
-                path="/recebimentos"
+                path="/recebimentos/novo"
                 element={
                   <PrivateRoute>
                     <MainLayout>
-                      <Recebimentos />
+                      <NovaConciliacaoPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/recebimentos/historico"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <HistoricoRecebimentosPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

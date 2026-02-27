@@ -466,27 +466,29 @@ export async function listarSettlements(params = {}) {
 }
 
 export async function listarRecebimentosDisponiveis(params = {}) {
+  const { signal, ...rest } = params;
   const q = new URLSearchParams();
-  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
-  if (params.dataFim) q.set('dataFim', params.dataFim);
-  const resposta = await fetch(`${API_BASE}/settlements/recebimentos-disponiveis?${q.toString()}`, {
-    headers: getHeaders(false)
-  });
+  if (rest.dataInicio) q.set('dataInicio', rest.dataInicio);
+  if (rest.dataFim) q.set('dataFim', rest.dataFim);
+  const fetchOpts = { headers: getHeaders(false) };
+  if (signal) fetchOpts.signal = signal;
+  const resposta = await fetch(`${API_BASE}/settlements/recebimentos-disponiveis?${q.toString()}`, fetchOpts);
   const dados = await resposta.json();
   if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar recebimentos.');
   return dados.transacoes || [];
 }
 
 export async function listarPendentes(params = {}) {
+  const { signal, ...rest } = params;
   const q = new URLSearchParams();
-  if (params.pessoa) q.set('pessoa', params.pessoa);
-  if (params.pessoas?.length) params.pessoas.forEach(p => q.append('pessoas', p));
-  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
-  if (params.dataFim) q.set('dataFim', params.dataFim);
-  if (params.excludeTransactionId) q.set('excludeTransactionId', params.excludeTransactionId);
-  const resposta = await fetch(`${API_BASE}/settlements/pendentes?${q.toString()}`, {
-    headers: getHeaders(false)
-  });
+  if (rest.pessoa) q.set('pessoa', rest.pessoa);
+  if (rest.pessoas?.length) rest.pessoas.forEach(p => q.append('pessoas', p));
+  if (rest.dataInicio) q.set('dataInicio', rest.dataInicio);
+  if (rest.dataFim) q.set('dataFim', rest.dataFim);
+  if (rest.excludeTransactionId) q.set('excludeTransactionId', rest.excludeTransactionId);
+  const fetchOpts = { headers: getHeaders(false) };
+  if (signal) fetchOpts.signal = signal;
+  const resposta = await fetch(`${API_BASE}/settlements/pendentes?${q.toString()}`, fetchOpts);
   const dados = await resposta.json();
   if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar pendentes.');
   return dados.transacoes || [];

@@ -17,11 +17,17 @@ export const toISOStringBR = (date) => {
   return d.toISOString();
 };
 
-// Função para formatar uma data ISO para exibição no formato brasileiro
-export const formatDateBR = (isoString) => {
-  if (!isoString) return '';
-  const [fullDate] = isoString.split('T');
-  const [year, month, day] = fullDate.split('-');
+// Função para formatar uma data ISO ou Date para exibição no formato brasileiro
+export const formatDateBR = (isoStringOrDate) => {
+  if (!isoStringOrDate) return '';
+  const str = typeof isoStringOrDate === 'string'
+    ? isoStringOrDate
+    : (isoStringOrDate instanceof Date ? isoStringOrDate.toISOString() : String(isoStringOrDate));
+  const [fullDate] = str.split('T');
+  if (!fullDate) return '';
+  const parts = fullDate.split('-');
+  if (parts.length < 3) return '';
+  const [year, month, day] = parts;
   return `${day}/${month}/${year}`;
 };
 

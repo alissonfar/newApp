@@ -10,7 +10,8 @@ import {
   FaBicycle, FaSwimmer, FaFootballBall, FaBasketballBall, FaBowlingBall,
   FaCreditCard, FaMoneyBillAlt, FaPiggyBank, FaWallet, FaHandHoldingUsd,
   FaChartLine, FaChartBar, FaChartPie, FaCalculator, FaBalanceScale,
-  FaUniversity, FaPercentage, FaReceipt, FaFileInvoiceDollar, FaCoins
+  FaUniversity, FaPercentage, FaReceipt, FaFileInvoiceDollar, FaCoins,
+  FaTag
 } from 'react-icons/fa';
 
 const icones = {
@@ -88,6 +89,7 @@ const icones = {
   football: FaFootballBall,
   basketball: FaBasketballBall,
   bowling: FaBowlingBall,
+  tag: FaTag,
 };
 
 const IconRenderer = ({ nome, size = 20, cor }) => {

@@ -69,15 +69,23 @@ const Relatorio = () => {
   const [errorCategorias, setErrorCategorias] = useState(null);
   const [pessoasOptions, setPessoasOptions] = useState([]);
 
-  const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [errorTransactions, setErrorTransactions] = useState(null);
 
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
-  const [selectedTipo, setSelectedTipo] = useState('both');
-  const [selectedPessoas, setSelectedPessoas] = useState([]);
-  const [excludePessoas, setExcludePessoas] = useState([]);
-  const [tagFilters, setTagFilters] = useState({});
+  const initialFilters = {
+    dataInicio: '',
+    dataFim: '',
+    selectedTipo: 'both',
+    selectedPessoas: [],
+    excludePessoas: [],
+    tagFilters: {},
+    searchTerm: '',
+    sortColumn: 'data',
+    sortDirection: 'desc'
+  };
+
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState('simples');
   const [reportTemplates, setReportTemplates] = useState([]);
 
@@ -93,9 +101,6 @@ const Relatorio = () => {
 
   const [exportFormat, setExportFormat] = useState('pdf');
   const [quickRange, setQuickRange] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortColumn, setSortColumn] = useState('data');
-  const [sortDirection, setSortDirection] = useState('desc');
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -114,7 +119,7 @@ const Relatorio = () => {
         setCategorias(cats);
         const initTagFilters = {};
         cats.forEach(cat => { initTagFilters[cat._id] = []; });
-        setTagFilters(prev => Object.keys(prev).length ? prev : initTagFilters);
+        setDraftFilters(prev => ({ ...prev, tagFilters: Object.keys(prev.tagFilters || {}).length ? prev.tagFilters : initTagFilters }));
       } catch (e) {
         setErrorCategorias(e);
       } finally {
@@ -148,47 +153,37 @@ const Relatorio = () => {
     loadTemplates();
   }, []);
 
-  const buildTagsFilter = useCallback(() => {
+  const buildTagsFilterFromObj = useCallback((tagFiltersObj) => {
     const filter = {};
-    Object.entries(tagFilters || {}).forEach(([catId, tagIds]) => {
+    Object.entries(tagFiltersObj || {}).forEach(([catId, tagIds]) => {
       if (Array.isArray(tagIds) && tagIds.length > 0) {
         filter[catId] = tagIds;
       }
     });
     return filter;
-  }, [tagFilters]);
+  }, []);
 
-  const fetchData = useCallback(async (pageNum = 1, override = {}) => {
+  const fetchData = useCallback(async (pageNum = 1, filters) => {
+    const f = filters ?? appliedFilters ?? draftFilters;
+    if (!f) return;
+
     setLoadingTransactions(true);
     setErrorTransactions(null);
     try {
-      const dInicio = override.dataInicio !== undefined ? override.dataInicio : dataInicio;
-      const dFim = override.dataFim !== undefined ? override.dataFim : dataFim;
-      const tipo = override.selectedTipo !== undefined ? override.selectedTipo : selectedTipo;
-      const pessoas = override.selectedPessoas !== undefined ? override.selectedPessoas : selectedPessoas;
-      const excluir = override.excludePessoas !== undefined ? override.excludePessoas : excludePessoas;
-      const tagsF = override.tagFilters !== undefined ? override.tagFilters : tagFilters;
-      const search = override.searchTerm !== undefined ? override.searchTerm : searchTerm;
-      const sortCol = override.sortColumn !== undefined ? override.sortColumn : sortColumn;
-      const sortDir = override.sortDirection !== undefined ? override.sortDirection : sortDirection;
-
-      const tagsFilterObj = {};
-      Object.entries(tagsF || {}).forEach(([catId, tagIds]) => {
-        if (Array.isArray(tagIds) && tagIds.length > 0) tagsFilterObj[catId] = tagIds;
-      });
-
+      const tagsFilterObj = buildTagsFilterFromObj(f.tagFilters);
+      const pessoas = f.selectedPessoas || [];
       const params = {
         page: pageNum,
         limit: PAGE_SIZE,
-        dataInicio: dInicio || undefined,
-        dataFim: dFim || undefined,
-        tipo: tipo !== 'both' ? tipo : undefined,
+        dataInicio: f.dataInicio || undefined,
+        dataFim: f.dataFim || undefined,
+        tipo: f.selectedTipo !== 'both' ? f.selectedTipo : undefined,
         pessoas: pessoas?.length ? pessoas : undefined,
-        excludePessoas: excluir?.length ? excluir : undefined,
+        excludePessoas: (f.excludePessoas || [])?.length ? f.excludePessoas : undefined,
         tagsFilter: Object.keys(tagsFilterObj).length ? tagsFilterObj : undefined,
-        search: (search || '').trim() || undefined,
-        sortBy: sortCol || 'data',
-        sortDir: sortDir || 'desc'
+        search: (f.searchTerm || '').trim() || undefined,
+        sortBy: f.sortColumn || 'data',
+        sortDir: f.sortDirection || 'desc'
       };
       const res = await obterTransacoesPaginadas(params);
       let flattened = flattenTransactions(res.data);
@@ -224,13 +219,7 @@ const Relatorio = () => {
     } finally {
       setLoadingTransactions(false);
     }
-  }, [dataInicio, dataFim, selectedTipo, selectedPessoas, excludePessoas, tagFilters, searchTerm, sortColumn, sortDirection]);
-
-  useEffect(() => {
-    if (!loadingCategorias) {
-      fetchData(1);
-    }
-  }, [loadingCategorias, fetchData]);
+  }, [appliedFilters, draftFilters, buildTagsFilterFromObj]);
 
   // Agrupa as tags por categoria (para exibir nos filtros)
   // Esta lógica agora usa `categorias` e `tags` do contexto
@@ -298,27 +287,33 @@ const Relatorio = () => {
       return `${yyyy}-${mm}-${dd}`;
     };
 
-    setDataInicio(toStringDate(start));
-    setDataFim(toStringDate(end));
+    setDraftFilters(prev => ({
+      ...prev,
+      dataInicio: toStringDate(start),
+      dataFim: toStringDate(end)
+    }));
   };
 
   const applyFilters = () => {
+    const draft = { ...draftFilters };
+    setAppliedFilters(draft);
     setPage(1);
-    fetchData(1);
+    fetchData(1, draft);
   };
 
   const handleExport = async () => {
     try {
+      const f = appliedFilters ?? draftFilters;
       const filters = {
-        dataInicio: dataInicio || undefined,
-        dataFim: dataFim || undefined,
-        tipo: selectedTipo !== 'both' ? selectedTipo : undefined,
-        pessoas: selectedPessoas.length ? selectedPessoas : undefined,
-        excludePessoas: excludePessoas.length ? excludePessoas : undefined,
-        tagsFilter: buildTagsFilter(),
-        search: searchTerm.trim() || undefined,
-        sortBy: sortColumn || 'data',
-        sortDir: sortDirection || 'desc'
+        dataInicio: f.dataInicio || undefined,
+        dataFim: f.dataFim || undefined,
+        tipo: f.selectedTipo !== 'both' ? f.selectedTipo : undefined,
+        pessoas: (f.selectedPessoas || []).length ? f.selectedPessoas : undefined,
+        excludePessoas: (f.excludePessoas || []).length ? f.excludePessoas : undefined,
+        tagsFilter: buildTagsFilterFromObj(f.tagFilters),
+        search: (f.searchTerm || '').trim() || undefined,
+        sortBy: f.sortColumn || 'data',
+        sortDir: f.sortDirection || 'desc'
       };
 
       let normalizedRows;
@@ -342,15 +337,15 @@ const Relatorio = () => {
           tagsPagamento: row.tagsPagamento || {}
         }));
         filterDetails = result.filterDetails || {
-          dataInicio,
-          dataFim,
-          selectedTipo,
-          selectedPessoas,
-          pessoas: selectedPessoas,
-          tipo: selectedTipo !== 'both' ? selectedTipo : undefined,
-          excludePessoas,
-          tagFilters,
-          tagsFilter: buildTagsFilter(),
+          dataInicio: f.dataInicio,
+          dataFim: f.dataFim,
+          selectedTipo: f.selectedTipo,
+          selectedPessoas: f.selectedPessoas,
+          pessoas: f.selectedPessoas,
+          tipo: f.selectedTipo !== 'both' ? f.selectedTipo : undefined,
+          excludePessoas: f.excludePessoas,
+          tagFilters: f.tagFilters,
+          tagsFilter: buildTagsFilterFromObj(f.tagFilters),
         };
         exportSummary = result.summary || {};
         templateUsed = result.templateUsed || selectedTemplate;
@@ -365,7 +360,7 @@ const Relatorio = () => {
           pessoa: row.pessoa || '-',
           tagsPagamento: row.tagsPagamento || {}
         }));
-        filterDetails = { dataInicio, dataFim, selectedTipo, selectedPessoas, excludePessoas, tagFilters };
+        filterDetails = { dataInicio: f.dataInicio, dataFim: f.dataFim, selectedTipo: f.selectedTipo, selectedPessoas: f.selectedPessoas, excludePessoas: f.excludePessoas, tagFilters: f.tagFilters };
         exportSummary = {
           ...summaryInfo,
           totalTransactions: normalizedRows.length,
@@ -417,27 +412,25 @@ const Relatorio = () => {
   const handleClearFilters = () => {
     const resetTagFilters = {};
     categorias.forEach(cat => { resetTagFilters[cat._id] = []; });
-    setDataInicio('');
-    setDataFim('');
-    setSelectedTipo('both');
-    setSelectedPessoas([]);
-    setExcludePessoas([]);
-    setTagFilters(resetTagFilters);
+    const reset = {
+      ...initialFilters,
+      tagFilters: resetTagFilters
+    };
+    setDraftFilters(reset);
+    setAppliedFilters(null);
     setQuickRange('');
-    setSearchTerm('');
-    setSortColumn('data');
-    setSortDirection('desc');
     setPage(1);
-    fetchData(1, {
-      dataInicio: '',
-      dataFim: '',
-      selectedTipo: 'both',
-      selectedPessoas: [],
-      excludePessoas: [],
-      tagFilters: resetTagFilters,
-      searchTerm: '',
-      sortColumn: 'data',
-      sortDirection: 'desc'
+    setFilteredRows([]);
+    setTotal(0);
+    setTotalPages(1);
+    setSummaryInfo({
+      totalTransactions: 0,
+      totalValue: '0.00',
+      totalPeople: 0,
+      averagePerPerson: '0.00',
+      totalGastos: '0.00',
+      totalRecebiveis: '0.00',
+      netValue: '0.00'
     });
   };
 
@@ -468,7 +461,7 @@ const Relatorio = () => {
       try {
         await excluirTransacao(row.id);
         toast.success('Transação excluída com sucesso!');
-        fetchData(page);
+        fetchData(page, appliedFilters ?? draftFilters);
       } catch (error) {
         toast.error('Erro ao excluir transação.');
       }
@@ -489,7 +482,7 @@ const Relatorio = () => {
 
   const handleSuccess = () => {
     handleCloseModal();
-    fetchData(page);
+    fetchData(page, appliedFilters ?? draftFilters);
   };
 
   const handleExportClick = (event) => {
@@ -549,8 +542,8 @@ const Relatorio = () => {
                 <label>Data Início:</label>
                 <input
                   type="date"
-                  value={dataInicio}
-                  onChange={e => setDataInicio(e.target.value)}
+                  value={draftFilters.dataInicio || ''}
+                  onChange={e => setDraftFilters(prev => ({ ...prev, dataInicio: e.target.value }))}
                 />
               </div>
 
@@ -558,8 +551,8 @@ const Relatorio = () => {
                 <label>Data Fim:</label>
                 <input
                   type="date"
-                  value={dataFim}
-                  onChange={e => setDataFim(e.target.value)}
+                  value={draftFilters.dataFim || ''}
+                  onChange={e => setDraftFilters(prev => ({ ...prev, dataFim: e.target.value }))}
                 />
               </div>
             </div>
@@ -574,10 +567,10 @@ const Relatorio = () => {
                 <Select
                   isMulti
                   options={pessoasOptions}
-                  value={selectedPessoas.map(p => ({ value: p, label: p }))}
+                  value={(draftFilters.selectedPessoas || []).map(p => ({ value: p, label: p }))}
                   onChange={(selectedOptions) => {
                     const values = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
-                    setSelectedPessoas(values);
+                    setDraftFilters(prev => ({ ...prev, selectedPessoas: values }));
                   }}
                   classNamePrefix="mySelect"
                   placeholder="Selecione pessoas..."
@@ -589,10 +582,10 @@ const Relatorio = () => {
                 <Select
                   isMulti
                   options={pessoasOptions}
-                  value={excludePessoas.map(p => ({ value: p, label: p }))}
+                  value={(draftFilters.excludePessoas || []).map(p => ({ value: p, label: p }))}
                   onChange={(selectedOptions) => {
                     const values = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
-                    setExcludePessoas(values);
+                    setDraftFilters(prev => ({ ...prev, excludePessoas: values }));
                   }}
                   classNamePrefix="mySelect"
                   placeholder="Excluir pessoas..."
@@ -602,8 +595,8 @@ const Relatorio = () => {
               <div className="filter-group">
                 <label>Tipo de Transação:</label>
                 <select
-                  value={selectedTipo}
-                  onChange={e => setSelectedTipo(e.target.value)}
+                  value={draftFilters.selectedTipo || 'both'}
+                  onChange={e => setDraftFilters(prev => ({ ...prev, selectedTipo: e.target.value }))}
                 >
                   <option value="both">Ambos</option>
                   <option value="gasto">Gasto</option>
@@ -628,7 +621,7 @@ const Relatorio = () => {
                       cor: tag.cor,
                       icone: tag.icone
                     }))}
-                    value={(tagFilters[categoriaId] || []).map(tagId => {
+                    value={((draftFilters.tagFilters || {})[categoriaId] || []).map(tagId => {
                       const tag = tags.find(t => t._id === tagId);
                       return tag ? {
                         value: tag._id,
@@ -639,7 +632,10 @@ const Relatorio = () => {
                     }).filter(Boolean)}
                     onChange={(selectedOptions) => {
                       const selected = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
-                      setTagFilters(prev => ({ ...prev, [categoriaId]: selected }));
+                      setDraftFilters(prev => ({
+                        ...prev,
+                        tagFilters: { ...(prev.tagFilters || {}), [categoriaId]: selected }
+                      }));
                     }}
                     formatOptionLabel={({ value, label, cor, icone }) => (
                       <span 
@@ -730,16 +726,16 @@ const Relatorio = () => {
                 <label>Pesquisar:</label>
                 <input
                   type="text"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  value={draftFilters.searchTerm || ''}
+                  onChange={e => setDraftFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
                   placeholder="Buscar descrição ou pessoa..."
                 />
               </div>
               <div className="filter-group">
                 <label>Ordenar por:</label>
                 <select
-                  value={sortColumn}
-                  onChange={e => setSortColumn(e.target.value)}
+                  value={draftFilters.sortColumn || 'data'}
+                  onChange={e => setDraftFilters(prev => ({ ...prev, sortColumn: e.target.value }))}
                 >
                   <option value="">--Nenhum--</option>
                   <option value="data">Data</option>
@@ -748,8 +744,8 @@ const Relatorio = () => {
                   <option value="valorPagamento">Valor (Pagamento)</option>
                 </select>
                 <select
-                  value={sortDirection}
-                  onChange={e => setSortDirection(e.target.value)}
+                  value={draftFilters.sortDirection || 'desc'}
+                  onChange={e => setDraftFilters(prev => ({ ...prev, sortDirection: e.target.value }))}
                 >
                   <option value="asc">Ascendente</option>
                   <option value="desc">Descendente</option>
@@ -960,6 +956,8 @@ const Relatorio = () => {
               </tbody>
             </table>
           </div>
+        ) : appliedFilters === null ? (
+          <p>Utilize os filtros e clique em Filtrar para buscar transações.</p>
         ) : (
           <p>Nenhum registro encontrado.</p>
         )}
@@ -967,14 +965,14 @@ const Relatorio = () => {
           <div className="relatorio-pagination" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               disabled={page <= 1}
-              onClick={() => { setPage(p => p - 1); fetchData(page - 1); }}
+              onClick={() => { setPage(p => p - 1); fetchData(page - 1, appliedFilters ?? draftFilters); }}
             >
               Anterior
             </button>
             <span>Página {page} de {totalPages}</span>
             <button
               disabled={page >= totalPages}
-              onClick={() => { setPage(p => p + 1); fetchData(page + 1); }}
+              onClick={() => { setPage(p => p + 1); fetchData(page + 1, appliedFilters ?? draftFilters); }}
             >
               Próxima
             </button>
