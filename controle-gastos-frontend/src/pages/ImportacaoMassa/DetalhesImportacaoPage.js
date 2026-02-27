@@ -152,7 +152,6 @@ const DetalhesImportacaoPage = () => {
 
     const handleEditarTransacao = (transacao) => {
         if (!transacao.importacao) {
-            console.error('[DEBUG] ID da importação não encontrado na transação');
             toast.error('Erro ao editar: ID da importação não encontrado');
             return;
         }

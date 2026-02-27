@@ -113,7 +113,8 @@ const truncate = (str, maxLen) => {
   return str.slice(0, maxLen).trim() + '...';
 };
 
-const ReportTable = ({ data, categorias = [], tags = [] }) => {
+const ReportTable = ({ data = [], categorias = [], tags = [] }) => {
+  const safeData = Array.isArray(data) ? data : [];
   const formatValue = (value, type) => {
     const formattedValue = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -192,7 +193,7 @@ const ReportTable = ({ data, categorias = [], tags = [] }) => {
         </View>
       </View>
 
-      {data.map((item, index) => (
+      {safeData.map((item, index) => (
         <View
           key={index}
           style={[styles.tableRow, index % 2 === 1 && styles.evenRow]}

@@ -9,29 +9,24 @@ module.exports = {
   },
   webpack: {
     configure: (webpackConfig) => {
-      console.log('CRACO está ativo! Configurando webpack...');
-      
-      // Encontrar regras CSS e ajustar a prioridade
+      // Encontrar regras CSS e ajustar a prioridade para Tailwind
       const cssRule = webpackConfig.module.rules.find(
         (rule) => rule.oneOf && Array.isArray(rule.oneOf)
       );
 
       if (cssRule && cssRule.oneOf) {
-        console.log('Regras CSS encontradas, ajustando prioridade para Tailwind...');
-        
-        // Forçar !important para classes Tailwind
         cssRule.oneOf.forEach((rule) => {
           if (rule.test && rule.test.toString().includes('css')) {
-            console.log('Regra CSS ajustada para priorizar Tailwind');
+            // Regra CSS ajustada para priorizar Tailwind
           }
         });
       }
-      
+
       return webpackConfig;
     },
   },
-  // Garantir que o Tailwind esteja no modo observação
+  // Tailwind: 'build' em produção para otimização, 'watch' em desenvolvimento
   env: {
-    TAILWIND_MODE: 'watch',
+    TAILWIND_MODE: process.env.NODE_ENV === 'production' ? 'build' : 'watch',
   }
 }; 

@@ -89,7 +89,8 @@ const formatCurrency = (value) => {
   });
 };
 
-const TransactionsTable = ({ data, categorias, tags }) => {
+const TransactionsTable = ({ data = [], categorias, tags }) => {
+  const safeData = Array.isArray(data) ? data : [];
   const processarTags = (tagsPagamento) => {
     if (!tagsPagamento || !categorias || !tags) return '-';
     
@@ -147,7 +148,7 @@ const TransactionsTable = ({ data, categorias, tags }) => {
         </View>
 
         {/* Linhas de dados */}
-        {data.map((row, index) => {
+        {safeData.map((row, index) => {
           const isGasto = row.tipo === 'gasto';
           const valor = isGasto ? -Math.abs(row.valorPagamento) : Math.abs(row.valorPagamento);
           

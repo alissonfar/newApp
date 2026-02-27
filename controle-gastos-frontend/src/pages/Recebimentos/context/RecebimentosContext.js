@@ -130,7 +130,7 @@ export function RecebimentosProvider({ children }) {
       dispatch({ type: ACTIONS.SET_LOADING_RECEBIMENTOS, payload: false });
       abortRecebimentosRef.current = null;
     }
-  }, []);
+  }, [state.appliedFiltrosRecebimentos, state.draftFiltrosRecebimentos]);
 
   const carregarPendentes = useCallback(async (filtrosOverride) => {
     if (!state.recebimentoSelecionado) return;
@@ -160,7 +160,11 @@ export function RecebimentosProvider({ children }) {
       dispatch({ type: ACTIONS.SET_LOADING_PENDENTES, payload: false });
       abortPendentesRef.current = null;
     }
-  }, [state.recebimentoSelecionado]);
+  }, [
+    state.recebimentoSelecionado,
+    state.appliedFiltrosPendentes,
+    state.draftFiltrosPendentes
+  ]);
 
   const applyFiltrosRecebimentos = useCallback(() => {
     const draft = { ...state.draftFiltrosRecebimentos };
