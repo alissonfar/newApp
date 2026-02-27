@@ -35,7 +35,6 @@
   background-color: var(--cor-fundo-menu);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   padding: 1.25rem 1rem;
   border-right: 1px solid var(--cor-borda-menu);
   transition: width 0.3s ease, transform 0.3s ease;
@@ -43,6 +42,7 @@
   left: 0;
   top: 0;
   height: 100vh;
+  height: 100svh; /* Comportamento mais previsível em zoom e mobile */
   z-index: 1000;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
@@ -60,12 +60,22 @@
   min-width: 72px;
 }
 
+/* Área superior do menu (logo + itens) - permite rolagem dos itens em zoom */
+.menu-top {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Logo e nome do sistema */
 .logo {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2rem; /* Ajuste leve no espaçamento inferior */
+  flex-shrink: 0;
+  margin-bottom: 1rem;
   padding: 0.75rem 0.75rem; /* Ajuste leve no padding */
 }
 
@@ -90,7 +100,14 @@
     padding-top: 45px; /* Espaço para o botão 'X' interno */
 }
 
-/* Itens do menu */
+/* Itens do menu - área rolável em zooms maiores */
+.menu-items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .menu-items ul {
   list-style: none;
   padding: 0;
@@ -275,6 +292,7 @@ button.menu-item.with-submenu {
 /* Conteúdo principal */
 .main-content {
   flex: 1;
+  min-width: 0; /* Permite encolher em zoom, evita overflow horizontal */
   padding: 2rem;
   /* margin-left: 260px; */
   margin-left: 280px; /* Ajustando margem para nova largura do menu */
@@ -320,6 +338,7 @@ button.menu-item.with-submenu {
 
 /* Rodapé do menu (usuário e links) */
 .menu-footer {
+  flex-shrink: 0;
   border-top: 1px solid var(--cor-borda-menu);
   padding-top: 1rem; /* Ajuste padding */
   margin-top: 1rem; /* Ajuste margem */
@@ -488,6 +507,7 @@ button.menu-item.with-submenu {
     left: 0;
     top: 0;
     height: 100vh;
+    height: 100svh;
     width: 280px; /* Largura quando aberto */
     transform: translateX(-100%); /* Escondido fora da tela */
     transition: transform 0.3s ease; /* Animação de deslize */
@@ -789,6 +809,7 @@ button.menu-item.with-submenu {
     left: 0;
     top: 0;
     height: 100vh;
+    height: 100svh;
     width: 280px;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
