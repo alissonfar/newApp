@@ -72,6 +72,53 @@ const patrimonioApi = {
   listarTransacoesPorSubconta: async (subcontaId) => {
     const dados = await obterTransacoes({ subconta: subcontaId });
     return dados.transacoes || [];
+  },
+  // Importação OFX
+  listarImportacoesOFX: async () => {
+    const response = await api.get('/patrimonio/importacoes-ofx');
+    return response.data;
+  },
+  obterImportacaoOFX: async (id) => {
+    const response = await api.get(`/patrimonio/importacoes-ofx/${id}`);
+    return response.data;
+  },
+  uploadOFX: async (arquivo, subcontaId) => {
+    const formData = new FormData();
+    formData.append('arquivo', arquivo);
+    formData.append('subcontaId', subcontaId);
+    const response = await api.post('/patrimonio/importacoes-ofx', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+  atualizarTransacaoOFX: async (importacaoId, transacaoOFXId, dados) => {
+    const response = await api.patch(
+      `/patrimonio/importacoes-ofx/${importacaoId}/transacoes/${transacaoOFXId}`,
+      dados
+    );
+    return response.data;
+  },
+  criarTransacaoDeOFX: async (importacaoId, transacaoOFXId) => {
+    const response = await api.post(
+      `/patrimonio/importacoes-ofx/${importacaoId}/transacoes/${transacaoOFXId}/criar-transacao`
+    );
+    return response.data;
+  },
+  finalizarImportacaoOFX: async (id) => {
+    const response = await api.post(`/patrimonio/importacoes-ofx/${id}/finalizar`);
+    return response.data;
+  },
+  cancelarImportacaoOFX: async (id) => {
+    await api.delete(`/patrimonio/importacoes-ofx/${id}`);
+  },
+  listarTransferencias: async (status) => {
+    const params = status ? `?status=${status}` : '';
+    const response = await api.get(`/patrimonio/transferencias${params}`);
+    return response.data;
+  },
+  criarTransferencia: async (dados) => {
+    const response = await api.post('/patrimonio/transferencias', dados);
+    return response.data;
   }
 };
 

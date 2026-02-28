@@ -43,6 +43,8 @@ const rotasTaxaCDI = require('./routes/rotasTaxaCDI');
 const rotasInstituicao = require('./routes/rotasInstituicao');
 const rotasSubconta = require('./routes/rotasSubconta');
 const rotasPatrimonio = require('./routes/rotasPatrimonio');
+const rotasImportacaoOFX = require('./routes/rotasImportacaoOFX');
+const rotasTransferencia = require('./routes/rotasTransferencia');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
@@ -58,6 +60,8 @@ app.use('/api/settlements', rotasSettlement);
 app.use('/api/taxa-cdi', rotasTaxaCDI);
 app.use('/api/instituicoes', rotasInstituicao);
 app.use('/api/subcontas', rotasSubconta);
+app.use('/api/patrimonio/importacoes-ofx', rotasImportacaoOFX);
+app.use('/api/patrimonio/transferencias', rotasTransferencia);
 app.use('/api/patrimonio', rotasPatrimonio);
 
 // Tratamento de erros

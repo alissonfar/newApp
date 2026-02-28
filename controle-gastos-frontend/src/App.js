@@ -27,6 +27,9 @@ import PatrimonioPage from './pages/Patrimonio/PatrimonioPage';
 import ContasPage from './pages/Patrimonio/ContasPage';
 import DetalheSubcontaPage from './pages/Patrimonio/DetalheSubcontaPage';
 import EvolucaoPage from './pages/Patrimonio/EvolucaoPage';
+import ImportacaoOFXPage from './pages/Patrimonio/ImportacaoOFXPage';
+import ImportacaoOFXDetalhePage from './pages/Patrimonio/ImportacaoOFXDetalhePage';
+import TransferenciasPage from './pages/Patrimonio/TransferenciasPage';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -161,6 +164,36 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <EvolucaoPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/importacoes-ofx"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <ImportacaoOFXPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/importacoes-ofx/:id"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <ImportacaoOFXDetalhePage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/transferencias"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <TransferenciasPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

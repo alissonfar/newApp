@@ -1,0 +1,141 @@
+.importacao-ofx-page {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.importacao-ofx-page h1 {
+  margin-bottom: 0.25rem;
+}
+
+.importacao-ofx-page .subtitulo {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.upload-section {
+  background: #f8f9fa;
+  padding: 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.upload-section h2,
+.lista-section h2 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.upload-form .form-row {
+  margin-bottom: 1rem;
+}
+
+.upload-form label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.upload-form select,
+.upload-form input[type="file"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.upload-form button {
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upload-form button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lista-importacoes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista-importacoes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lista-importacoes li:hover {
+  background: #f5f5f5;
+}
+
+.item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.item-info svg {
+  color: #1976d2;
+  font-size: 1.25rem;
+}
+
+.item-info strong {
+  display: block;
+}
+
+.item-info span {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.item-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.status {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.status-revisao { background: #fff3e0; color: #e65100; }
+.status-finalizada { background: #e8f5e9; color: #2e7d32; }
+.status-processando { background: #e3f2fd; color: #1565c0; }
+.status-cancelada { background: #ffebee; color: #c62828; }
+
+.loading, .vazio {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

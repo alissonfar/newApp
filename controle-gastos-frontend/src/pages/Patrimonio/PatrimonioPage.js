@@ -127,6 +127,8 @@ const PatrimonioPage = () => {
 
       <div className="patrimonio-actions">
         <button onClick={() => navigate('/patrimonio/evolucao')}>Ver Evolução</button>
+        <button onClick={() => navigate('/patrimonio/importacoes-ofx')}>Importar OFX</button>
+        <button onClick={() => navigate('/patrimonio/transferencias')}>Transferências</button>
       </div>
     </div>
   );

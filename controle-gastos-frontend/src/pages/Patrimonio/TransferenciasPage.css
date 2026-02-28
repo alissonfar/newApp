@@ -1,0 +1,217 @@
+.transferencias-page {
+  padding: 1.5rem 2rem;
+  max-width: 700px;
+  margin: 0 auto;
+  background: #f5f7fa;
+  min-height: 100vh;
+}
+
+.transferencias-page .btn-voltar {
+  background: none;
+  border: none;
+  color: #2196f3;
+  cursor: pointer;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  padding: 0;
+}
+
+.transferencias-page .btn-voltar:hover {
+  text-decoration: underline;
+}
+
+.transferencias-page h1 {
+  font-size: 1.75rem;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.transferencias-page .subtitulo {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.form-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 1.5rem;
+}
+
+.form-section h2,
+.lista-section h2 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.transferencia-form .form-row {
+  margin-bottom: 1rem;
+}
+
+.transferencia-form .form-row label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.transferencia-form select,
+.transferencia-form input[type="text"],
+.transferencia-form input[type="date"] {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.form-row-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.transferencia-form button[type="submit"] {
+  margin-top: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.transferencia-form button[type="submit"]:hover:not(:disabled) {
+  background: #1976d2;
+}
+
+.transferencia-form button[type="submit"]:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lista-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.lista-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.filtro-status {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.lista-transferencias {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.transferencia-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  background: #fafafa;
+}
+
+.transferencia-item.status-concluida {
+  background: #f1f8e9;
+  border-color: #c8e6c9;
+}
+
+.transferencia-info {
+  flex: 1;
+}
+
+.origem-destino {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.origem-destino .conta {
+  font-weight: 500;
+}
+
+.origem-destino .arrow {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.transferencia-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.transferencia-meta .valor {
+  font-weight: 600;
+  color: #333;
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.badge.pendente {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.badge.concluida {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.loading, .vazio {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .form-row-duo {
+    grid-template-columns: 1fr;
+  }
+}
