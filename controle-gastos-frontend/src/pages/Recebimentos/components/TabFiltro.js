@@ -6,6 +6,7 @@ import Card, { CardContent } from '../../../components/shared/Card';
 import SectionHeader from '../../../components/shared/SectionHeader';
 import Button from '../../../components/shared/Button';
 import EmptyState from '../../../components/shared/EmptyState';
+import PeriodQuickFilter from '../../../components/shared/PeriodQuickFilter';
 
 const formatarValor = (v) => {
   const n = parseFloat(v);
@@ -62,29 +63,25 @@ const TabFiltro = () => {
                 ))}
               </select>
             </div>
-            <div className="filtro-grupo">
-              <label>Data início</label>
-              <input
-                type="date"
-                className="input-field"
-                value={draftFiltrosPendentes?.dataInicio || ''}
-                onChange={(e) => setDraftFiltrosPendentes({ dataInicio: e.target.value })}
-              />
-            </div>
-            <div className="filtro-grupo">
-              <label>Data fim</label>
-              <input
-                type="date"
-                className="input-field"
-                value={draftFiltrosPendentes?.dataFim || ''}
-                onChange={(e) => setDraftFiltrosPendentes({ dataFim: e.target.value })}
+            <div className="filtro-grupo filtro-grupo--periodo">
+              <label>Período</label>
+              <PeriodQuickFilter
+                dataInicio={draftFiltrosPendentes?.dataInicio || ''}
+                dataFim={draftFiltrosPendentes?.dataFim || ''}
+                onChange={(range) => setDraftFiltrosPendentes(range)}
+                onPeriodSelect={({ dataInicio, dataFim }) => {
+                  if (dataInicio && dataFim) {
+                    applyFiltrosPendentes({ dataInicio, dataFim });
+                  }
+                }}
+                showCustomInputs={true}
               />
             </div>
             <div className="filtro-grupo filtro-grupo--action">
               <label>&nbsp;</label>
               <Button
                 variant="primary"
-                onClick={applyFiltrosPendentes}
+                onClick={() => applyFiltrosPendentes()}
                 disabled={loadingPendentes}
               >
                 {loadingPendentes ? 'Carregando...' : 'Filtrar'}

@@ -9,6 +9,7 @@ import SectionHeader from '../../../components/shared/SectionHeader';
 import Button from '../../../components/shared/Button';
 import Badge from '../../../components/shared/Badge';
 import EmptyState from '../../../components/shared/EmptyState';
+import BulkActionBar from '../../../components/shared/BulkActionBar';
 import { formatDateBR } from '../../../utils/dateUtils';
 
 const formatarValor = (v) => {
@@ -24,8 +25,21 @@ const TabSelecao = () => {
     loadingPendentes,
     transacoesSelecionadasSet,
     toggleSelecao,
+    selectAllVisible,
+    clearSelection,
     setTabAtiva
   } = useRecebimentos();
+
+  const selectedCount = transacoesSelecionadasSet.size;
+  const allVisibleSelected = pendentes.length > 0 && selectedCount === pendentes.length;
+
+  const handleSelectAllHeader = () => {
+    if (allVisibleSelected) {
+      clearSelection();
+    } else {
+      selectAllVisible();
+    }
+  };
 
   const totalSelecionado = pendentes
     .filter((t) => transacoesSelecionadasSet.has(t._id))
@@ -89,6 +103,26 @@ const TabSelecao = () => {
       <Card className="tab-selecao-card">
         <CardContent>
           <SectionHeader title="Transações pendentes" icon={<FaListUl size={18} />} />
+          {selectedCount > 0 && (
+            <BulkActionBar
+              selectedCount={selectedCount}
+              totalCount={pendentes.length}
+              onClearSelection={clearSelection}
+              onSelectAll={selectAllVisible}
+              actions={
+                statusVisual !== 'sobra' && selectedCount > 0
+                  ? [
+                      {
+                        label: 'Ir para Resumo →',
+                        variant: 'primary',
+                        size: 'md',
+                        onClick: () => setTabAtiva(3)
+                      }
+                    ]
+                  : []
+              }
+            />
+          )}
           <div className="tab-selecao-tabela-wrapper">
             {loadingPendentes ? (
               <div className="tab-loading">
@@ -104,7 +138,14 @@ const TabSelecao = () => {
               <table className="tabela-pendentes">
                 <thead>
                   <tr>
-                    <th></th>
+                    <th className="tabela-pendentes__th-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={handleSelectAllHeader}
+                        title={allVisibleSelected ? 'Desmarcar todas' : 'Selecionar todas'}
+                      />
+                    </th>
                     <th>Valor</th>
                     <th>Data</th>
                     <th>Pessoa</th>
@@ -115,8 +156,12 @@ const TabSelecao = () => {
                 <tbody>
                   {pendentes.map((t) => {
                     const pessoa = t.pagamentos?.[0]?.pessoa || '-';
+                    const isSelected = transacoesSelecionadasSet.has(t._id);
                     return (
-                      <tr key={t._id}>
+                      <tr
+                        key={t._id}
+                        className={isSelected ? 'tabela-pendentes__row--selected' : ''}
+                      >
                         <td>
                           <input
                             type="checkbox"
@@ -156,7 +201,7 @@ const TabSelecao = () => {
             <p className="erro-total">O total selecionado excede o valor do recebimento. Desmarque algumas transações.</p>
           )}
 
-          {transacoesSelecionadasSet.size > 0 && statusVisual !== 'sobra' && (
+          {selectedCount > 0 && statusVisual !== 'sobra' && (
             <Button
               variant="primary"
               size="lg"

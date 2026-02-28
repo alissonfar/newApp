@@ -22,7 +22,7 @@ import {
   TableChart as CsvIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
-import { getCurrentDateBR, formatDateBR } from '../../utils/dateUtils';
+import { getCurrentDateBR, formatDateBR, getDateRangeForPeriod } from '../../utils/dateUtils';
 
 const PAGE_SIZE = 50;
 
@@ -241,56 +241,14 @@ const Relatorio = () => {
     }, {});
   }, [tags, categorias]); // Recalcula se tags ou categorias mudarem
 
-  // Seleção rápida de datas
+  // Seleção rápida de datas - reutiliza utilitário compartilhado (DRY com Recebimentos)
   const handleQuickDateRange = (option) => {
-    const now = getCurrentDateBR();
-    let start, end;
-
-    switch (option) {
-      case 'MES_ATUAL':
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        break;
-      case 'MES_ANTERIOR':
-        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        start = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1);
-        end = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0);
-        break;
-      case 'ULTIMOS_60_DIAS':
-        end = now;
-        start = new Date(now);
-        start.setDate(start.getDate() - 60);
-        break;
-      case 'ULTIMOS_30_DIAS':
-        end = now;
-        start = new Date(now);
-        start.setDate(start.getDate() - 30);
-        break;
-      case 'ULTIMOS_15_DIAS':
-        end = now;
-        start = new Date(now);
-        start.setDate(start.getDate() - 15);
-        break;
-      case 'ULTIMOS_7_DIAS':
-        end = now;
-        start = new Date(now);
-        start.setDate(start.getDate() - 7);
-        break;
-      default:
-        return;
-    }
-
-    const toStringDate = (date) => {
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    };
-
+    const range = getDateRangeForPeriod(option);
+    if (!range) return;
     setDraftFilters(prev => ({
       ...prev,
-      dataInicio: toStringDate(start),
-      dataFim: toStringDate(end)
+      dataInicio: range.dataInicio,
+      dataFim: range.dataFim
     }));
   };
 

@@ -166,16 +166,26 @@ export function RecebimentosProvider({ children }) {
     state.draftFiltrosPendentes
   ]);
 
-  const applyFiltrosRecebimentos = useCallback(() => {
-    const draft = { ...state.draftFiltrosRecebimentos };
+  const applyFiltrosRecebimentos = useCallback((filtrosOverride) => {
+    const draft = filtrosOverride
+      ? { ...state.draftFiltrosRecebimentos, ...filtrosOverride }
+      : { ...state.draftFiltrosRecebimentos };
+    if (filtrosOverride) {
+      dispatch({ type: ACTIONS.SET_DRAFT_FILTROS_RECEBIMENTOS, payload: filtrosOverride });
+    }
     dispatch({ type: ACTIONS.SET_APPLIED_FILTROS_RECEBIMENTOS, payload: draft });
     dispatch({ type: ACTIONS.SET_HAS_BUSCADO_RECEBIMENTOS, payload: true });
     carregarRecebimentosDisponiveis(draft);
   }, [state.draftFiltrosRecebimentos, carregarRecebimentosDisponiveis]);
 
-  const applyFiltrosPendentes = useCallback(() => {
+  const applyFiltrosPendentes = useCallback((filtrosOverride) => {
     if (!state.recebimentoSelecionado) return;
-    const draft = { ...state.draftFiltrosPendentes };
+    const draft = filtrosOverride
+      ? { ...state.draftFiltrosPendentes, ...filtrosOverride }
+      : { ...state.draftFiltrosPendentes };
+    if (filtrosOverride) {
+      dispatch({ type: ACTIONS.SET_DRAFT_FILTROS_PENDENTES, payload: filtrosOverride });
+    }
     dispatch({ type: ACTIONS.SET_APPLIED_FILTROS_PENDENTES, payload: draft });
     carregarPendentes(draft);
   }, [state.draftFiltrosPendentes, state.recebimentoSelecionado, carregarPendentes]);
@@ -203,6 +213,15 @@ export function RecebimentosProvider({ children }) {
 
   const toggleSelecao = useCallback((id) => {
     dispatch({ type: ACTIONS.TOGGLE_SELECAO, payload: id });
+  }, []);
+
+  const selectAllVisible = useCallback(() => {
+    const ids = state.pendentes.map((t) => t._id);
+    dispatch({ type: ACTIONS.SET_TRANSACOES_SELECIONADAS, payload: ids });
+  }, [state.pendentes]);
+
+  const clearSelection = useCallback(() => {
+    dispatch({ type: ACTIONS.SET_TRANSACOES_SELECIONADAS, payload: [] });
   }, []);
 
   const handleConfirmar = useCallback(async () => {
@@ -246,6 +265,8 @@ export function RecebimentosProvider({ children }) {
     applyFiltrosPendentes,
     carregarPessoas,
     toggleSelecao,
+    selectAllVisible,
+    clearSelection,
     handleConfirmar,
     setRecebimentoSelecionado: (v) =>
       dispatch({ type: ACTIONS.SET_RECEBIMENTO_SELECIONADO, payload: v }),

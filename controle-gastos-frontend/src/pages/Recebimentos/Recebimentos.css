@@ -77,6 +77,15 @@
   margin: 0 0 1rem 0;
 }
 
+.filtros-recebimentos {
+  margin-bottom: 1rem;
+}
+
+.filtros-recebimentos .filtros-row--action {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
 .filtros-row {
   display: flex;
   gap: 0.75rem;
@@ -196,6 +205,10 @@
   margin: 1rem 0;
 }
 
+.filtro-grupo--periodo {
+  grid-column: 1 / -1;
+}
+
 .filtro-grupo label {
   display: block;
   font-size: 0.85rem;
@@ -290,6 +303,16 @@
   font-size: 0.9rem;
 }
 
+.tabela-pendentes__th-checkbox {
+  width: 2.5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tabela-pendentes__th-checkbox input {
+  cursor: pointer;
+}
+
 .tabela-pendentes th,
 .tabela-pendentes td {
   padding: 0.5rem 0.75rem;
@@ -303,8 +326,16 @@
   color: var(--cor-texto, #2C3E50);
 }
 
+.tabela-pendentes tbody tr {
+  transition: background 0.15s ease;
+}
+
 .tabela-pendentes tbody tr:hover {
-  background: var(--cor-fundo-hover, #fafafa);
+  background: var(--cor-fundo-hover, #f0f7ff);
+}
+
+.tabela-pendentes tbody tr.tabela-pendentes__row--selected {
+  background: var(--cor-primaria-clara, rgba(33, 150, 243, 0.06));
 }
 
 .tabela-pendentes input[type="checkbox"] {

@@ -11,6 +11,7 @@ import Card, { CardContent } from '../../../components/shared/Card';
 import SectionHeader from '../../../components/shared/SectionHeader';
 import Button from '../../../components/shared/Button';
 import EmptyState from '../../../components/shared/EmptyState';
+import PeriodQuickFilter from '../../../components/shared/PeriodQuickFilter';
 import { formatDateBR } from '../../../utils/dateUtils';
 
 const formatarValor = (v) => {
@@ -46,28 +47,29 @@ const TabConfiguracao = () => {
           <CardContent>
             <SectionHeader title="Selecione o recebimento" icon={<FaReceipt size={18} />} />
             <p className="dica">Transações do tipo recebível que ainda não foram conciliadas.</p>
-            <div className="filtros-row">
-              <input
-                type="date"
-                className="input-field"
-                value={draftFiltrosRecebimentos?.dataInicio || ''}
-                onChange={(e) => setDraftFiltrosRecebimentos({ dataInicio: e.target.value })}
-                placeholder="Data início"
+            <div className="filtros-recebimentos">
+              <PeriodQuickFilter
+                dataInicio={draftFiltrosRecebimentos?.dataInicio || ''}
+                dataFim={draftFiltrosRecebimentos?.dataFim || ''}
+                onChange={(range) => {
+                  setDraftFiltrosRecebimentos(range);
+                }}
+                onPeriodSelect={({ dataInicio, dataFim }) => {
+                  if (dataInicio && dataFim) {
+                    applyFiltrosRecebimentos({ dataInicio, dataFim });
+                  }
+                }}
+                showCustomInputs={true}
               />
-              <input
-                type="date"
-                className="input-field"
-                value={draftFiltrosRecebimentos?.dataFim || ''}
-                onChange={(e) => setDraftFiltrosRecebimentos({ dataFim: e.target.value })}
-                placeholder="Data fim"
-              />
-              <Button
-                variant="primary"
-                onClick={applyFiltrosRecebimentos}
-                disabled={loadingRecebimentos}
-              >
-                {loadingRecebimentos ? 'Carregando...' : 'Filtrar'}
-              </Button>
+              <div className="filtros-row filtros-row--action">
+                <Button
+                  variant="primary"
+                  onClick={applyFiltrosRecebimentos}
+                  disabled={loadingRecebimentos}
+                >
+                  {loadingRecebimentos ? 'Carregando...' : 'Filtrar'}
+                </Button>
+              </div>
             </div>
             <div className="lista-recebimentos">
               {loadingRecebimentos ? (

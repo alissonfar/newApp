@@ -1,0 +1,32 @@
+/* BulkActionBar - Padrão Gmail/Notion/SaaS */
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--cor-primaria-clara, rgba(33, 150, 243, 0.12));
+  border: 1px solid var(--cor-primaria, #2196F3);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.bulk-action-bar__info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bulk-action-bar__count {
+  font-weight: 600;
+  color: var(--cor-primaria, #2196F3);
+  font-size: 0.95rem;
+}
+
+.bulk-action-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

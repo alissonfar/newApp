@@ -1,0 +1,38 @@
+/* PeriodQuickFilter - Reutilizado por Relatório e Recebimentos */
+.period-quick-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.period-quick-filter--compact .period-quick-filter__buttons {
+  flex-wrap: wrap;
+}
+
+.period-quick-filter__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.period-quick-filter__btn {
+  white-space: nowrap;
+}
+
+.period-quick-filter__btn .ds-button__icon,
+.period-quick-filter__btn svg {
+  margin-right: 0.25rem;
+}
+
+.period-quick-filter__inputs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.period-quick-filter__input {
+  flex: 1;
+  min-width: 140px;
+  max-width: 180px;
+}

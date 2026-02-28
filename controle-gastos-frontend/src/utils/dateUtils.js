@@ -42,4 +42,83 @@ export const getYesterdayBR = () => {
   const now = getCurrentDateBR();
   now.setDate(now.getDate() - 1);
   return now.toISOString().split('T')[0];
+};
+
+/**
+ * Períodos rápidos disponíveis (compatível com Relatório e Recebimentos)
+ */
+export const PERIODOS_RAPIDOS = {
+  MES_ATUAL: 'MES_ATUAL',
+  MES_ANTERIOR: 'MES_ANTERIOR',
+  ULTIMOS_7_DIAS: 'ULTIMOS_7_DIAS',
+  ULTIMOS_15_DIAS: 'ULTIMOS_15_DIAS',
+  ULTIMOS_30_DIAS: 'ULTIMOS_30_DIAS',
+  ULTIMOS_60_DIAS: 'ULTIMOS_60_DIAS',
+  ESTE_ANO: 'ESTE_ANO',
+  PERSONALIZADO: 'PERSONALIZADO'
+};
+
+/**
+ * Retorna { dataInicio, dataFim } em formato YYYY-MM-DD para um período rápido.
+ * Reutilizado por Relatório e Recebimentos - DRY obrigatório.
+ * @param {string} period - Uma das chaves de PERIODOS_RAPIDOS (exceto PERSONALIZADO)
+ * @returns {{ dataInicio: string, dataFim: string } | null}
+ */
+export const getDateRangeForPeriod = (period) => {
+  if (!period || period === PERIODOS_RAPIDOS.PERSONALIZADO) return null;
+
+  const now = getCurrentDateBR();
+  let start;
+  let end;
+
+  switch (period) {
+    case PERIODOS_RAPIDOS.MES_ATUAL:
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      break;
+    case PERIODOS_RAPIDOS.MES_ANTERIOR: {
+      const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      start = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1);
+      end = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0);
+      break;
+    }
+    case PERIODOS_RAPIDOS.ULTIMOS_7_DIAS:
+      end = new Date(now);
+      start = new Date(now);
+      start.setDate(start.getDate() - 7);
+      break;
+    case PERIODOS_RAPIDOS.ULTIMOS_15_DIAS:
+      end = new Date(now);
+      start = new Date(now);
+      start.setDate(start.getDate() - 15);
+      break;
+    case PERIODOS_RAPIDOS.ULTIMOS_30_DIAS:
+      end = new Date(now);
+      start = new Date(now);
+      start.setDate(start.getDate() - 30);
+      break;
+    case PERIODOS_RAPIDOS.ULTIMOS_60_DIAS:
+      end = new Date(now);
+      start = new Date(now);
+      start.setDate(start.getDate() - 60);
+      break;
+    case PERIODOS_RAPIDOS.ESTE_ANO:
+      start = new Date(now.getFullYear(), 0, 1);
+      end = new Date(now.getFullYear(), 11, 31);
+      break;
+    default:
+      return null;
+  }
+
+  const toStringDate = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  return {
+    dataInicio: toStringDate(start),
+    dataFim: toStringDate(end)
+  };
 }; 
