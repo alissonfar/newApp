@@ -153,7 +153,7 @@ const SubcontaForm = ({ subconta, instituicoes, instituicaoPadrao, onSalvar, onF
           </div>
           {erro && <p className="form-erro">{erro}</p>}
           <div className="form-actions">
-            <button type="button" onClick={onFechar}>Cancelar</button>
+            <button type="button" className="btn-cancelar" onClick={onFechar}>Cancelar</button>
             <button type="submit">Salvar</button>
           </div>
         </form>

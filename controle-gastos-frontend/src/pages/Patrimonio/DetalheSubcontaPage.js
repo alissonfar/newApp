@@ -15,6 +15,7 @@ import { FaArrowLeft, FaCheck, FaSpinner, FaExclamationTriangle } from 'react-ic
 import patrimonioApi from '../../services/patrimonioApi';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import '../../components/Patrimonio/PatrimonioForm.css';
 import './DetalheSubcontaPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -231,7 +232,7 @@ const DetalheSubcontaPage = () => {
               />
             </div>
             <div className="form-actions">
-              <button type="button" onClick={() => setModalConfirmar(false)}>Cancelar</button>
+              <button type="button" className="btn-cancelar" onClick={() => setModalConfirmar(false)}>Cancelar</button>
               <button onClick={handleConfirmarSaldo} disabled={confirmando}>
                 {confirmando ? <FaSpinner className="spinner-inline" /> : 'Confirmar'}
               </button>

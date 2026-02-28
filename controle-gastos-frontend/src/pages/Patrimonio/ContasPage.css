@@ -85,18 +85,36 @@
   gap: 0.25rem;
 }
 
-.btn-edit, .btn-excluir {
-  padding: 0.25rem 0.5rem;
+/* Botões Editar/Excluir - estilos escopados para evitar conflito com globais (TagManagement, etc.) */
+.contas-page .btn-editar,
+.contas-page .btn-excluir {
+  padding: 0.35rem 0.75rem;
   font-size: 0.8rem;
-  background: transparent;
-  border: 1px solid #ddd;
+  border: none;
   border-radius: 6px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: background-color 0.2s;
 }
 
-.btn-excluir {
-  color: #c62828;
-  border-color: #ef9a9a;
+.contas-page .btn-editar {
+  background-color: var(--cor-info);
+  color: white;
+}
+
+.contas-page .btn-editar:hover {
+  background-color: var(--cor-info-escura);
+}
+
+.contas-page .btn-excluir {
+  background-color: var(--cor-erro);
+  color: white;
+}
+
+.contas-page .btn-excluir:hover {
+  background-color: var(--cor-erro-escura);
 }
 
 .lista-subcontas {
@@ -161,16 +179,14 @@
 
 .subconta-actions {
   margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
-.subconta-actions button {
+.subconta-actions .btn-editar,
+.subconta-actions .btn-excluir {
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
-  margin-right: 0.5rem;
-  background: transparent;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
 .sem-subcontas {

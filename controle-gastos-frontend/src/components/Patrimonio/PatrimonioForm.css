@@ -67,9 +67,17 @@
   font-size: 0.95rem;
 }
 
-.patrimonio-modal .form-actions button[type="button"] {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
+.patrimonio-modal .form-actions button[type="button"],
+.patrimonio-modal .form-actions .btn-cancelar {
+  background-color: #f5f5f5;
+  color: var(--cor-texto, #212529);
+  border: 1px solid var(--cor-borda, #ddd);
+}
+
+.patrimonio-modal .form-actions button[type="button"]:hover,
+.patrimonio-modal .form-actions .btn-cancelar:hover {
+  background-color: #e8e8e8;
+  border-color: #ccc;
 }
 
 .patrimonio-modal .form-actions button[type="submit"] {

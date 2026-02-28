@@ -149,7 +149,7 @@ const ContasPage = () => {
                   <FaPlus /> Subconta
                 </button>
                 <button
-                  className="btn-edit"
+                  className="btn-editar"
                   onClick={() => { setEditandoInstituicao(instituicao); setModalInstituicao(true); }}
                 >
                   Editar
@@ -186,10 +186,18 @@ const ContasPage = () => {
                       </div>
                     )}
                     <div className="subconta-actions">
-                      <button onClick={() => { setEditandoSubconta(sc); setInstituicaoSelecionada(sc.instituicao); setModalSubconta(true); }}>
+                      <button
+                        className="btn-editar"
+                        onClick={() => { setEditandoSubconta(sc); setInstituicaoSelecionada(sc.instituicao); setModalSubconta(true); }}
+                      >
                         Editar
                       </button>
-                      <button onClick={() => handleExcluirSubconta(sc._id)}>Excluir</button>
+                      <button
+                        className="btn-excluir"
+                        onClick={() => handleExcluirSubconta(sc._id)}
+                      >
+                        Excluir
+                      </button>
                     </div>
                   </li>
                 ))

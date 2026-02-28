@@ -11,7 +11,7 @@
 | **Nome** | Sistema de Controle de Gastos |
 | **Objetivo principal** | Gerenciamento de transações financeiras pessoais e compartilhadas, com suporte a múltiplos participantes por transação e um proprietário definido. |
 | **Público-alvo** | Usuários que precisam controlar gastos e recebíveis, com divisão por pessoa (participantes) e filtro por proprietário. |
-| **Problema que resolve** | Centralização e organização de transações financeiras, conciliação de recebimentos com gastos, importação em massa, relatórios customizáveis e controle de parcelamentos. |
+| **Problema que resolve** | Centralização e organização de transações financeiras, conciliação de recebimentos com gastos, importação em massa, relatórios customizáveis, controle de parcelamentos e gestão de patrimônio (contas bancárias, subcontas, evolução e rendimentos). |
 
 ---
 
@@ -53,6 +53,7 @@
 ### Integrações externas
 - **Email**: Nodemailer (Gmail) para verificação de email, redefinição de senha e testes
 - **MongoDB**: Conexão via `DB_URI`
+- **Taxa CDI**: API BCB (api.bcb.gov.br) para obter taxas CDI diária/mensal/anual (cálculo de rendimento estimado)
 - **Não informado**: APIs de terceiros para bancos, Open Banking, etc.
 
 ---
@@ -107,6 +108,17 @@
 - **Fluxos**: Gerar backup (mongodump ou lógico); Restaurar; Listar usuários; Ações em usuários
 - **Dependências**: Usuario, Backup, todos os modelos para restore
 
+### Módulo de Patrimônio
+- **Responsabilidade**: Gestão de instituições financeiras (bancos, corretoras, carteiras), subcontas (contas dentro de instituições), histórico de saldo, confirmação de saldo, evolução patrimonial e rendimento estimado (CDI).
+- **Entidades**: Instituicao, Subconta, HistoricoSaldo, TaxaCDI
+- **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB)
+- **Dependências**: Usuario; Transacao (vinculação opcional via `subconta`); TaxaCDI (coleção global, não por usuário)
+
+### Módulo de Insights
+- **Responsabilidade**: Placeholder para funcionalidade futura (análises, tendências).
+- **Estado**: Em desenvolvimento (página vazia com mensagem "Esta funcionalidade está em desenvolvimento").
+- **Dependências**: Nenhuma (ainda)
+
 ### Módulo de Email
 - **Responsabilidade**: Envio de emails (teste, verificação, redefinição de senha).
 - **Fluxos**: Teste de conexão; Envio de templates
@@ -121,7 +133,7 @@
 | Entidade | Descrição |
 |----------|-----------|
 | **Usuario** | nome, email, senha (hash), emailVerificado, tokens de verificação/redefinição, preferencias (tema, proprietario, moedaPadrao, notificacoes), role (admin/pro/comum), status (ativo/inativo/bloqueado) |
-| **Transacao** | tipo (gasto/recebivel), descricao, valor, data, observacao, pagamentos[], status (ativo/estornado), usuario, deduplicationKey, campos de parcelamento, settlementAsSource, settlementLeftoverFrom |
+| **Transacao** | tipo (gasto/recebivel), descricao, valor, data, observacao, pagamentos[], status (ativo/estornado), usuario, deduplicationKey, campos de parcelamento, settlementAsSource, settlementLeftoverFrom, subconta (opcional, ref Subconta) |
 | **Pagamento** | pessoa, valor, tags (objeto { categoriaId: [tagIds] }) |
 | **Categoria** | codigo, nome, descricao, cor, icone, ativo, usuario |
 | **Tag** | codigo, nome, descricao, categoria (string), cor, icone, ativo, usuario |
@@ -130,17 +142,24 @@
 | **Settlement** | usuario, receivingTransactionId, appliedTransactions[], tagId, totalApplied, leftoverAmount, leftoverTransactionId |
 | **ModeloRelatorio** | nome, descricao, aggregation (default/devedor), regras (tag + effect), usuario, ativo |
 | **Backup** | filename, size, type (mongodump/logical), operation, createdBy, status, errorMessage |
+| **Instituicao** | usuario, nome, tipo (banco_digital/banco_tradicional/carteira_digital/corretora), cor, icone, ativo |
+| **Subconta** | usuario, instituicao, nome, tipo (corrente/rendimento_automatico/caixinha/investimento_fixo), proposito (disponivel/reserva_emergencia/objetivo/guardado), rendimento (percentualCDI), saldoAtual, dataUltimaConfirmacao, meta, ativo |
+| **HistoricoSaldo** | usuario, subconta, saldo, data, origem (manual/importacao_ofx/importacao_csv), observacao |
+| **TaxaCDI** | data (unique), taxaDiaria, taxaMensal, taxaAnual, fonte (api.bcb.gov.br) — coleção global, não por usuário |
 
 ### Relacionamentos
-- Usuario 1:N Transacao, Categoria, Tag, Importacao, TransacaoImportada, Settlement, ModeloRelatorio
-- Transacao N:1 Usuario; N:1 Settlement (via settlementAsSource); 1:1 Transacao (sobra via settlementLeftoverFrom)
+- Usuario 1:N Transacao, Categoria, Tag, Importacao, TransacaoImportada, Settlement, ModeloRelatorio, Instituicao, Subconta, HistoricoSaldo
+- Transacao N:1 Usuario; N:1 Settlement (via settlementAsSource); 1:1 Transacao (sobra via settlementLeftoverFrom); N:1 Subconta (opcional)
 - Tag N:1 Categoria (por string `categoria`)
 - Importacao 1:N TransacaoImportada
-- TransacaoImportada N:1 Importacao; N:1 Transacao (transacaoCriada)
+- TransacaoImportada N:1 Importacao; N:1 Transacao (transacaoCriada); N:1 Subconta (opcional)
 - Settlement N:1 Transacao (receivingTransactionId); N:1 Tag; N:1 Transacao (leftoverTransactionId)
+- Instituicao N:1 Usuario
+- Subconta N:1 Usuario; N:1 Instituicao
+- HistoricoSaldo N:1 Usuario; N:1 Subconta
 
 ### Entidade central
-**Transacao** — núcleo do sistema; todas as funcionalidades principais orbitam em torno dela (importação gera transações, settlement altera tags em transações, relatórios agregam transações).
+**Transacao** — núcleo do sistema; todas as funcionalidades principais orbitam em torno dela (importação gera transações, settlement altera tags em transações, relatórios agregam transações, patrimônio pode vincular transações a subcontas).
 
 ### Regras de integridade
 - Soma dos `pagamentos[].valor` deve ser igual ao `valor` da transação (validação implícita no fluxo)
@@ -149,6 +168,8 @@
 - Categoria: `(nome, usuario)` único
 - Tag: `(nome, usuario)` único
 - TransacaoImportada: valor não pode ser negativo (pre-save)
+- Instituicao: `(nome, usuario)` único
+- Subconta: `(nome, instituicao, usuario)` único; exclusão é soft delete (ativo=false)
 
 ### Estados das entidades principais
 
@@ -164,6 +185,12 @@
 **Usuario**
 - `ativo` | `inativo` | `bloqueado`
 
+**Instituicao / Subconta**
+- `ativo` | `inativo` (soft delete)
+
+**HistoricoSaldo (origem)**
+- `manual` | `importacao_ofx` | `importacao_csv`
+
 ---
 
 ## 5️⃣ Regras de Negócio Importantes
@@ -174,10 +201,11 @@
 - Settlement: total aplicado ≤ valor do recebimento
 - Importação: apenas CSV/JSON; limite 10MB
 - Parcelamento: ≥ 2 parcelas; intervalo ≥ 1 dia
+- Patrimônio: Instituição (nome, usuario) único; Subconta (nome, instituicao, usuario) único; subconta deve pertencer ao usuário para vincular em transação
 
 ### Processos com múltiplos estados
 - **Importação**: pendente → processando → validado/erro → finalizada/estornada
-- **TransacaoImportada**: pendente → revisada → validada/erro/ignorada → processada/ja_importada/estornada
+- **TransacaoImportada**: pendente → revisada → validada/erro/ignorada → processada/ja_importada/estornada; suporta campo `subconta` opcional; na finalização da importação, pode-se enviar `subcontaId` e `saldo` para atualizar saldo da subconta e criar HistoricoSaldo
 
 ### Regras de consistência
 - Deduplicação: `deduplicationKey` (SHA256 de usuarioId|descricao|valor|data|tipo|identificador) evita duplicatas na importação
@@ -192,6 +220,7 @@
 - Transações estornadas não entram em cálculos
 - Settlement: sobra vira nova transação recebível
 - Relatório devedor: totalBruto - totalPago = totalDevido
+- Patrimônio: saldo consolidado = soma de saldoAtual das subcontas ativas; rendimento estimado mensal = soma de (saldo × taxaDiaria × percentualCDI) × 30 por subconta; subconta desatualizada = sem confirmação por 7+ dias
 
 ---
 
@@ -243,7 +272,17 @@
 2. Categorias e tags carregadas via DataContext (obterCategorias, obterTags)
 3. Tags usadas em pagamentos (estrutura `pagamentos[].tags = { categoriaId: [tagIds] }`)
 
-### Fluxo 7: Administração (admin)
+### Fluxo 7: Patrimônio
+1. Acessar `/patrimonio` → resumo (total geral, rendimento estimado, por instituição, por propósito)
+2. Alertas de subcontas desatualizadas (7+ dias sem confirmação)
+3. Clicar em "Gerenciar Contas" → `/patrimonio/contas`
+4. Criar instituição (modal) → criar subcontas por instituição
+5. Clicar em subconta → `/patrimonio/contas/:subcontaId` (detalhe: saldo, histórico, gráfico, transações vinculadas, confirmar saldo)
+6. Confirmar saldo → cria HistoricoSaldo (origem: manual); atualiza saldoAtual e dataUltimaConfirmacao
+7. Ver evolução → `/patrimonio/evolucao` (gráfico de evolução patrimonial por período)
+8. Transações podem ser vinculadas a subconta (campo opcional na criação/edição)
+
+### Fluxo 8: Administração (admin)
 1. Acessar `/admin` (requer role admin)
 2. Gerar/restaurar backup
 3. Listar usuários, ver detalhes, resetar senha, verificar email, alterar role/status
@@ -257,6 +296,7 @@
 - **Settlement**: Lógica transacional; aplicação/remoção de tags em pagamentos; criação de sobra
 - **Report Engine**: Flatten de pagamentos, regras por tag (add/subtract/ignore), agregações (default/devedor)
 - **Parcelamento**: Preview vs persistência; expansão na importação (1 linha → N transações)
+- **Patrimônio**: Evolução baseada em HistoricoSaldo (último saldo conhecido por subconta por data); TaxaCDI externa (BCB); rendimento estimado por percentualCDI
 
 ### Riscos técnicos
 - Processamento de importação assíncrono sem fila: falha silenciosa se processo morrer
@@ -289,11 +329,13 @@
 - Backup/restore (admin)
 - Gerenciamento de usuários (admin)
 - Responsividade
+- **Módulo de Patrimônio**: CRUD instituições e subcontas, resumo (total, por instituição, por propósito), evolução patrimonial, histórico de saldo, confirmação de saldo, rendimento estimado (CDI), vinculação de transações a subcontas, alertas de subcontas desatualizadas
 
 ### Parcialmente implementado
 - Export PDF de relatórios (frontend; backend retorna JSON)
 - Modelos de relatório (CRUD existe; integração com report engine)
 - PWA (apenas manifest; sem Service Worker)
+- Patrimônio: HistoricoSaldo suporta origem `importacao_ofx` e `importacao_csv`, mas importação OFX/CSV para histórico não está implementada (apenas manual)
 
 ### Planejado mas não implementado
 - **Não informado** explicitamente no código
@@ -309,6 +351,7 @@
 - Settlement com transações MongoDB
 - Report engine extensível (templates + modelos)
 - Suporte a parcelamento na criação e na importação
+- Módulo Patrimônio bem integrado: instituições → subcontas → histórico; vinculação opcional de transações; TaxaCDI externa para rendimento estimado
 
 ### Pontos de melhoria
 - Substituir processamento assíncrono de importação por fila (Bull, Agenda, etc.)
@@ -329,4 +372,4 @@
 
 ---
 
-*Documento gerado com base na análise do código-fonte. Última atualização: fevereiro/2025.*
+*Documento gerado com base na análise do código-fonte. Última atualização: fevereiro/2025 (incluído módulo Patrimônio).*
