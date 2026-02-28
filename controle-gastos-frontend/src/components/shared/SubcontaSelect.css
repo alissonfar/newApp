@@ -1,0 +1,12 @@
+.subconta-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subconta-select-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

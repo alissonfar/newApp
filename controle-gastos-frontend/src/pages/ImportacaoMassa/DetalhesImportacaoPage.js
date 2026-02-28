@@ -5,6 +5,7 @@ import { FaSpinner, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRigh
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
 import patrimonioApi from '../../services/patrimonioApi';
+import SubcontaSelect from '../../components/shared/SubcontaSelect';
 import { useData } from '../../context/DataContext';
 import { obterCategorias } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
@@ -848,17 +849,13 @@ const DetalhesImportacaoPage = () => {
                         <p>Deseja atualizar o saldo de alguma subconta com base nesta importação?</p>
                         <div className="form-group">
                             <label>Subconta</label>
-                            <select
+                            <SubcontaSelect
+                                subcontas={subcontas}
                                 value={saldoSubcontaId}
-                                onChange={e => setSaldoSubcontaId(e.target.value)}
-                            >
-                                <option value="">Selecione...</option>
-                                {subcontas.map(sc => (
-                                    <option key={sc._id} value={sc._id}>
-                                        {sc.instituicao?.nome || ''} - {sc.nome}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={setSaldoSubcontaId}
+                                placeholder="Selecione..."
+                                allowEmpty
+                            />
                         </div>
                         <div className="form-group">
                             <label>Saldo</label>

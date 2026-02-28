@@ -31,7 +31,7 @@ exports.upload = async (req, res) => {
     }
 
     const populated = await ImportacaoOFX.findById(importacao._id)
-      .populate('subconta', 'nome instituicao');
+      .populate({ path: 'subconta', select: 'nome instituicao', populate: { path: 'instituicao' } });
     return res.status(201).json(populated);
   } catch (erro) {
     if (req.file?.path) {
@@ -50,7 +50,7 @@ exports.upload = async (req, res) => {
 exports.listar = async (req, res) => {
   try {
     const importacoes = await ImportacaoOFX.find({ usuario: req.userId })
-      .populate('subconta', 'nome instituicao')
+      .populate({ path: 'subconta', select: 'nome instituicao', populate: { path: 'instituicao' } })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -67,7 +67,7 @@ exports.obterDetalhes = async (req, res) => {
       _id: req.params.id,
       usuario: req.userId
     })
-      .populate('subconta', 'nome instituicao tipo')
+      .populate({ path: 'subconta', select: 'nome instituicao tipo', populate: { path: 'instituicao' } })
       .lean();
 
     if (!importacao) {

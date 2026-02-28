@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../shared/Button';
+import InstituicaoSelect from '../shared/InstituicaoSelect';
 import './PatrimonioForm.css';
 
 const TIPOS = [
@@ -82,16 +83,14 @@ const SubcontaForm = ({ subconta, instituicoes, instituicaoPadrao, onSalvar, onF
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Instituição</label>
-            <select
+            <InstituicaoSelect
+              instituicoes={instituicoes || []}
               value={instituicao}
-              onChange={(e) => setInstituicao(e.target.value)}
+              onChange={setInstituicao}
+              placeholder="Selecione..."
+              allowEmpty
               disabled={!!instituicaoPadrao && !subconta}
-            >
-              <option value="">Selecione...</option>
-              {instituicoes?.map((i) => (
-                <option key={i._id} value={i._id}>{i.nome}</option>
-              ))}
-            </select>
+            />
           </div>
           <div className="form-group">
             <label>Nome</label>

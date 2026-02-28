@@ -9,6 +9,7 @@ import { criarTransacao, atualizarTransacao, obterPreviewParcelas } from '../../
 import { useData } from '../../context/DataContext';
 import patrimonioApi from '../../services/patrimonioApi';
 import IconRenderer from '../shared/IconRenderer';
+import SubcontaSelect from '../shared/SubcontaSelect';
 import './NovaTransacaoForm.css';
 import { getTodayBR, getYesterdayBR, toISOStringBR, formatDateBR } from '../../utils/dateUtils';
 
@@ -649,18 +650,15 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
             {subcontas.length > 0 && (
               <div className="form-section">
                 <label>Subconta (opcional):</label>
-                <select
+                <SubcontaSelect
+                  subcontas={subcontas}
                   value={subconta}
-                  onChange={e => setSubconta(e.target.value)}
+                  onChange={setSubconta}
+                  placeholder="Nenhuma"
+                  allowEmpty
+                  className="subconta-select-nova-transacao"
                   tabIndex={91}
-                >
-                  <option value="">Nenhuma</option>
-                  {subcontas.map((sc) => (
-                    <option key={sc._id} value={sc._id}>
-                      {sc.instituicao?.nome || 'Inst'} - {sc.nome}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             )}
           </div>

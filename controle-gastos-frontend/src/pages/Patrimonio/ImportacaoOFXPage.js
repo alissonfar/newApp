@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaUpload, FaSpinner, FaChevronRight, FaFileAlt } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
+import SubcontaSelect from '../../components/shared/SubcontaSelect';
 import './ImportacaoOFXPage.css';
 
 const ImportacaoOFXPage = () => {
@@ -73,18 +74,13 @@ const ImportacaoOFXPage = () => {
         <form onSubmit={handleUpload} className="upload-form">
           <div className="form-row">
             <label>Subconta</label>
-            <select
+            <SubcontaSelect
+              subcontas={subcontas}
               value={subcontaId}
-              onChange={(e) => setSubcontaId(e.target.value)}
-              required
-            >
-              <option value="">Selecione a subconta</option>
-              {subcontas.map((sc) => (
-                <option key={sc._id} value={sc._id}>
-                  {sc.instituicao?.nome || 'Inst'} - {sc.nome}
-                </option>
-              ))}
-            </select>
+              onChange={setSubcontaId}
+              placeholder="Selecione a subconta"
+              filterTipos={['corrente', 'rendimento_automatico']}
+            />
           </div>
           <div className="form-row">
             <label>Arquivo OFX</label>
@@ -110,7 +106,13 @@ const ImportacaoOFXPage = () => {
         ) : (
           <ul className="lista-importacoes">
             {importacoes.map((imp) => (
-              <li key={imp._id} onClick={() => navigate(`/patrimonio/importacoes-ofx/${imp._id}`)}>
+              <li
+                key={imp._id}
+                onClick={() => navigate(`/patrimonio/importacoes-ofx/${imp._id}`)}
+                style={{
+                  borderLeft: `4px solid ${imp.subconta?.instituicao?.cor || 'var(--cor-primaria)'}`
+                }}
+              >
                 <div className="item-info">
                   <FaFileAlt />
                   <div>

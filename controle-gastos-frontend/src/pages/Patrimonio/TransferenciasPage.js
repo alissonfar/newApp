@@ -5,14 +5,8 @@ import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import SubcontaSelect from '../../components/shared/SubcontaSelect';
 import './TransferenciasPage.css';
-
-const TIPOS_LABEL = {
-  corrente: 'Conta Corrente',
-  rendimento_automatico: 'Rendimento Automático',
-  caixinha: 'Caixinha',
-  investimento_fixo: 'Investimento Fixo'
-};
 
 const TransferenciasPage = () => {
   const navigate = useNavigate();
@@ -51,12 +45,6 @@ const TransferenciasPage = () => {
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
-
-  const labelSubconta = (sc) => {
-    const inst = sc.instituicao?.nome || 'Inst';
-    const tipo = TIPOS_LABEL[sc.tipo] || sc.tipo;
-    return `${inst} - ${sc.nome} (${tipo})`;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -108,29 +96,23 @@ const TransferenciasPage = () => {
         <form onSubmit={handleSubmit} className="transferencia-form">
           <div className="form-row">
             <label>De (origem)</label>
-            <select
+            <SubcontaSelect
+              subcontas={subcontas}
               value={form.subcontaOrigemId}
-              onChange={(e) => setForm({ ...form, subcontaOrigemId: e.target.value })}
-              required
-            >
-              <option value="">Selecione a conta de origem</option>
-              {subcontas.map((sc) => (
-                <option key={sc._id} value={sc._id}>{labelSubconta(sc)}</option>
-              ))}
-            </select>
+              onChange={(v) => setForm({ ...form, subcontaOrigemId: v })}
+              placeholder="Selecione a conta de origem"
+              showTipo
+            />
           </div>
           <div className="form-row">
             <label>Para (destino)</label>
-            <select
+            <SubcontaSelect
+              subcontas={subcontas}
               value={form.subcontaDestinoId}
-              onChange={(e) => setForm({ ...form, subcontaDestinoId: e.target.value })}
-              required
-            >
-              <option value="">Selecione a conta de destino</option>
-              {subcontas.map((sc) => (
-                <option key={sc._id} value={sc._id}>{labelSubconta(sc)}</option>
-              ))}
-            </select>
+              onChange={(v) => setForm({ ...form, subcontaDestinoId: v })}
+              placeholder="Selecione a conta de destino"
+              showTipo
+            />
           </div>
           <div className="form-row-duo">
             <div className="form-row">
