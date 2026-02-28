@@ -150,10 +150,10 @@ const importacaoService = {
     }
   },
 
-  // Finalizar importação
-  finalizarImportacao: async (importacaoId) => {
+  // Finalizar importação (opcional: { subcontaId, saldo } para atualizar saldo de subconta)
+  finalizarImportacao: async (importacaoId, opts = {}) => {
     try {
-      const response = await api.put(`/importacoes/${importacaoId}/finalizar`);
+      const response = await api.put(`/importacoes/${importacaoId}/finalizar`, opts);
       return response.data;
     } catch (error) {
       throw new Error('Erro ao finalizar importação: ' + error.message);

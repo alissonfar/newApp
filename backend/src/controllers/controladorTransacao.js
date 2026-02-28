@@ -1,5 +1,6 @@
 // src/controllers/controladorTransacao.js
 const Transacao = require('../models/transacao');
+const Subconta = require('../models/subconta');
 const mongoose = require('mongoose');
 
 function buildMatchStage(req) {
@@ -61,6 +62,10 @@ function buildMatchStage(req) {
     ];
   }
 
+  if (req.query.subconta && mongoose.Types.ObjectId.isValid(req.query.subconta)) {
+    match.subconta = new mongoose.Types.ObjectId(req.query.subconta);
+  }
+
   return match;
 }
 
@@ -81,6 +86,9 @@ exports.obterTodasTransacoes = async (req, res) => {
       const filtros = { status: 'ativo', usuario: req.userId };
       if (req.query.proprietario) {
         filtros['pagamentos.pessoa'] = new RegExp('^' + req.query.proprietario + '$', 'i');
+      }
+      if (req.query.subconta && mongoose.Types.ObjectId.isValid(req.query.subconta)) {
+        filtros.subconta = new mongoose.Types.ObjectId(req.query.subconta);
       }
       const transacoes = await Transacao.find(filtros);
       return res.json({ transacoes });
@@ -277,9 +285,16 @@ exports.previewParcelas = async (req, res) => {
 };
 
 exports.criarTransacao = async (req, res) => {
-  const { tipo, descricao, valor, data, pagamentos, observacao, isInstallment, totalInstallments, installmentIntervalDays, installmentIntervalMonths } = req.body;
+  const { tipo, descricao, valor, data, pagamentos, observacao, isInstallment, totalInstallments, installmentIntervalDays, installmentIntervalMonths, subconta } = req.body;
   if (!tipo || !descricao || !valor || !data || !pagamentos) {
     return res.status(400).json({ erro: 'Os campos obrigatórios são: tipo, descricao, valor, data e pagamentos.' });
+  }
+  let subcontaId = subconta || null;
+  if (subcontaId && mongoose.Types.ObjectId.isValid(subcontaId)) {
+    const sub = await Subconta.findOne({ _id: subcontaId, usuario: req.userId, ativo: true });
+    if (!sub) subcontaId = null;
+  } else {
+    subcontaId = null;
   }
 
   const numParcelas = parseInt(totalInstallments, 10) || 1;
@@ -299,7 +314,8 @@ exports.criarTransacao = async (req, res) => {
         data,
         pagamentos,
         observacao,
-        usuario: req.userId
+        usuario: req.userId,
+        subconta: subcontaId
       });
       await novaTransacao.save();
       return res.status(201).json(novaTransacao);
@@ -344,6 +360,7 @@ exports.criarTransacao = async (req, res) => {
           pagamentos: [{ pessoa: pessoaBase, valor: p.value, tags: tagsBase }],
           observacao: observacao || '',
           usuario: req.userId,
+          subconta: subcontaId,
           isInstallment: true,
           installmentGroupId,
           installmentNumber: p.installmentNumber,
@@ -382,6 +399,14 @@ exports.atualizarTransacao = async (req, res) => {
     transacao.data = req.body.data || transacao.data;
     transacao.pagamentos = req.body.pagamentos || transacao.pagamentos;
     transacao.observacao = req.body.observacao !== undefined ? req.body.observacao : transacao.observacao;
+    if (req.body.subconta !== undefined) {
+      if (req.body.subconta && mongoose.Types.ObjectId.isValid(req.body.subconta)) {
+        const sub = await Subconta.findOne({ _id: req.body.subconta, usuario: req.userId, ativo: true });
+        transacao.subconta = sub ? req.body.subconta : transacao.subconta;
+      } else {
+        transacao.subconta = null;
+      }
+    }
     await transacao.save();
     res.json(transacao);
   } catch (error) {

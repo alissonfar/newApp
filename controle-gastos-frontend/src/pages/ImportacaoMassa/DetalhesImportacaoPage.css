@@ -371,6 +371,53 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.modal-atualizar-saldo {
+  max-width: 420px;
+}
+
+.modal-atualizar-saldo .form-group {
+  margin-bottom: 1rem;
+}
+
+.modal-atualizar-saldo .form-group label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.modal-atualizar-saldo .form-group select,
+.modal-atualizar-saldo .form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.modal-actions .btn-confirmar {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modal-actions .btn-confirmar:hover:not(:disabled) {
+  background: #43a047;
+}
+
+.modal-actions .btn-confirmar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Melhorias nos status */
 .status-badge {
   display: inline-flex;

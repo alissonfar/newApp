@@ -39,6 +39,10 @@ const adminRoutes = require('./routes/adminRoutes');
 const rotasRelatorio = require('./routes/rotasRelatorio');
 const rotasModeloRelatorio = require('./routes/rotasModeloRelatorio');
 const rotasSettlement = require('./routes/rotasSettlement');
+const rotasTaxaCDI = require('./routes/rotasTaxaCDI');
+const rotasInstituicao = require('./routes/rotasInstituicao');
+const rotasSubconta = require('./routes/rotasSubconta');
+const rotasPatrimonio = require('./routes/rotasPatrimonio');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
@@ -51,6 +55,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/reports', rotasRelatorio);
 app.use('/api/modelos-relatorio', rotasModeloRelatorio);
 app.use('/api/settlements', rotasSettlement);
+app.use('/api/taxa-cdi', rotasTaxaCDI);
+app.use('/api/instituicoes', rotasInstituicao);
+app.use('/api/subcontas', rotasSubconta);
+app.use('/api/patrimonio', rotasPatrimonio);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {

@@ -1,0 +1,169 @@
+.detalhe-subconta-page {
+  padding: 1.5rem 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+  background: #f5f7fa;
+  min-height: 100vh;
+}
+
+.detalhe-header {
+  margin-bottom: 1.5rem;
+}
+
+.btn-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  color: #2196f3;
+  cursor: pointer;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.btn-voltar:hover {
+  text-decoration: underline;
+}
+
+.detalhe-header h1 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+}
+
+.detalhe-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.detalhe-card {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.detalhe-card h3 {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.detalhe-card .valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.data-confirmacao, .badge-estimativa {
+  font-size: 0.8rem;
+  color: #888;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.detalhe-section {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 1rem;
+}
+
+.detalhe-section h3 {
+  font-size: 1rem;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h3 {
+  margin-bottom: 0;
+}
+
+.btn-confirmar {
+  padding: 0.5rem 1rem;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-confirmar:hover {
+  background: #43a047;
+}
+
+.grafico-container {
+  height: 200px;
+  margin-bottom: 1rem;
+}
+
+.tabela-historico {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabela-historico th,
+.tabela-historico td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.tabela-historico th {
+  font-weight: 600;
+  color: #555;
+}
+
+.lista-transacoes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista-transacoes li {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.lista-transacoes .positivo { color: #2e7d32; }
+.lista-transacoes .negativo { color: #c62828; }
+
+.sem-dados {
+  color: #888;
+  font-style: italic;
+}
+
+.detalhe-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1rem;
+  color: #666;
+}
+
+.spinner-inline {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

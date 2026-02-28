@@ -74,7 +74,8 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Usuario', 
     required: true 
-  }
+  },
+  subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: false, default: null }
 }, { 
   timestamps: true,
   toJSON: { 
@@ -101,6 +102,7 @@ TransacaoImportadaSchema.methods.paraTransacao = function() {
     observacao: this.observacao || '',
     pagamentos,
     usuario: this.usuario,
+    subconta: this.subconta || undefined,
     deduplicationKey: this.deduplicationKey || undefined,
     isInstallment: this.isInstallment || false,
     installmentGroupId: this.installmentGroupId || undefined,

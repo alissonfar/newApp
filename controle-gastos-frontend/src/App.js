@@ -23,6 +23,10 @@ import EmailNaoVerificado from './pages/EmailNaoVerificado/EmailNaoVerificado';
 import EsqueciSenha from './pages/EsqueciSenha/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha/RedefinirSenha';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import PatrimonioPage from './pages/Patrimonio/PatrimonioPage';
+import ContasPage from './pages/Patrimonio/ContasPage';
+import DetalheSubcontaPage from './pages/Patrimonio/DetalheSubcontaPage';
+import EvolucaoPage from './pages/Patrimonio/EvolucaoPage';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -117,6 +121,46 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <Tags />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <PatrimonioPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/contas"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <ContasPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/contas/:subcontaId"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <DetalheSubcontaPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/evolucao"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <EvolucaoPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

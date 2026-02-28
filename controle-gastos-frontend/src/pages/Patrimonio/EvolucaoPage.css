@@ -1,0 +1,80 @@
+.evolucao-page {
+  padding: 1.5rem 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+  background: #f5f7fa;
+  min-height: 100vh;
+}
+
+.evolucao-header {
+  margin-bottom: 1.5rem;
+}
+
+.btn-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  color: #2196f3;
+  cursor: pointer;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.btn-voltar:hover {
+  text-decoration: underline;
+}
+
+.evolucao-header h1 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+}
+
+.evolucao-filtros {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.filtro-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filtro-group label {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.filtro-group input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.evolucao-grafico {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  height: 350px;
+}
+
+.evolucao-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1rem;
+  color: #666;
+}
+
+.sem-dados {
+  color: #888;
+  text-align: center;
+  padding: 2rem;
+}

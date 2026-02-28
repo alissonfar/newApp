@@ -5,6 +5,8 @@ const Importacao = require('../models/importacao');
 const TransacaoImportada = require('../models/transacaoImportada');
 const ImportacaoService = require('../services/importacaoService');
 const Transacao = require('../models/transacao');
+const Subconta = require('../models/subconta');
+const HistoricoSaldo = require('../models/historicoSaldo');
 const installmentUtils = require('../utils/installmentUtils');
 
 class ImportacaoController {
@@ -290,6 +292,7 @@ class ImportacaoController {
                     observacao: ti.observacao || `Importado via importação #${ti.importacao}`,
                     pagamentos,
                     usuario: ti.usuario,
+                    subconta: ti.subconta || null,
                     deduplicationKey: dedupKeyOverride != null ? dedupKeyOverride : (ti.deduplicationKey || null),
                     isInstallment: !!installmentGroupId,
                     installmentGroupId: installmentGroupId || null,
@@ -379,6 +382,29 @@ class ImportacaoController {
                 throw err;
             } finally {
                 session.endSession();
+            }
+
+            // Opcional: atualizar saldo de subconta se subcontaId e saldo forem enviados
+            const { subcontaId, saldo } = req.body || {};
+            if (subcontaId && saldo != null && !isNaN(parseFloat(saldo))) {
+                try {
+                    const subconta = await Subconta.findOne({ _id: subcontaId, usuario: req.userId });
+                    if (subconta) {
+                        subconta.saldoAtual = parseFloat(saldo);
+                        subconta.dataUltimaConfirmacao = new Date();
+                        await subconta.save();
+                        await HistoricoSaldo.create({
+                            usuario: req.userId,
+                            subconta: subconta._id,
+                            saldo: parseFloat(saldo),
+                            data: new Date(),
+                            origem: 'importacao_csv',
+                            observacao: `Importação #${importacao._id}`
+                        });
+                    }
+                } catch (errSaldo) {
+                    console.warn('[ImportacaoController] Erro ao atualizar saldo pós-importação:', errSaldo);
+                }
             }
 
             res.json({ 

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { FaSpinner, FaExclamationTriangle, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import importacaoService from '../../services/importacaoService';
+import patrimonioApi from '../../services/patrimonioApi';
 import { useData } from '../../context/DataContext';
 import { obterCategorias } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
@@ -27,6 +28,11 @@ const DetalhesImportacaoPage = () => {
     const [abaAtiva, setAbaAtiva] = useState('novas'); // 'novas' | 'ja_importadas' | 'ignoradas'
     const [selecionados, setSelecionados] = useState(new Set());
     const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
+    const [modalAtualizarSaldo, setModalAtualizarSaldo] = useState(false);
+    const [subcontas, setSubcontas] = useState([]);
+    const [saldoSubcontaId, setSaldoSubcontaId] = useState('');
+    const [saldoSubcontaValor, setSaldoSubcontaValor] = useState('');
+    const [atualizandoSaldo, setAtualizandoSaldo] = useState(false);
 
     // Obter tags do contexto; categorias (incluindo inativas) para exibir nomes no histórico
     const { tags: allTags = [] } = useData();
@@ -354,9 +360,38 @@ const DetalhesImportacaoPage = () => {
             await importacaoService.finalizarImportacao(id);
             toast.success('Importação finalizada com sucesso!');
             await carregarDetalhes();
+            const subcontasList = await patrimonioApi.listarSubcontas().catch(() => []);
+            setSubcontas(subcontasList);
+            if (subcontasList.length > 0) {
+                setModalAtualizarSaldo(true);
+                setSaldoSubcontaId('');
+                setSaldoSubcontaValor('');
+            }
         } catch (error) {
             console.error('Erro ao finalizar importação:', error);
             toast.error(error.message || 'Erro ao finalizar importação');
+        }
+    };
+
+    const handleConfirmarAtualizarSaldo = async () => {
+        const valor = parseFloat(saldoSubcontaValor);
+        if (!saldoSubcontaId || isNaN(valor)) {
+            toast.error('Selecione uma subconta e informe o saldo.');
+            return;
+        }
+        try {
+            setAtualizandoSaldo(true);
+            await patrimonioApi.confirmarSaldo(saldoSubcontaId, {
+                saldo: valor,
+                observacao: `Importação #${id}`,
+                origem: 'importacao_csv'
+            });
+            toast.success('Saldo atualizado com sucesso!');
+            setModalAtualizarSaldo(false);
+        } catch (error) {
+            toast.error(error.message || 'Erro ao atualizar saldo.');
+        } finally {
+            setAtualizandoSaldo(false);
         }
     };
 
@@ -845,6 +880,49 @@ const DetalhesImportacaoPage = () => {
                             proprietarioPadrao={proprietario}
                             mostrarParcelamentoEmEdicao={true}
                         />
+                    </div>
+                </div>
+            )}
+
+            {modalAtualizarSaldo && (
+                <div className="modal" onClick={() => setModalAtualizarSaldo(false)}>
+                    <div className="modal-content modal-atualizar-saldo" onClick={e => e.stopPropagation()}>
+                        <h3>Atualizar saldo de subconta</h3>
+                        <p>Deseja atualizar o saldo de alguma subconta com base nesta importação?</p>
+                        <div className="form-group">
+                            <label>Subconta</label>
+                            <select
+                                value={saldoSubcontaId}
+                                onChange={e => setSaldoSubcontaId(e.target.value)}
+                            >
+                                <option value="">Selecione...</option>
+                                {subcontas.map(sc => (
+                                    <option key={sc._id} value={sc._id}>
+                                        {sc.instituicao?.nome || ''} - {sc.nome}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Saldo</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                value={saldoSubcontaValor}
+                                onChange={e => setSaldoSubcontaValor(e.target.value)}
+                                placeholder="0,00"
+                            />
+                        </div>
+                        <div className="modal-actions">
+                            <button onClick={() => setModalAtualizarSaldo(false)}>Não, obrigado</button>
+                            <button
+                                className="btn-confirmar"
+                                onClick={handleConfirmarAtualizarSaldo}
+                                disabled={atualizandoSaldo || !saldoSubcontaId || !saldoSubcontaValor}
+                            >
+                                {atualizandoSaldo ? 'Atualizando...' : 'Atualizar saldo'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

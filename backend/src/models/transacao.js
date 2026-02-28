@@ -26,7 +26,9 @@ const TransacaoSchema = new mongoose.Schema({
   installmentIntervalDays: { type: Number, default: null },
   // Módulo de Recebimentos (Conciliação)
   settlementAsSource: { type: mongoose.Schema.Types.ObjectId, ref: 'Settlement', default: null },
-  settlementLeftoverFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Settlement', default: null }
+  settlementLeftoverFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Settlement', default: null },
+  // Módulo Patrimônio - vinculação opcional a subconta
+  subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: false, default: null }
 });
 
 TransacaoSchema.index({ usuario: 1, settlementAsSource: 1 }, { sparse: true });

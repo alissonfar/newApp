@@ -1,0 +1,83 @@
+.patrimonio-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.patrimonio-modal {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.patrimonio-modal h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #2c3e50;
+}
+
+.patrimonio-modal .form-group {
+  margin-bottom: 1rem;
+}
+
+.patrimonio-modal .form-group label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.patrimonio-modal .form-group input,
+.patrimonio-modal .form-group select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.patrimonio-modal .form-erro {
+  color: #c62828;
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+}
+
+.patrimonio-modal .form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.patrimonio-modal .form-actions button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.patrimonio-modal .form-actions button[type="button"] {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+}
+
+.patrimonio-modal .form-actions button[type="submit"] {
+  background: #2196f3;
+  color: white;
+  border: none;
+}
+
+.patrimonio-modal .form-actions button[type="submit"]:hover {
+  background: #1976d2;
+}

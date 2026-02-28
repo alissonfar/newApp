@@ -7,6 +7,7 @@ import { Tooltip, IconButton } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { criarTransacao, atualizarTransacao, obterPreviewParcelas } from '../../api';
 import { useData } from '../../context/DataContext';
+import patrimonioApi from '../../services/patrimonioApi';
 import IconRenderer from '../shared/IconRenderer';
 import './NovaTransacaoForm.css';
 import { getTodayBR, getYesterdayBR, toISOStringBR, formatDateBR } from '../../utils/dateUtils';
@@ -109,6 +110,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
 
   // Estado para mostrar aviso de validação (não-bloqueante)
   const [showValidationWarning, setShowValidationWarning] = useState(false);
+
+  // Subconta (opcional) - vinculação ao módulo Patrimônio
+  const [subcontas, setSubcontas] = useState([]);
+  const [subconta, setSubconta] = useState('');
   
   // Removido handleFocus - causava scroll excessivo durante navegação rápida por teclado
   
@@ -118,6 +123,17 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       setData(getTodayBR());
     }
     // A dependência [transacao] permanece para garantir que execute quando o modo muda
+  }, [transacao]);
+
+  // Carregar subcontas para o select opcional
+  useEffect(() => {
+    patrimonioApi.listarSubcontas().then(setSubcontas).catch(() => setSubcontas([]));
+  }, []);
+
+  // Sincronizar subconta quando transacao mudar (edição)
+  useEffect(() => {
+    const scId = transacao?.subconta?._id || transacao?.subconta || '';
+    setSubconta(scId);
   }, [transacao]);
   
   // Quando parcelado, manter único pagamento com valor = valorTotal (só atualiza quando necessário para evitar loop)
@@ -376,6 +392,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           tags: p.paymentTags
         }))
       };
+      if (subconta) transacaoData.subconta = subconta;
+      else transacaoData.subconta = null;
 
       if (ehParcelado || ehParceladoNaEdicao) {
         transacaoData.isInstallment = true;
@@ -421,6 +439,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         setValorTotal('');
         setObservacao('');
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
+        setSubconta('');
         setIsImportada(false);
         setImportacaoId(null);
         setIsParcelado(false);
@@ -627,6 +646,23 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 tabIndex={90}
               />
             </div>
+            {subcontas.length > 0 && (
+              <div className="form-section">
+                <label>Subconta (opcional):</label>
+                <select
+                  value={subconta}
+                  onChange={e => setSubconta(e.target.value)}
+                  tabIndex={91}
+                >
+                  <option value="">Nenhuma</option>
+                  {subcontas.map((sc) => (
+                    <option key={sc._id} value={sc._id}>
+                      {sc.instituicao?.nome || 'Inst'} - {sc.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <div className="right-column">
             <div className="form-section pagamentos-section">
