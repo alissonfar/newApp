@@ -28,7 +28,9 @@ const HistoricoRecebimentosPage = () => {
   const getTagCompleta = (tagId) => {
     if (!tagId) return null;
     const id = typeof tagId === 'object' ? tagId._id : tagId;
-    return (tags || []).find((t) => t._id === id) || (tagId?.nome ? { nome: tagId.nome, cor: '#64748b', icone: 'tag' } : null);
+    const idStr = id ? String(id) : null;
+    const tag = (tags || []).find((t) => t._id === id || String(t._id) === idStr);
+    return tag || (tagId?.nome ? { nome: tagId.nome, cor: tagId.cor || '#64748b', icone: tagId.icone || 'tag' } : null);
   };
 
   const carregarSettlements = async (page = 1) => {

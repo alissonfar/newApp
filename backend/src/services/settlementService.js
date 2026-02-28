@@ -31,20 +31,45 @@ async function startTransactionSession() {
 }
 
 /**
+ * Converte pagamento (possivelmente Mongoose subdocument) para objeto plano.
+ */
+function toPlainPagamento(p) {
+  if (!p) return { pessoa: 'Titular', valor: 0, tags: {} };
+  const po = p.toObject ? p.toObject() : { pessoa: p.pessoa, valor: p.valor, tags: p.tags };
+  return {
+    pessoa: po.pessoa,
+    valor: po.valor,
+    tags: po.tags && typeof po.tags === 'object' ? JSON.parse(JSON.stringify(po.tags)) : {}
+  };
+}
+
+/**
  * Aplica tag em todos os pagamentos de uma transação.
  * Estrutura: pagamentos[].tags = { [categoriaId]: [tagId, ...] }
+ * A chave categoriaId deve ser o _id da categoria (string). O valor é array de tag IDs (strings).
  */
 function aplicarTagEmPagamentos(pagamentos, tag) {
-  if (!pagamentos || !tag) return pagamentos;
-  const categoriaId = (tag.categoria && tag.categoria.toString) ? tag.categoria.toString() : String(tag.categoria);
+  if (!pagamentos || !Array.isArray(pagamentos) || pagamentos.length === 0 || !tag) return pagamentos;
+
+  const categoriaId = (tag.categoria && tag.categoria.toString)
+    ? tag.categoria.toString()
+    : (tag.categoria ? String(tag.categoria) : null);
   const tagIdStr = (tag._id && tag._id.toString) ? tag._id.toString() : String(tag._id);
 
-  return pagamentos.map(p => {
-    const tagsAtuais = p.tags && typeof p.tags === 'object' ? { ...p.tags } : {};
+  if (!categoriaId) {
+    throw new Error(`Tag "${tag.nome || tagIdStr}" não possui categoria definida. Não é possível aplicar.`);
+  }
+
+  return pagamentos.map((p) => {
+    const po = toPlainPagamento(p);
+    const tagsAtuais = po.tags || {};
     const arr = Array.isArray(tagsAtuais[categoriaId]) ? [...tagsAtuais[categoriaId]] : [];
-    if (!arr.includes(tagIdStr)) arr.push(tagIdStr);
+    const tagIdNormalized = tagIdStr;
+    if (!arr.some((id) => String(id) === tagIdNormalized)) {
+      arr.push(tagIdNormalized);
+    }
     tagsAtuais[categoriaId] = arr;
-    return { ...p, tags: tagsAtuais };
+    return { pessoa: po.pessoa, valor: po.valor, tags: tagsAtuais };
   });
 }
 
@@ -52,18 +77,19 @@ function aplicarTagEmPagamentos(pagamentos, tag) {
  * Remove tag de todos os pagamentos de uma transação.
  */
 function removerTagDePagamentos(pagamentos, tagId) {
-  if (!pagamentos || !tagId) return pagamentos;
+  if (!pagamentos || !Array.isArray(pagamentos) || !tagId) return pagamentos;
   const tagIdStr = (tagId && tagId.toString) ? tagId.toString() : String(tagId);
 
-  return pagamentos.map(p => {
-    const tagsAtuais = p.tags && typeof p.tags === 'object' ? { ...p.tags } : {};
+  return pagamentos.map((p) => {
+    const po = toPlainPagamento(p);
+    const tagsAtuais = po.tags ? JSON.parse(JSON.stringify(po.tags)) : {};
     for (const cat of Object.keys(tagsAtuais)) {
       if (Array.isArray(tagsAtuais[cat])) {
-        tagsAtuais[cat] = tagsAtuais[cat].filter(id => (id && id.toString ? id.toString() : String(id)) !== tagIdStr);
+        tagsAtuais[cat] = tagsAtuais[cat].filter((id) => (id && id.toString ? id.toString() : String(id)) !== tagIdStr);
         if (tagsAtuais[cat].length === 0) delete tagsAtuais[cat];
       }
     }
-    return { ...p, tags: tagsAtuais };
+    return { pessoa: po.pessoa, valor: po.valor, tags: tagsAtuais };
   });
 }
 
@@ -85,9 +111,15 @@ async function criar(dados, usuarioId) {
     const usuarioObj = await Usuario.findById(usuarioId).select('preferencias.proprietario').lean().session(session);
     const proprietario = usuarioObj?.preferencias?.proprietario?.trim() || 'Titular';
 
-    const tag = await Tag.findOne({ _id: tagId, usuario: usuarioId, ativo: true }).lean().session(session);
+    const tag = await Tag.findOne({ _id: tagId, usuario: usuarioId, ativo: true })
+      .select('_id nome categoria')
+      .lean()
+      .session(session);
     if (!tag) {
       throw new Error('Tag não encontrada ou inativa.');
+    }
+    if (!tag.categoria) {
+      throw new Error(`A tag "${tag.nome || tagId}" não possui categoria. Configure a tag corretamente antes de usar na conciliação.`);
     }
 
     const transacaoRecebimento = await Transacao.findOne({
@@ -150,13 +182,22 @@ async function criar(dados, usuarioId) {
       { session }
     );
 
-    for (const t of transacoesAlvo) {
-      const pagamentosAtualizados = aplicarTagEmPagamentos(t.pagamentos, tag);
-      await Transacao.updateOne(
-        { _id: t._id },
-        { $set: { pagamentos: pagamentosAtualizados, settlementApplied: settlement._id } },
-        { session }
-      );
+    const bulkOps = transacoesAlvo.map((t) => {
+      const pagamentosPlain = (t.pagamentos || []).map(toPlainPagamento);
+      const pagamentosAtualizados = aplicarTagEmPagamentos(pagamentosPlain, tag);
+      return {
+        updateOne: {
+          filter: { _id: t._id },
+          update: { $set: { pagamentos: pagamentosAtualizados, settlementApplied: settlement._id } },
+          session
+        }
+      };
+    });
+    if (bulkOps.length > 0) {
+      const bulkResult = await Transacao.bulkWrite(bulkOps, { session });
+      if (bulkResult.matchedCount !== transacoesAlvo.length) {
+        throw new Error(`Falha ao aplicar tag: apenas ${bulkResult.matchedCount} de ${transacoesAlvo.length} transações foram atualizadas.`);
+      }
     }
 
     let leftoverTransactionId = null;
@@ -229,16 +270,23 @@ async function excluir(settlementId, usuarioId) {
     );
 
     const tagIdToRemove = settlement.tagId?._id || settlement.tagId;
+    const excluirBulkOps = [];
     for (const app of settlement.appliedTransactions) {
       const transacao = await Transacao.findById(app.transactionId).session(session);
-      if (transacao && transacao.pagamentos) {
-        const pagamentosAtualizados = removerTagDePagamentos(transacao.pagamentos, tagIdToRemove);
-        await Transacao.updateOne(
-          { _id: app.transactionId },
-          { $set: { pagamentos: pagamentosAtualizados, settlementApplied: null } },
-          { session }
-        );
+      if (transacao && transacao.pagamentos && transacao.pagamentos.length > 0) {
+        const pagamentosPlain = transacao.pagamentos.map(toPlainPagamento);
+        const pagamentosAtualizados = removerTagDePagamentos(pagamentosPlain, tagIdToRemove);
+        excluirBulkOps.push({
+          updateOne: {
+            filter: { _id: app.transactionId },
+            update: { $set: { pagamentos: pagamentosAtualizados, settlementApplied: null } },
+            session
+          }
+        });
       }
+    }
+    if (excluirBulkOps.length > 0) {
+      await Transacao.bulkWrite(excluirBulkOps, { session });
     }
 
     if (settlement.leftoverTransactionId) {
@@ -332,8 +380,8 @@ async function listar(usuarioId, opts = {}) {
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
-    .populate('receivingTransactionId', 'descricao valor data')
-    .populate('tagId', 'nome codigo')
+    .populate('receivingTransactionId', 'descricao valor data pagamentos')
+    .populate('tagId', 'nome codigo cor icone')
     .populate('appliedTransactions.transactionId', 'descricao valor data')
     .populate('leftoverTransactionId', 'descricao valor')
     .lean();
