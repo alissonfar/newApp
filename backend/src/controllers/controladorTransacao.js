@@ -2,6 +2,7 @@
 const Transacao = require('../models/transacao');
 const Subconta = require('../models/subconta');
 const mongoose = require('mongoose');
+const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
 
 function buildMatchStage(req) {
   const match = { status: 'ativo', usuario: new mongoose.Types.ObjectId(req.userId) };
@@ -66,6 +67,7 @@ function buildMatchStage(req) {
     match.subconta = new mongoose.Types.ObjectId(req.query.subconta);
   }
 
+  addContabilizavelCondition(match);
   return match;
 }
 
@@ -83,13 +85,17 @@ exports.obterTodasTransacoes = async (req, res) => {
     const usePagination = !isNaN(page) && !isNaN(limit) && page >= 1 && limit >= 1;
 
     if (!usePagination) {
-      const filtros = { status: 'ativo', usuario: req.userId };
+      const filtros = { status: 'ativo', usuario: new mongoose.Types.ObjectId(req.userId) };
       if (req.query.proprietario) {
         filtros['pagamentos.pessoa'] = new RegExp('^' + req.query.proprietario + '$', 'i');
       }
       if (req.query.subconta && mongoose.Types.ObjectId.isValid(req.query.subconta)) {
         filtros.subconta = new mongoose.Types.ObjectId(req.query.subconta);
       }
+      if (req.query.tipo && ['gasto', 'recebivel'].includes(req.query.tipo.toLowerCase())) {
+        filtros.tipo = req.query.tipo.toLowerCase();
+      }
+      addContabilizavelCondition(filtros);
       const transacoes = await Transacao.find(filtros);
       return res.json({ transacoes });
     }

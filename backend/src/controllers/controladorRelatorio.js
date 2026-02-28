@@ -1,10 +1,13 @@
 // src/controllers/controladorRelatorio.js
 const Transacao = require('../models/transacao');
+const mongoose = require('mongoose');
+const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
 
 exports.gerarRelatorio = async (req, res) => {
   try {
-    // Busca transações ativas do usuário autenticado
-    const transacoes = await Transacao.find({ status: 'ativo', usuario: req.userId });
+    const match = { status: 'ativo', usuario: new mongoose.Types.ObjectId(req.userId) };
+    addContabilizavelCondition(match);
+    const transacoes = await Transacao.find(match);
     
     let totalGastos = 0;
     let totalRecebimentos = 0;

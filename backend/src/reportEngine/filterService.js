@@ -1,6 +1,7 @@
 // src/reportEngine/filterService.js
 const Transacao = require('../models/transacao');
 const mongoose = require('mongoose');
+const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
 
 const MAX_EXPORT = 50000;
 
@@ -64,6 +65,7 @@ function buildMatchFromFilters(filters, userId) {
     ];
   }
 
+  addContabilizavelCondition(match);
   return match;
 }
 

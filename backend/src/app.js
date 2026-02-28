@@ -28,6 +28,31 @@ mongoose.connect(process.env.DB_URI)
   .then(() => console.log('Conectado ao MongoDB'))
   .catch(err => console.error('Erro ao conectar ao MongoDB:', err));
 
+// Health check (verifica conexão e suporte a transações/replica set)
+app.get('/api/health', async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState;
+    const connected = state === 1;
+    let replicaSet = null;
+    if (connected) {
+      try {
+        const status = await mongoose.connection.db.admin().command({ replSetGetStatus: 1 });
+        replicaSet = status?.set || 'unknown';
+      } catch (rsErr) {
+        replicaSet = 'not_configured';
+      }
+    }
+    res.json({
+      ok: connected,
+      mongodb: { connected: state === 1, stateName: ['disconnected', 'connected', 'connecting', 'disconnecting'][state] || 'unknown' },
+      replicaSet: replicaSet,
+      transactionsSupported: connected && replicaSet !== 'not_configured'
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err?.message });
+  }
+});
+
 // Rotas
 const rotasUsuario = require('./routes/rotasUsuario');
 const rotasTransacao = require('./routes/rotasTransacao');

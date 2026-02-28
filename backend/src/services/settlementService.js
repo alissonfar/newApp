@@ -5,6 +5,31 @@ const Transacao = require('../models/transacao');
 const Tag = require('../models/tag');
 const Usuario = require('../models/usuarios');
 
+const TRANSACTION_REPLICA_SET_MSG =
+  'Transações MongoDB requerem replica set. Execute rs.initiate() no mongosh após subir o container.';
+
+/**
+ * Inicia sessão e transação MongoDB. Lança erro claro se o ambiente não suportar transactions.
+ */
+async function startTransactionSession() {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    return session;
+  } catch (err) {
+    session.endSession().catch(() => {});
+    const msg = (err && err.message) || '';
+    if (
+      msg.includes('replica set') ||
+      msg.includes('Transaction numbers') ||
+      (err.code && [251, 263].includes(err.code))
+    ) {
+      throw new Error(`${TRANSACTION_REPLICA_SET_MSG} Detalhe: ${msg}`);
+    }
+    throw err;
+  }
+}
+
 /**
  * Aplica tag em todos os pagamentos de uma transação.
  * Estrutura: pagamentos[].tags = { [categoriaId]: [tagId, ...] }
@@ -54,8 +79,7 @@ async function criar(dados, usuarioId) {
     throw new Error('Campos obrigatórios: receivingTransactionId, appliedTransactionIds (array não vazio), tagId.');
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const session = await startTransactionSession();
 
   try {
     const usuarioObj = await Usuario.findById(usuarioId).select('preferencias.proprietario').lean().session(session);
@@ -87,27 +111,12 @@ async function criar(dados, usuarioId) {
       _id: { $in: appliedTransactionIds },
       usuario: usuarioId,
       status: 'ativo',
-      tipo: 'gasto'
+      tipo: 'gasto',
+      $or: [{ settlementApplied: null }, { settlementApplied: { $exists: false } }]
     }).session(session);
 
     if (transacoesAlvo.length !== appliedTransactionIds.length) {
-      throw new Error('Uma ou mais transações não foram encontradas ou não são gastos ativos.');
-    }
-
-    const jaQuitadas = await Settlement.find({
-      usuario: usuarioId,
-      'appliedTransactions.transactionId': { $in: appliedTransactionIds }
-    }).session(session);
-
-    const idsQuitados = new Set();
-    jaQuitadas.forEach(s => {
-      s.appliedTransactions.forEach(a => idsQuitados.add(a.transactionId.toString()));
-    });
-
-    for (const t of transacoesAlvo) {
-      if (idsQuitados.has(t._id.toString())) {
-        throw new Error(`A transação "${t.descricao}" já foi quitada em outra conciliação.`);
-      }
+      throw new Error('Uma ou mais transações não foram encontradas, não são gastos ativos ou já foram quitadas em outra conciliação.');
     }
 
     const appliedTransactions = transacoesAlvo.map(t => ({
@@ -145,7 +154,7 @@ async function criar(dados, usuarioId) {
       const pagamentosAtualizados = aplicarTagEmPagamentos(t.pagamentos, tag);
       await Transacao.updateOne(
         { _id: t._id },
-        { $set: { pagamentos: pagamentosAtualizados } },
+        { $set: { pagamentos: pagamentosAtualizados, settlementApplied: settlement._id } },
         { session }
       );
     }
@@ -185,7 +194,12 @@ async function criar(dados, usuarioId) {
 
     return { ...settlementPopulado, leftoverTransactionId };
   } catch (err) {
-    await session.abortTransaction();
+    try {
+      await session.abortTransaction();
+    } catch (abortErr) {
+      console.error('[Settlement criar] Erro ao abortar transação:', abortErr?.message, abortErr?.code);
+    }
+    console.error('[Settlement criar] Erro:', err?.message, 'code:', err?.code);
     throw err;
   } finally {
     session.endSession();
@@ -196,8 +210,7 @@ async function criar(dados, usuarioId) {
  * Exclui um settlement e reverte todas as alterações.
  */
 async function excluir(settlementId, usuarioId) {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const session = await startTransactionSession();
 
   try {
     const settlement = await Settlement.findOne({
@@ -222,7 +235,7 @@ async function excluir(settlementId, usuarioId) {
         const pagamentosAtualizados = removerTagDePagamentos(transacao.pagamentos, tagIdToRemove);
         await Transacao.updateOne(
           { _id: app.transactionId },
-          { $set: { pagamentos: pagamentosAtualizados } },
+          { $set: { pagamentos: pagamentosAtualizados, settlementApplied: null } },
           { session }
         );
       }
@@ -241,7 +254,12 @@ async function excluir(settlementId, usuarioId) {
     await session.commitTransaction();
     return { mensagem: 'Conciliação excluída com sucesso.' };
   } catch (err) {
-    await session.abortTransaction();
+    try {
+      await session.abortTransaction();
+    } catch (abortErr) {
+      console.error('[Settlement excluir] Erro ao abortar transação:', abortErr?.message, abortErr?.code);
+    }
+    console.error('[Settlement excluir] Erro:', err?.message, 'code:', err?.code);
     throw err;
   } finally {
     session.endSession();
@@ -275,19 +293,11 @@ async function listarRecebimentosDisponiveis(usuarioId, filtros = {}) {
  * @param {Object} filtros.excludeTransactionId - ID da transação a excluir (ex: recebimento selecionado)
  */
 async function listarPendentes(usuarioId, filtros = {}) {
-  const idsQuitados = await Settlement.aggregate([
-    { $match: { usuario: new mongoose.Types.ObjectId(usuarioId) } },
-    { $unwind: '$appliedTransactions' },
-    { $group: { _id: null, ids: { $addToSet: '$appliedTransactions.transactionId' } } },
-    { $project: { ids: 1, _id: 0 } }
-  ]);
-
-  const idsQuitadosSet = new Set((idsQuitados[0]?.ids || []).map(id => id.toString()));
-
   const match = {
     usuario: new mongoose.Types.ObjectId(usuarioId),
     status: 'ativo',
-    tipo: 'gasto'
+    tipo: 'gasto',
+    $or: [{ settlementApplied: null }, { settlementApplied: { $exists: false } }]
   };
 
   if (filtros.pessoa) {
@@ -307,8 +317,7 @@ async function listarPendentes(usuarioId, filtros = {}) {
   }
 
   const transacoes = await Transacao.find(match).sort({ data: -1 }).limit(500).lean();
-
-  return transacoes.filter(t => !idsQuitadosSet.has(t._id.toString()));
+  return transacoes;
 }
 
 /**

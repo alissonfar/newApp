@@ -14,7 +14,7 @@ npm install
 Exemplo de variáveis necessárias:
 ```env
 PORT=3001
-DB_URI=mongodb://localhost:27017/controle-gastos
+DB_URI=mongodb://localhost:27017/controle_gastos?replicaSet=rs0
 JWT_SECRET=sua_chave_secreta
 JWT_EXPIRES=7d
 
@@ -25,7 +25,16 @@ EMAIL_FROM=seu_email@gmail.com
 SITE_URL=http://localhost:3004
 ```
 
-3. Inicie o servidor:
+3. **MongoDB com Docker (replica set para transações):**
+   O módulo de Recebimentos (conciliação) usa transações MongoDB, que exigem replica set.
+   - Se usar `docker-compose` com `--replSet rs0`, execute no mongosh após subir o container:
+     ```bash
+     mongosh
+     rs.initiate()
+     ```
+   - Verifique o status: `GET /api/health` — deve retornar `transactionsSupported: true`.
+
+4. Inicie o servidor:
 ```bash
 # Ambiente de desenvolvimento
 npm run dev
