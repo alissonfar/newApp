@@ -26,3 +26,4 @@ backupMongoDB.txt
 backend/backups/*.gz
 backend/backups/*.json
 backend/tmp/
+mongo_data/

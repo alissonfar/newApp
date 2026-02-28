@@ -1,0 +1,9 @@
+services:
+  mongodb_local:
+    image: mongodb/mongodb-community-server:latest
+    container_name: mongo-dev-container
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo_data:/data/db
+    restart: always
