@@ -13,7 +13,7 @@
 }
 
 .patrimonio-modal {
-  background: white;
+  background: var(--cor-fundo-card);
   padding: 1.5rem;
   border-radius: 12px;
   max-width: 420px;
@@ -24,7 +24,8 @@
 .patrimonio-modal h3 {
   margin: 0 0 1rem 0;
   font-size: 1.25rem;
-  color: #2c3e50;
+  color: var(--cor-texto);
+  font-family: var(--fonte-titulos);
 }
 
 .patrimonio-modal .form-group {
@@ -35,20 +36,20 @@
   display: block;
   margin-bottom: 0.35rem;
   font-size: 0.9rem;
-  color: #555;
+  color: var(--cor-texto-suave, #555);
 }
 
 .patrimonio-modal .form-group input,
 .patrimonio-modal .form-group select {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--cor-borda, #ddd);
   border-radius: 6px;
   font-size: 1rem;
 }
 
 .patrimonio-modal .form-erro {
-  color: #c62828;
+  color: var(--cor-erro);
   font-size: 0.9rem;
   margin: 0 0 1rem 0;
 }
@@ -58,34 +59,4 @@
   gap: 0.75rem;
   justify-content: flex-end;
   margin-top: 1.25rem;
-}
-
-.patrimonio-modal .form-actions button {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.patrimonio-modal .form-actions button[type="button"],
-.patrimonio-modal .form-actions .btn-cancelar {
-  background-color: #f5f5f5;
-  color: var(--cor-texto, #212529);
-  border: 1px solid var(--cor-borda, #ddd);
-}
-
-.patrimonio-modal .form-actions button[type="button"]:hover,
-.patrimonio-modal .form-actions .btn-cancelar:hover {
-  background-color: #e8e8e8;
-  border-color: #ccc;
-}
-
-.patrimonio-modal .form-actions button[type="submit"] {
-  background: #2196f3;
-  color: white;
-  border: none;
-}
-
-.patrimonio-modal .form-actions button[type="submit"]:hover {
-  background: #1976d2;
 }

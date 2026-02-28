@@ -8,11 +8,13 @@ import patrimonioApi from '../../services/patrimonioApi';
 import { useData } from '../../context/DataContext';
 import { obterCategorias } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
+import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './DetalhesImportacaoPage.css';
 
 const DetalhesImportacaoPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { mostrarConfirmacao } = useConfirmacao();
     const { usuario } = useContext(AuthContext);
     const proprietario = usuario?.preferencias?.proprietario || '';
     const [importacao, setImportacao] = useState(null);
@@ -272,51 +274,6 @@ const DetalhesImportacaoPage = () => {
         transacoesNaoJaImportadas.every(t => t.status === 'validada' || t.status === 'erro');
     const podeFinalizarImportacao = importacao?.status !== 'finalizada' &&
         (importacao?.tipoImportacao === 'complementar' ? temTransacoesValidadas : todasNovasValidadas);
-
-    // Função para mostrar confirmação customizada
-    const mostrarConfirmacao = (mensagem, tipo) => {
-        return new Promise((resolve) => {
-            const toastId = toast.warn(
-                <div className="confirmacao-toast-content">
-                    <div className="titulo">
-                        <FaExclamationTriangle />
-                        <span>Confirmação Necessária</span>
-                    </div>
-                    <div className="mensagem">
-                        {mensagem}
-                    </div>
-                    <div className="acoes">
-                        <button
-                            onClick={() => {
-                                toast.dismiss(toastId);
-                                resolve(false);
-                            }}
-                            className="btn-cancelar"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={() => {
-                                toast.dismiss(toastId);
-                                resolve(true);
-                            }}
-                            className={`btn-confirmar ${tipo}`}
-                        >
-                            Confirmar
-                        </button>
-                    </div>
-                </div>,
-                {
-                    position: "top-center",
-                    autoClose: false,
-                    closeOnClick: false,
-                    draggable: false,
-                    closeButton: false,
-                    className: 'confirmacao-toast'
-                }
-            );
-        });
-    };
 
     // Função para excluir uma transação
     const handleExcluirTransacao = async (transacaoId) => {

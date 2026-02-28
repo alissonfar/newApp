@@ -1,8 +1,8 @@
 .contas-page {
   padding: 1.5rem 2rem;
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
-  background: #f5f7fa;
+  background: var(--cor-fundo);
   min-height: 100vh;
 }
 
@@ -11,27 +11,20 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .contas-header h1 {
   font-size: 1.75rem;
-  color: #2c3e50;
+  color: var(--cor-texto);
+  font-family: var(--fonte-titulos);
+  margin: 0;
 }
 
-.contas-actions button {
-  padding: 0.5rem 1rem;
-  background: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+.contas-actions {
   display: flex;
-  align-items: center;
   gap: 0.5rem;
-}
-
-.contas-actions button:hover {
-  background: #1976d2;
 }
 
 .contas-loading {
@@ -41,162 +34,13 @@
   justify-content: center;
   min-height: 300px;
   gap: 1rem;
-  color: #666;
+  color: var(--cor-texto-suave, #666);
 }
 
-.grupo-instituicao {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.contas-loading .spinner {
+  font-size: 2rem;
+}
+
+.contas-arvore {
   margin-bottom: 1rem;
-  overflow: hidden;
-}
-
-.instituicao-header {
-  padding: 1rem 1.25rem;
-  background: #f8f9fa;
-  border-bottom: 1px solid #eee;
-}
-
-.instituicao-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.instituicao-nome {
-  font-weight: 600;
-  font-size: 1.1rem;
-  padding-left: 0.5rem;
-  border-left: 4px solid #2196f3;
-}
-
-.btn-add-subconta {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.85rem;
-  background: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-/* Botões Editar/Excluir - estilos escopados para evitar conflito com globais (TagManagement, etc.) */
-.contas-page .btn-editar,
-.contas-page .btn-excluir {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  transition: background-color 0.2s;
-}
-
-.contas-page .btn-editar {
-  background-color: var(--cor-info);
-  color: white;
-}
-
-.contas-page .btn-editar:hover {
-  background-color: var(--cor-info-escura);
-}
-
-.contas-page .btn-excluir {
-  background-color: var(--cor-erro);
-  color: white;
-}
-
-.contas-page .btn-excluir:hover {
-  background-color: var(--cor-erro-escura);
-}
-
-.lista-subcontas {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.subconta-item {
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid #eee;
-}
-
-.subconta-item:last-child {
-  border-bottom: none;
-}
-
-.subconta-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-
-.subconta-link:hover {
-  background: #f5f5f5;
-  margin: -0.75rem -1.25rem;
-  padding: 0.75rem 1.25rem;
-}
-
-.chevron {
-  font-size: 0.75rem;
-  color: #999;
-}
-
-.subconta-nome {
-  flex: 1;
-}
-
-.subconta-saldo {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.alerta {
-  color: #ff9800;
-  margin-left: 0.25rem;
-}
-
-.progresso-meta {
-  margin-top: 0.5rem;
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.progresso-bar {
-  height: 4px;
-  background: #4caf50;
-  border-radius: 2px;
-  margin-bottom: 0.25rem;
-}
-
-.subconta-actions {
-  margin-top: 0.5rem;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.subconta-actions .btn-editar,
-.subconta-actions .btn-excluir {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
-}
-
-.sem-subcontas {
-  padding: 1rem 1.25rem;
-  color: #888;
-  font-style: italic;
-}
-
-.sem-dados {
-  color: #888;
-  text-align: center;
-  padding: 2rem;
 }

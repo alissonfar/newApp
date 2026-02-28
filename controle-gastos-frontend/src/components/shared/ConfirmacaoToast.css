@@ -1,0 +1,113 @@
+/* Toast de Confirmação - componente reutilizável */
+.confirmacao-toast {
+  background: var(--cor-fundo-card, white) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  width: 400px !important;
+  max-width: 90vw !important;
+  border-left: 5px solid var(--cor-alerta) !important;
+}
+
+.confirmacao-toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.confirmacao-toast-content .titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--cor-texto);
+}
+
+.confirmacao-toast-content .titulo svg {
+  color: var(--cor-alerta);
+  flex-shrink: 0;
+}
+
+.confirmacao-toast-content .mensagem {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--cor-texto-suave, #666);
+}
+
+.confirmacao-toast-content .mensagem p {
+  margin: 0 0 0.5rem 0;
+}
+
+.confirmacao-toast-content .mensagem ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.confirmacao-toast-content .mensagem ul li {
+  padding: 4px 0;
+}
+
+.confirmacao-toast-content .mensagem ul li::before {
+  content: '• ';
+  color: var(--cor-primaria);
+}
+
+.confirmacao-toast-content .acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.confirmacao-toast-content .btn-cancelar {
+  padding: 8px 16px;
+  border: 1px solid var(--cor-borda, #ddd);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cor-texto-suave, #666);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.confirmacao-toast-content .btn-cancelar:hover {
+  background: var(--cor-fundo-hover, #f5f5f5);
+}
+
+.confirmacao-toast-content .btn-confirmar {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.confirmacao-toast-content .btn-confirmar.excluir,
+.confirmacao-toast-content .btn-confirmar.cancelar {
+  background: var(--cor-erro);
+}
+
+.confirmacao-toast-content .btn-confirmar.excluir:hover,
+.confirmacao-toast-content .btn-confirmar.cancelar:hover {
+  background: var(--cor-erro-escura, #c82333);
+}
+
+.confirmacao-toast-content .btn-confirmar.finalizar {
+  background: var(--cor-sucesso);
+}
+
+.confirmacao-toast-content .btn-confirmar.finalizar:hover {
+  background: var(--cor-sucesso-escura, #218838);
+}
+
+.confirmacao-toast-content .btn-confirmar.estornar {
+  background: var(--cor-erro);
+}
+
+.confirmacao-toast-content .btn-confirmar.estornar:hover {
+  background: var(--cor-erro-escura, #c82333);
+}

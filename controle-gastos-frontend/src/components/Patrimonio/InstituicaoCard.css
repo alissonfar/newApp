@@ -1,0 +1,77 @@
+/* InstituicaoCard */
+.instituicao-card {
+  background: var(--cor-fundo-card);
+  border-radius: 12px;
+  box-shadow: var(--sombra-card, 0 2px 8px rgba(0, 0, 0, 0.08));
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border-left: 4px solid var(--cor-primaria);
+  transition: box-shadow 0.2s ease;
+}
+
+.instituicao-card:hover {
+  box-shadow: var(--sombra-hover, 0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.instituicao-card__header {
+  padding: 1rem 1.25rem;
+  background: var(--cor-fundo, #f8f9fa);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.instituicao-card__info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.instituicao-card__nome {
+  font-family: var(--fonte-titulos);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+  margin: 0;
+}
+
+.instituicao-card__tipo {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave, #666);
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+}
+
+.instituicao-card__total {
+  font-weight: 600;
+  color: var(--cor-texto);
+  font-family: var(--fonte-corpo);
+}
+
+.instituicao-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.instituicao-card__subcontas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.instituicao-card__empty {
+  padding: 1rem 1.25rem;
+}
+
+.instituicao-card__empty .ds-empty-state {
+  padding: 1rem;
+}

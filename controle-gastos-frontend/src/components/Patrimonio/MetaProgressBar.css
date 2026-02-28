@@ -1,0 +1,25 @@
+/* MetaProgressBar */
+.meta-progress-bar {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave, #666);
+}
+
+.meta-progress-bar__track {
+  height: 6px;
+  background: var(--cor-fundo-hover, #eee);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.meta-progress-bar__fill {
+  height: 100%;
+  background: var(--cor-sucesso);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.meta-progress-bar__label {
+  font-family: var(--fonte-corpo);
+}

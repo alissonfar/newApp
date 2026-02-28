@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaPlus, FaSpinner, FaChevronLeft, FaChevronRight, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
+import { FaPlus, FaSpinner, FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
 import importacaoService from '../../services/importacaoService';
+import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './GerenciamentoImportacoesPage.css';
 
 const GerenciamentoImportacoesPage = () => {
   const navigate = useNavigate();
+  const { mostrarConfirmacao } = useConfirmacao();
   const [importacoes, setImportacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,50 +41,6 @@ const GerenciamentoImportacoesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const mostrarConfirmacao = (mensagem, tipo) => {
-    return new Promise((resolve) => {
-      const toastId = toast.warn(
-        <div className="confirmacao-toast-content">
-          <div className="titulo">
-            <FaExclamationTriangle />
-            <span>Confirmação Necessária</span>
-          </div>
-          <div className="mensagem">
-            {mensagem}
-          </div>
-          <div className="acoes">
-            <button
-              onClick={() => {
-                toast.dismiss(toastId);
-                resolve(false);
-              }}
-              className="btn-cancelar"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => {
-                toast.dismiss(toastId);
-                resolve(true);
-              }}
-              className={`btn-confirmar ${tipo}`}
-            >
-              Confirmar
-            </button>
-          </div>
-        </div>,
-        {
-          position: "top-center",
-          autoClose: false,
-          closeOnClick: false,
-          draggable: false,
-          closeButton: false,
-          className: 'confirmacao-toast'
-        }
-      );
-    });
   };
 
   const handleExcluirImportacao = async (importacaoId, status) => {

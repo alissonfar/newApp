@@ -1,0 +1,57 @@
+/* SubcontaItem */
+.subconta-item {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--cor-fundo-card);
+  transition: background 0.15s ease;
+}
+
+.subconta-item:last-child {
+  border-bottom: none;
+}
+
+.subconta-item:hover {
+  background: var(--cor-fundo-hover, #f8f9fa);
+}
+
+.subconta-item__link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.subconta-item__chevron {
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave, #999);
+  flex-shrink: 0;
+}
+
+.subconta-item__nome {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--fonte-corpo);
+  font-weight: 500;
+}
+
+.subconta-item__badge {
+  flex-shrink: 0;
+}
+
+.subconta-item__saldo {
+  font-weight: 600;
+  color: var(--cor-texto);
+  font-family: var(--fonte-corpo);
+  flex-shrink: 0;
+}
+
+.subconta-item__alerta {
+  color: var(--cor-alerta);
+  margin-left: 0.25rem;
+  flex-shrink: 0;
+}
+
+.subconta-item__actions {
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}

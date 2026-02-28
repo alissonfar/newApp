@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Button from '../shared/Button';
 import './PatrimonioForm.css';
 
 const TIPOS = [
@@ -74,8 +75,8 @@ const InstituicaoForm = ({ instituicao, onSalvar, onFechar }) => {
           </div>
           {erro && <p className="form-erro">{erro}</p>}
           <div className="form-actions">
-            <button type="button" className="btn-cancelar" onClick={onFechar}>Cancelar</button>
-            <button type="submit">Salvar</button>
+            <Button type="button" variant="ghost" onClick={onFechar}>Cancelar</Button>
+            <Button type="submit" variant="primary">Salvar</Button>
           </div>
         </form>
       </div>

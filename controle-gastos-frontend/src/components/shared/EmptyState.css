@@ -1,0 +1,26 @@
+/* Design System - EmptyState */
+.ds-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.ds-empty-state__icon {
+  color: var(--cor-texto-suave, #999);
+  margin-bottom: 1rem;
+}
+
+.ds-empty-state__message {
+  font-family: var(--fonte-corpo);
+  font-size: 0.95rem;
+  color: var(--cor-texto-suave, #888);
+  font-style: italic;
+  margin: 0 0 1rem 0;
+}
+
+.ds-empty-state__actions {
+  margin-top: 0.5rem;
+}

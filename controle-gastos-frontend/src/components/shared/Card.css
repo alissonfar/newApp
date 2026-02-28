@@ -1,0 +1,22 @@
+/* Design System - Card */
+.ds-card {
+  background: var(--cor-fundo-card);
+  border-radius: 12px;
+  box-shadow: var(--sombra-card, 0 2px 8px rgba(0, 0, 0, 0.08));
+  transition: var(--transicao-padrao, all 0.2s ease);
+  overflow: hidden;
+}
+
+.ds-card:hover {
+  box-shadow: var(--sombra-hover, 0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.ds-card__header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--cor-fundo, #f8f9fa);
+}
+
+.ds-card__content {
+  padding: 1.25rem;
+}

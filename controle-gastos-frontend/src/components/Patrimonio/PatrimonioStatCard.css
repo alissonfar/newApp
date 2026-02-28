@@ -1,0 +1,53 @@
+/* PatrimonioStatCard */
+.patrimonio-stat-card {
+  padding: 1.25rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.patrimonio-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.patrimonio-stat-card__inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.patrimonio-stat-card__icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cor-fundo-hover, rgba(33, 150, 243, 0.08));
+  border-radius: 10px;
+  color: var(--cor-primaria);
+}
+
+.patrimonio-stat-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.patrimonio-stat-card__label {
+  font-family: var(--fonte-titulos);
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #666);
+  margin: 0 0 0.25rem 0;
+}
+
+.patrimonio-stat-card__valor {
+  font-family: var(--fonte-corpo);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+  margin: 0;
+}
+
+.patrimonio-stat-card__badge {
+  margin-top: 0.25rem;
+  display: inline-block;
+}

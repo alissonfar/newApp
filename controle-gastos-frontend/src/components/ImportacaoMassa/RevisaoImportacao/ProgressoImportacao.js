@@ -2,9 +2,11 @@ import React from 'react';
 import { FaPlay, FaPause, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useImportacao } from '../../../contexts/ImportacaoContext';
+import { useConfirmacao } from '../../../hooks/useConfirmacao';
 import './ProgressoImportacao.css';
 
 const ProgressoImportacao = ({ importacaoId }) => {
+  const { mostrarConfirmacao } = useConfirmacao();
   const { 
     progresso, 
     status,
@@ -29,24 +31,30 @@ const ProgressoImportacao = ({ importacaoId }) => {
   };
 
   const handleFinalizar = async () => {
-    if (window.confirm('Tem certeza que deseja finalizar a importação? Esta ação não pode ser desfeita.')) {
-      try {
-        await finalizarImportacao(importacaoId);
-        toast.success('Importação finalizada com sucesso!');
-      } catch (error) {
-        toast.error('Erro ao finalizar importação.');
-      }
+    const confirmado = await mostrarConfirmacao(
+      <p>Tem certeza que deseja finalizar a importação? Esta ação não pode ser desfeita.</p>,
+      'finalizar'
+    );
+    if (!confirmado) return;
+    try {
+      await finalizarImportacao(importacaoId);
+      toast.success('Importação finalizada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao finalizar importação.');
     }
   };
 
   const handleCancelar = async () => {
-    if (window.confirm('Tem certeza que deseja cancelar a importação? Esta ação não pode ser desfeita.')) {
-      try {
-        await cancelarImportacao(importacaoId);
-        toast.success('Importação cancelada com sucesso!');
-      } catch (error) {
-        toast.error('Erro ao cancelar importação.');
-      }
+    const confirmado = await mostrarConfirmacao(
+      <p>Tem certeza que deseja cancelar a importação? Esta ação não pode ser desfeita.</p>,
+      'cancelar'
+    );
+    if (!confirmado) return;
+    try {
+      await cancelarImportacao(importacaoId);
+      toast.success('Importação cancelada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao cancelar importação.');
     }
   };
 

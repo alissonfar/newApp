@@ -1,0 +1,31 @@
+/* Design System - SectionHeader */
+.ds-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.ds-section-header__title {
+  font-family: var(--fonte-titulos);
+  font-size: 1rem;
+  color: var(--cor-texto);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ds-section-header__icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cor-primaria);
+}
+
+.ds-section-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

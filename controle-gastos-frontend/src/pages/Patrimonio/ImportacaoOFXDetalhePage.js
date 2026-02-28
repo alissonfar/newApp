@@ -5,9 +5,11 @@ import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './ImportacaoOFXDetalhePage.css';
 
 const ImportacaoOFXDetalhePage = () => {
+  const { mostrarConfirmacao } = useConfirmacao();
   const { id } = useParams();
   const navigate = useNavigate();
   const [importacao, setImportacao] = useState(null);
@@ -37,7 +39,11 @@ const ImportacaoOFXDetalhePage = () => {
   const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
 
   const handleFinalizar = async () => {
-    if (!window.confirm('Confirma a finalização? O saldo da subconta será atualizado.')) return;
+    const confirmado = await mostrarConfirmacao(
+      <p>Confirma a finalização? O saldo da subconta será atualizado.</p>,
+      'finalizar'
+    );
+    if (!confirmado) return;
     try {
       setFinalizando(true);
       await patrimonioApi.finalizarImportacaoOFX(id);
@@ -51,7 +57,11 @@ const ImportacaoOFXDetalhePage = () => {
   };
 
   const handleCancelar = async () => {
-    if (!window.confirm('Cancelar esta importação? Todas as transações serão removidas.')) return;
+    const confirmado = await mostrarConfirmacao(
+      <p>Cancelar esta importação? Todas as transações serão removidas.</p>,
+      'cancelar'
+    );
+    if (!confirmado) return;
     try {
       setCancelando(true);
       await patrimonioApi.cancelarImportacaoOFX(id);

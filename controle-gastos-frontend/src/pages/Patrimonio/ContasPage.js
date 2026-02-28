@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaSpinner, FaChevronRight, FaExclamationTriangle } from 'react-icons/fa';
+import { FaPlus, FaSpinner } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import InstituicaoForm from '../../components/Patrimonio/InstituicaoForm';
 import SubcontaForm from '../../components/Patrimonio/SubcontaForm';
+import InstituicaoCard from '../../components/Patrimonio/InstituicaoCard';
+import Button from '../../components/shared/Button';
+import EmptyState from '../../components/shared/EmptyState';
 import './ContasPage.css';
 
 const DIAS_ALERTA = 7;
@@ -128,87 +131,54 @@ const ContasPage = () => {
       <div className="contas-header">
         <h1>Contas Bancárias</h1>
         <div className="contas-actions">
-          <button onClick={() => { setEditandoInstituicao(null); setModalInstituicao(true); }}>
-            <FaPlus /> Nova Instituição
-          </button>
+          <Button
+            variant="primary"
+            icon={<FaPlus size={14} />}
+            onClick={() => { setEditandoInstituicao(null); setModalInstituicao(true); }}
+          >
+            Nova Instituição
+          </Button>
         </div>
       </div>
 
       <div className="contas-arvore">
-        {grupos.map(({ instituicao, subcontas: subs }) => (
-          <div key={instituicao._id} className="grupo-instituicao">
-            <div className="instituicao-header">
-              <div className="instituicao-info">
-                <span className="instituicao-nome" style={{ borderLeftColor: instituicao.cor || '#ccc' }}>
-                  {instituicao.nome}
-                </span>
-                <button
-                  className="btn-add-subconta"
-                  onClick={() => { setInstituicaoSelecionada(instituicao); setEditandoSubconta(null); setModalSubconta(true); }}
-                >
-                  <FaPlus /> Subconta
-                </button>
-                <button
-                  className="btn-editar"
-                  onClick={() => { setEditandoInstituicao(instituicao); setModalInstituicao(true); }}
-                >
-                  Editar
-                </button>
-                <button
-                  className="btn-excluir"
-                  onClick={() => handleExcluirInstituicao(instituicao._id)}
-                >
-                  Excluir
-                </button>
-              </div>
-            </div>
-            <ul className="lista-subcontas">
-              {subs.length === 0 ? (
-                <li className="sem-subcontas">Nenhuma subconta. Clique em "Subconta" para adicionar.</li>
-              ) : (
-                subs.map((sc) => (
-                  <li key={sc._id} className="subconta-item">
-                    <div
-                      className="subconta-link"
-                      onClick={() => navigate(`/patrimonio/contas/${sc._id}`)}
-                    >
-                      <FaChevronRight className="chevron" />
-                      <span className="subconta-nome">{sc.nome}</span>
-                      <span className="subconta-saldo">{formatarMoeda(sc.saldoAtual)}</span>
-                      {estaDesatualizada(sc) && (
-                        <FaExclamationTriangle className="alerta" title="Saldo desatualizado" />
-                      )}
-                    </div>
-                    {progressoMeta(sc) != null && (
-                      <div className="progresso-meta">
-                        <div className="progresso-bar" style={{ width: `${progressoMeta(sc)}%` }} />
-                        <span>{progressoMeta(sc).toFixed(0)}% da meta</span>
-                      </div>
-                    )}
-                    <div className="subconta-actions">
-                      <button
-                        className="btn-editar"
-                        onClick={() => { setEditandoSubconta(sc); setInstituicaoSelecionada(sc.instituicao); setModalSubconta(true); }}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="btn-excluir"
-                        onClick={() => handleExcluirSubconta(sc._id)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        ))}
+        {grupos.map(({ instituicao, subcontas: subs }) => {
+          const totalConsolidado = subs.reduce((acc, s) => acc + (s.saldoAtual || 0), 0);
+          return (
+            <InstituicaoCard
+              key={instituicao._id}
+              instituicao={instituicao}
+              subcontas={subs}
+              totalConsolidado={totalConsolidado}
+              formatarMoeda={formatarMoeda}
+              estaDesatualizada={estaDesatualizada}
+              progressoMeta={progressoMeta}
+              onNavigateSubconta={(path) => navigate(path)}
+              onAdicionarSubconta={() => {
+                setInstituicaoSelecionada(instituicao);
+                setEditandoSubconta(null);
+                setModalSubconta(true);
+              }}
+              onEditarInstituicao={() => {
+                setEditandoInstituicao(instituicao);
+                setModalInstituicao(true);
+              }}
+              onExcluirInstituicao={handleExcluirInstituicao}
+              onEditarSubconta={(sc) => {
+                setEditandoSubconta(sc);
+                setInstituicaoSelecionada(sc.instituicao);
+                setModalSubconta(true);
+              }}
+              onExcluirSubconta={handleExcluirSubconta}
+            />
+          );
+        })}
       </div>
 
       {instituicoes.length === 0 && (
-        <p className="sem-dados">Nenhuma instituição cadastrada. Clique em "Nova Instituição" para começar.</p>
+        <EmptyState
+          message='Nenhuma instituição cadastrada. Clique em "Nova Instituição" para começar.'
+        />
       )}
 
       {modalInstituicao && (

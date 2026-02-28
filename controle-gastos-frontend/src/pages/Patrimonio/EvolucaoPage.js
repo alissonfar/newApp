@@ -13,6 +13,8 @@ import {
 } from 'chart.js';
 import { FaArrowLeft, FaSpinner } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
+import Button from '../../components/shared/Button';
+import EmptyState from '../../components/shared/EmptyState';
 import { format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import './EvolucaoPage.css';
@@ -62,9 +64,9 @@ const EvolucaoPage = () => {
   return (
     <div className="evolucao-page">
       <div className="evolucao-header">
-        <button className="btn-voltar" onClick={() => navigate('/patrimonio')}>
-          <FaArrowLeft /> Voltar
-        </button>
+        <Button variant="ghost" icon={<FaArrowLeft size={14} />} onClick={() => navigate('/patrimonio')}>
+          Voltar
+        </Button>
         <h1>Evolução do Patrimônio</h1>
       </div>
 
@@ -118,7 +120,7 @@ const EvolucaoPage = () => {
           />
         </div>
       ) : (
-        <p className="sem-dados">Nenhum dado de evolução no período selecionado. Confirme saldos nas subcontas para gerar histórico.</p>
+        <EmptyState message="Nenhum dado de evolução no período selecionado. Confirme saldos nas subcontas para gerar histórico." />
       )}
     </div>
   );

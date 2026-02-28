@@ -11,10 +11,14 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { FaArrowLeft, FaCheck, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { FaArrowLeft, FaCheck, FaSpinner } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
+import SectionHeader from '../../components/shared/SectionHeader';
+import Button from '../../components/shared/Button';
+import EmptyState from '../../components/shared/EmptyState';
 import '../../components/Patrimonio/PatrimonioForm.css';
 import './DetalheSubcontaPage.css';
 
@@ -102,8 +106,11 @@ const DetalheSubcontaPage = () => {
   if (!subconta) {
     return (
       <div className="detalhe-subconta-page">
-        <p>Subconta não encontrada.</p>
-        <button onClick={() => navigate('/patrimonio/contas')}>Voltar</button>
+        <EmptyState message="Subconta não encontrada.">
+          <Button variant="primary" icon={<FaArrowLeft size={14} />} onClick={() => navigate('/patrimonio/contas')}>
+            Voltar
+          </Button>
+        </EmptyState>
       </div>
     );
   }
@@ -111,36 +118,37 @@ const DetalheSubcontaPage = () => {
   return (
     <div className="detalhe-subconta-page">
       <div className="detalhe-header">
-        <button className="btn-voltar" onClick={() => navigate('/patrimonio/contas')}>
-          <FaArrowLeft /> Voltar
-        </button>
+        <Button variant="ghost" icon={<FaArrowLeft size={14} />} onClick={() => navigate('/patrimonio/contas')}>
+          Voltar
+        </Button>
         <h1>{subconta.instituicao?.nome} - {subconta.nome}</h1>
       </div>
 
       <div className="detalhe-cards">
-        <div className="detalhe-card">
-          <h3>Saldo Confirmado</h3>
-          <p className="valor">{formatarMoeda(subconta.saldoAtual)}</p>
-          <span className="data-confirmacao">
-            Última confirmação: {formatarData(subconta.dataUltimaConfirmacao)}
-          </span>
-        </div>
+        <PatrimonioStatCard
+          label="Saldo Confirmado"
+          valor={formatarMoeda(subconta.saldoAtual)}
+          icon="piggybank"
+        />
         {rendimento && (rendimento.rendimentoMensal > 0 || rendimento.rendimentoDiario > 0) && (
-          <div className="detalhe-card estimativa">
-            <h3>Rendimento Estimado (mês)</h3>
-            <p className="valor">{formatarMoeda(rendimento.rendimentoMensal)}</p>
-            <span className="badge-estimativa">Estimativa - {rendimento.percentualCDI}% CDI</span>
-          </div>
+          <PatrimonioStatCard
+            label="Rendimento Estimado (mês)"
+            valor={formatarMoeda(rendimento.rendimentoMensal)}
+            icon="chartline"
+            badge={{ label: `Estimativa - ${rendimento.percentualCDI}% CDI`, variant: 'neutral' }}
+          />
         )}
       </div>
+      <p className="detalhe-data-confirmacao">
+        Última confirmação: {formatarData(subconta.dataUltimaConfirmacao)}
+      </p>
 
       <div className="detalhe-section">
-        <div className="section-header">
-          <h3>Histórico de Saldo</h3>
-          <button className="btn-confirmar" onClick={() => setModalConfirmar(true)}>
-            <FaCheck /> Confirmar Saldo
-          </button>
-        </div>
+        <SectionHeader title="Histórico de Saldo">
+          <Button variant="success" icon={<FaCheck size={14} />} onClick={() => setModalConfirmar(true)}>
+            Confirmar Saldo
+          </Button>
+        </SectionHeader>
         {historico.length > 0 ? (
           <div className="grafico-container">
             <Line
@@ -160,12 +168,12 @@ const DetalheSubcontaPage = () => {
             />
           </div>
         ) : (
-          <p className="sem-dados">Nenhum histórico ainda. Confirme o saldo para criar o primeiro registro.</p>
+          <EmptyState message="Nenhum histórico ainda. Confirme o saldo para criar o primeiro registro." />
         )}
       </div>
 
       <div className="detalhe-section">
-        <h3>Registros de Histórico</h3>
+        <SectionHeader title="Registros de Histórico" />
         {historico.length > 0 ? (
           <table className="tabela-historico">
             <thead>
@@ -191,7 +199,7 @@ const DetalheSubcontaPage = () => {
       </div>
 
       <div className="detalhe-section">
-        <h3>Transações Vinculadas</h3>
+        <SectionHeader title="Transações Vinculadas" />
         {transacoes.length > 0 ? (
           <ul className="lista-transacoes">
             {transacoes.map((t) => (
@@ -205,7 +213,7 @@ const DetalheSubcontaPage = () => {
             ))}
           </ul>
         ) : (
-          <p className="sem-dados">Nenhuma transação vinculada a esta subconta.</p>
+          <EmptyState message="Nenhuma transação vinculada a esta subconta." />
         )}
       </div>
 
@@ -232,10 +240,10 @@ const DetalheSubcontaPage = () => {
               />
             </div>
             <div className="form-actions">
-              <button type="button" className="btn-cancelar" onClick={() => setModalConfirmar(false)}>Cancelar</button>
-              <button onClick={handleConfirmarSaldo} disabled={confirmando}>
+              <Button type="button" variant="ghost" onClick={() => setModalConfirmar(false)}>Cancelar</Button>
+              <Button onClick={handleConfirmarSaldo} disabled={confirmando}>
                 {confirmando ? <FaSpinner className="spinner-inline" /> : 'Confirmar'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

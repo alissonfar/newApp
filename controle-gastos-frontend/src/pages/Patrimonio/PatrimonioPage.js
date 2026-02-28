@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPiggyBank, FaBuilding, FaChartPie, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
+import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
+import PatrimonioAlerta from '../../components/Patrimonio/PatrimonioAlerta';
+import SectionHeader from '../../components/shared/SectionHeader';
+import Button from '../../components/shared/Button';
+import Card from '../../components/shared/Card';
+import EmptyState from '../../components/shared/EmptyState';
 import './PatrimonioPage.css';
 
 const PatrimonioPage = () => {
@@ -54,47 +60,35 @@ const PatrimonioPage = () => {
     <div className="patrimonio-page">
       <div className="patrimonio-header">
         <h1><FaPiggyBank /> Patrimônio</h1>
-        <button className="btn-contas" onClick={() => navigate('/patrimonio/contas')}>
+        <Button variant="primary" onClick={() => navigate('/patrimonio/contas')}>
           Gerenciar Contas
-        </button>
+        </Button>
       </div>
 
       <div className="patrimonio-cards">
-        <div className="patrimonio-card total">
-          <div className="card-icon">💰</div>
-          <h3>Total Geral</h3>
-          <p className="valor">{formatarMoeda(resumo?.totalGeral)}</p>
-        </div>
-        <div className="patrimonio-card rendimento">
-          <div className="card-icon">📈</div>
-          <h3>Rendimento Estimado (mês)</h3>
-          <p className="valor">{formatarMoeda(resumo?.rendimentoEstimadoConsolidado)}</p>
-          <span className="badge-estimativa">Estimativa</span>
-        </div>
+        <PatrimonioStatCard
+          label="Total Geral"
+          valor={formatarMoeda(resumo?.totalGeral)}
+          icon="piggybank"
+        />
+        <PatrimonioStatCard
+          label="Rendimento Estimado (mês)"
+          valor={formatarMoeda(resumo?.rendimentoEstimadoConsolidado)}
+          icon="chartline"
+          badge={{ label: 'Estimativa', variant: 'neutral' }}
+        />
       </div>
 
       {resumo?.subcontasDesatualizadas?.length > 0 && (
-        <div className="patrimonio-alerta">
-          <FaExclamationTriangle />
-          <div>
-            <strong>Subcontas desatualizadas</strong>
-            <p>As seguintes subcontas não tiveram o saldo confirmado nos últimos 7 dias:</p>
-            <ul>
-              {resumo.subcontasDesatualizadas.map((s) => (
-                <li key={s._id}>
-                  <button onClick={() => navigate(`/patrimonio/contas/${s._id}`)}>
-                    {s.instituicao} - {s.nome}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <PatrimonioAlerta
+          subcontasDesatualizadas={resumo.subcontasDesatualizadas}
+          onNavigateSubconta={(path) => navigate(path)}
+        />
       )}
 
       <div className="patrimonio-grid">
-        <div className="patrimonio-section">
-          <h3><FaBuilding /> Por Instituição</h3>
+        <Card className="patrimonio-section">
+          <SectionHeader title="Por Instituição" icon={<FaBuilding />} />
           {resumo?.porInstituicao?.length > 0 ? (
             <ul className="lista-distribuicao">
               {resumo.porInstituicao.map((item) => (
@@ -105,11 +99,11 @@ const PatrimonioPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="sem-dados">Nenhuma instituição cadastrada.</p>
+            <EmptyState message="Nenhuma instituição cadastrada." />
           )}
-        </div>
-        <div className="patrimonio-section">
-          <h3><FaChartPie /> Por Propósito</h3>
+        </Card>
+        <Card className="patrimonio-section">
+          <SectionHeader title="Por Propósito" icon={<FaChartPie />} />
           {resumo?.porProposito?.length > 0 ? (
             <ul className="lista-distribuicao">
               {resumo.porProposito.map((item) => (
@@ -120,15 +114,21 @@ const PatrimonioPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="sem-dados">Nenhuma subconta cadastrada.</p>
+            <EmptyState message="Nenhuma subconta cadastrada." />
           )}
-        </div>
+        </Card>
       </div>
 
       <div className="patrimonio-actions">
-        <button onClick={() => navigate('/patrimonio/evolucao')}>Ver Evolução</button>
-        <button onClick={() => navigate('/patrimonio/importacoes-ofx')}>Importar OFX</button>
-        <button onClick={() => navigate('/patrimonio/transferencias')}>Transferências</button>
+        <Button variant="success" onClick={() => navigate('/patrimonio/evolucao')}>
+          Ver Evolução
+        </Button>
+        <Button variant="primary" onClick={() => navigate('/patrimonio/importacoes-ofx')}>
+          Importar OFX
+        </Button>
+        <Button variant="primary" onClick={() => navigate('/patrimonio/transferencias')}>
+          Transferências
+        </Button>
       </div>
     </div>
   );

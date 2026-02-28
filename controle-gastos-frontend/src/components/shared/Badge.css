@@ -1,0 +1,34 @@
+/* Design System - Badge */
+.ds-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  flex-shrink: 0;
+  font-family: var(--fonte-titulos);
+}
+
+.ds-badge--success {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: var(--cor-sucesso);
+}
+
+.ds-badge--warning {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: var(--cor-alerta);
+}
+
+.ds-badge--error {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--cor-erro);
+}
+
+.ds-badge--info {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--cor-primaria);
+}
+
+.ds-badge--neutral {
+  background-color: rgba(158, 158, 158, 0.25);
+  color: var(--cor-texto-suave, #757575);
+}

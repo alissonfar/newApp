@@ -1,0 +1,29 @@
+/* BadgeProposito */
+.badge-proposito {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  flex-shrink: 0;
+  font-family: var(--fonte-titulos);
+}
+
+.badge-proposito--info {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--cor-primaria);
+}
+
+.badge-proposito--success {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: var(--cor-sucesso);
+}
+
+.badge-proposito--warning {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: var(--cor-alerta);
+}
+
+.badge-proposito--neutral {
+  background-color: rgba(158, 158, 158, 0.25);
+  color: var(--cor-texto-suave, #757575);
+}
