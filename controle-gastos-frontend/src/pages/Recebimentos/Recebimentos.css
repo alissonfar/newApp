@@ -29,25 +29,6 @@
   color: var(--cor-texto-destaque, #1976d2);
 }
 
-.recebimentos-novo-header .link-historico {
-  font-size: 0.9rem;
-  color: var(--cor-primaria, #2196F3);
-  text-decoration: none;
-}
-
-.recebimentos-novo-header .link-historico:hover {
-  text-decoration: underline;
-}
-
-.recebimentos-tabs-mui {
-  margin-top: 0.5rem;
-}
-
-.recebimentos-tabs-mui .MuiTab-root {
-  font-size: 0.9rem;
-  min-height: 48px;
-}
-
 .recebimentos-content-area {
   flex: 1;
   overflow-y: auto;
@@ -72,29 +53,22 @@
   }
 }
 
-.tab-configuracao-col {
-  background: var(--cor-fundo-card, #fff);
-  border: 1px solid var(--cor-fundo-hover, #e0e0e0);
-  border-radius: var(--borda-radius, 8px);
-  padding: 1.25rem;
+.tab-configuracao-card {
+  min-height: 0;
 }
 
-.tab-configuracao-col h3 {
-  font-size: 1.1rem;
-  margin: 0 0 0.5rem 0;
-  color: var(--cor-texto, #2C3E50);
-}
-
-.tab-configuracao-placeholder,
-.tab-filtro-placeholder,
-.tab-selecao-placeholder,
-.tab-resumo-placeholder {
+.tab-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
   padding: 2rem;
-  text-align: center;
   color: var(--cor-texto-suave, #607D8B);
-  background: var(--cor-fundo-card, #fff);
-  border-radius: var(--borda-radius, 8px);
-  border: 1px dashed var(--cor-fundo-hover, #e0e0e0);
+}
+
+.tab-loading p {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 .dica {
@@ -110,27 +84,9 @@
   flex-wrap: wrap;
 }
 
-.filtros-row input[type="date"],
-.filtros-row select {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--cor-fundo-hover, #ddd);
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.filtros-row button {
-  padding: 0.4rem 1rem;
-  background: var(--cor-primaria, #2196F3);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.filtros-row button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.filtros-row .input-field {
+  flex: 1;
+  min-width: 140px;
 }
 
 .lista-recebimentos {
@@ -145,20 +101,24 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.6rem 0.8rem;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--cor-fundo-hover, #e0e0e0);
-  border-radius: 6px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: all 0.2s ease;
+  box-shadow: var(--sombra-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+  background: var(--cor-fundo-card, #fff);
 }
 
 .recebimento-card:hover {
   background: var(--cor-fundo-hover, #f5f5f5);
+  box-shadow: var(--sombra-hover, 0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
 .recebimento-card.selecionado {
   border-color: var(--cor-primaria, #2196F3);
   background: var(--cor-primaria-clara, rgba(33, 150, 243, 0.08));
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
 
 .recebimento-card-desc {
@@ -229,18 +189,6 @@
 }
 
 /* ========== Tab Filtro ========== */
-.tab-filtro {
-  background: var(--cor-fundo-card, #fff);
-  border: 1px solid var(--cor-fundo-hover, #e0e0e0);
-  border-radius: var(--borda-radius, 8px);
-  padding: 1.5rem;
-}
-
-.tab-filtro h3 {
-  font-size: 1.1rem;
-  margin: 0 0 0.5rem 0;
-}
-
 .tab-filtro-campos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -264,11 +212,19 @@
   font-size: 0.9rem;
 }
 
-.tab-filtro-preview {
+.tab-filtro-wrapper {
+  max-width: 100%;
+}
+
+.tab-filtro-card .tab-filtro-preview {
   margin-top: 1.5rem;
-  padding: 1rem;
   background: var(--cor-fundo-hover, #f5f5f5);
-  border-radius: 6px;
+  box-shadow: none;
+  border: 1px solid var(--cor-fundo-hover, #eee);
+}
+
+.tab-filtro-card .tab-filtro-preview .ds-card__content {
+  padding: 1rem;
 }
 
 .preview-item {
@@ -278,11 +234,18 @@
 }
 
 /* ========== Tab Seleção ========== */
-.tab-selecao {
-  background: var(--cor-fundo-card, #fff);
-  border: 1px solid var(--cor-fundo-hover, #e0e0e0);
-  border-radius: var(--borda-radius, 8px);
-  padding: 1.5rem;
+.tab-selecao-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tab-selecao-totais-card .ds-card__content {
+  padding: 1rem 1.25rem;
+}
+
+.tab-selecao-totais-card .tab-selecao-totais {
+  margin-bottom: 0;
 }
 
 .tab-selecao-totais {
@@ -354,27 +317,13 @@
   margin: 1rem 0 0 0;
 }
 
-.btn-avancar {
+.tab-selecao-btn-avancar {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background: var(--cor-primaria, #2196F3);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.btn-avancar:hover {
-  background: var(--cor-secundaria, #1976D2);
 }
 
 /* ========== Tab Resumo ========== */
-.tab-resumo {
-  background: var(--cor-fundo-card, #fff);
-  border: 1px solid var(--cor-fundo-hover, #e0e0e0);
-  border-radius: var(--borda-radius, 8px);
-  padding: 1.5rem;
+.tab-resumo-btn-confirmar {
+  margin-top: 0.5rem;
 }
 
 .tab-resumo-valores {
@@ -422,33 +371,6 @@
   margin: 0.5rem 0 0 0;
 }
 
-.btn-confirmar {
-  padding: 0.75rem 2rem;
-  background: var(--cor-primaria, #2196F3);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-confirmar:hover:not(:disabled) {
-  background: var(--cor-secundaria, #1976D2);
-}
-
-.btn-confirmar:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.sem-dados {
-  color: var(--cor-texto-suave, #666);
-  font-style: italic;
-  padding: 1rem 0;
-}
-
 /* ========== Página Histórico ========== */
 .recebimentos-historico-page {
   display: flex;
@@ -471,21 +393,11 @@
   color: var(--cor-texto-destaque, #1976d2);
 }
 
-.recebimentos-historico-header .link-nova {
-  padding: 0.5rem 1rem;
-  background: var(--cor-primaria, #2196F3);
-  color: white;
-  text-decoration: none;
-  border-radius: 6px;
-  font-size: 0.95rem;
-}
-
-.recebimentos-historico-header .link-nova:hover {
-  background: var(--cor-secundaria, #1976D2);
-}
-
 .recebimentos-historico-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .historico-loading {
@@ -581,22 +493,4 @@
   gap: 1rem;
   margin-top: 1.5rem;
   justify-content: center;
-}
-
-.paginacao button {
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--cor-fundo-hover, #ddd);
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.paginacao button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.paginacao button:not(:disabled):hover {
-  background: var(--cor-fundo-hover, #f5f5f5);
 }

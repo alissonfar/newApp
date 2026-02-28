@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Button,
-  CircularProgress
-} from '@mui/material';
+import { FaHistory } from 'react-icons/fa';
+import { Accordion, AccordionSummary, AccordionDetails, CircularProgress } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { listarSettlements, excluirSettlement } from '../../api';
 import { useData } from '../../context/DataContext';
 import TagBadge from './components/TagBadge';
+import Button from '../../components/shared/Button';
+import EmptyState from '../../components/shared/EmptyState';
+import Card, { CardContent } from '../../components/shared/Card';
 import { formatDateBR } from '../../utils/dateUtils';
+import '../../components/shared/Button.css';
 import './Recebimentos.css';
 
 const formatarValor = (v) => {
@@ -71,7 +70,7 @@ const HistoricoRecebimentosPage = () => {
     <div className="recebimentos-historico-page">
       <header className="recebimentos-historico-header">
         <h1>Histórico de Conciliações</h1>
-        <Link to="/recebimentos/novo" className="link-nova">
+        <Link to="/recebimentos/novo" className="ds-button ds-button--primary ds-button--md" style={{ textDecoration: 'none' }}>
           Nova Conciliação
         </Link>
       </header>
@@ -83,33 +82,41 @@ const HistoricoRecebimentosPage = () => {
             <p>Carregando...</p>
           </div>
         ) : settlements.items.length === 0 ? (
-          <p className="sem-dados">Nenhuma conciliação registrada.</p>
+          <Card>
+            <CardContent>
+              <EmptyState
+                message="Nenhuma conciliação registrada."
+                icon={<FaHistory size={48} />}
+              />
+            </CardContent>
+          </Card>
         ) : (
-          <div className="historico-accordion-list">
-            {settlements.items.map((s) => (
-              <Accordion key={s._id} className="historico-accordion">
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <div className="accordion-summary-content">
-                    <span className="accordion-id">#{s._id?.slice(-6)}</span>
-                    <span className="accordion-data">{formatDateBR(s.createdAt)}</span>
-                    <span className="accordion-pessoa">{pessoaRecebimento(s)}</span>
-                    <span className="accordion-valor">
-                      R$ {formatarValor(s.receivingTransactionId?.valor)}
-                    </span>
-                    <span className="accordion-tag">
-                      {getTagCompleta(s.tagId) ? <TagBadge tag={getTagCompleta(s.tagId)} size={14} /> : '-'}
-                    </span>
-                    <Button
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      onClick={(e) => handleExcluir(s._id, e)}
-                      className="btn-excluir-accordion"
-                    >
-                      Excluir
-                    </Button>
-                  </div>
-                </AccordionSummary>
+          <Card>
+            <CardContent>
+              <div className="historico-accordion-list">
+                {settlements.items.map((s) => (
+                  <Accordion key={s._id} className="historico-accordion">
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <div className="accordion-summary-content">
+                        <span className="accordion-id">#{s._id?.slice(-6)}</span>
+                        <span className="accordion-data">{formatDateBR(s.createdAt)}</span>
+                        <span className="accordion-pessoa">{pessoaRecebimento(s)}</span>
+                        <span className="accordion-valor">
+                          R$ {formatarValor(s.receivingTransactionId?.valor)}
+                        </span>
+                        <span className="accordion-tag">
+                          {getTagCompleta(s.tagId) ? <TagBadge tag={getTagCompleta(s.tagId)} size={14} /> : '-'}
+                        </span>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={(e) => handleExcluir(s._id, e)}
+                          className="btn-excluir-accordion"
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </AccordionSummary>
                 <AccordionDetails>
                   <div className="accordion-details">
                     <div className="detail-row">
@@ -143,28 +150,32 @@ const HistoricoRecebimentosPage = () => {
                     </div>
                   </div>
                 </AccordionDetails>
-              </Accordion>
-            ))}
-          </div>
+                  </Accordion>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {settlements.totalPages > 1 && (
           <div className="paginacao">
-            <button
+            <Button
+              variant="ghost"
               disabled={settlements.page <= 1}
               onClick={() => carregarSettlements(settlements.page - 1)}
             >
               Anterior
-            </button>
+            </Button>
             <span>
               Página {settlements.page} de {settlements.totalPages}
             </span>
-            <button
+            <Button
+              variant="ghost"
               disabled={settlements.page >= settlements.totalPages}
               onClick={() => carregarSettlements(settlements.page + 1)}
             >
               Próxima
-            </button>
+            </Button>
           </div>
         )}
       </div>

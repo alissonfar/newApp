@@ -1,8 +1,13 @@
 import React, { useContext } from 'react';
+import { FaCheckCircle } from 'react-icons/fa';
 import { useRecebimentos } from '../context/RecebimentosContext';
 import { AuthContext } from '../../../context/AuthContext';
 import { useData } from '../../../context/DataContext';
 import TagBadge from './TagBadge';
+import Card, { CardContent } from '../../../components/shared/Card';
+import SectionHeader from '../../../components/shared/SectionHeader';
+import Button from '../../../components/shared/Button';
+import EmptyState from '../../../components/shared/EmptyState';
 import { formatDateBR } from '../../../utils/dateUtils';
 
 const formatarValor = (v) => {
@@ -43,58 +48,68 @@ const TabResumo = () => {
 
   if (!recebimentoSelecionado) {
     return (
-      <div className="tab-resumo-placeholder">
-        <p>Complete as etapas anteriores para ver o resumo.</p>
-      </div>
+      <Card>
+        <CardContent>
+          <EmptyState
+            message="Complete as etapas anteriores para ver o resumo."
+            icon={<FaCheckCircle size={48} />}
+          />
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="tab-resumo">
-      <div className="tab-resumo-valores">
-        <div className="resumo-item">
-          <span>Valor total recebido:</span>
-          <strong>R$ {formatarValor(valorRecebimento)}</strong>
+    <Card className="tab-resumo-card">
+      <CardContent>
+        <SectionHeader title="Resumo da conciliação" icon={<FaCheckCircle size={18} />} />
+        <div className="tab-resumo-valores">
+          <div className="resumo-item">
+            <span>Valor total recebido:</span>
+            <strong>R$ {formatarValor(valorRecebimento)}</strong>
+          </div>
+          <div className="resumo-item">
+            <span>Total aplicado:</span>
+            <strong>R$ {formatarValor(totalAplicado)}</strong>
+          </div>
+          <div className="resumo-item sobra">
+            <span>Valor de sobra:</span>
+            <strong>R$ {formatarValor(sobra)}</strong>
+          </div>
         </div>
-        <div className="resumo-item">
-          <span>Total aplicado:</span>
-          <strong>R$ {formatarValor(totalAplicado)}</strong>
+
+        <div className="tab-resumo-detalhes">
+          <h4>Transações que serão quitadas</h4>
+          <ul>
+            {transacoesQuitadas.map((t) => (
+              <li key={t._id}>
+                {t.descricao} — R$ {formatarValor(t.valor)} ({formatDateBR(t.data)})
+              </li>
+            ))}
+          </ul>
         </div>
-        <div className="resumo-item sobra">
-          <span>Valor de sobra:</span>
-          <strong>R$ {formatarValor(sobra)}</strong>
+
+        <div className="tab-resumo-info">
+          <p><strong>Tag aplicada:</strong> {tagSelecionadaObj ? <TagBadge tag={tagSelecionadaObj} size={16} /> : '-'}</p>
+          {sobra > 0 && (
+            <p className="info-sobra">
+              Será criada uma nova transação de receita real de R$ {formatarValor(sobra)} para{' '}
+              {proprietario || 'Titular'}.
+            </p>
+          )}
         </div>
-      </div>
 
-      <div className="tab-resumo-detalhes">
-        <h4>Transações que serão quitadas</h4>
-        <ul>
-          {transacoesQuitadas.map((t) => (
-            <li key={t._id}>
-              {t.descricao} — R$ {formatarValor(t.valor)} ({formatDateBR(t.data)})
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="tab-resumo-info">
-        <p><strong>Tag aplicada:</strong> {tagSelecionadaObj ? <TagBadge tag={tagSelecionadaObj} size={16} /> : '-'}</p>
-        {sobra > 0 && (
-          <p className="info-sobra">
-            Será criada uma nova transação de receita real de R$ {formatarValor(sobra)} para{' '}
-            {proprietario || 'Titular'}.
-          </p>
-        )}
-      </div>
-
-      <button
-        className="btn-confirmar"
-        onClick={handleConfirmar}
-        disabled={!podeConfirmar || confirmando}
-      >
-        {confirmando ? 'Processando...' : 'Confirmar Conciliação'}
-      </button>
-    </div>
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={handleConfirmar}
+          disabled={!podeConfirmar || confirmando}
+          className="tab-resumo-btn-confirmar"
+        >
+          {confirmando ? 'Processando...' : 'Confirmar Conciliação'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 
