@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaSpinner, FaTimes, FaPlus } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
@@ -17,7 +17,7 @@ const ImportacaoOFXDetalhePage = () => {
   const [finalizando, setFinalizando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
 
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     if (!id) return;
     try {
       setCarregando(true);
@@ -29,11 +29,11 @@ const ImportacaoOFXDetalhePage = () => {
     } finally {
       setCarregando(false);
     }
-  };
+  }, [id, navigate]);
 
   useEffect(() => {
     carregar();
-  }, [id]);
+  }, [carregar]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';

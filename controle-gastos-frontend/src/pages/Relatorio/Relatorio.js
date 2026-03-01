@@ -22,7 +22,7 @@ import {
   TableChart as CsvIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
-import { getCurrentDateBR, formatDateBR, getDateRangeForPeriod } from '../../utils/dateUtils';
+import { formatDateBR, getDateRangeForPeriod } from '../../utils/dateUtils';
 
 const PAGE_SIZE = 50;
 

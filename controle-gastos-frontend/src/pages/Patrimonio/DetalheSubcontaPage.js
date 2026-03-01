@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Line } from 'react-chartjs-2';
 import {
@@ -37,7 +37,7 @@ const DetalheSubcontaPage = () => {
   const [novoSaldo, setNovoSaldo] = useState('');
   const [observacao, setObservacao] = useState('');
 
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     if (!subcontaId) return;
     try {
       setCarregando(true);
@@ -57,11 +57,11 @@ const DetalheSubcontaPage = () => {
     } finally {
       setCarregando(false);
     }
-  };
+  }, [subcontaId]);
 
   useEffect(() => {
     carregar();
-  }, [subcontaId]);
+  }, [carregar]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';

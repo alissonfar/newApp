@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaExchangeAlt, FaSpinner, FaArrowRight, FaCheck, FaClock } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
@@ -22,7 +22,7 @@ const TransferenciasPage = () => {
     data: format(new Date(), 'yyyy-MM-dd')
   });
 
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     try {
       setCarregando(true);
       const [subs, trans] = await Promise.all([
@@ -37,11 +37,11 @@ const TransferenciasPage = () => {
     } finally {
       setCarregando(false);
     }
-  };
+  }, [filtroStatus]);
 
   useEffect(() => {
     carregar();
-  }, [filtroStatus]);
+  }, [carregar]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
