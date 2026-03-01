@@ -1,0 +1,53 @@
+/* Design System - SegmentedControl */
+.ds-segmented-control {
+  display: inline-flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-fundo);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .ds-segmented-control {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .ds-segmented-control__btn {
+    flex: 1;
+  }
+}
+
+.ds-segmented-control__btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--fonte-principal);
+}
+
+.ds-segmented-control__btn:not(:last-child) {
+  border-right: 1px solid var(--cor-borda);
+}
+
+.ds-segmented-control__btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.ds-segmented-control__btn--active {
+  background: var(--cor-primaria);
+  color: white;
+}
+
+.ds-segmented-control__btn--active.ds-segmented-control__btn--error {
+  background: var(--cor-erro);
+}
+
+.ds-segmented-control__btn--active.ds-segmented-control__btn--success {
+  background: var(--cor-sucesso);
+}

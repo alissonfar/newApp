@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from 'react-calendar';
-import { FaPlus, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote, FaExclamationTriangle, FaUserTie, FaSpinner, FaCalendarDay, FaCalendarWeek, FaCalendarAlt } from 'react-icons/fa';
+import { FaPlus, FaCopy, FaArrowDown, FaArrowUp, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote, FaExclamationTriangle, FaUserTie, FaSpinner, FaCalendarDay, FaCalendarWeek, FaCalendarAlt } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -20,7 +20,13 @@ import DayDetailModal from '../../components/Modal/DayDetailModal';
 import { AuthContext } from '../../context/AuthContext';
 import './Home.css';
 import { formatDateBR, getTodayBR } from '../../utils/dateUtils';
+import { formatarMoeda } from '../../utils/format';
 import useDashboardData from '../../hooks/useDashboardData';
+import Card, { CardHeader, CardContent } from '../../components/shared/Card';
+import SectionHeader from '../../components/shared/SectionHeader';
+import SegmentedControl from '../../components/shared/SegmentedControl';
+import Button from '../../components/shared/Button';
+import EmptyState from '../../components/shared/EmptyState';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -347,97 +353,125 @@ const Home = () => {
               </div>
             </section>
 
-            <section className="dashboard-section ultimas-transacoes bg-white p-4 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-semibold text-gray-700">Últimas Transações</h2>
-              </div>
-
-              {/* Busca e Filtros */}
-              <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                <input
-                  type="text"
-                  placeholder="Buscar por descrição ou pessoa..."
-                  value={buscaTransacao}
-                  onChange={(e) => setBuscaTransacao(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <Card className="dashboard-section ultimas-transacoes">
+              <CardHeader>
+                <SectionHeader
+                  title="Últimas Transações"
+                  children={
+                    <button
+                      onClick={handleVerTransacoes}
+                      className="ultimas-transacoes-ver-todas text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      Ver todas →
+                    </button>
+                  }
                 />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setFiltroTipo('todos')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      filtroTipo === 'todos'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    onClick={() => setFiltroTipo('gasto')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      filtroTipo === 'gasto'
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Gastos
-                  </button>
-                  <button
-                    onClick={() => setFiltroTipo('recebivel')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      filtroTipo === 'recebivel'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Recebíveis
-                  </button>
+                <p className="ultimas-transacoes-subtitle">Últimas 10 movimentações</p>
+              </CardHeader>
+              <CardContent className="ultimas-transacoes-content">
+                {/* Busca e Filtros */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  <input
+                    type="text"
+                    placeholder="Buscar por descrição ou pessoa..."
+                    value={buscaTransacao}
+                    onChange={(e) => setBuscaTransacao(e.target.value)}
+                    className="input-field flex-1"
+                  />
+                  <SegmentedControl
+                    options={[
+                      { value: 'todos', label: 'Todos' },
+                      { value: 'gasto', label: 'Gastos', variant: 'error' },
+                      { value: 'recebivel', label: 'Recebíveis', variant: 'success' }
+                    ]}
+                    value={filtroTipo}
+                    onChange={setFiltroTipo}
+                  />
                 </div>
-              </div>
 
-              <div className="transacoes-lista space-y-3 max-h-72 overflow-y-auto">
-                {transacoesFiltradas.slice(0, 10).map((t, index) => (
-                  <div key={index} className={`transacao-item flex justify-between items-center py-2 px-3 rounded border-l-4 group ${t.tipo === 'gasto' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}>
-                    <div className="transacao-info flex-1">
-                      <strong className="text-sm text-gray-800 block">{t.descricao}</strong>
-                      <span className="text-xs text-gray-500">{new Date(t.data).toLocaleDateString()}</span>
-                      {t.pagamentos && t.pagamentos.length > 0 && (
-                        <span className="text-xs text-gray-600 block mt-1">
-                          {t.pagamentos.map(p => p.pessoa).join(', ')}
-                        </span>
-                      )}
+                {/* Lista de Transações - Grid tabular com cards */}
+                <div className="transacoes-lista max-h-72 overflow-y-auto">
+                  {carregandoDados ? (
+                    <div className="transacoes-skeleton">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="transacao-card-skeleton">
+                          <div className="loading-skeleton transacao-skeleton-icon" />
+                          <div className="transacao-skeleton-content">
+                            <div className="loading-skeleton transacao-skeleton-desc" />
+                            <div className="loading-skeleton transacao-skeleton-meta" />
+                          </div>
+                          <div className="loading-skeleton transacao-skeleton-valor" />
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleDuplicarTransacao(t)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
-                        title="Duplicar transação"
-                      >
-                        <FaPlus className="text-blue-600 text-xs" />
-                      </button>
-                      <div className={`transacao-valor font-medium text-sm ${t.tipo === 'gasto' ? 'text-red-600' : 'text-green-600'}`}>
-                        {t.tipo === 'gasto' ? '-' : '+'} R$ {t.valor.toFixed(2)}
+                  ) : transacoesFiltradas.length === 0 ? (
+                    <EmptyState
+                      message={
+                        buscaTransacao || filtroTipo !== 'todos'
+                          ? 'Nenhuma transação encontrada com os filtros aplicados.'
+                          : 'Nenhuma transação encontrada.'
+                      }
+                    />
+                  ) : (
+                    <>
+                      {/* Tabela unificada - um único grid para alinhamento consistente */}
+                      <div className="transacoes-tabela">
+                        <div className="transacoes-tabela-header">
+                          <span className="transacoes-col-tipo" />
+                          <span className="transacoes-col-descricao">Descrição</span>
+                          <span className="transacoes-col-data">Data</span>
+                          <span className="transacoes-col-valor">Valor</span>
+                          <span className="transacoes-col-acao" />
+                        </div>
+                        {transacoesFiltradas.slice(0, 10).map((t, index) => (
+                          <div
+                            key={t._id || index}
+                            className={`transacao-card group ${t.tipo === 'gasto' ? 'transacao-card--gasto' : 'transacao-card--recebivel'}`}
+                          >
+                            <div className={`transacoes-col-tipo transacao-tipo ${t.tipo === 'gasto' ? 'transacao-tipo--gasto' : 'transacao-tipo--recebivel'}`}>
+                              {t.tipo === 'gasto' ? <FaArrowDown size={14} /> : <FaArrowUp size={14} />}
+                            </div>
+                            <div className="transacoes-col-descricao transacao-descricao">
+                              <span className="transacao-descricao-texto">{t.descricao}</span>
+                              {t.pagamentos && t.pagamentos.length > 0 && (
+                                <span className="transacao-pessoas">{t.pagamentos.map(p => p.pessoa).join(', ')}</span>
+                              )}
+                            </div>
+                            <div className="transacoes-col-data transacao-data">
+                              {new Date(t.data).toLocaleDateString('pt-BR')}
+                            </div>
+                            <div className="transacoes-col-valor transacao-valor-cell">
+                              <span className={`transacao-valor ${t.tipo === 'gasto' ? 'transacao-valor--gasto' : 'transacao-valor--recebivel'}`}>
+                                {t.tipo === 'gasto' ? '-' : '+'} {formatarMoeda(t.valor)}
+                              </span>
+                            </div>
+                            <div className="transacoes-col-acao transacao-acao">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon={<FaCopy size={12} />}
+                                onClick={() => handleDuplicarTransacao(t)}
+                                title="Duplicar transação"
+                                aria-label="Duplicar transação"
+                                className="transacao-btn-duplicar"
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  </div>
-                ))}
-                {transacoesFiltradas.length === 0 && !carregandoDados && (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    {buscaTransacao || filtroTipo !== 'todos'
-                      ? 'Nenhuma transação encontrada com os filtros aplicados.'
-                      : 'Nenhuma transação encontrada.'}
-                  </p>
-                )}
-                {transacoesFiltradas.length > 10 && (
-                  <button
-                    onClick={handleVerTransacoes}
-                    className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    Ver todas as {transacoesFiltradas.length} transações →
-                  </button>
-                )}
-              </div>
-            </section>
+                      {transacoesFiltradas.length > 10 && (
+                        <button
+                          onClick={handleVerTransacoes}
+                          className="transacoes-ver-todas-btn"
+                        >
+                          Ver todas as {transacoesFiltradas.length} transações →
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="dashboard-column lg:col-span-1 flex flex-col gap-6">
