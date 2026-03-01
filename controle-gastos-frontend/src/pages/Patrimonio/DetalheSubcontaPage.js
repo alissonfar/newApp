@@ -61,7 +61,7 @@ const DetalheSubcontaPage = () => {
 
   useEffect(() => {
     carregar();
-  }, [carregar]);
+  }, [carregar, subcontaId]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';

@@ -76,7 +76,7 @@ const DetalheVinculoPage = () => {
     } catch (err) {
       console.error(err);
     }
-  }, [id, periodo.dataInicio, periodo.dataFim]);
+  }, [id, periodo]);
 
   useEffect(() => {
     carregar();
@@ -86,7 +86,7 @@ const DetalheVinculoPage = () => {
     if (!carregando && periodo.dataInicio) {
       carregarComPeriodo();
     }
-  }, [periodo.dataInicio, periodo.dataFim]);
+  }, [carregando, carregarComPeriodo, periodo.dataInicio, periodo.dataFim]);
 
   const handlePeriodChange = (p) => {
     setPeriodo(prev => ({ ...prev, ...p }));

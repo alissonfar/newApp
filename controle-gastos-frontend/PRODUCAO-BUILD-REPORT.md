@@ -1,28 +1,58 @@
 # Relatório de Preparação para Produção - Frontend
 
-**Data:** 27/02/2025  
+**Data:** 01/03/2026 (atualizado)  
 **Projeto:** controle-gastos-frontend  
 **Status:** ✅ BUILD OK
 
 ---
 
-## 1️⃣ Erros Encontrados Inicialmente
+## 1️⃣ Erros Encontrados Inicialmente (Sessão 01/03/2026)
 
 ### Classificação por Tipo
 
 | Categoria | Quantidade | Severidade |
 |-----------|------------|------------|
-| ❌ React Hooks (useCallback - exhaustive-deps) | 2 | Warning |
-| ❌ Console.log em craco.config.js | 4 | Info |
-| ❌ Console.debug em DetalhesImportacaoPage | 1 | Info |
+| ❌ React Hooks (useCallback/useEffect - exhaustive-deps) | 3 | Warning |
+| Browserslist desatualizado | 1 | Info |
+| Bundle size grande (~860 kB gzip) | 1 | Info |
 
-**Observação:** O build inicial **compilou com sucesso** (exit code 0), porém com **warnings** que impediriam um deploy "limpo" em produção.
+**Observação:** O build inicial **compilou com sucesso** (exit code 0), porém com **warnings de ESLint** que impediriam um deploy "limpo" em produção.
 
 ---
 
 ## 2️⃣ Correções Aplicadas
 
-### 2.1 RecebimentosContext.js - Dependências do useCallback
+### 2.1 DetalheVinculoPage.js - Dependências de useCallback e useEffect (01/03/2026)
+
+**Arquivo:** `src/pages/Conjunto/DetalheVinculoPage.js`
+
+**Problema:** 
+- `carregarComPeriodo` usava `periodo` mas dependências tinham apenas `periodo.dataInicio` e `periodo.dataFim`
+- `useEffect` do período faltava `carregando` e `carregarComPeriodo`
+
+**Causa raiz:** O ESLint `react-hooks/exhaustive-deps` exige que todas as variáveis usadas estejam nas dependências para evitar closures obsoletas.
+
+**Solução aplicada:**
+- `carregarComPeriodo`: alterado de `[id, periodo.dataInicio, periodo.dataFim]` para `[id, periodo]`
+- `useEffect`: adicionadas `carregando` e `carregarComPeriodo` ao array de dependências
+
+**Impacto:** Garante que o recarregamento por período responda corretamente às mudanças de estado.
+
+---
+
+### 2.2 DetalheSubcontaPage.js - Dependência do useEffect (01/03/2026)
+
+**Arquivo:** `src/pages/Patrimonio/DetalheSubcontaPage.js`
+
+**Problema:** `useEffect` tinha dependência faltando segundo o ESLint.
+
+**Solução aplicada:** Adicionado `subcontaId` explicitamente ao array de dependências: `[carregar, subcontaId]`.
+
+**Impacto:** Garante que a subconta seja recarregada quando o ID da rota mudar.
+
+---
+
+### 2.3 RecebimentosContext.js - Dependências do useCallback (sessão anterior)
 
 **Arquivo:** `src/pages/Recebimentos/context/RecebimentosContext.js`
 
@@ -38,7 +68,7 @@
 
 ---
 
-### 2.2 craco.config.js - Remoção de console.log
+### 2.4 craco.config.js - Remoção de console.log
 
 **Problema:** Logs de debug durante o build poluíam a saída e não são adequados para produção.
 
@@ -46,7 +76,7 @@
 
 ---
 
-### 2.3 DetalhesImportacaoPage.js - Remoção de console.debug
+### 2.5 DetalhesImportacaoPage.js - Remoção de console.debug
 
 **Problema:** `console.error('[DEBUG] ID da importação não encontrado na transação')` era log de debug esquecido.
 
@@ -54,7 +84,7 @@
 
 ---
 
-### 2.4 ReportTable.js e TransactionsTable.js - Validação defensiva
+### 2.6 ReportTable.js e TransactionsTable.js - Validação defensiva
 
 **Problema:** Uso de `data.map()` sem validar se `data` é array. Se `data` for `undefined` ou `null`, ocorreria crash em runtime.
 
@@ -66,7 +96,7 @@
 
 ---
 
-### 2.5 craco.config.js - TAILWIND_MODE para produção
+### 2.7 craco.config.js - TAILWIND_MODE para produção
 
 **Problema:** `TAILWIND_MODE: 'watch'` fixo não é ideal para build de produção.
 
@@ -86,7 +116,7 @@ Há diversos `console.error` e `console.warn` em blocos catch e em funções de 
 
 ---
 
-### 3.2 Bundle size (848.5 kB gzip)
+### 3.2 Bundle size (~860 kB gzip)
 
 **Status:** Acima do recomendado.
 
