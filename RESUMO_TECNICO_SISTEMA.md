@@ -114,6 +114,18 @@
 - **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB)
 - **Dependências**: Usuario; Transacao (vinculação opcional via `subconta`); TaxaCDI (coleção global, não por usuário)
 
+### Módulo de Importação OFX
+- **Responsabilidade**: Upload de extratos OFX (formato bancário), parse XML, criação de TransacaoOFX por linha, revisão, aprovação/ignorar, conversão em Transacao ou vinculação a Transferência (movimentação interna).
+- **Entidades**: ImportacaoOFX, TransacaoOFX
+- **Fluxos**: Upload OFX → Parse (xml2js, chardet, iconv-lite) → Cria TransacaoOFX (deduplicação por fitid+subconta) → Revisão → Aprovar (cria Transacao e/ou HistoricoSaldo) ou Ignorar; Movimentação interna: detecta padrões (Caixinha, Resgate, Aporte, Transferência para conta) e sugere vínculo com Transferência pendente
+- **Dependências**: Usuario, Subconta, Transacao, HistoricoSaldo, Transferencia; movimentacaoInternaService (sugestão de transferências)
+
+### Módulo de Transferências
+- **Responsabilidade**: Transferências entre subcontas do mesmo usuário; registro manual ou vinculação a TransacaoOFX (reconhecimento de movimentação interna).
+- **Entidades**: Transferencia
+- **Fluxos**: Criar transferência (subcontaOrigem, subcontaDestino, valor, data); Listar por status; TransacaoOFX pode vincular-se a Transferência (campo `transferencia`) para marcar movimentação interna
+- **Dependências**: Usuario, Subconta; TransacaoOFX (opcional, para vínculo bidirecional)
+
 ### Módulo de Insights
 - **Responsabilidade**: Placeholder para funcionalidade futura (análises, tendências).
 - **Estado**: Em desenvolvimento (página vazia com mensagem "Esta funcionalidade está em desenvolvimento").
@@ -146,9 +158,12 @@
 | **Subconta** | usuario, instituicao, nome, tipo (corrente/rendimento_automatico/caixinha/investimento_fixo), proposito (disponivel/reserva_emergencia/objetivo/guardado), rendimento (percentualCDI), saldoAtual, dataUltimaConfirmacao, meta, ativo |
 | **HistoricoSaldo** | usuario, subconta, saldo, data, origem (manual/importacao_ofx/importacao_csv), observacao |
 | **TaxaCDI** | data (unique), taxaDiaria, taxaMensal, taxaAnual, fonte (api.bcb.gov.br) — coleção global, não por usuário |
+| **ImportacaoOFX** | usuario, subconta, nomeArquivo, status (processando/revisao/finalizada/cancelada), dtStart, dtEnd, saldoFinalExtrato, dataSaldoExtrato, totalTransacoes/Creditos/Debitos/Ignoradas |
+| **TransacaoOFX** | importacaoOFX, subconta, usuario, fitid, tipo (credito/debito), valor, data, memo, descricao, status (pendente/aprovada/ignorada/ja_importada), movimentacaoInterna, transferencia (ref), transacaoCriada (ref), deduplicationKey |
+| **Transferencia** | usuario, subcontaOrigem, subcontaDestino, valor, data, status (pendente/concluida), transacaoOFX (ref opcional) |
 
 ### Relacionamentos
-- Usuario 1:N Transacao, Categoria, Tag, Importacao, TransacaoImportada, Settlement, ModeloRelatorio, Instituicao, Subconta, HistoricoSaldo
+- Usuario 1:N Transacao, Categoria, Tag, Importacao, TransacaoImportada, Settlement, ModeloRelatorio, Instituicao, Subconta, HistoricoSaldo, ImportacaoOFX, TransacaoOFX, Transferencia
 - Transacao N:1 Usuario; N:1 Settlement (via settlementAsSource); 1:1 Transacao (sobra via settlementLeftoverFrom); N:1 Subconta (opcional)
 - Tag N:1 Categoria (por string `categoria`)
 - Importacao 1:N TransacaoImportada
@@ -157,6 +172,9 @@
 - Instituicao N:1 Usuario
 - Subconta N:1 Usuario; N:1 Instituicao
 - HistoricoSaldo N:1 Usuario; N:1 Subconta
+- ImportacaoOFX N:1 Usuario; N:1 Subconta; 1:N TransacaoOFX
+- TransacaoOFX N:1 ImportacaoOFX; N:1 Subconta; N:1 Usuario; N:1 Transferencia (opcional); N:1 Transacao (transacaoCriada)
+- Transferencia N:1 Usuario; N:1 Subconta (origem e destino); 1:1 TransacaoOFX (opcional)
 
 ### Entidade central
 **Transacao** — núcleo do sistema; todas as funcionalidades principais orbitam em torno dela (importação gera transações, settlement altera tags em transações, relatórios agregam transações, patrimônio pode vincular transações a subcontas).
@@ -170,6 +188,8 @@
 - TransacaoImportada: valor não pode ser negativo (pre-save)
 - Instituicao: `(nome, usuario)` único
 - Subconta: `(nome, instituicao, usuario)` único; exclusão é soft delete (ativo=false)
+- ImportacaoOFX: subconta deve ser tipo `corrente` ou `rendimento_automatico`
+- Transferencia: subcontaOrigem ≠ subcontaDestino; ambas devem pertencer ao usuário
 
 ### Estados das entidades principais
 
@@ -191,6 +211,15 @@
 **HistoricoSaldo (origem)**
 - `manual` | `importacao_ofx` | `importacao_csv`
 
+**ImportacaoOFX**
+- `processando` → `revisao` → `finalizada` | `cancelada`
+
+**TransacaoOFX**
+- `pendente` → `aprovada` | `ignorada` | `ja_importada`
+
+**Transferencia**
+- `pendente` | `concluida`
+
 ---
 
 ## 5️⃣ Regras de Negócio Importantes
@@ -208,7 +237,8 @@
 - **TransacaoImportada**: pendente → revisada → validada/erro/ignorada → processada/ja_importada/estornada; suporta campo `subconta` opcional; na finalização da importação, pode-se enviar `subcontaId` e `saldo` para atualizar saldo da subconta e criar HistoricoSaldo
 
 ### Regras de consistência
-- Deduplicação: `deduplicationKey` (SHA256 de usuarioId|descricao|valor|data|tipo|identificador) evita duplicatas na importação
+- Deduplicação CSV/JSON: `deduplicationKey` (SHA256 de usuarioId|descricao|valor|data|tipo|identificador) evita duplicatas na importação
+- Deduplicação OFX: `deduplicationKey` (SHA256 de usuarioId|subcontaId|fitid) evita duplicatas por transação bancária
 - Settlement: transações MongoDB em sessão transacional
 - Finalização de importação: transações criadas em sessão transacional
 
@@ -281,6 +311,8 @@
 6. Confirmar saldo → cria HistoricoSaldo (origem: manual); atualiza saldoAtual e dataUltimaConfirmacao
 7. Ver evolução → `/patrimonio/evolucao` (gráfico de evolução patrimonial por período)
 8. Transações podem ser vinculadas a subconta (campo opcional na criação/edição)
+9. Transferências: `/patrimonio/transferencias` → criar/listar transferências entre subcontas
+10. Importação OFX: `/patrimonio/importacoes-ofx` → upload OFX por subconta → revisão → aprovar/ignorar; movimentações internas podem vincular a transferências pendentes
 
 ### Fluxo 8: Administração (admin)
 1. Acessar `/admin` (requer role admin)
@@ -292,7 +324,8 @@
 ## 7️⃣ Pontos Sensíveis / Complexidade Técnica
 
 ### Partes mais complexas
-- **Importação**: Parser CSV/JSON com múltiplos formatos, classificação (novas/já importadas/ignoradas), expansão de parcelas, deduplicação
+- **Importação CSV/JSON**: Parser com múltiplos formatos, classificação (novas/já importadas/ignoradas), expansão de parcelas, deduplicação
+- **Importação OFX**: Parse XML (xml2js), detecção de encoding (chardet, iconv-lite), extração de BANKMSGSRSV1/STMTTRN, deduplicação por fitid; detecção de movimentação interna (padrões no MEMO) e sugestão de vínculo com Transferência
 - **Settlement**: Lógica transacional; aplicação/remoção de tags em pagamentos; criação de sobra
 - **Report Engine**: Flatten de pagamentos, regras por tag (add/subtract/ignore), agregações (default/devedor)
 - **Parcelamento**: Preview vs persistência; expansão na importação (1 linha → N transações)
@@ -330,12 +363,13 @@
 - Gerenciamento de usuários (admin)
 - Responsividade
 - **Módulo de Patrimônio**: CRUD instituições e subcontas, resumo (total, por instituição, por propósito), evolução patrimonial, histórico de saldo, confirmação de saldo, rendimento estimado (CDI), vinculação de transações a subcontas, alertas de subcontas desatualizadas
+- **Importação OFX**: Upload de extratos OFX, parse XML, TransacaoOFX, revisão, aprovação/ignorar, conversão em Transacao, detecção de movimentação interna e sugestão de vínculo com Transferência
+- **Transferências**: CRUD entre subcontas, vinculação opcional com TransacaoOFX (movimentação interna)
 
 ### Parcialmente implementado
 - Export PDF de relatórios (frontend; backend retorna JSON)
 - Modelos de relatório (CRUD existe; integração com report engine)
 - PWA (apenas manifest; sem Service Worker)
-- Patrimônio: HistoricoSaldo suporta origem `importacao_ofx` e `importacao_csv`, mas importação OFX/CSV para histórico não está implementada (apenas manual)
 
 ### Planejado mas não implementado
 - **Não informado** explicitamente no código
@@ -347,11 +381,12 @@
 ### Pontos fortes
 - Arquitetura clara: backend em camadas, frontend com Context API
 - Modelagem flexível: pagamentos com múltiplas pessoas e tags por categoria
-- Deduplicação robusta na importação
+- Deduplicação robusta na importação (CSV/JSON e OFX)
 - Settlement com transações MongoDB
 - Report engine extensível (templates + modelos)
 - Suporte a parcelamento na criação e na importação
 - Módulo Patrimônio bem integrado: instituições → subcontas → histórico; vinculação opcional de transações; TaxaCDI externa para rendimento estimado
+- Importação OFX completa: parse de extratos bancários, detecção de movimentação interna, sugestão de vínculo com transferências
 
 ### Pontos de melhoria
 - Substituir processamento assíncrono de importação por fila (Bull, Agenda, etc.)
@@ -372,4 +407,4 @@
 
 ---
 
-*Documento gerado com base na análise do código-fonte. Última atualização: fevereiro/2025 (incluído módulo Patrimônio).*
+*Documento gerado com base na análise do código-fonte. Última atualização: março/2025 (incluídos módulos Importação OFX e Transferências).*
