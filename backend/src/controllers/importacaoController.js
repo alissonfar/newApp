@@ -282,7 +282,10 @@ class ImportacaoController {
                 const pagamentos = ti.pagamentos && ti.pagamentos.length > 0
                     ? ti.pagamentos.map(p => {
                         const base = p.toObject ? p.toObject() : (typeof p === 'object' ? { ...p } : { pessoa: 'Importação Automática', tags: {} });
-                        return { pessoa: base.pessoa || 'Importação Automática', valor, tags: base.tags || {} };
+                        const valorPagamento = (base.valor != null && base.valor !== undefined)
+                            ? parseFloat(base.valor)
+                            : valor;
+                        return { pessoa: base.pessoa || 'Importação Automática', valor: valorPagamento, tags: base.tags || {} };
                     })
                     : [{ pessoa: 'Importação Automática', valor, tags: {} }];
                 const obj = {
@@ -303,15 +306,12 @@ class ImportacaoController {
                     installmentIntervalDays: intervalDays != null ? intervalDays : null
                 };
                 if (ti.contaConjunta?.ativo) {
-                    obj.contaConjunta = {
-                        ativo: true,
-                        vinculoId: ti.contaConjunta.vinculoId,
-                        pagoPor: ti.contaConjunta.pagoPor,
-                        valorTotal: ti.contaConjunta.valorTotal,
-                        parteUsuario: ti.contaConjunta.parteUsuario,
-                        parteOutro: ti.contaConjunta.parteOutro,
-                        acertadoEm: null
-                    };
+                    const preparado = transacaoService.prepararValorEContaConjunta({
+                        valor,
+                        contaConjunta: { ...ti.contaConjunta, ativo: true }
+                    });
+                    obj.valor = preparado.valor;
+                    obj.contaConjunta = preparado.contaConjunta;
                 }
                 return obj;
             };
