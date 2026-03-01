@@ -30,6 +30,12 @@ function flattenTransactions(transArray) {
   const flattened = [];
   (transArray || []).forEach((tr) => {
     const id = tr.id || tr._id;
+    const baseContaConjunta = tr.contaConjunta?.ativo ? {
+      valorTotal: tr.contaConjunta.valorTotal,
+      parteUsuario: tr.contaConjunta.parteUsuario,
+      pagoPor: tr.contaConjunta.pagoPor,
+      vinculo: tr.contaConjunta.vinculoId?.nome || tr.vinculoNome || (tr.contaConjunta.vinculoId?._id || tr.contaConjunta.vinculoId) || ''
+    } : {};
     if (!tr.pagamentos || tr.pagamentos.length === 0) {
       flattened.push({
         id,
@@ -39,7 +45,8 @@ function flattenTransactions(transArray) {
         valor: tr.valor,
         pessoa: null,
         valorPagamento: 0,
-        tagsPagamento: {}
+        tagsPagamento: {},
+        ...baseContaConjunta
       });
     } else {
       tr.pagamentos.forEach((p) => {
@@ -51,7 +58,8 @@ function flattenTransactions(transArray) {
           valor: tr.valor,
           pessoa: p.pessoa,
           valorPagamento: p.valor,
-          tagsPagamento: p.tags || {}
+          tagsPagamento: p.tags || {},
+          ...baseContaConjunta
         });
       });
     }
@@ -339,11 +347,29 @@ const Relatorio = () => {
       const filename = buildReportFilename(filterDetails, exportFormat === 'csv' ? 'csv' : 'pdf', categorias, tags);
 
       if (exportFormat === 'csv') {
+        const csvRows = normalizedRows.map((r) => {
+          const tagsStr = r.tagsPagamento && typeof r.tagsPagamento === 'object'
+            ? Object.values(r.tagsPagamento).flat().filter(Boolean).join(', ')
+            : '';
+          return {
+            Data: r.data,
+            Descrição: r.descricao,
+            Tipo: r.tipo,
+            Status: r.status || '',
+            Pessoa: r.pessoa,
+            Valor: r.valorPagamento,
+            Tags: tagsStr,
+            'Valor Total': r.valorTotal ?? '',
+            'Parte Usuário': r.parteUsuario ?? '',
+            'Pago Por': r.pagoPor ?? '',
+            'Vínculo': r.vinculo ?? ''
+          };
+        });
         exportDataToCSV(
-          normalizedRows,
+          csvRows,
           filename,
           {
-            customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'],
+            customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags', 'Valor Total', 'Parte Usuário', 'Pago Por', 'Vínculo'],
             formatDates: true,
             formatCurrency: true
           }

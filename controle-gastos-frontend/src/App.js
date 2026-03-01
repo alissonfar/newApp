@@ -30,6 +30,8 @@ import EvolucaoPage from './pages/Patrimonio/EvolucaoPage';
 import ImportacaoOFXPage from './pages/Patrimonio/ImportacaoOFXPage';
 import ImportacaoOFXDetalhePage from './pages/Patrimonio/ImportacaoOFXDetalhePage';
 import TransferenciasPage from './pages/Patrimonio/TransferenciasPage';
+import ConjuntoPage from './pages/Conjunto/ConjuntoPage';
+import DetalheVinculoPage from './pages/Conjunto/DetalheVinculoPage';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -194,6 +196,26 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <TransferenciasPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/conjunto"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <ConjuntoPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/conjunto/:id"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <DetalheVinculoPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

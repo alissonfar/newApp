@@ -71,7 +71,7 @@ const transacaoImportadaController = {
       });
 
       // Campos permitidos para atualização (installment* tratados separadamente abaixo)
-      const camposPermitidos = ['descricao', 'valor', 'data', 'tipo', 'observacao', 'pagamentos', 'subconta'];
+      const camposPermitidos = ['descricao', 'valor', 'data', 'tipo', 'observacao', 'pagamentos', 'subconta', 'contaConjunta'];
       
       // Atualiza apenas os campos permitidos que foram enviados
       camposPermitidos.forEach(campo => {
@@ -107,6 +107,19 @@ const transacaoImportadaController = {
 
               return pagamentoProcessado;
             });
+          } else if (campo === 'contaConjunta') {
+            if (req.body.contaConjunta?.ativo) {
+              transacao.contaConjunta = {
+                ativo: true,
+                vinculoId: req.body.contaConjunta.vinculoId,
+                pagoPor: req.body.contaConjunta.pagoPor,
+                valorTotal: req.body.contaConjunta.valorTotal,
+                parteUsuario: req.body.contaConjunta.parteUsuario,
+                parteOutro: req.body.contaConjunta.parteOutro
+              };
+            } else {
+              transacao.contaConjunta = { ativo: false };
+            }
           } else {
             transacao[campo] = req.body[campo];
           }

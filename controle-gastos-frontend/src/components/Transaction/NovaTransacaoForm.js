@@ -5,7 +5,7 @@ import Select from 'react-select'; // Import do React-Select
 import { toast } from 'react-toastify'; // Import do toast do React Toastify
 import { Tooltip, IconButton } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { criarTransacao, atualizarTransacao, obterPreviewParcelas } from '../../api';
+import { criarTransacao, atualizarTransacao, obterPreviewParcelas, listarVinculosConjuntos } from '../../api';
 import { useData } from '../../context/DataContext';
 import patrimonioApi from '../../services/patrimonioApi';
 import IconRenderer from '../shared/IconRenderer';
@@ -74,7 +74,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   const [_id, set_Id] = useState(transacao?._id);
   const [tipo, setTipo] = useState(transacao ? transacao.tipo : 'gasto');
   const [descricao, setDescricao] = useState(transacao ? transacao.descricao : '');
-  const [data, setData] = useState(transacao ? transacao.data.split('T')[0] : '');
+  const [data, setData] = useState(transacao ? (typeof transacao.data === 'string' ? transacao.data.split('T')[0] : transacao.data instanceof Date ? transacao.data.toISOString().split('T')[0] : '') : '');
   const [valorTotal, setValorTotal] = useState(transacao ? String(transacao.valor) : '');
   const [observacao, setObservacao] = useState(transacao ? transacao.observacao : '');
   
@@ -115,6 +115,14 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   // Subconta (opcional) - vinculação ao módulo Patrimônio
   const [subcontas, setSubcontas] = useState([]);
   const [subconta, setSubconta] = useState('');
+
+  // Conta Conjunta (opcional)
+  const [isContaConjunta, setIsContaConjunta] = useState(false);
+  const [vinculos, setVinculos] = useState([]);
+  const [vinculoId, setVinculoId] = useState('');
+  const [pagoPor, setPagoPor] = useState('usuario');
+  const [valorTotalCompra, setValorTotalCompra] = useState('');
+  const [parteUsuario, setParteUsuario] = useState('');
   
   // Removido handleFocus - causava scroll excessivo durante navegação rápida por teclado
   
@@ -130,6 +138,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   useEffect(() => {
     patrimonioApi.listarSubcontas().then(setSubcontas).catch(() => setSubcontas([]));
   }, []);
+
+  // Carregar vínculos quando conta conjunta ativa
+  useEffect(() => {
+    if (isContaConjunta) {
+      listarVinculosConjuntos().then(setVinculos).catch(() => setVinculos([]));
+    }
+  }, [isContaConjunta]);
 
   // Sincronizar subconta quando transacao mudar (edição)
   useEffect(() => {
@@ -198,24 +213,25 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     return () => clearTimeout(timer);
   }, [isParcelado, totalParcelas, intervaloDias, valorTotal, data, transacao, mostrarParcelamentoEmEdicao]);
 
+  // Valor esperado para soma dos pagamentos (Conta Conjunta Fluxo B: parteUsuario)
+  const valorEsperadoParaSoma = (isContaConjunta && pagoPor === 'outro')
+    ? parseFloat(parteUsuario || 0)
+    : parseFloat(valorTotal || 0);
+
   // Validação visual em tempo real (não-bloqueante)
   useEffect(() => {
-    if (!valorTotal || pagamentos.length === 0) {
+    if (pagamentos.length === 0) {
       setShowValidationWarning(false);
       return;
     }
-
     const soma = pagamentos.reduce((acc, pag) => {
       const v = parseFloat(pag.valor || 0);
       return acc + (isNaN(v) ? 0 : v);
     }, 0);
-
-    const total = parseFloat(valorTotal || 0);
+    const total = valorEsperadoParaSoma;
     const diferenca = Math.abs(total - soma);
-
-    // Mostra aviso se a diferença for > 0.01 (evita erros de arredondamento)
     setShowValidationWarning(diferenca > 0.01);
-  }, [valorTotal, pagamentos]);
+  }, [valorTotal, parteUsuario, isContaConjunta, pagoPor, pagamentos, valorEsperadoParaSoma]);
 
   // Sempre que "transacao" mudar (modo edição), preenche os estados
   useEffect(() => {
@@ -223,7 +239,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       set_Id(transacao._id);
       setTipo(transacao.tipo);
       setDescricao(transacao.descricao);
-      setData(transacao.data.split('T')[0]);
+      setData(typeof transacao.data === 'string' ? transacao.data.split('T')[0] : transacao.data instanceof Date ? transacao.data.toISOString().split('T')[0] : '');
       setValorTotal(String(transacao.valor));
       setObservacao(transacao.observacao || '');
       
@@ -249,6 +265,19 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         setIsParcelado(false);
         setTotalParcelas('2');
         setIntervaloDias('30');
+      }
+      if (transacao.contaConjunta?.ativo) {
+        setIsContaConjunta(true);
+        setVinculoId(transacao.contaConjunta.vinculoId?._id || transacao.contaConjunta.vinculoId || '');
+        setPagoPor(transacao.contaConjunta.pagoPor || 'usuario');
+        setValorTotalCompra(String(transacao.contaConjunta.valorTotal || transacao.valor));
+        setParteUsuario(String(transacao.contaConjunta.parteUsuario ?? transacao.valor));
+      } else {
+        setIsContaConjunta(false);
+        setVinculoId('');
+        setPagoPor('usuario');
+        setValorTotalCompra('');
+        setParteUsuario('');
       }
     }
   }, [transacao, proprietarioPadrao]);
@@ -281,18 +310,31 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   const handleValorTotalChange = (e) => {
     const raw = e.target.value;
     setValorTotal(raw);
-    if (pagamentos.length === 1) {
+    if (isContaConjunta && pagoPor === 'outro') {
+      setParteUsuario(raw);
+      if (pagamentos.length === 1) handlePagamentoChange(0, 'valor', raw);
+    } else if (pagamentos.length === 1) {
       handlePagamentoChange(0, 'valor', raw);
     }
   };
+
+  const handleParteUsuarioChange = (raw) => {
+    setParteUsuario(raw);
+    if (pagoPor === 'outro') {
+      setValorTotal(raw);
+      if (pagamentos.length === 1) {
+        handlePagamentoChange(0, 'valor', raw);
+      }
+    }
+  };
   
-  // Validação: a soma dos pagamentos deve ser igual ao valor total
+  // Validação: a soma dos pagamentos deve ser igual ao valor esperado (valor total ou parteUsuario em Fluxo B)
   const validatePagamentos = () => {
     const soma = pagamentos.reduce((acc, pag) => {
       const v = parseFloat(pag.valor || 0);
       return acc + (isNaN(v) ? 0 : v);
     }, 0);
-    return parseFloat(valorTotal || 0) === soma;
+    return Math.abs(valorEsperadoParaSoma - soma) <= 0.01;
   };
   
   // Ref para handleSubmit (evita dependência instável no useEffect de atalhos)
@@ -371,6 +413,23 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       toast.error('A soma dos pagamentos deve ser igual ao valor total da transação.');
       return;
     }
+    if (isContaConjunta && !vinculoId) {
+      toast.error('Selecione um vínculo para conta conjunta.');
+      return;
+    }
+    if (isContaConjunta && vinculoId) {
+      const vTotal = pagoPor === 'outro' ? parseFloat(valorTotalCompra) || 0 : parseFloat(valorTotal) || 0;
+      const pUsuario = parseFloat(parteUsuario || (pagoPor === 'outro' ? valorTotal : valorTotal)) || 0;
+      const pOutro = vTotal - pUsuario;
+      if (Math.abs(pUsuario + pOutro - vTotal) > 0.01) {
+        toast.error('Minha parte + parte do outro deve ser igual ao valor total.');
+        return;
+      }
+      if (vTotal <= 0) {
+        toast.error('Valor total deve ser maior que zero.');
+        return;
+      }
+    }
     
     try {
       const numParcelas = parseInt(totalParcelas, 10) || 2;
@@ -380,12 +439,31 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       const ehParcelado = isParcelado && !transacao && parcelasValidas && intervaloValido;
       const ehParceladoNaEdicao = mostrarParcelamentoEmEdicao && isParcelado && parcelasValidas && intervaloValido;
 
+      let valorFinal = parseFloat(valorTotal);
+      let contaConjuntaPayload = null;
+      if (isContaConjunta && vinculoId) {
+        const vTotal = pagoPor === 'outro'
+          ? parseFloat(valorTotalCompra) || 0
+          : parseFloat(valorTotal) || 0;
+        const pUsuario = parseFloat(parteUsuario || valorTotal) || 0;
+        const pOutro = Math.round((vTotal - pUsuario) * 100) / 100;
+        contaConjuntaPayload = {
+          ativo: true,
+          vinculoId,
+          pagoPor,
+          valorTotal: vTotal,
+          parteUsuario: pUsuario,
+          parteOutro: pOutro
+        };
+        valorFinal = pagoPor === 'outro' ? pUsuario : vTotal;
+      }
+
       const transacaoData = {
         _id,
         tipo,
         descricao,
         data: toISOStringBR(data),
-        valor: parseFloat(valorTotal),
+        valor: valorFinal,
         observacao,
         pagamentos: pagamentos.map(p => ({
           pessoa: p.pessoa,
@@ -395,6 +473,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       };
       if (subconta) transacaoData.subconta = subconta;
       else transacaoData.subconta = null;
+      if (contaConjuntaPayload) transacaoData.contaConjunta = contaConjuntaPayload;
 
       if (ehParcelado || ehParceladoNaEdicao) {
         transacaoData.isInstallment = true;
@@ -441,6 +520,11 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         setObservacao('');
         setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
         setSubconta('');
+        setIsContaConjunta(false);
+        setVinculoId('');
+        setPagoPor('usuario');
+        setValorTotalCompra('');
+        setParteUsuario('');
         setIsImportada(false);
         setImportacaoId(null);
         setIsParcelado(false);
@@ -661,6 +745,119 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
                 />
               </div>
             )}
+            <div className="form-section conta-conjunta-section">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isContaConjunta}
+                  onChange={(e) => {
+                    setIsContaConjunta(e.target.checked);
+                    if (!e.target.checked) {
+                      setVinculoId('');
+                      setPagoPor('usuario');
+                      setValorTotalCompra('');
+                      setParteUsuario('');
+                    }
+                  }}
+                  tabIndex={92}
+                />
+                {' '}Esta é uma conta conjunta
+              </label>
+              {isContaConjunta && (
+                <div className="conta-conjunta-campos">
+                  <div className="form-section">
+                    <label>Vínculo:</label>
+                    <select
+                      value={vinculoId}
+                      onChange={(e) => setVinculoId(e.target.value)}
+                      required={isContaConjunta}
+                      tabIndex={93}
+                    >
+                      <option value="">Selecione...</option>
+                      {vinculos.map((v) => (
+                        <option key={v._id} value={v._id}>
+                          {v.nome} ({v.participante})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-section">
+                    <label>Quem pagou:</label>
+                    <div className="radio-group">
+                      <label>
+                        <input
+                          type="radio"
+                          name="pagoPor"
+                          value="usuario"
+                          checked={pagoPor === 'usuario'}
+                          onChange={() => setPagoPor('usuario')}
+                          tabIndex={94}
+                        />
+                        {' '}Eu paguei
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="pagoPor"
+                          value="outro"
+                          checked={pagoPor === 'outro'}
+                          onChange={() => setPagoPor('outro')}
+                          tabIndex={95}
+                        />
+                        {' '}Outro participante pagou
+                      </label>
+                    </div>
+                  </div>
+                  {pagoPor === 'outro' && (
+                    <>
+                      <div className="form-section">
+                        <label>Valor total da compra:</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={valorTotalCompra}
+                          onChange={(e) => setValorTotalCompra(e.target.value)}
+                          tabIndex={96}
+                        />
+                      </div>
+                      <div className="form-section">
+                        <label>Minha parte:</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={parteUsuario}
+                          onChange={(e) => handleParteUsuarioChange(e.target.value)}
+                          tabIndex={97}
+                        />
+                        {valorTotalCompra && parteUsuario && (
+                          <span className="parte-outro-info">
+                            Parte do outro: R$ {(parseFloat(valorTotalCompra) - parseFloat(parteUsuario || 0)).toFixed(2).replace('.', ',')}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {pagoPor === 'usuario' && (
+                    <div className="form-section">
+                      <label>Minha parte (do valor total):</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={parteUsuario}
+                        onChange={(e) => setParteUsuario(e.target.value)}
+                        placeholder={valorTotal}
+                        tabIndex={98}
+                      />
+                      {valorTotal && parteUsuario && (
+                        <span className="parte-outro-info">
+                          Parte do outro: R$ {(parseFloat(valorTotal) - parseFloat(parteUsuario || 0)).toFixed(2).replace('.', ',')}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="right-column">
             <div className="form-section pagamentos-section">

@@ -515,3 +515,120 @@ export async function excluirSettlement(id) {
   return dados;
 }
 
+/* ----- Vínculos Conjuntos (Conta Conjunta) ----- */
+export async function listarVinculosConjuntos() {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar vínculos.');
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function criarVinculoConjunto(dados) {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(dados)
+  });
+  const dadosResposta = await resposta.json();
+  if (!resposta.ok || dadosResposta?.erro) throw new Error(dadosResposta?.erro || 'Erro ao criar vínculo.');
+  return dadosResposta;
+}
+
+export async function obterVinculoConjunto(id) {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos/${id}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao obter vínculo.');
+  return dados;
+}
+
+export async function atualizarVinculoConjunto(id, dados) {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(dados)
+  });
+  const dadosResposta = await resposta.json();
+  if (!resposta.ok || dadosResposta?.erro) throw new Error(dadosResposta?.erro || 'Erro ao atualizar vínculo.');
+  return dadosResposta;
+}
+
+export async function excluirVinculoConjunto(id) {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao excluir vínculo.');
+  return dados;
+}
+
+export async function obterSaldoVinculo(id) {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos/${id}/saldo`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao obter saldo.');
+  return dados;
+}
+
+export async function obterResumoVinculo(id, params = {}) {
+  const q = new URLSearchParams();
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  const query = q.toString();
+  const url = `${API_BASE}/vinculos-conjuntos/${id}/resumo${query ? '?' + query : ''}`;
+  const resposta = await fetch(url, { headers: getHeaders(false) });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao obter resumo.');
+  return dados;
+}
+
+export async function listarTransacoesVinculo(id, params = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', params.page);
+  if (params.limit) q.set('limit', params.limit);
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  if (params.pendente !== undefined) q.set('pendente', params.pendente);
+  const query = q.toString();
+  const url = `${API_BASE}/vinculos-conjuntos/${id}/transacoes${query ? '?' + query : ''}`;
+  const resposta = await fetch(url, { headers: getHeaders(false) });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar transações.');
+  return dados;
+}
+
+export async function listarAcertosVinculo(id) {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos/${id}/acertos`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar acertos.');
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function registrarAcertoVinculo(vinculoId, dados) {
+  const resposta = await fetch(`${API_BASE}/vinculos-conjuntos/${vinculoId}/acertos`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(dados)
+  });
+  const dadosResposta = await resposta.json();
+  if (!resposta.ok || dadosResposta?.erro) throw new Error(dadosResposta?.erro || 'Erro ao registrar acerto.');
+  return dadosResposta;
+}
+
+export async function estornarAcerto(acertoId) {
+  const resposta = await fetch(`${API_BASE}/acertos/${acertoId}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao estornar acerto.');
+  return dados;
+}
+

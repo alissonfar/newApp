@@ -70,6 +70,8 @@ const rotasSubconta = require('./routes/rotasSubconta');
 const rotasPatrimonio = require('./routes/rotasPatrimonio');
 const rotasImportacaoOFX = require('./routes/rotasImportacaoOFX');
 const rotasTransferencia = require('./routes/rotasTransferencia');
+const rotasVinculoConjunto = require('./routes/rotasVinculoConjunto');
+const rotasAcertos = require('./routes/rotasAcertos');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
@@ -88,6 +90,8 @@ app.use('/api/subcontas', rotasSubconta);
 app.use('/api/patrimonio/importacoes-ofx', rotasImportacaoOFX);
 app.use('/api/patrimonio/transferencias', rotasTransferencia);
 app.use('/api/patrimonio', rotasPatrimonio);
+app.use('/api/vinculos-conjuntos', rotasVinculoConjunto);
+app.use('/api/acertos', rotasAcertos);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {

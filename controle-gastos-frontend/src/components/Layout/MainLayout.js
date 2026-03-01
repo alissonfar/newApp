@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank, FaUsers } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -84,6 +84,7 @@ const MainLayout = ({ children }) => {
     },
     { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },
     { name: 'Patrimônio', path: '/patrimonio', icon: <FaPiggyBank /> },
+    { name: 'Contas Conjuntas', path: '/conjunto', icon: <FaUsers /> },
   ];
 
   // Controle de exibição do menu de perfil

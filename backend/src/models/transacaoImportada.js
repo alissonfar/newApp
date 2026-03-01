@@ -75,7 +75,15 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     ref: 'Usuario', 
     required: true 
   },
-  subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: false, default: null }
+  subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: false, default: null },
+  contaConjunta: {
+    ativo: { type: Boolean, default: false },
+    vinculoId: { type: mongoose.Schema.Types.ObjectId, ref: 'VinculoConjunto' },
+    pagoPor: { type: String, enum: ['usuario', 'outro'] },
+    valorTotal: { type: Number, min: 0 },
+    parteUsuario: { type: Number, min: 0 },
+    parteOutro: { type: Number, min: 0 }
+  }
 }, { 
   timestamps: true,
   toJSON: { 
@@ -94,7 +102,7 @@ TransacaoImportadaSchema.methods.paraTransacao = function() {
   const pagamentos = this.pagamentos && this.pagamentos.length > 0
     ? this.pagamentos
     : [{ pessoa: 'Titular', valor: this.valor, tags: {} }];
-  return {
+  const result = {
     tipo: this.tipo,
     descricao: this.descricao,
     valor: this.valor,
@@ -111,6 +119,18 @@ TransacaoImportadaSchema.methods.paraTransacao = function() {
     installmentIntervalMonths: this.installmentIntervalMonths,
     installmentIntervalDays: this.installmentIntervalDays
   };
+  if (this.contaConjunta?.ativo) {
+    result.contaConjunta = {
+      ativo: true,
+      vinculoId: this.contaConjunta.vinculoId,
+      pagoPor: this.contaConjunta.pagoPor,
+      valorTotal: this.contaConjunta.valorTotal,
+      parteUsuario: this.contaConjunta.parteUsuario,
+      parteOutro: this.contaConjunta.parteOutro,
+      acertadoEm: null
+    };
+  }
+  return result;
 };
 
 // Middleware para validar valor

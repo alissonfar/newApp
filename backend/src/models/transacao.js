@@ -29,7 +29,17 @@ const TransacaoSchema = new mongoose.Schema({
   settlementApplied: { type: mongoose.Schema.Types.ObjectId, ref: 'Settlement', default: null },
   settlementLeftoverFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Settlement', default: null },
   // Módulo Patrimônio - vinculação opcional a subconta
-  subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: false, default: null }
+  subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: false, default: null },
+  // Módulo Conta Conjunta - metadados de divisão (ignorado quando ativo=false)
+  contaConjunta: {
+    ativo: { type: Boolean, default: false },
+    vinculoId: { type: mongoose.Schema.Types.ObjectId, ref: 'VinculoConjunto' },
+    pagoPor: { type: String, enum: ['usuario', 'outro'] },
+    valorTotal: { type: Number, min: 0 },
+    parteUsuario: { type: Number, min: 0 },
+    parteOutro: { type: Number, min: 0 },
+    acertadoEm: { type: mongoose.Schema.Types.ObjectId, ref: 'AcertoConjunto', default: null }
+  }
 });
 
 TransacaoSchema.index({ usuario: 1, settlementAsSource: 1 }, { sparse: true });
@@ -38,5 +48,6 @@ TransacaoSchema.index({ usuario: 1, deduplicationKey: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, installmentGroupId: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, status: 1, data: -1 });
 TransacaoSchema.index({ usuario: 1, 'pagamentos.pessoa': 1 });
+TransacaoSchema.index({ usuario: 1, 'contaConjunta.ativo': 1, 'contaConjunta.vinculoId': 1, 'contaConjunta.acertadoEm': 1 }, { sparse: true });
 
 module.exports = mongoose.model('Transacao', TransacaoSchema);

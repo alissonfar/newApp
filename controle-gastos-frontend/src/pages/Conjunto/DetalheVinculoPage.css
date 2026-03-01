@@ -1,0 +1,158 @@
+.detalhe-vinculo-page {
+  padding: 1.5rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--cor-fundo);
+  min-height: 100vh;
+}
+
+.detalhe-vinculo-header {
+  margin-bottom: 1rem;
+}
+
+.detalhe-vinculo-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1rem;
+}
+
+.detalhe-vinculo-placar {
+  margin-bottom: 1.5rem;
+}
+
+.placar-card {
+  padding: 1.5rem;
+}
+
+.placar-card h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.5rem;
+}
+
+.participante-nome {
+  margin: 0 0 0.5rem 0;
+  color: var(--cor-texto-suave, #555);
+}
+
+.saldo-atual {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1rem 0;
+}
+
+.saldo-atual.positivo {
+  color: var(--cor-sucesso, #2e7d32);
+}
+
+.saldo-atual.negativo {
+  color: var(--cor-erro, #c62828);
+}
+
+.detalhe-vinculo-resumo,
+.detalhe-vinculo-transacoes,
+.detalhe-vinculo-acertos {
+  margin-bottom: 1.5rem;
+}
+
+.detalhe-vinculo-resumo .ds-card,
+.detalhe-vinculo-transacoes .ds-card,
+.detalhe-vinculo-acertos .ds-card {
+  padding: 1.25rem;
+}
+
+.resumo-totais {
+  margin-top: 1rem;
+}
+
+.resumo-totais p {
+  margin: 0.25rem 0;
+}
+
+.lista-transacoes,
+.lista-acertos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.transacao-item,
+.lista-acertos li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.transacao-item:last-child,
+.lista-acertos li:last-child {
+  border-bottom: none;
+}
+
+.transacao-desc {
+  font-weight: 500;
+  flex: 1 1 100%;
+}
+
+.transacao-detalhe,
+.transacao-parte,
+.transacao-data {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.acerto-data,
+.acerto-dir,
+.acerto-valor {
+  margin-right: 1rem;
+}
+
+.acerto-obs {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.modal-acerto {
+  background: white;
+  padding: 1.5rem;
+  border-radius: var(--borda-radius);
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-acerto h3 {
+  margin: 0 0 1rem 0;
+}
+
+.modal-acerto .form-group {
+  margin-bottom: 1rem;
+}
+
+.modal-acerto .form-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.modal-acerto .form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-acerto .radio-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.modal-acerto .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}

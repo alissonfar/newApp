@@ -8,6 +8,7 @@ const Transacao = require('../models/transacao');
 const Subconta = require('../models/subconta');
 const HistoricoSaldo = require('../models/historicoSaldo');
 const installmentUtils = require('../utils/installmentUtils');
+const transacaoService = require('../services/transacaoService');
 
 class ImportacaoController {
     static async criar(req, res) {
@@ -284,7 +285,7 @@ class ImportacaoController {
                         return { pessoa: base.pessoa || 'Importação Automática', valor, tags: base.tags || {} };
                     })
                     : [{ pessoa: 'Importação Automática', valor, tags: {} }];
-                return {
+                const obj = {
                     tipo: ti.tipo,
                     descricao: ti.descricao,
                     valor,
@@ -301,6 +302,18 @@ class ImportacaoController {
                     installmentIntervalMonths: null,
                     installmentIntervalDays: intervalDays != null ? intervalDays : null
                 };
+                if (ti.contaConjunta?.ativo) {
+                    obj.contaConjunta = {
+                        ativo: true,
+                        vinculoId: ti.contaConjunta.vinculoId,
+                        pagoPor: ti.contaConjunta.pagoPor,
+                        valorTotal: ti.contaConjunta.valorTotal,
+                        parteUsuario: ti.contaConjunta.parteUsuario,
+                        parteOutro: ti.contaConjunta.parteOutro,
+                        acertadoEm: null
+                    };
+                }
+                return obj;
             };
 
             // Processar grupos parcelados: expandir se 1 linha representa o total
@@ -359,6 +372,16 @@ class ImportacaoController {
                 const dataVal = ti.data instanceof Date ? ti.data : new Date(ti.data);
                 transacoesReais.push(montarTransacao(ti, ti.valor, dataVal, null, null, null, null));
                 mapeamentoTiParaTransacao.push({ ti, transacaoIndex: transacoesReais.length - 1 });
+            }
+
+            for (const tr of transacoesReais) {
+                if (tr.contaConjunta?.ativo) {
+                    transacaoService.validarSomaPagamentos(tr, tr.pagamentos);
+                    await transacaoService.validarContaConjunta({
+                        contaConjunta: tr.contaConjunta,
+                        usuarioId: tr.usuario
+                    });
+                }
             }
 
             const session = await mongoose.startSession();
