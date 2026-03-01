@@ -2,6 +2,7 @@
 const Transacao = require('../models/transacao');
 const mongoose = require('mongoose');
 const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
+const { buildPagamentosTagFilterStage } = require('../utils/pagamentosTagFilter');
 
 const MAX_EXPORT = 50000;
 
@@ -99,6 +100,14 @@ async function fetchFilteredTransactions(filters, userId) {
     : null;
 
   const pipeline = [{ $match: matchStage }];
+
+  // Filtro granular por tags: manter apenas pagamentos que possuem as tags selecionadas (antes do filtro de pessoas)
+  const tagsFilterStage = buildPagamentosTagFilterStage(f.tagsFilter);
+  if (tagsFilterStage) {
+    pipeline.push(tagsFilterStage);
+    pipeline.push({ $match: { $expr: { $gt: [{ $size: '$pagamentos' }, 0] } } });
+  }
+
   if (pessoasFilter && pessoasFilter.length > 0) {
     pipeline.push({
       $addFields: {

@@ -27,3 +27,6 @@ backend/backups/*.gz
 backend/backups/*.json
 backend/tmp/
 mongo_data/
+
+
+backend/scripts/sync_db.bat

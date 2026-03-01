@@ -3,6 +3,18 @@ const Transacao = require('../models/transacao');
 const Subconta = require('../models/subconta');
 const mongoose = require('mongoose');
 const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
+const { buildPagamentosTagFilterStage } = require('../utils/pagamentosTagFilter');
+
+function getTagsFilterFromReq(req) {
+  if (!req.query.tagsFilter) return null;
+  try {
+    const tagsFilter = typeof req.query.tagsFilter === 'string'
+      ? JSON.parse(req.query.tagsFilter) : req.query.tagsFilter;
+    return tagsFilter && typeof tagsFilter === 'object' ? tagsFilter : null;
+  } catch (e) {
+    return null;
+  }
+}
 
 function buildMatchStage(req) {
   const match = { status: 'ativo', usuario: new mongoose.Types.ObjectId(req.userId) };
@@ -35,22 +47,17 @@ function buildMatchStage(req) {
     match.tipo = req.query.tipo.toLowerCase();
   }
 
-  if (req.query.tagsFilter) {
-    try {
-      const tagsFilter = typeof req.query.tagsFilter === 'string'
-        ? JSON.parse(req.query.tagsFilter) : req.query.tagsFilter;
-      const tagConditions = [];
-      for (const [categoriaId, tagIds] of Object.entries(tagsFilter)) {
-        if (Array.isArray(tagIds) && tagIds.length > 0) {
-          tagConditions.push({ ['pagamentos.tags.' + categoriaId]: { $in: tagIds } });
-        }
+  const tagsFilter = getTagsFilterFromReq(req);
+  if (tagsFilter) {
+    const tagConditions = [];
+    for (const [categoriaId, tagIds] of Object.entries(tagsFilter)) {
+      if (Array.isArray(tagIds) && tagIds.length > 0) {
+        tagConditions.push({ ['pagamentos.tags.' + categoriaId]: { $in: tagIds } });
       }
-      if (tagConditions.length > 0) {
-        match.$and = match.$and || [];
-        match.$and.push(...tagConditions);
-      }
-    } catch (e) {
-      console.warn('tagsFilter inválido:', e.message);
+    }
+    if (tagConditions.length > 0) {
+      match.$and = match.$and || [];
+      match.$and.push(...tagConditions);
     }
   }
 
@@ -110,6 +117,13 @@ exports.obterTodasTransacoes = async (req, res) => {
       : null;
 
     const pipeline = [{ $match: matchStage }];
+
+    // Filtro granular por tags: manter apenas pagamentos que possuem as tags selecionadas (antes do filtro de pessoas)
+    const tagsFilterStage = buildPagamentosTagFilterStage(getTagsFilterFromReq(req));
+    if (tagsFilterStage) {
+      pipeline.push(tagsFilterStage);
+      pipeline.push({ $match: { $expr: { $gt: [{ $size: '$pagamentos' }, 0] } } });
+    }
 
     if (pessoasFilter && pessoasFilter.length > 0) {
       pipeline.push({
@@ -236,6 +250,14 @@ exports.obterTransacoesExport = async (req, res) => {
       : null;
 
     const exportPipeline = [{ $match: matchStage }];
+
+    // Filtro granular por tags: manter apenas pagamentos que possuem as tags selecionadas (antes do filtro de pessoas)
+    const tagsFilterStage = buildPagamentosTagFilterStage(getTagsFilterFromReq(req));
+    if (tagsFilterStage) {
+      exportPipeline.push(tagsFilterStage);
+      exportPipeline.push({ $match: { $expr: { $gt: [{ $size: '$pagamentos' }, 0] } } });
+    }
+
     if (pessoasFilter && pessoasFilter.length > 0) {
       exportPipeline.push({
         $addFields: {

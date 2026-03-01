@@ -78,6 +78,29 @@ function paymentHasAnyTag(tagsPagamento, tagIds) {
 }
 
 /**
+ * Verifica se o pagamento atende ao filtro de tags (tagsFilter).
+ * tagsFilter = { categoriaId: [tagId1, tagId2], ... } - para cada categoria, o pagamento deve ter pelo menos uma das tags
+ * @param {Object} tagsPagamento - tags do pagamento
+ * @param {Object} tagsFilter - filtro por categoria/tags
+ * @returns {boolean}
+ */
+function rowMatchesTagsFilter(tagsPagamento, tagsFilter) {
+  if (!tagsFilter || typeof tagsFilter !== 'object') return true;
+  for (const [categoriaId, tagIds] of Object.entries(tagsFilter)) {
+    if (!Array.isArray(tagIds) || tagIds.length === 0) continue;
+    const catTags = tagsPagamento?.[categoriaId];
+    if (!Array.isArray(catTags)) return false;
+    const tagIdsStr = tagIds.map(t => t?.toString ? t.toString() : t);
+    const hasMatch = catTags.some(ct => {
+      const ctStr = ct?.toString ? ct.toString() : ct;
+      return tagIdsStr.includes(ctStr);
+    });
+    if (!hasMatch) return false;
+  }
+  return true;
+}
+
+/**
  * Aplica regras de TagBehavior às linhas.
  * Prioridade: primeira regra que bater.
  * Sem regra explícita -> effect: 'add'
@@ -121,7 +144,7 @@ function applyRules(rows, rules, tags) {
  * @param {Array} transacoes
  * @param {Array} rules
  * @param {Array} tags
- * @param {Object} [filters] - filtros opcionais; quando filters.pessoas existe, filtra linhas por pessoa
+ * @param {Object} [filters] - filtros opcionais; filters.pessoas filtra por pessoa; filters.tagsFilter filtra por tags de pagamento
  * @returns {Array} rows com effect
  */
 function processWithRules(transacoes, rules, tags, filters) {
@@ -133,6 +156,9 @@ function processWithRules(transacoes, rules, tags, filters) {
         String(p).toLowerCase() === String(row.pessoa).toLowerCase()
       )
     );
+  }
+  if (filters?.tagsFilter && typeof filters.tagsFilter === 'object' && Object.keys(filters.tagsFilter).some(k => Array.isArray(filters.tagsFilter[k]) && filters.tagsFilter[k].length > 0)) {
+    flattened = flattened.filter(row => rowMatchesTagsFilter(row.tagsPagamento, filters.tagsFilter));
   }
   if (!rules || rules.length === 0) {
     return flattened.map((r) => ({ ...r, effect: TagEffect.ADD }));
