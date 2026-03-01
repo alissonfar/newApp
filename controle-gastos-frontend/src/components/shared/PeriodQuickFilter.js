@@ -78,7 +78,7 @@ const PeriodQuickFilter = ({
             className="input-field period-quick-filter__input"
             value={dataInicio || ''}
             onChange={(e) => {
-              onChange?.({ dataInicio: e.target.value });
+              onChange?.({ dataInicio: e.target.value, dataFim: dataFim || '' });
               onPeriodSelect?.({ period: PERIODOS_RAPIDOS.PERSONALIZADO });
             }}
             placeholder="Data início"
@@ -88,7 +88,7 @@ const PeriodQuickFilter = ({
             className="input-field period-quick-filter__input"
             value={dataFim || ''}
             onChange={(e) => {
-              onChange?.({ dataFim: e.target.value });
+              onChange?.({ dataInicio: dataInicio || '', dataFim: e.target.value });
               onPeriodSelect?.({ period: PERIODOS_RAPIDOS.PERSONALIZADO });
             }}
             placeholder="Data fim"

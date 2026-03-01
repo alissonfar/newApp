@@ -91,8 +91,8 @@ exports.obterSaldo = async (req, res) => {
 
 exports.obterResumo = async (req, res) => {
   try {
-    const dataInicio = req.query.dataInicio ? new Date(req.query.dataInicio) : null;
-    const dataFim = req.query.dataFim ? new Date(req.query.dataFim) : null;
+    const dataInicio = req.query.dataInicio || null;
+    const dataFim = req.query.dataFim || null;
     const resultado = await vinculoService.obterResumo(
       req.params.id,
       req.userId,

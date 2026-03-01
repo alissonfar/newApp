@@ -89,7 +89,7 @@ const DetalheVinculoPage = () => {
   }, [periodo.dataInicio, periodo.dataFim]);
 
   const handlePeriodChange = (p) => {
-    setPeriodo({ dataInicio: p.dataInicio || '', dataFim: p.dataFim || '' });
+    setPeriodo(prev => ({ ...prev, ...p }));
   };
 
   const handleRegistrarAcerto = async (e) => {

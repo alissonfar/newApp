@@ -91,8 +91,8 @@ async function softDelete(id, usuarioId) {
  * Resumo por tag/categoria com valorTotal e parteUsuario.
  * @param {string} vinculoId
  * @param {string} usuarioId
- * @param {Date} dataInicio
- * @param {Date} dataFim
+ * @param {string} dataInicio - YYYY-MM-DD
+ * @param {string} dataFim - YYYY-MM-DD
  */
 async function obterResumo(vinculoId, usuarioId, dataInicio, dataFim) {
   const match = {
@@ -103,8 +103,8 @@ async function obterResumo(vinculoId, usuarioId, dataInicio, dataFim) {
   };
   if (dataInicio || dataFim) {
     match.data = {};
-    if (dataInicio) match.data.$gte = new Date(dataInicio);
-    if (dataFim) match.data.$lte = new Date(dataFim);
+    if (dataInicio) match.data.$gte = new Date(String(dataInicio) + 'T00:00:00.000Z');
+    if (dataFim) match.data.$lte = new Date(String(dataFim) + 'T23:59:59.999Z');
   }
 
   const pipeline = [
@@ -142,8 +142,8 @@ async function listarTransacoes(vinculoId, usuarioId, filtros = {}) {
 
   if (filtros.dataInicio || filtros.dataFim) {
     query.data = {};
-    if (filtros.dataInicio) query.data.$gte = new Date(filtros.dataInicio);
-    if (filtros.dataFim) query.data.$lte = new Date(filtros.dataFim);
+    if (filtros.dataInicio) query.data.$gte = new Date(String(filtros.dataInicio) + 'T00:00:00.000Z');
+    if (filtros.dataFim) query.data.$lte = new Date(String(filtros.dataFim) + 'T23:59:59.999Z');
   }
 
   if (filtros.pendente !== undefined) {
