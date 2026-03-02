@@ -7,18 +7,20 @@ import { AuthContext } from './AuthContext';
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
-  const { token } = useContext(AuthContext);
+  const { token, carregando } = useContext(AuthContext);
   const [categorias, setCategorias] = useState([]);
   const [tags, setTags] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState(null);
 
   useEffect(() => {
-    if (!token) {
-      setCategorias([]);
-      setTags([]);
-      setErrorData(null);
-      setLoadingData(false);
+    if (!token || carregando) {
+      if (!token) {
+        setCategorias([]);
+        setTags([]);
+        setErrorData(null);
+        setLoadingData(false);
+      }
       return;
     }
 
@@ -42,7 +44,7 @@ export const DataProvider = ({ children }) => {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, carregando]);
 
   const refreshData = async () => {
     setLoadingData(true);
