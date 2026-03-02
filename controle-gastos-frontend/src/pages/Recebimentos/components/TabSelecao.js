@@ -175,14 +175,22 @@ const TabSelecao = () => {
                         <td>{t.status || 'ativo'}</td>
                         <td>
                           {(() => {
-                            const pagTags = t.pagamentos?.[0]?.tags;
-                            if (!pagTags || typeof pagTags !== 'object') return '-';
-                            const tagIds = Object.keys(pagTags).filter((k) => pagTags[k]);
-                            if (tagIds.length === 0) return '-';
+                            const allTagIds = new Set();
+                            (t.pagamentos || []).forEach((pag) => {
+                              const pagTags = pag?.tags;
+                              if (pagTags && typeof pagTags === 'object') {
+                                Object.values(pagTags).forEach((arr) => {
+                                  if (Array.isArray(arr)) {
+                                    arr.forEach((id) => allTagIds.add(id));
+                                  }
+                                });
+                              }
+                            });
+                            if (allTagIds.size === 0) return '-';
                             return (
                               <span className="tags-cell">
-                                {tagIds.map((tagId) => {
-                                  const tag = (tags || []).find((tg) => tg._id === tagId);
+                                {[...allTagIds].map((tagId) => {
+                                  const tag = (tags || []).find((tg) => String(tg._id) === String(tagId));
                                   return tag ? <TagBadge key={tagId} tag={tag} size={12} /> : null;
                                 })}
                               </span>
