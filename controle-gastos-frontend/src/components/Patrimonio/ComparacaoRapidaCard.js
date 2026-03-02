@@ -3,7 +3,6 @@ import Card from '../shared/Card';
 import useSimulacao from '../../hooks/useSimulacao';
 import './ComparacaoRapidaCard.css';
 
-const PERCENTUAIS = [100, 110, 120];
 const MESES_PADRAO = 12;
 const VALOR_PADRAO = 10000;
 

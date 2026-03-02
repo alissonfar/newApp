@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import Decimal from 'decimal.js';
 
-const DIAS_UTEIS_ANO = 252;
-
 /**
  * Calcula taxa mensal equivalente para simulação.
  * CDI_ajustado = CDI_anual × (percentualCDI/100)
