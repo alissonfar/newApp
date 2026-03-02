@@ -25,10 +25,12 @@ const TabConfiguracao = () => {
     loadingRecebimentos,
     recebimentoSelecionado,
     tagSelecionada,
+    removeTagSelecionada,
     draftFiltrosRecebimentos,
     hasBuscadoRecebimentos,
     setRecebimentoSelecionado,
     setTagSelecionada,
+    setRemoveTagSelecionada,
     setDraftFiltrosRecebimentos,
     applyFiltrosRecebimentos
   } = useRecebimentos();
@@ -122,6 +124,35 @@ const TabConfiguracao = () => {
                     <TagBadge tag={(tags || []).find((t) => t._id === tagSelecionada)} size={16} />
                   </div>
                 )}
+
+                <div style={{ marginTop: '1.5rem' }}>
+                  <SectionHeader title="Tag para remover (opcional)" icon={<IconRenderer nome="tag" size={18} />} />
+                <p className="dica">Tag que será removida dos pagamentos ao conciliar.</p>
+                <Select
+                  value={(() => {
+                    const tag = (tags || []).find((t) => t._id === removeTagSelecionada);
+                    return tag ? { value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone } : null;
+                  })()}
+                  onChange={(opt) => setRemoveTagSelecionada(opt?.value || '')}
+                  options={(tags || []).map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
+                  placeholder="-- Nenhuma (opcional) --"
+                  isClearable
+                  className="tag-select-recebimentos"
+                  classNamePrefix="tag-select"
+                  formatOptionLabel={({ label, cor, icone }) => (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IconRenderer nome={icone || 'tag'} size={18} cor={cor || '#64748b'} />
+                      <span>{label}</span>
+                    </div>
+                  )}
+                />
+                {removeTagSelecionada && (tags || []).find((t) => t._id === removeTagSelecionada) && (
+                  <div className="tag-selecionada-preview" style={{ marginTop: '0.75rem' }}>
+                    <TagBadge tag={(tags || []).find((t) => t._id === removeTagSelecionada)} size={16} />
+                  </div>
+                )}
+                </div>
+
                 {tags?.length === 0 && (
                   <p className="aviso">Configure tags em Gerenciar Tags antes de conciliar.</p>
                 )}

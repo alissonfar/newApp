@@ -9,6 +9,15 @@ const SettlementSchema = new mongoose.Schema({
     amountApplied: { type: Number, required: true }
   }],
   tagId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag', required: true },
+  removeTagId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag', required: false },
+  removedTagLog: {
+    type: [{
+      transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transacao', required: true },
+      payerIndex: { type: Number, required: true }
+    }],
+    default: [],
+    immutable: true
+  },
   totalApplied: { type: Number, required: true },
   leftoverAmount: { type: Number, default: 0 },
   leftoverTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transacao', default: null },

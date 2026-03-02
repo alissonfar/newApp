@@ -9,7 +9,7 @@
 | Aspecto | Descrição |
 |---------|-----------|
 | **Nome** | Sistema de Controle de Gastos |
-| **Objetivo principal** | Gerenciamento de transações financeiras pessoais e compartilhadas, com suporte a múltiplos participantes por transação e um proprietário definido. |
+| **Objetivo principal** | Gerenciamento de transações financeiras pessoais e compartilhadas, com suporte a múltiplos participantes por transação, um proprietário definido e contas conjuntas (divisão de gastos com participante e acertos). |
 | **Público-alvo** | Usuários que precisam controlar gastos e recebíveis, com divisão por pessoa (participantes) e filtro por proprietário. |
 | **Problema que resolve** | Centralização e organização de transações financeiras, conciliação de recebimentos com gastos, importação em massa, relatórios customizáveis, controle de parcelamentos e gestão de patrimônio (contas bancárias, subcontas, evolução e rendimentos). |
 
@@ -126,6 +126,12 @@
 - **Fluxos**: Criar transferência (subcontaOrigem, subcontaDestino, valor, data); Listar por status; TransacaoOFX pode vincular-se a Transferência (campo `transferencia`) para marcar movimentação interna
 - **Dependências**: Usuario, Subconta; TransacaoOFX (opcional, para vínculo bidirecional)
 
+### Módulo de Conta Conjunta (Vínculos Conjuntos)
+- **Responsabilidade**: Gestão de contas compartilhadas entre o usuário e um participante (ex.: namorado(a), colega de apartamento); divisão de gastos (parteUsuario/parteOutro), saldo pendente e acertos (quitação FIFO).
+- **Entidades**: VinculoConjunto, AcertoConjunto; Transacao.contaConjunta (subdocumento)
+- **Fluxos**: Criar vínculo (nome, participante) → Criar transação marcando "conta conjunta" (vinculoId, pagoPor, valorTotal, parteUsuario, parteOutro) → Visualizar saldo (saldo > 0: outro deve ao usuário; saldo < 0: usuário deve ao outro) → Registrar acerto (valor, direcao: recebi/paguei, data) → Acerto aplica FIFO nas transações pendentes; Estornar acerto (reabre transações quitadas)
+- **Dependências**: Usuario, Transacao (campo contaConjunta opcional)
+
 ### Módulo de Insights
 - **Responsabilidade**: Placeholder para funcionalidade futura (análises, tendências).
 - **Estado**: Em desenvolvimento (página vazia com mensagem "Esta funcionalidade está em desenvolvimento").
@@ -145,7 +151,7 @@
 | Entidade | Descrição |
 |----------|-----------|
 | **Usuario** | nome, email, senha (hash), emailVerificado, tokens de verificação/redefinição, preferencias (tema, proprietario, moedaPadrao, notificacoes), role (admin/pro/comum), status (ativo/inativo/bloqueado) |
-| **Transacao** | tipo (gasto/recebivel), descricao, valor, data, observacao, pagamentos[], status (ativo/estornado), usuario, deduplicationKey, campos de parcelamento, settlementAsSource, settlementLeftoverFrom, subconta (opcional, ref Subconta) |
+| **Transacao** | tipo (gasto/recebivel), descricao, valor, data, observacao, pagamentos[], status (ativo/estornado), usuario, deduplicationKey, campos de parcelamento, settlementAsSource, settlementLeftoverFrom, subconta (opcional, ref Subconta), contaConjunta (ativo, vinculoId, pagoPor, valorTotal, parteUsuario, parteOutro, acertadoEm) |
 | **Pagamento** | pessoa, valor, tags (objeto { categoriaId: [tagIds] }) |
 | **Categoria** | codigo, nome, descricao, cor, icone, ativo, usuario |
 | **Tag** | codigo, nome, descricao, categoria (string), cor, icone, ativo, usuario |
@@ -161,9 +167,11 @@
 | **ImportacaoOFX** | usuario, subconta, nomeArquivo, status (processando/revisao/finalizada/cancelada), dtStart, dtEnd, saldoFinalExtrato, dataSaldoExtrato, totalTransacoes/Creditos/Debitos/Ignoradas |
 | **TransacaoOFX** | importacaoOFX, subconta, usuario, fitid, tipo (credito/debito), valor, data, memo, descricao, status (pendente/aprovada/ignorada/ja_importada), movimentacaoInterna, transferencia (ref), transacaoCriada (ref), deduplicationKey |
 | **Transferencia** | usuario, subcontaOrigem, subcontaDestino, valor, data, status (pendente/concluida), transacaoOFX (ref opcional) |
+| **VinculoConjunto** | usuario, nome, participante, descricao, ativo |
+| **AcertoConjunto** | usuario, vinculo, valor, direcao (recebi/paguei), data, observacao, transacoesQuitadas[] |
 
 ### Relacionamentos
-- Usuario 1:N Transacao, Categoria, Tag, Importacao, TransacaoImportada, Settlement, ModeloRelatorio, Instituicao, Subconta, HistoricoSaldo, ImportacaoOFX, TransacaoOFX, Transferencia
+- Usuario 1:N Transacao, Categoria, Tag, Importacao, TransacaoImportada, Settlement, ModeloRelatorio, Instituicao, Subconta, HistoricoSaldo, ImportacaoOFX, TransacaoOFX, Transferencia, VinculoConjunto, AcertoConjunto
 - Transacao N:1 Usuario; N:1 Settlement (via settlementAsSource); 1:1 Transacao (sobra via settlementLeftoverFrom); N:1 Subconta (opcional)
 - Tag N:1 Categoria (por string `categoria`)
 - Importacao 1:N TransacaoImportada
@@ -175,6 +183,9 @@
 - ImportacaoOFX N:1 Usuario; N:1 Subconta; 1:N TransacaoOFX
 - TransacaoOFX N:1 ImportacaoOFX; N:1 Subconta; N:1 Usuario; N:1 Transferencia (opcional); N:1 Transacao (transacaoCriada)
 - Transferencia N:1 Usuario; N:1 Subconta (origem e destino); 1:1 TransacaoOFX (opcional)
+- VinculoConjunto N:1 Usuario
+- AcertoConjunto N:1 Usuario; N:1 VinculoConjunto; 1:N Transacao (transacoesQuitadas)
+- Transacao: contaConjunta.vinculoId ref VinculoConjunto; contaConjunta.acertadoEm ref AcertoConjunto
 
 ### Entidade central
 **Transacao** — núcleo do sistema; todas as funcionalidades principais orbitam em torno dela (importação gera transações, settlement altera tags em transações, relatórios agregam transações, patrimônio pode vincular transações a subcontas).
@@ -190,6 +201,8 @@
 - Subconta: `(nome, instituicao, usuario)` único; exclusão é soft delete (ativo=false)
 - ImportacaoOFX: subconta deve ser tipo `corrente` ou `rendimento_automatico`
 - Transferencia: subcontaOrigem ≠ subcontaDestino; ambas devem pertencer ao usuário
+- VinculoConjunto: (nome, usuario) único
+- AcertoConjunto: valor do acerto ≤ saldo pendente; direcao deve ser coerente com saldo
 
 ### Estados das entidades principais
 
@@ -220,6 +233,12 @@
 **Transferencia**
 - `pendente` | `concluida`
 
+**VinculoConjunto**
+- `ativo` | `inativo` (soft delete)
+
+**AcertoConjunto**
+- Sem estados; registro imutável (estorno remove o acerto e reabre transações)
+
 ---
 
 ## 5️⃣ Regras de Negócio Importantes
@@ -231,6 +250,7 @@
 - Importação: apenas CSV/JSON; limite 10MB
 - Parcelamento: ≥ 2 parcelas; intervalo ≥ 1 dia
 - Patrimônio: Instituição (nome, usuario) único; Subconta (nome, instituicao, usuario) único; subconta deve pertencer ao usuário para vincular em transação
+- Conta Conjunta: VinculoConjunto (nome, usuario) único; acerto: valor ≤ saldo pendente; parteUsuario + parteOutro = valorTotal
 
 ### Processos com múltiplos estados
 - **Importação**: pendente → processando → validado/erro → finalizada/estornada
@@ -251,6 +271,7 @@
 - Settlement: sobra vira nova transação recebível
 - Relatório devedor: totalBruto - totalPago = totalDevido
 - Patrimônio: saldo consolidado = soma de saldoAtual das subcontas ativas; rendimento estimado mensal = soma de (saldo × taxaDiaria × percentualCDI) × 30 por subconta; subconta desatualizada = sem confirmação por 7+ dias
+- Conta Conjunta: saldo = soma(parteOutro) - soma(parteUsuario) para transações pendentes (acertadoEm=null); acerto aplica FIFO (transações mais antigas primeiro); direcao "paguei" quita dívidas do usuário; direcao "recebi" quita dívidas do participante
 
 ---
 
@@ -314,7 +335,16 @@
 9. Transferências: `/patrimonio/transferencias` → criar/listar transferências entre subcontas
 10. Importação OFX: `/patrimonio/importacoes-ofx` → upload OFX por subconta → revisão → aprovar/ignorar; movimentações internas podem vincular a transferências pendentes
 
-### Fluxo 8: Administração (admin)
+### Fluxo 8: Conta Conjunta (Vínculos)
+1. Acessar `/conjunto` → listar vínculos (contas conjuntas)
+2. Criar vínculo: nome (ex.: "Apartamento"), participante (ex.: "Maria"), descrição opcional
+3. Clicar em vínculo → `/conjunto/:id` (detalhe: saldo, resumo, transações, acertos)
+4. Ao criar transação (NovaTransacaoForm): marcar "Conta conjunta" → selecionar vínculo, quem pagou (eu/outro), valor total, parte do usuário
+5. Saldo exibido: positivo = participante deve ao usuário; negativo = usuário deve ao participante
+6. Registrar acerto: valor, direção (paguei/recebi), data → quita transações pendentes (FIFO)
+7. Estornar acerto: reabre transações quitadas
+
+### Fluxo 9: Administração (admin)
 1. Acessar `/admin` (requer role admin)
 2. Gerar/restaurar backup
 3. Listar usuários, ver detalhes, resetar senha, verificar email, alterar role/status
@@ -330,6 +360,7 @@
 - **Report Engine**: Flatten de pagamentos, regras por tag (add/subtract/ignore), agregações (default/devedor)
 - **Parcelamento**: Preview vs persistência; expansão na importação (1 linha → N transações)
 - **Patrimônio**: Evolução baseada em HistoricoSaldo (último saldo conhecido por subconta por data); TaxaCDI externa (BCB); rendimento estimado por percentualCDI
+- **Conta Conjunta**: Cálculo de saldo a partir de transações pendentes; acerto FIFO (transações mais antigas quitadas primeiro); lógica de direção (paguei/recebi) vs saldo
 
 ### Riscos técnicos
 - Processamento de importação assíncrono sem fila: falha silenciosa se processo morrer
@@ -365,6 +396,7 @@
 - **Módulo de Patrimônio**: CRUD instituições e subcontas, resumo (total, por instituição, por propósito), evolução patrimonial, histórico de saldo, confirmação de saldo, rendimento estimado (CDI), vinculação de transações a subcontas, alertas de subcontas desatualizadas
 - **Importação OFX**: Upload de extratos OFX, parse XML, TransacaoOFX, revisão, aprovação/ignorar, conversão em Transacao, detecção de movimentação interna e sugestão de vínculo com Transferência
 - **Transferências**: CRUD entre subcontas, vinculação opcional com TransacaoOFX (movimentação interna)
+- **Conta Conjunta (Vínculos)**: CRUD vínculos, transações com divisão (parteUsuario/parteOutro), saldo pendente, acertos FIFO, estorno de acerto
 
 ### Parcialmente implementado
 - Export PDF de relatórios (frontend; backend retorna JSON)
@@ -387,6 +419,7 @@
 - Suporte a parcelamento na criação e na importação
 - Módulo Patrimônio bem integrado: instituições → subcontas → histórico; vinculação opcional de transações; TaxaCDI externa para rendimento estimado
 - Importação OFX completa: parse de extratos bancários, detecção de movimentação interna, sugestão de vínculo com transferências
+- Módulo Conta Conjunta: divisão de gastos com participante, acertos FIFO, integração com formulário de transação
 
 ### Pontos de melhoria
 - Substituir processamento assíncrono de importação por fila (Bull, Agenda, etc.)
@@ -407,4 +440,4 @@
 
 ---
 
-*Documento gerado com base na análise do código-fonte. Última atualização: março/2025 (incluídos módulos Importação OFX e Transferências).*
+*Documento gerado com base na análise do código-fonte. Última atualização: março/2026 (incluído módulo Conta Conjunta / Vínculos).*

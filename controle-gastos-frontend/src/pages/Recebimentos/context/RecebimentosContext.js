@@ -15,6 +15,7 @@ const initialState = {
   loadingRecebimentos: false,
   recebimentoSelecionado: null,
   tagSelecionada: '',
+  removeTagSelecionada: '',
   draftFiltrosRecebimentos: initialDraftRecebimentos,
   appliedFiltrosRecebimentos: null,
   hasBuscadoRecebimentos: false,
@@ -33,6 +34,7 @@ const ACTIONS = {
   SET_LOADING_RECEBIMENTOS: 'SET_LOADING_RECEBIMENTOS',
   SET_RECEBIMENTO_SELECIONADO: 'SET_RECEBIMENTO_SELECIONADO',
   SET_TAG: 'SET_TAG',
+  SET_REMOVE_TAG: 'SET_REMOVE_TAG',
   SET_DRAFT_FILTROS_RECEBIMENTOS: 'SET_DRAFT_FILTROS_RECEBIMENTOS',
   SET_APPLIED_FILTROS_RECEBIMENTOS: 'SET_APPLIED_FILTROS_RECEBIMENTOS',
   SET_HAS_BUSCADO_RECEBIMENTOS: 'SET_HAS_BUSCADO_RECEBIMENTOS',
@@ -58,6 +60,8 @@ function recebimentosReducer(state, action) {
       return { ...state, recebimentoSelecionado: action.payload };
     case ACTIONS.SET_TAG:
       return { ...state, tagSelecionada: action.payload };
+    case ACTIONS.SET_REMOVE_TAG:
+      return { ...state, removeTagSelecionada: action.payload };
     case ACTIONS.SET_DRAFT_FILTROS_RECEBIMENTOS:
       return { ...state, draftFiltrosRecebimentos: { ...state.draftFiltrosRecebimentos, ...action.payload } };
     case ACTIONS.SET_APPLIED_FILTROS_RECEBIMENTOS:
@@ -92,6 +96,7 @@ function recebimentosReducer(state, action) {
         ...state,
         recebimentoSelecionado: null,
         tagSelecionada: '',
+        removeTagSelecionada: '',
         transacoesSelecionadas: [],
         pendentes: [],
         appliedFiltrosPendentes: null
@@ -244,7 +249,8 @@ export function RecebimentosProvider({ children }) {
       await criarSettlement({
         receivingTransactionId: recebimentoSelecionado._id,
         appliedTransactionIds: transacoesSelecionadas,
-        tagId: tagSelecionada
+        tagId: tagSelecionada,
+        removeTagId: state.removeTagSelecionada || undefined
       });
       toast.success('Conciliação realizada com sucesso!');
       dispatch({ type: ACTIONS.RESET_CONCILIACAO });
@@ -271,6 +277,7 @@ export function RecebimentosProvider({ children }) {
     setRecebimentoSelecionado: (v) =>
       dispatch({ type: ACTIONS.SET_RECEBIMENTO_SELECIONADO, payload: v }),
     setTagSelecionada: (v) => dispatch({ type: ACTIONS.SET_TAG, payload: v }),
+    setRemoveTagSelecionada: (v) => dispatch({ type: ACTIONS.SET_REMOVE_TAG, payload: v }),
     setDraftFiltrosRecebimentos: (payload) =>
       dispatch({ type: ACTIONS.SET_DRAFT_FILTROS_RECEBIMENTOS, payload }),
     setDraftFiltrosPendentes: (payload) =>

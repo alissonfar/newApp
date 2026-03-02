@@ -94,12 +94,61 @@ function removerTagDePagamentos(pagamentos, tagId) {
 }
 
 /**
+ * Remove tag de um único pagamento. Retorna o pagamento atualizado e se a tag foi removida.
+ * @returns {{ pagamentoAtualizado: Object, foiRemovido: boolean }}
+ */
+function removerTagDePagamentoUnico(pagamento, tagId) {
+  if (!pagamento || !tagId) return { pagamentoAtualizado: toPlainPagamento(pagamento), foiRemovido: false };
+  const po = toPlainPagamento(pagamento);
+  const tagsAtuais = po.tags ? JSON.parse(JSON.stringify(po.tags)) : {};
+  const tagIdStr = (tagId && tagId.toString) ? tagId.toString() : String(tagId);
+  let foiRemovido = false;
+  for (const cat of Object.keys(tagsAtuais)) {
+    if (Array.isArray(tagsAtuais[cat])) {
+      const antes = tagsAtuais[cat].length;
+      tagsAtuais[cat] = tagsAtuais[cat].filter((id) => (id && id.toString ? id.toString() : String(id)) !== tagIdStr);
+      if (tagsAtuais[cat].length < antes) foiRemovido = true;
+      if (tagsAtuais[cat].length === 0) delete tagsAtuais[cat];
+    }
+  }
+  return {
+    pagamentoAtualizado: { pessoa: po.pessoa, valor: po.valor, tags: tagsAtuais },
+    foiRemovido
+  };
+}
+
+/**
+ * Aplica tag apenas no pagamento no índice indicado.
+ * Estrutura: pagamentos[].tags = { [categoriaId]: [tagId, ...] }
+ */
+function aplicarTagEmPagamentoPorIndice(pagamentos, tag, indice) {
+  if (!pagamentos || !Array.isArray(pagamentos) || indice < 0 || indice >= pagamentos.length || !tag) return pagamentos;
+  const categoriaId = (tag.categoria && tag.categoria.toString)
+    ? tag.categoria.toString()
+    : (tag.categoria ? String(tag.categoria) : null);
+  const tagIdStr = (tag._id && tag._id.toString) ? tag._id.toString() : String(tag._id);
+  if (!categoriaId) {
+    throw new Error(`Tag "${tag.nome || tagIdStr}" não possui categoria definida. Não é possível aplicar.`);
+  }
+  const resultado = pagamentos.map((p, i) => {
+    const po = toPlainPagamento(p);
+    if (i !== indice) return po;
+    const tagsAtuais = po.tags || {};
+    const arr = Array.isArray(tagsAtuais[categoriaId]) ? [...tagsAtuais[categoriaId]] : [];
+    if (!arr.some((id) => String(id) === tagIdStr)) arr.push(tagIdStr);
+    tagsAtuais[categoriaId] = arr;
+    return { pessoa: po.pessoa, valor: po.valor, tags: tagsAtuais };
+  });
+  return resultado;
+}
+
+/**
  * Cria um settlement (conciliação) com sessão transacional.
- * @param {Object} dados - { receivingTransactionId, appliedTransactionIds, tagId }
+ * @param {Object} dados - { receivingTransactionId, appliedTransactionIds, tagId, removeTagId? }
  * @param {string} usuarioId
  */
 async function criar(dados, usuarioId) {
-  const { receivingTransactionId, appliedTransactionIds, tagId } = dados;
+  const { receivingTransactionId, appliedTransactionIds, tagId, removeTagId } = dados;
 
   if (!receivingTransactionId || !appliedTransactionIds || !Array.isArray(appliedTransactionIds) || appliedTransactionIds.length === 0 || !tagId) {
     throw new Error('Campos obrigatórios: receivingTransactionId, appliedTransactionIds (array não vazio), tagId.');
@@ -120,6 +169,17 @@ async function criar(dados, usuarioId) {
     }
     if (!tag.categoria) {
       throw new Error(`A tag "${tag.nome || tagId}" não possui categoria. Configure a tag corretamente antes de usar na conciliação.`);
+    }
+
+    let removeTag = null;
+    if (removeTagId) {
+      removeTag = await Tag.findOne({ _id: removeTagId, usuario: usuarioId, ativo: true })
+        .select('_id nome categoria')
+        .lean()
+        .session(session);
+      if (!removeTag) {
+        throw new Error('Tag para remover não encontrada ou inativa.');
+      }
     }
 
     const transacaoRecebimento = await Transacao.findOne({
@@ -164,11 +224,34 @@ async function criar(dados, usuarioId) {
 
     const leftoverAmount = Math.round((valorRecebimento - totalApplied) * 100) / 100;
 
+    const removedTagLog = [];
+    const transacoesParaAtualizar = transacoesAlvo.map((t) => {
+      const pagamentosPlain = (t.pagamentos || []).map(toPlainPagamento);
+      let pagamentosAtualizados = aplicarTagEmPagamentos(pagamentosPlain, tag);
+      if (removeTagId && removeTag) {
+        for (let payerIndex = 0; payerIndex < pagamentosAtualizados.length; payerIndex++) {
+          const { pagamentoAtualizado, foiRemovido } = removerTagDePagamentoUnico(
+            pagamentosAtualizados[payerIndex],
+            removeTag._id
+          );
+          if (foiRemovido) {
+            pagamentosAtualizados = pagamentosAtualizados.map((p, i) =>
+              i === payerIndex ? pagamentoAtualizado : p
+            );
+            removedTagLog.push({ transactionId: t._id, payerIndex });
+          }
+        }
+      }
+      return { transactionId: t._id, pagamentosAtualizados };
+    });
+
     const settlement = new Settlement({
       usuario: usuarioId,
       receivingTransactionId,
       appliedTransactions,
       tagId,
+      removeTagId: removeTagId || undefined,
+      removedTagLog,
       totalApplied,
       leftoverAmount: leftoverAmount > 0 ? leftoverAmount : 0,
       leftoverTransactionId: null
@@ -176,23 +259,19 @@ async function criar(dados, usuarioId) {
 
     await settlement.save({ session });
 
+    const bulkOps = transacoesParaAtualizar.map(({ transactionId, pagamentosAtualizados }) => ({
+      updateOne: {
+        filter: { _id: transactionId },
+        update: { $set: { pagamentos: pagamentosAtualizados, settlementApplied: settlement._id } },
+        session
+      }
+    }));
+
     await Transacao.updateOne(
       { _id: receivingTransactionId },
       { $set: { settlementAsSource: settlement._id } },
       { session }
     );
-
-    const bulkOps = transacoesAlvo.map((t) => {
-      const pagamentosPlain = (t.pagamentos || []).map(toPlainPagamento);
-      const pagamentosAtualizados = aplicarTagEmPagamentos(pagamentosPlain, tag);
-      return {
-        updateOne: {
-          filter: { _id: t._id },
-          update: { $set: { pagamentos: pagamentosAtualizados, settlementApplied: settlement._id } },
-          session
-        }
-      };
-    });
     if (bulkOps.length > 0) {
       const bulkResult = await Transacao.bulkWrite(bulkOps, { session });
       if (bulkResult.matchedCount !== transacoesAlvo.length) {
@@ -230,6 +309,7 @@ async function criar(dados, usuarioId) {
     const settlementPopulado = await Settlement.findById(settlement._id)
       .populate('receivingTransactionId', 'descricao valor data')
       .populate('tagId', 'nome codigo')
+      .populate('removeTagId', 'nome codigo cor icone')
       .populate('appliedTransactions.transactionId', 'descricao valor data')
       .lean();
 
@@ -257,7 +337,10 @@ async function excluir(settlementId, usuarioId) {
     const settlement = await Settlement.findOne({
       _id: settlementId,
       usuario: usuarioId
-    }).populate('tagId').session(session);
+    })
+      .populate('tagId')
+      .populate('removeTagId')
+      .session(session);
 
     if (!settlement) {
       throw new Error('Conciliação não encontrada.');
@@ -274,8 +357,8 @@ async function excluir(settlementId, usuarioId) {
     for (const app of settlement.appliedTransactions) {
       const transacao = await Transacao.findById(app.transactionId).session(session);
       if (transacao && transacao.pagamentos && transacao.pagamentos.length > 0) {
-        const pagamentosPlain = transacao.pagamentos.map(toPlainPagamento);
-        const pagamentosAtualizados = removerTagDePagamentos(pagamentosPlain, tagIdToRemove);
+        let pagamentosAtualizados = transacao.pagamentos.map(toPlainPagamento);
+        pagamentosAtualizados = removerTagDePagamentos(pagamentosAtualizados, tagIdToRemove);
         excluirBulkOps.push({
           updateOne: {
             filter: { _id: app.transactionId },
@@ -287,6 +370,34 @@ async function excluir(settlementId, usuarioId) {
     }
     if (excluirBulkOps.length > 0) {
       await Transacao.bulkWrite(excluirBulkOps, { session });
+    }
+
+    if (settlement.removeTagId && settlement.removedTagLog && settlement.removedTagLog.length > 0) {
+      let tagParaRestaurar = null;
+      const removeTag = settlement.removeTagId;
+      if (removeTag && (removeTag._id || removeTag.categoria)) {
+        tagParaRestaurar = { _id: removeTag._id || removeTag, categoria: removeTag.categoria, nome: removeTag.nome };
+      } else if (removeTag) {
+        const tagDoc = await Tag.findById(removeTag).select('_id categoria nome').lean().session(session);
+        if (tagDoc) tagParaRestaurar = tagDoc;
+      }
+      if (tagParaRestaurar) {
+        for (const entry of settlement.removedTagLog) {
+          const transacao = await Transacao.findById(entry.transactionId).session(session);
+          if (transacao && transacao.pagamentos && entry.payerIndex >= 0 && entry.payerIndex < transacao.pagamentos.length) {
+            const pagamentosAtualizados = aplicarTagEmPagamentoPorIndice(
+              transacao.pagamentos.map(toPlainPagamento),
+              tagParaRestaurar,
+              entry.payerIndex
+            );
+            await Transacao.updateOne(
+              { _id: entry.transactionId },
+              { $set: { pagamentos: pagamentosAtualizados } },
+              { session }
+            );
+          }
+        }
+      }
     }
 
     if (settlement.leftoverTransactionId) {
@@ -382,6 +493,7 @@ async function listar(usuarioId, opts = {}) {
     .limit(limit)
     .populate('receivingTransactionId', 'descricao valor data pagamentos')
     .populate('tagId', 'nome codigo cor icone')
+    .populate('removeTagId', 'nome codigo cor icone')
     .populate('appliedTransactions.transactionId', 'descricao valor data')
     .populate('leftoverTransactionId', 'descricao valor')
     .lean();

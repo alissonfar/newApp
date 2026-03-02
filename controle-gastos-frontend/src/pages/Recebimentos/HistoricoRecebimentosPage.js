@@ -137,6 +137,14 @@ const HistoricoRecebimentosPage = () => {
                         {getTagCompleta(s.tagId) ? <TagBadge tag={getTagCompleta(s.tagId)} size={14} /> : '-'}
                       </strong>
                     </div>
+                    {s.removeTagId && (
+                      <div className="detail-row">
+                        <span>Tag removida:</span>
+                        <strong>
+                          {getTagCompleta(s.removeTagId) ? <TagBadge tag={getTagCompleta(s.removeTagId)} size={14} /> : '-'}
+                        </strong>
+                      </div>
+                    )}
                     <div className="transacoes-quitadas">
                       <h4>Transações quitadas</h4>
                       <ul>
