@@ -135,7 +135,23 @@ const DetalheSubcontaPage = () => {
             label="Rendimento Estimado (mês)"
             valor={formatarMoeda(rendimento.rendimentoMensal)}
             icon="chartline"
-            badge={{ label: `Estimativa - ${rendimento.percentualCDI}% CDI`, variant: 'neutral' }}
+            badge={{
+              label: (
+                <>
+                  Estimativa - {rendimento.percentualCDI}% CDI ·{' '}
+                  <button
+                    type="button"
+                    className="detalhe-subconta-simular-link"
+                    onClick={() => navigate(
+                      `/patrimonio/simulador?valor=${encodeURIComponent(subconta?.saldoAtual || 0)}&percentual=${encodeURIComponent(rendimento.percentualCDI || 100)}`
+                    )}
+                  >
+                    Simular
+                  </button>
+                </>
+              ),
+              variant: 'neutral'
+            }}
           />
         )}
       </div>

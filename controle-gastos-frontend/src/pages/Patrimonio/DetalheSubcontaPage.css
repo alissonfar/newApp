@@ -24,6 +24,20 @@
   margin-bottom: 0.5rem;
 }
 
+.detalhe-subconta-simular-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--cor-primaria);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.detalhe-subconta-simular-link:hover {
+  opacity: 0.85;
+}
+
 .detalhe-data-confirmacao {
   font-size: 0.8rem;
   color: var(--cor-texto-suave, #888);

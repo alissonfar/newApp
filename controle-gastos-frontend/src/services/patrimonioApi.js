@@ -65,8 +65,14 @@ const patrimonioApi = {
     const response = await api.get(`/patrimonio/evolucao?${params.toString()}`);
     return response.data;
   },
-  obterTaxaCDI: async () => {
-    const response = await api.get('/taxa-cdi/atual');
+  obterTaxaCDI: async (forceRefresh = false) => {
+    const params = new URLSearchParams();
+    if (forceRefresh) {
+      params.append('force', '1');
+      params.append('_t', String(Date.now())); // Cache-busting para evitar resposta em cache
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await api.get(`/taxa-cdi/atual${query}`);
     return response.data;
   },
   listarTransacoesPorSubconta: async (subcontaId) => {

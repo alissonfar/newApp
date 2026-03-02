@@ -30,6 +30,7 @@ import EvolucaoPage from './pages/Patrimonio/EvolucaoPage';
 import ImportacaoOFXPage from './pages/Patrimonio/ImportacaoOFXPage';
 import ImportacaoOFXDetalhePage from './pages/Patrimonio/ImportacaoOFXDetalhePage';
 import TransferenciasPage from './pages/Patrimonio/TransferenciasPage';
+import SimuladorRendimentosPage from './pages/Patrimonio/SimuladorRendimentosPage';
 import ConjuntoPage from './pages/Conjunto/ConjuntoPage';
 import DetalheVinculoPage from './pages/Conjunto/DetalheVinculoPage';
 
@@ -166,6 +167,16 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <EvolucaoPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/simulador"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <SimuladorRendimentosPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

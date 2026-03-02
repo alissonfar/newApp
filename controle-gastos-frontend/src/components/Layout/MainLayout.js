@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank, FaUsers } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank, FaUsers, FaCalculator, FaBuilding, FaChartArea, FaExchangeAlt } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import './MainLayout.css';
@@ -47,7 +47,8 @@ const MainLayout = ({ children }) => {
   
   // Estado para controlar quais submenus estão expandidos
   const [expandedMenus, setExpandedMenus] = useState({
-    transacoes: true // Inicialmente expandido
+    transacoes: true,
+    patrimonio: false
   });
 
   // Toggle para expandir/colapsar submenus
@@ -61,7 +62,8 @@ const MainLayout = ({ children }) => {
 
   // Função para verificar se o item pai deve ser destacado
   const isParentActive = (submenuPaths) => {
-    return submenuPaths.some(path => location.pathname === path);
+    if (!submenuPaths) return false;
+    return submenuPaths.some(path => path && (location.pathname === path || location.pathname.startsWith(path + '/')));
   };
 
   // Menu lateral
@@ -83,7 +85,21 @@ const MainLayout = ({ children }) => {
       ]
     },
     { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },
-    { name: 'Patrimônio', path: '/patrimonio', icon: <FaPiggyBank /> },
+    {
+      name: 'Patrimônio',
+      path: null,
+      icon: <FaPiggyBank />,
+      hasSubmenu: true,
+      key: 'patrimonio',
+      submenu: [
+        { name: 'Resumo', path: '/patrimonio', icon: <FaPiggyBank />, isSubItem: true },
+        { name: 'Contas', path: '/patrimonio/contas', icon: <FaBuilding />, isSubItem: true },
+        { name: 'Simulador de Rendimentos', path: '/patrimonio/simulador', icon: <FaCalculator />, isSubItem: true },
+        { name: 'Evolução', path: '/patrimonio/evolucao', icon: <FaChartArea />, isSubItem: true },
+        { name: 'Importar OFX', path: '/patrimonio/importacoes-ofx', icon: <FaFileImport />, isSubItem: true },
+        { name: 'Transferências', path: '/patrimonio/transferencias', icon: <FaExchangeAlt />, isSubItem: true }
+      ]
+    },
     { name: 'Contas Conjuntas', path: '/conjunto', icon: <FaUsers /> },
   ];
 

@@ -1,0 +1,57 @@
+.comparacao-rapida-card {
+  padding: 1.25rem;
+}
+
+.comparacao-rapida-card__title {
+  font-family: var(--fonte-titulos);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+  margin: 0 0 0.5rem 0;
+}
+
+.comparacao-rapida-card__subtitulo {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+  margin: 0 0 1rem 0;
+}
+
+.comparacao-rapida-card__input-valor {
+  width: 100px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--cor-borda, #ddd);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--cor-texto);
+}
+
+.comparacao-rapida-card__tabela {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.comparacao-rapida-card__linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--cor-fundo-hover, rgba(0, 0, 0, 0.02));
+  border-radius: 6px;
+}
+
+.comparacao-rapida-card__percentual {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.comparacao-rapida-card__valor {
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.comparacao-rapida-card__aviso {
+  color: var(--cor-texto-suave, #666);
+  font-size: 0.9rem;
+  margin: 0;
+}

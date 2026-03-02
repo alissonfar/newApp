@@ -1,0 +1,43 @@
+.simulador-rendimentos-page {
+  padding: 1.5rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--cor-fundo);
+  min-height: 100vh;
+}
+
+.simulador-rendimentos-header {
+  margin-bottom: 1.5rem;
+}
+
+.simulador-rendimentos-title {
+  font-size: 1.75rem;
+  color: var(--cor-texto);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--fonte-titulos);
+  margin: 1rem 0 0 0;
+}
+
+.simulador-rendimentos-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+  .simulador-rendimentos-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.simulador-rendimentos-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.simulador-rendimentos-sidebar {
+  min-width: 0;
+}

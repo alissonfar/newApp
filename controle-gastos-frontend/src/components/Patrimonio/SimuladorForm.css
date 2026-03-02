@@ -1,0 +1,117 @@
+.simulador-form {
+  padding: 1.5rem;
+}
+
+.simulador-form__title {
+  font-family: var(--fonte-titulos);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+  margin: 0 0 1.25rem 0;
+}
+
+.simulador-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .simulador-form__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.simulador-form__inputs .form-group {
+  margin-bottom: 1rem;
+}
+
+.simulador-form__inputs .form-group label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.simulador-form__inputs input[type="number"] {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cor-borda, #ddd);
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.simulador-form__opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.simulador-form__custom-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.simulador-form__input-custom {
+  width: 80px;
+  padding: 0.5rem 0.5rem;
+  border: 1px solid var(--cor-borda, #ddd);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.simulador-form__resultados {
+  background: var(--cor-fundo-hover, rgba(0, 0, 0, 0.02));
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.simulador-form__resultado-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.simulador-form__resultado-row--destaque {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--cor-primaria);
+}
+
+.simulador-form__resultado-row--positivo {
+  color: var(--cor-sucesso, #2e7d32);
+  font-weight: 600;
+}
+
+.simulador-form__aviso {
+  color: var(--cor-texto-suave, #666);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.simulador-form__comparacao {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.875rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.simulador-form__comparacao p {
+  margin: 0.25rem 0;
+}
+
+.simulador-form__comparacao-valor {
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.simulador-form__diferenca {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--cor-sucesso, #2e7d32);
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
