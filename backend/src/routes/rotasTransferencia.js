@@ -9,6 +9,7 @@ router.use(autenticacao);
 router.get('/', transferenciaController.listar);
 router.post('/', transferenciaController.criar);
 router.patch('/:id/confirmar', transferenciaController.confirmar);
+router.post('/:id/confirmar', transferenciaController.confirmar); // fallback para proxies que bloqueiam PATCH
 router.get('/:id', transferenciaController.obterPorId);
 
 module.exports = router;

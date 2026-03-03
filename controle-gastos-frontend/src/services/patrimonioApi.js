@@ -128,7 +128,7 @@ const patrimonioApi = {
     return response.data;
   },
   confirmarTransferencia: async (id) => {
-    const response = await api.patch(`/patrimonio/transferencias/${id}/confirmar`);
+    const response = await api.post(`/patrimonio/transferencias/${id}/confirmar`);
     return response.data;
   }
 };
