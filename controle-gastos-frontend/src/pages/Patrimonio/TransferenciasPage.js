@@ -14,6 +14,7 @@ const TransferenciasPage = () => {
   const [transferencias, setTransferencias] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [confirmandoId, setConfirmandoId] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('');
   const [form, setForm] = useState({
     subcontaOrigemId: '',
@@ -79,6 +80,19 @@ const TransferenciasPage = () => {
     }
   };
 
+  const handleConfirmar = async (id) => {
+    try {
+      setConfirmandoId(id);
+      await patrimonioApi.confirmarTransferencia(id);
+      toast.success('Transferência confirmada');
+      carregar();
+    } catch (err) {
+      toast.error(err.response?.data?.erro || 'Erro ao confirmar transferência');
+    } finally {
+      setConfirmandoId(null);
+    }
+  };
+
   return (
     <div className="transferencias-page">
       <button className="btn-voltar" onClick={() => navigate('/patrimonio')}>
@@ -87,8 +101,9 @@ const TransferenciasPage = () => {
 
       <h1><FaExchangeAlt /> Transferências entre Contas</h1>
       <p className="subtitulo">
-        Registre transferências entre suas subcontas (ex.: Caixinha → Conta Corrente). 
+        Registre transferências entre suas subcontas (ex.: Caixinha → Conta Corrente).
         Ao importar OFX, você poderá vincular transações do extrato a transferências pendentes.
+        Se seu banco não exporta extrato, confirme manualmente quando a transferência for realizada.
       </p>
 
       <section className="form-section">
@@ -177,7 +192,19 @@ const TransferenciasPage = () => {
                   {t.status === 'concluida' ? (
                     <span className="badge concluida"><FaCheck /> Concluída</span>
                   ) : (
-                    <span className="badge pendente"><FaClock /> Pendente</span>
+                    <>
+                      <span className="badge pendente"><FaClock /> Pendente</span>
+                      <button
+                        type="button"
+                        className="btn-confirmar"
+                        onClick={() => handleConfirmar(t._id)}
+                        disabled={confirmandoId === t._id}
+                        title="Confirmar que a transferência foi realizada"
+                      >
+                        {confirmandoId === t._id ? <FaSpinner className="spin" /> : <FaCheck />}
+                        {confirmandoId === t._id ? ' Confirmando...' : ' Confirmar'}
+                      </button>
+                    </>
                   )}
                 </div>
               </li>

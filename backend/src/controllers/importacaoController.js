@@ -422,6 +422,7 @@ class ImportacaoController {
                             saldo: parseFloat(saldo),
                             data: new Date(),
                             origem: 'importacao_csv',
+                            tipo: 'ajuste',
                             observacao: `Importação #${importacao._id}`
                         });
                     }

@@ -28,7 +28,7 @@ const style = {
   maxHeight: '90vh', // Limitar altura máxima geral
 };
 
-const DayDetailModal = ({ transactions, date, open, onClose }) => {
+const DayDetailModal = ({ transactions, date, open, onClose, proprietario = '' }) => {
   // O Modal MUI controla a renderização baseado na prop 'open'
   // Não precisamos mais da verificação inicial `if (!transactions...)` aqui,
   // pois o componente pai (Home) só o renderizará com 'open=true' quando houver dados.
@@ -109,7 +109,11 @@ const DayDetailModal = ({ transactions, date, open, onClose }) => {
                       color: t.tipo === 'gasto' ? 'error.dark' : 'success.dark'
                     }}
                   >
-                    {t.tipo === 'gasto' ? '-' : '+'} R$ {t.valor.toFixed(2)}
+                    {(() => {
+                      const pagamentoProprietario = t.pagamentos?.find(p => p.pessoa && proprietario && p.pessoa.toLowerCase() === proprietario.toLowerCase());
+                      const valorExibicao = pagamentoProprietario?.valor ?? t.valor;
+                      return `${t.tipo === 'gasto' ? '-' : '+'} R$ ${(typeof valorExibicao === 'number' ? valorExibicao : parseFloat(valorExibicao) || 0).toFixed(2)}`;
+                    })()}
                   </Typography>
                 </Box>
                 {t.categoria && (

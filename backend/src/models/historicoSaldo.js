@@ -11,6 +11,12 @@ const HistoricoSaldoSchema = new mongoose.Schema({
     enum: ['manual', 'importacao_ofx', 'importacao_csv'],
     required: true
   },
+  tipo: {
+    type: String,
+    enum: ['rendimento', 'aporte', 'transferencia_entrada', 'transferencia_saida', 'ajuste'],
+    required: false,
+    default: 'ajuste'
+  },
   observacao: { type: String, default: '' }
 }, {
   timestamps: true
@@ -19,5 +25,6 @@ const HistoricoSaldoSchema = new mongoose.Schema({
 HistoricoSaldoSchema.index({ usuario: 1 });
 HistoricoSaldoSchema.index({ subconta: 1 });
 HistoricoSaldoSchema.index({ subconta: 1, data: -1 });
+HistoricoSaldoSchema.index({ subconta: 1, tipo: 1, data: -1 });
 
 module.exports = mongoose.model('HistoricoSaldo', HistoricoSaldoSchema);

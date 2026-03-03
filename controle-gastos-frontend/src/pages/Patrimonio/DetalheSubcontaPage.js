@@ -36,6 +36,9 @@ const DetalheSubcontaPage = () => {
   const [modalConfirmar, setModalConfirmar] = useState(false);
   const [novoSaldo, setNovoSaldo] = useState('');
   const [observacao, setObservacao] = useState('');
+  const [tipoRegistro, setTipoRegistro] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('');
+  const [agruparPorTipo, setAgruparPorTipo] = useState(false);
 
   const carregar = useCallback(async () => {
     if (!subcontaId) return;
@@ -43,7 +46,7 @@ const DetalheSubcontaPage = () => {
       setCarregando(true);
       const [sc, hist, rend, trans] = await Promise.all([
         patrimonioApi.obterSubconta(subcontaId),
-        patrimonioApi.obterHistorico(subcontaId),
+        patrimonioApi.obterHistorico(subcontaId, filtroTipo ? { tipo: filtroTipo } : {}),
         patrimonioApi.obterRendimentoEstimado(subcontaId),
         patrimonioApi.listarTransacoesPorSubconta(subcontaId)
       ]);
@@ -57,7 +60,7 @@ const DetalheSubcontaPage = () => {
     } finally {
       setCarregando(false);
     }
-  }, [subcontaId]);
+  }, [subcontaId, filtroTipo]);
 
   useEffect(() => {
     carregar();
@@ -65,6 +68,60 @@ const DetalheSubcontaPage = () => {
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
+
+  const obterClasseVariacao = (delta, tipo) => {
+    if (tipo === 'rendimento') return 'variacao-rendimento';
+    if (delta > 0) return 'variacao-positiva';
+    if (delta < 0) return 'variacao-negativa';
+    return '';
+  };
+
+  const TIPOS_OPCOES = [
+    { value: '', label: 'Todos' },
+    { value: 'rendimento', label: 'Rendimento' },
+    { value: 'aporte', label: 'Aporte' },
+    { value: 'transferencia_entrada', label: 'Transferência entrada' },
+    { value: 'transferencia_saida', label: 'Transferência saída' },
+    { value: 'ajuste', label: 'Ajuste' }
+  ];
+
+  const LABEL_POR_TIPO = Object.fromEntries(TIPOS_OPCOES.filter((o) => o.value).map((o) => [o.value, o.label]));
+
+  const calcularEstatisticas = () => {
+    const stats = { aportes: 0, rendimentos: 0, transferenciasEntrada: 0, transferenciasSaida: 0 };
+    historico.forEach((h, i) => {
+      const saldoAnterior = historico[i + 1]?.saldo;
+      if (saldoAnterior == null) return;
+      const delta = h.saldo - saldoAnterior;
+      const tipo = h.tipo || 'ajuste';
+      if (tipo === 'aporte' && delta > 0) stats.aportes += delta;
+      if (tipo === 'rendimento') stats.rendimentos += delta;
+      if (tipo === 'transferencia_entrada') stats.transferenciasEntrada += delta;
+      if (tipo === 'transferencia_saida') stats.transferenciasSaida += Math.abs(delta);
+    });
+    return stats;
+  };
+
+  const historicoAgrupado = agruparPorTipo
+    ? Object.entries(
+        historico.reduce((acc, h) => {
+          const t = h.tipo || 'ajuste';
+          if (!acc[t]) acc[t] = [];
+          acc[t].push(h);
+          return acc;
+        }, {})
+      ).sort((a, b) => a[0].localeCompare(b[0]))
+    : null;
+
+  const formatarVariacao = (h, index) => {
+    const saldoAnterior = historico[index + 1]?.saldo;
+    if (saldoAnterior == null) return { texto: '—', classe: '' };
+    const delta = h.saldo - saldoAnterior;
+    const tipo = h.tipo || 'ajuste';
+    const classe = obterClasseVariacao(delta, tipo);
+    const sinal = delta > 0 ? '+' : '';
+    return { texto: `${sinal}${formatarMoeda(delta)}`, classe };
+  };
 
   const dadosGrafico = {
     labels: historico.slice().reverse().map((h) => formatarData(h.data)),
@@ -80,10 +137,12 @@ const DetalheSubcontaPage = () => {
   const handleConfirmarSaldo = async () => {
     const saldoNum = parseFloat(novoSaldo);
     if (isNaN(saldoNum)) return;
+    if (!tipoRegistro) return;
     try {
       setConfirmando(true);
-      await patrimonioApi.confirmarSaldo(subcontaId, { saldo: saldoNum, observacao });
+      await patrimonioApi.confirmarSaldo(subcontaId, { saldo: saldoNum, observacao, tipo: tipoRegistro });
       setModalConfirmar(false);
+      setTipoRegistro('');
       carregar();
     } catch (err) {
       console.error(err);
@@ -130,6 +189,14 @@ const DetalheSubcontaPage = () => {
           valor={formatarMoeda(subconta.saldoAtual)}
           icon="piggybank"
         />
+        {subconta.percentualCDI > 0 && rendimento && (
+          <div className="projecao-rendimento-card">
+            <h4>Projeção de Rendimento</h4>
+            <p><strong>Saldo hoje:</strong> {formatarMoeda(rendimento.saldoAtual)}</p>
+            <p><strong>Amanhã:</strong> {formatarMoeda((rendimento.saldoAtual || 0) + (rendimento.rendimentoDiario || 0))} <span className="variacao-positiva">(+{formatarMoeda(rendimento.rendimentoDiario)})</span></p>
+            <p><strong>Projeção mensal estimada:</strong> <span className="variacao-positiva">+{formatarMoeda(rendimento.rendimentoMensal)}</span></p>
+          </div>
+        )}
         {rendimento && (rendimento.rendimentoMensal > 0 || rendimento.rendimentoDiario > 0) && (
           <PatrimonioStatCard
             label="Rendimento Estimado (mês)"
@@ -190,27 +257,106 @@ const DetalheSubcontaPage = () => {
 
       <div className="detalhe-section">
         <SectionHeader title="Registros de Histórico" />
+        {historico.length > 0 && (
+          <>
+            <div className="historico-filtros">
+              <div className="historico-filtro-item">
+                <label htmlFor="filtro-tipo">Filtro por tipo:</label>
+                <select
+                  id="filtro-tipo"
+                  value={filtroTipo}
+                  onChange={(e) => setFiltroTipo(e.target.value)}
+                >
+                  {TIPOS_OPCOES.map((opt) => (
+                    <option key={opt.value || 'todos'} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <label className="historico-agrupar">
+                <input
+                  type="checkbox"
+                  checked={agruparPorTipo}
+                  onChange={(e) => setAgruparPorTipo(e.target.checked)}
+                />
+                Agrupar por tipo
+              </label>
+            </div>
+            {(() => {
+              const stats = calcularEstatisticas();
+              const temStats = stats.aportes > 0 || stats.rendimentos > 0 || stats.transferenciasEntrada > 0 || stats.transferenciasSaida > 0;
+              return temStats ? (
+                <div className="historico-estatisticas">
+                  {stats.aportes > 0 && <span>Total aportes: {formatarMoeda(stats.aportes)}</span>}
+                  {stats.rendimentos > 0 && <span>Total rendimentos: {formatarMoeda(stats.rendimentos)}</span>}
+                  {stats.transferenciasEntrada > 0 && <span>Transferências entrada: {formatarMoeda(stats.transferenciasEntrada)}</span>}
+                  {stats.transferenciasSaida > 0 && <span>Transferências saída: {formatarMoeda(stats.transferenciasSaida)}</span>}
+                </div>
+              ) : null;
+            })()}
+          </>
+        )}
         {historico.length > 0 ? (
+          agruparPorTipo && historicoAgrupado ? (
+            <div className="historico-agrupado">
+              {historicoAgrupado.map(([tipo, itens]) => (
+                <div key={tipo} className="historico-grupo">
+                  <h5>{LABEL_POR_TIPO[tipo] || tipo}</h5>
+                  <table className="tabela-historico">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Saldo</th>
+                        <th>Variação</th>
+                        <th>Origem</th>
+                        <th>Observação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itens.map((h, idx) => {
+                        const idxGlobal = historico.indexOf(h);
+                        const { texto, classe } = formatarVariacao(h, idxGlobal);
+                        return (
+                          <tr key={h._id}>
+                            <td>{formatarData(h.data)}</td>
+                            <td>{formatarMoeda(h.saldo)}</td>
+                            <td className={classe ? `tabela-historico-variacao ${classe}` : ''}>{texto}</td>
+                            <td>{h.origem}</td>
+                            <td>{h.observacao || '-'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          ) : (
           <table className="tabela-historico">
             <thead>
               <tr>
                 <th>Data</th>
                 <th>Saldo</th>
+                <th>Variação</th>
                 <th>Origem</th>
                 <th>Observação</th>
               </tr>
             </thead>
             <tbody>
-              {historico.map((h) => (
-                <tr key={h._id}>
-                  <td>{formatarData(h.data)}</td>
-                  <td>{formatarMoeda(h.saldo)}</td>
-                  <td>{h.origem}</td>
-                  <td>{h.observacao || '-'}</td>
-                </tr>
-              ))}
+              {historico.map((h, index) => {
+                const { texto, classe } = formatarVariacao(h, index);
+                return (
+                  <tr key={h._id}>
+                    <td>{formatarData(h.data)}</td>
+                    <td>{formatarMoeda(h.saldo)}</td>
+                    <td className={classe ? `tabela-historico-variacao ${classe}` : ''}>{texto}</td>
+                    <td>{h.origem}</td>
+                    <td>{h.observacao || '-'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+          )
         ) : null}
       </div>
 
@@ -247,6 +393,29 @@ const DetalheSubcontaPage = () => {
               />
             </div>
             <div className="form-group">
+              <label>Tipo do registro <span className="obrigatorio">*</span></label>
+              <div className="form-radio-group">
+                {[
+                  { value: 'rendimento', label: 'Rendimento' },
+                  { value: 'aporte', label: 'Aporte' },
+                  { value: 'transferencia_entrada', label: 'Transferência entrada' },
+                  { value: 'transferencia_saida', label: 'Transferência saída' },
+                  { value: 'ajuste', label: 'Ajuste' }
+                ].map((opt) => (
+                  <label key={opt.value} className="form-radio-label">
+                    <input
+                      type="radio"
+                      name="tipoRegistro"
+                      value={opt.value}
+                      checked={tipoRegistro === opt.value}
+                      onChange={(e) => setTipoRegistro(e.target.value)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="form-group">
               <label>Observação (opcional)</label>
               <input
                 type="text"
@@ -257,7 +426,7 @@ const DetalheSubcontaPage = () => {
             </div>
             <div className="form-actions">
               <Button type="button" variant="ghost" onClick={() => setModalConfirmar(false)}>Cancelar</Button>
-              <Button onClick={handleConfirmarSaldo} disabled={confirmando}>
+              <Button onClick={handleConfirmarSaldo} disabled={confirmando || !tipoRegistro}>
                 {confirmando ? <FaSpinner className="spinner-inline" /> : 'Confirmar'}
               </Button>
             </div>

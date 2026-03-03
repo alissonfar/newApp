@@ -1,6 +1,7 @@
 // src/controllers/transferenciaController.js
 const Transferencia = require('../models/transferencia');
 const Subconta = require('../models/subconta');
+const HistoricoSaldo = require('../models/historicoSaldo');
 
 exports.listar = async (req, res) => {
   try {
@@ -60,6 +61,81 @@ exports.criar = async (req, res) => {
   } catch (erro) {
     console.error('[Transferencia] Erro ao criar:', erro);
     return res.status(500).json({ erro: 'Erro ao criar transferência' });
+  }
+};
+
+exports.confirmar = async (req, res) => {
+  try {
+    const transferencia = await Transferencia.findOne({
+      _id: req.params.id,
+      usuario: req.userId
+    });
+
+    if (!transferencia) {
+      return res.status(404).json({ erro: 'Transferência não encontrada' });
+    }
+    if (transferencia.status !== 'pendente') {
+      return res.status(400).json({ erro: 'Só é possível confirmar transferências pendentes' });
+    }
+
+    const valor = transferencia.valor;
+    const origemId = transferencia.subcontaOrigem?._id || transferencia.subcontaOrigem;
+    const destinoId = transferencia.subcontaDestino?._id || transferencia.subcontaDestino;
+
+    const [origem, destino] = await Promise.all([
+      Subconta.findOne({ _id: origemId, usuario: req.userId }),
+      Subconta.findOne({ _id: destinoId, usuario: req.userId })
+    ]);
+
+    if (!origem || !destino) {
+      return res.status(404).json({ erro: 'Subconta(s) não encontrada(s)' });
+    }
+
+    const saldoOrigemAntes = origem.saldoAtual ?? 0;
+    const saldoDestinoAntes = destino.saldoAtual ?? 0;
+    const novoSaldoOrigem = saldoOrigemAntes - valor;
+    const novoSaldoDestino = saldoDestinoAntes + valor;
+
+    origem.saldoAtual = novoSaldoOrigem;
+    origem.dataUltimaConfirmacao = transferencia.data;
+    await origem.save();
+
+    destino.saldoAtual = novoSaldoDestino;
+    destino.dataUltimaConfirmacao = transferencia.data;
+    await destino.save();
+
+    await HistoricoSaldo.create([
+      {
+        usuario: req.userId,
+        subconta: origemId,
+        saldo: novoSaldoOrigem,
+        data: transferencia.data,
+        origem: 'manual',
+        tipo: 'transferencia_saida',
+        observacao: `Transferência confirmada manualmente → ${destino.nome}`
+      },
+      {
+        usuario: req.userId,
+        subconta: destinoId,
+        saldo: novoSaldoDestino,
+        data: transferencia.data,
+        origem: 'manual',
+        tipo: 'transferencia_entrada',
+        observacao: `Transferência confirmada manualmente ← ${origem.nome}`
+      }
+    ]);
+
+    transferencia.status = 'concluida';
+    await transferencia.save();
+
+    const populated = await Transferencia.findById(transferencia._id)
+      .populate('subcontaOrigem subcontaDestino', 'nome instituicao')
+      .lean();
+
+    return res.json(populated);
+  } catch (erro) {
+    console.error('[Transferencia] Erro ao confirmar:', erro);
+    return res.status(500).json({ erro: 'Erro ao confirmar transferência' });
   }
 };
 

@@ -195,6 +195,35 @@
   color: #2e7d32;
 }
 
+.transferencia-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.transferencia-status .btn-confirmar {
+  padding: 0.35rem 0.75rem;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.transferencia-status .btn-confirmar:hover:not(:disabled) {
+  background: #43a047;
+}
+
+.transferencia-status .btn-confirmar:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .loading, .vazio {
   text-align: center;
   padding: 2rem;

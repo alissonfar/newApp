@@ -261,6 +261,7 @@ async function finalizarImportacaoOFX(importacaoId, usuarioId) {
     saldo: importacao.saldoFinalExtrato,
     data: importacao.dataSaldoExtrato,
     origem: 'importacao_ofx',
+    tipo: 'ajuste',
     observacao: `Importação OFX #${importacao._id} - ${importacao.nomeArquivo}`
   });
 

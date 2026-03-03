@@ -42,12 +42,13 @@ const patrimonioApi = {
     const response = await api.delete(`/subcontas/${id}`);
     return response.data;
   },
-  confirmarSaldo: async (id, { saldo, observacao, origem }) => {
-    const response = await api.post(`/subcontas/${id}/confirmar-saldo`, { saldo, observacao, origem });
+  confirmarSaldo: async (id, { saldo, observacao, origem, tipo }) => {
+    const response = await api.post(`/subcontas/${id}/confirmar-saldo`, { saldo, observacao, origem, tipo });
     return response.data;
   },
-  obterHistorico: async (id) => {
-    const response = await api.get(`/subcontas/${id}/historico`);
+  obterHistorico: async (id, { tipo } = {}) => {
+    const params = tipo ? `?tipo=${encodeURIComponent(tipo)}` : '';
+    const response = await api.get(`/subcontas/${id}/historico${params}`);
     return response.data;
   },
   obterRendimentoEstimado: async (id) => {
@@ -124,6 +125,10 @@ const patrimonioApi = {
   },
   criarTransferencia: async (dados) => {
     const response = await api.post('/patrimonio/transferencias', dados);
+    return response.data;
+  },
+  confirmarTransferencia: async (id) => {
+    const response = await api.patch(`/patrimonio/transferencias/${id}/confirmar`);
     return response.data;
   }
 };

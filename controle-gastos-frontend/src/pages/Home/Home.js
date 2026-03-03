@@ -442,7 +442,11 @@ const Home = () => {
                             </div>
                             <div className="transacoes-col-valor transacao-valor-cell">
                               <span className={`transacao-valor ${t.tipo === 'gasto' ? 'transacao-valor--gasto' : 'transacao-valor--recebivel'}`}>
-                                {t.tipo === 'gasto' ? '-' : '+'} {formatarMoeda(t.valor)}
+                                {(() => {
+                                  const pagamentoProprietario = t.pagamentos?.find(p => p.pessoa && p.pessoa.toLowerCase() === proprietario.toLowerCase());
+                                  const valorExibicao = pagamentoProprietario?.valor ?? t.valor;
+                                  return `${t.tipo === 'gasto' ? '-' : '+'} ${formatarMoeda(valorExibicao)}`;
+                                })()}
                               </span>
                             </div>
                             <div className="transacoes-col-acao transacao-acao">
@@ -546,6 +550,7 @@ const Home = () => {
         open={isDayModalOpen}
         transactions={selectedDateTransactions}
         date={selectedDate}
+        proprietario={proprietario}
         onClose={() => setIsDayModalOpen(false)}
       />
     </div>

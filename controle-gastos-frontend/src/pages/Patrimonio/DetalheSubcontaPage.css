@@ -90,6 +90,97 @@
 .lista-transacoes .positivo { color: var(--cor-sucesso); }
 .lista-transacoes .negativo { color: var(--cor-erro); }
 
+.tabela-historico-variacao.variacao-positiva { color: var(--cor-sucesso, #2e7d32); }
+.tabela-historico-variacao.variacao-negativa { color: var(--cor-erro, #c62828); }
+.tabela-historico-variacao.variacao-rendimento { color: #2196f3; }
+
+.projecao-rendimento-card {
+  background: var(--cor-fundo-card);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: var(--sombra-card, 0 2px 8px rgba(0,0,0,0.08));
+  border-left: 4px solid #2196f3;
+}
+
+.projecao-rendimento-card h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: var(--cor-texto);
+}
+
+.projecao-rendimento-card p {
+  margin: 0.35rem 0;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.projecao-rendimento-card .variacao-positiva {
+  color: var(--cor-sucesso, #2e7d32);
+}
+
+.historico-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.historico-filtro-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.historico-filtro-item label {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.historico-filtro-item select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--cor-borda, #ddd);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.historico-agrupar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.historico-estatisticas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--cor-fundo, #f9f9f9);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.historico-estatisticas span {
+  color: var(--cor-texto-suave, #555);
+}
+
+.historico-agrupado {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.historico-grupo h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
 .detalhe-loading {
   display: flex;
   flex-direction: column;

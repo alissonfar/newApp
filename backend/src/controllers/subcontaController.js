@@ -62,6 +62,7 @@ exports.criar = async (req, res) => {
         saldo: saldoInicial,
         data: new Date(),
         origem: 'manual',
+        tipo: 'ajuste',
         observacao: 'Saldo inicial'
       });
     }
@@ -113,16 +114,26 @@ exports.excluir = async (req, res) => {
   }
 };
 
+const TIPOS_HISTORICO = ['rendimento', 'aporte', 'transferencia_entrada', 'transferencia_saida', 'ajuste'];
+
 exports.confirmarSaldo = async (req, res) => {
   try {
     const subconta = await Subconta.findOne({ _id: req.params.id, usuario: req.userId });
     if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
-    const { saldo, observacao, origem } = req.body;
+    const { saldo, observacao, origem, tipo } = req.body;
     const saldoNum = parseFloat(saldo);
     if (saldo == null || isNaN(saldoNum)) {
       return res.status(400).json({ erro: 'O campo saldo é obrigatório e deve ser um número.' });
     }
     const origemValida = ['manual', 'importacao_ofx', 'importacao_csv'].includes(origem) ? origem : 'manual';
+    let tipoValido = 'ajuste';
+    if (origemValida === 'importacao_ofx' || origemValida === 'importacao_csv') {
+      tipoValido = 'ajuste';
+    } else if (tipo && TIPOS_HISTORICO.includes(tipo)) {
+      tipoValido = tipo;
+    } else if (origemValida === 'manual') {
+      return res.status(400).json({ erro: 'O campo tipo é obrigatório para confirmação manual de saldo.' });
+    }
     subconta.saldoAtual = saldoNum;
     subconta.dataUltimaConfirmacao = new Date();
     await subconta.save();
@@ -133,6 +144,7 @@ exports.confirmarSaldo = async (req, res) => {
       saldo: saldoNum,
       data: new Date(),
       origem: origemValida,
+      tipo: tipoValido,
       observacao: observacao || ''
     });
     await historico.save();
@@ -149,7 +161,10 @@ exports.obterHistorico = async (req, res) => {
   try {
     const subconta = await Subconta.findOne({ _id: req.params.id, usuario: req.userId });
     if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
-    const historico = await HistoricoSaldo.find({ subconta: req.params.id })
+    const { tipo } = req.query;
+    const match = { subconta: req.params.id, usuario: req.userId };
+    if (tipo && TIPOS_HISTORICO.includes(tipo)) match.tipo = tipo;
+    const historico = await HistoricoSaldo.find(match)
       .sort({ data: -1 })
       .limit(100)
       .lean();

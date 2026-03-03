@@ -54,6 +54,29 @@
   margin: 0 0 1rem 0;
 }
 
+.patrimonio-modal .form-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.patrimonio-modal .form-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: normal;
+  margin: 0;
+}
+
+.patrimonio-modal .form-radio-label input {
+  width: auto;
+}
+
+.patrimonio-modal .obrigatorio {
+  color: var(--cor-erro);
+}
+
 .patrimonio-modal .form-actions {
   display: flex;
   gap: 0.75rem;
