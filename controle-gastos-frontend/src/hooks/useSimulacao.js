@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import Decimal from 'decimal.js';
 
+/** Dias úteis no ano (padrão financeiro, alinhado ao backend). */
+const DIAS_UTEIS_ANO = 252;
+const DIAS_UTEIS_MES = 21;
+const MESES_NO_ANO = DIAS_UTEIS_ANO / DIAS_UTEIS_MES;
+
 /**
  * Calcula taxa mensal equivalente para simulação.
  * CDI_ajustado = CDI_anual × (percentualCDI/100)
@@ -9,7 +14,7 @@ import Decimal from 'decimal.js';
 function calcularTaxaMensal(cdiAnualPercent, percentualCDI) {
   if (!cdiAnualPercent || !percentualCDI) return 0;
   const cdiAjustado = new Decimal(cdiAnualPercent).times(percentualCDI).div(100);
-  const taxaMensal = new Decimal(1).plus(cdiAjustado.div(100)).pow(1 / 12).minus(1);
+  const taxaMensal = new Decimal(1).plus(cdiAjustado.div(100)).pow(1 / MESES_NO_ANO).minus(1);
   return taxaMensal.toNumber();
 }
 

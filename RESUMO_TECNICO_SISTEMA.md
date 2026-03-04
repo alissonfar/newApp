@@ -32,6 +32,7 @@
 | **Autenticação** | JWT (jsonwebtoken), bcrypt/bcryptjs |
 | **Email** | Nodemailer (Gmail) |
 | **Upload/Parse** | Multer, csv-parse, xlsx, xml2js, iconv-lite, chardet |
+| **Precisão numérica** | decimal.js (backend e frontend) |
 
 ### Padrão arquitetural
 - **Backend**: Estrutura em camadas (routes → controllers → services → models)
@@ -52,8 +53,9 @@
 
 ### Integrações externas
 - **Email**: Nodemailer (Gmail) para verificação de email, redefinição de senha e testes
-- **MongoDB**: Conexão via `DB_URI`
-- **Taxa CDI**: API BCB (api.bcb.gov.br) para obter taxas CDI diária/mensal/anual (cálculo de rendimento estimado)
+- **MongoDB**: Conexão via `DB_URI`; suporte a transações MongoDB (requer replica set)
+- **Taxa CDI**: API BCB (api.bcb.gov.br) para obter taxas CDI diária/mensal/anual (cálculo de rendimento estimado e simulador)
+- **Health check**: `GET /api/health` verifica conexão MongoDB e suporte a transações/replica set
 - **Não informado**: APIs de terceiros para bancos, Open Banking, etc.
 
 ---
@@ -91,9 +93,9 @@
 - **Dependências**: Usuario, Transacao, TransacaoImportada, ImportacaoService
 
 ### Módulo de Recebimentos (Settlement/Conciliação)
-- **Responsabilidade**: Conciliação de recebíveis com gastos; aplicação de tag em gastos quitados; geração de transação de sobra.
+- **Responsabilidade**: Conciliação de recebíveis com gastos; aplicação de tag em gastos quitados; geração de transação de sobra; remoção de tag ao reverter (removeTagId, removedTagLog).
 - **Entidades**: Settlement
-- **Fluxos**: Selecionar recebimento → Selecionar gastos → Aplicar tag → Criar settlement; Excluir settlement (reverte alterações)
+- **Fluxos**: Selecionar recebimento → Selecionar gastos → Aplicar tag → Criar settlement; Excluir settlement (reverte alterações, remove tag aplicada)
 - **Dependências**: Transacao, Tag, Usuario
 
 ### Módulo de Relatórios
@@ -109,9 +111,9 @@
 - **Dependências**: Usuario, Backup, todos os modelos para restore
 
 ### Módulo de Patrimônio
-- **Responsabilidade**: Gestão de instituições financeiras (bancos, corretoras, carteiras), subcontas (contas dentro de instituições), histórico de saldo, confirmação de saldo, evolução patrimonial e rendimento estimado (CDI).
+- **Responsabilidade**: Gestão de instituições financeiras (bancos, corretoras, carteiras), subcontas (contas dentro de instituições), histórico de saldo, confirmação de saldo, evolução patrimonial, rendimento estimado (CDI) e simulador de rendimentos.
 - **Entidades**: Instituicao, Subconta, HistoricoSaldo, TaxaCDI
-- **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB)
+- **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB); Simulador de Rendimentos (`/patrimonio/simulador`) permite simular rendimento com valor, % CDI e período (usa useCdiData, SimuladorForm, CdiDataCard, ComparacaoRapidaCard)
 - **Dependências**: Usuario; Transacao (vinculação opcional via `subconta`); TaxaCDI (coleção global, não por usuário)
 
 ### Módulo de Importação OFX
@@ -151,13 +153,13 @@
 | Entidade | Descrição |
 |----------|-----------|
 | **Usuario** | nome, email, senha (hash), emailVerificado, tokens de verificação/redefinição, preferencias (tema, proprietario, moedaPadrao, notificacoes), role (admin/pro/comum), status (ativo/inativo/bloqueado) |
-| **Transacao** | tipo (gasto/recebivel), descricao, valor, data, observacao, pagamentos[], status (ativo/estornado), usuario, deduplicationKey, campos de parcelamento, settlementAsSource, settlementLeftoverFrom, subconta (opcional, ref Subconta), contaConjunta (ativo, vinculoId, pagoPor, valorTotal, parteUsuario, parteOutro, acertadoEm) |
+| **Transacao** | tipo (gasto/recebivel), descricao, valor, data, observacao, pagamentos[], status (ativo/estornado), usuario, deduplicationKey, campos de parcelamento, settlementAsSource, settlementApplied, settlementLeftoverFrom, subconta (opcional, ref Subconta), contaConjunta (ativo, vinculoId, pagoPor, valorTotal, parteUsuario, parteOutro, acertadoEm) |
 | **Pagamento** | pessoa, valor, tags (objeto { categoriaId: [tagIds] }) |
 | **Categoria** | codigo, nome, descricao, cor, icone, ativo, usuario |
 | **Tag** | codigo, nome, descricao, categoria (string), cor, icone, ativo, usuario |
 | **Importacao** | descricao, status, nomeArquivo, caminhoArquivo, totalProcessado/Sucesso/Erro/Ignoradas, tagsPadrao, tipoImportacao (normal/complementar), usuario |
 | **TransacaoImportada** | importacao, descricao, valor, data, categoria, tipo, status, pagamentos, dadosOriginais, deduplicationKey, transacaoCriada, campos de parcelamento, usuario |
-| **Settlement** | usuario, receivingTransactionId, appliedTransactions[], tagId, totalApplied, leftoverAmount, leftoverTransactionId |
+| **Settlement** | usuario, receivingTransactionId, appliedTransactions[] (transactionId, amountApplied), tagId, removeTagId, removedTagLog, totalApplied, leftoverAmount, leftoverTransactionId |
 | **ModeloRelatorio** | nome, descricao, aggregation (default/devedor), regras (tag + effect), usuario, ativo |
 | **Backup** | filename, size, type (mongodump/logical), operation, createdBy, status, errorMessage |
 | **Instituicao** | usuario, nome, tipo (banco_digital/banco_tradicional/carteira_digital/corretora), cor, icone, ativo |
@@ -334,6 +336,7 @@
 8. Transações podem ser vinculadas a subconta (campo opcional na criação/edição)
 9. Transferências: `/patrimonio/transferencias` → criar/listar transferências entre subcontas
 10. Importação OFX: `/patrimonio/importacoes-ofx` → upload OFX por subconta → revisão → aprovar/ignorar; movimentações internas podem vincular a transferências pendentes
+11. Simulador de Rendimentos: `/patrimonio/simulador` → valor, % CDI (presets ou custom), período → cálculo de rendimento estimado; link direto do detalhe da subconta com valor e percentual pré-preenchidos
 
 ### Fluxo 8: Conta Conjunta (Vínculos)
 1. Acessar `/conjunto` → listar vínculos (contas conjuntas)
@@ -373,8 +376,8 @@
 
 ### Débitos técnicos conhecidos
 - `validarMultiplas` em transacaoImportadaController: valida sem criar Transacao (inconsistência com fluxo de finalização)
-- Código de debug (console.log) em transacaoImportadaController
-- api.js: `importacaoApi.criar` usa POST `/importacoes` mas rota real espera FormData com `arquivo`; `uploadArquivo` chama rota inexistente `/importacoes/:id/arquivo`
+- Código de debug (console.log) em transacaoImportadaController e importacaoController
+- api.js: `importacaoApi` é legacy/não utilizado; o app usa `importacaoService` que envia FormData corretamente. `importacaoApi.uploadArquivo` chama rota inexistente `/importacoes/:id/arquivo`
 - PDF de relatório: backend retorna JSON quando format=pdf (comentário "Fase 3: PDF no backend - por ora retornamos JSON")
 
 ---
@@ -393,7 +396,7 @@
 - Backup/restore (admin)
 - Gerenciamento de usuários (admin)
 - Responsividade
-- **Módulo de Patrimônio**: CRUD instituições e subcontas, resumo (total, por instituição, por propósito), evolução patrimonial, histórico de saldo, confirmação de saldo, rendimento estimado (CDI), vinculação de transações a subcontas, alertas de subcontas desatualizadas
+- **Módulo de Patrimônio**: CRUD instituições e subcontas, resumo (total, por instituição, por propósito), evolução patrimonial, histórico de saldo, confirmação de saldo, rendimento estimado (CDI), vinculação de transações a subcontas, alertas de subcontas desatualizadas, **Simulador de Rendimentos** (valor, % CDI, período)
 - **Importação OFX**: Upload de extratos OFX, parse XML, TransacaoOFX, revisão, aprovação/ignorar, conversão em Transacao, detecção de movimentação interna e sugestão de vínculo com Transferência
 - **Transferências**: CRUD entre subcontas, vinculação opcional com TransacaoOFX (movimentação interna)
 - **Conta Conjunta (Vínculos)**: CRUD vínculos, transações com divisão (parteUsuario/parteOutro), saldo pendente, acertos FIFO, estorno de acerto
@@ -417,7 +420,7 @@
 - Settlement com transações MongoDB
 - Report engine extensível (templates + modelos)
 - Suporte a parcelamento na criação e na importação
-- Módulo Patrimônio bem integrado: instituições → subcontas → histórico; vinculação opcional de transações; TaxaCDI externa para rendimento estimado
+- Módulo Patrimônio bem integrado: instituições → subcontas → histórico; vinculação opcional de transações; TaxaCDI externa para rendimento estimado; Simulador de Rendimentos com CDI
 - Importação OFX completa: parse de extratos bancários, detecção de movimentação interna, sugestão de vínculo com transferências
 - Módulo Conta Conjunta: divisão de gastos com participante, acertos FIFO, integração com formulário de transação
 
@@ -425,7 +428,7 @@
 - Substituir processamento assíncrono de importação por fila (Bull, Agenda, etc.)
 - Implementar Service Worker para offline
 - Remover CORS permissivo em produção
-- Corrigir inconsistências na API de importação (frontend vs backend)
+- Remover código legacy `importacaoApi` em api.js (não utilizado; importacaoService é o correto)
 - Implementar geração de PDF no backend
 - Remover logs de debug em produção
 
@@ -440,4 +443,4 @@
 
 ---
 
-*Documento gerado com base na análise do código-fonte. Última atualização: março/2026 (incluído módulo Conta Conjunta / Vínculos).*
+*Documento gerado com base na análise do código-fonte. Última atualização: março/2026 (Simulador de Rendimentos, ajustes Settlement/Transacao, correção débito técnico importação).*

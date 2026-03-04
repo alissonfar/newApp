@@ -9,7 +9,19 @@ const AcertoConjuntoSchema = new mongoose.Schema({
   data: { type: Date, required: true },
   observacao: { type: String },
   transacoesQuitadas: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transacao' }],
-  criadoEm: { type: Date, default: Date.now }
+  criadoEm: { type: Date, default: Date.now },
+  tipo: {
+    type: String,
+    enum: ['compensacao', 'pagamento_individual'],
+    default: 'compensacao'
+  },
+  ladoAfetado: {
+    type: String,
+    enum: ['usuario', 'participante'],
+    required: function () {
+      return this.tipo === 'pagamento_individual';
+    }
+  }
 });
 
 AcertoConjuntoSchema.index({ vinculo: 1, data: -1 });

@@ -9,6 +9,7 @@ import {
   obterResumoVinculo,
   listarTransacoesVinculo,
   listarAcertosVinculo,
+  obterExtratoVinculo,
   registrarAcertoVinculo,
   estornarAcerto
 } from '../../api';
@@ -16,6 +17,7 @@ import { getDateRangeForPeriod, PERIODOS_RAPIDOS } from '../../utils/dateUtils';
 import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
 import Card from '../../components/shared/Card';
+import ModalTransacao from '../../components/Modal/ModalTransacao';
 import EmptyState from '../../components/shared/EmptyState';
 import Badge from '../../components/shared/Badge';
 import PeriodQuickFilter from '../../components/shared/PeriodQuickFilter';
@@ -36,26 +38,31 @@ const DetalheVinculoPage = () => {
   const [periodo, setPeriodo] = useState({ dataInicio: '', dataFim: '' });
   const [acertoValor, setAcertoValor] = useState('');
   const [acertoDirecao, setAcertoDirecao] = useState('paguei');
+  const [acertoTipo, setAcertoTipo] = useState('compensacao');
   const [acertoData, setAcertoData] = useState('');
   const [acertoObservacao, setAcertoObservacao] = useState('');
   const [salvandoAcerto, setSalvandoAcerto] = useState(false);
   const [estornandoId, setEstornandoId] = useState(null);
+  const [extrato, setExtrato] = useState({ items: [], total: 0 });
+  const [filtroTransacao, setFiltroTransacao] = useState('');
 
   const carregar = useCallback(async () => {
     if (!id) return;
     try {
       setCarregando(true);
       const range = getDateRangeForPeriod(PERIODOS_RAPIDOS.MES_ATUAL);
-      const [v, res, trans, ac] = await Promise.all([
+      const [v, res, trans, ac, ext] = await Promise.all([
         obterVinculoConjunto(id),
         obterResumoVinculo(id, range || {}),
         listarTransacoesVinculo(id, { limit: 50 }),
-        listarAcertosVinculo(id)
+        listarAcertosVinculo(id),
+        obterExtratoVinculo(id, { limit: 50 })
       ]);
       setVinculo(v);
       setResumo(res);
       setTransacoes({ items: trans.items || trans.transacoes || [], total: trans.total || 0 });
       setAcertos(Array.isArray(ac) ? ac : []);
+      setExtrato({ items: ext.items || [], total: ext.total || 0 });
       if (range) setPeriodo({ dataInicio: range.dataInicio, dataFim: range.dataFim });
     } catch (err) {
       console.error(err);
@@ -67,16 +74,19 @@ const DetalheVinculoPage = () => {
   const carregarComPeriodo = useCallback(async () => {
     if (!id) return;
     try {
+      const params = { ...periodo, limit: 50 };
+      if (filtroTransacao === 'euDevo') params.euDevo = true;
+      if (filtroTransacao === 'outroDeve') params.outroDeve = true;
       const [res, trans] = await Promise.all([
         obterResumoVinculo(id, periodo),
-        listarTransacoesVinculo(id, { ...periodo, limit: 50 })
+        listarTransacoesVinculo(id, params)
       ]);
       setResumo(res);
       setTransacoes({ items: trans.items || trans.transacoes || [], total: trans.total || 0 });
     } catch (err) {
       console.error(err);
     }
-  }, [id, periodo]);
+  }, [id, periodo, filtroTransacao]);
 
   useEffect(() => {
     carregar();
@@ -86,7 +96,7 @@ const DetalheVinculoPage = () => {
     if (!carregando && periodo.dataInicio) {
       carregarComPeriodo();
     }
-  }, [carregando, carregarComPeriodo, periodo.dataInicio, periodo.dataFim]);
+  }, [carregando, carregarComPeriodo, periodo.dataInicio, periodo.dataFim, filtroTransacao]);
 
   const handlePeriodChange = (p) => {
     setPeriodo(prev => ({ ...prev, ...p }));
@@ -105,16 +115,22 @@ const DetalheVinculoPage = () => {
     }
     try {
       setSalvandoAcerto(true);
-      await registrarAcertoVinculo(id, {
+      const payload = {
         valor,
         direcao: acertoDirecao,
         data: acertoData,
-        observacao: acertoObservacao || undefined
-      });
+        observacao: acertoObservacao || undefined,
+        tipo: acertoTipo
+      };
+      if (acertoTipo === 'pagamento_individual') {
+        payload.ladoAfetado = acertoDirecao === 'paguei' ? 'usuario' : 'participante';
+      }
+      await registrarAcertoVinculo(id, payload);
       toast.success('Acerto registrado com sucesso.');
       setModalAcerto(false);
       setAcertoValor('');
       setAcertoDirecao('paguei');
+      setAcertoTipo('compensacao');
       setAcertoData('');
       setAcertoObservacao('');
       carregar();
@@ -162,8 +178,12 @@ const DetalheVinculoPage = () => {
     );
   }
 
-  const saldo = vinculo.saldo ?? 0;
+  const saldo = vinculo.saldo ?? resumo?.saldoLiquido ?? 0;
+  const totalEuDevo = resumo?.totalEuDevo ?? 0;
+  const totalOutroDeve = resumo?.totalOutroDeve ?? 0;
+  const saldoLiquido = resumo?.saldoLiquido ?? saldo;
   const items = transacoes.items || transacoes;
+  const extratoItems = extrato.items || [];
 
   return (
     <div className="detalhe-vinculo-page">
@@ -177,10 +197,20 @@ const DetalheVinculoPage = () => {
         <Card className="placar-card">
           <h2>{vinculo.nome}</h2>
           <p className="participante-nome">{vinculo.participante}</p>
-          <p className={`saldo-atual ${saldo >= 0 ? 'positivo' : 'negativo'}`}>
-            {saldo >= 0 ? 'Te devem: ' : 'Você deve: '}
-            {formatarMoeda(Math.abs(saldo))}
-          </p>
+          <div className="resumo-metricas">
+            <div className="metrica metrica-eu-devo">
+              <span className="metrica-label">Eu devo</span>
+              <span className="metrica-valor">{formatarMoeda(totalEuDevo)}</span>
+            </div>
+            <div className="metrica metrica-outro-deve">
+              <span className="metrica-label">Outro deve</span>
+              <span className="metrica-valor">{formatarMoeda(totalOutroDeve)}</span>
+            </div>
+            <div className="metrica metrica-saldo">
+              <span className="metrica-label">Saldo líquido</span>
+              <span className="metrica-valor">{formatarMoeda(saldoLiquido)}</span>
+            </div>
+          </div>
           <Button variant="primary" onClick={() => {
             setModalAcerto(true);
             setAcertoData(new Date().toISOString().split('T')[0]);
@@ -210,6 +240,21 @@ const DetalheVinculoPage = () => {
       <div className="detalhe-vinculo-transacoes">
         <Card>
           <SectionHeader title="Lançamentos conjuntos" icon={<FaReceipt />} />
+          <div className="filtros-transacao">
+            <span>Filtrar:</span>
+            <label>
+              <input type="radio" name="filtroTrans" value="" checked={filtroTransacao === ''} onChange={() => setFiltroTransacao('')} />
+              {' '}Todos
+            </label>
+            <label>
+              <input type="radio" name="filtroTrans" value="euDevo" checked={filtroTransacao === 'euDevo'} onChange={() => setFiltroTransacao('euDevo')} />
+              {' '}O que EU devo
+            </label>
+            <label>
+              <input type="radio" name="filtroTrans" value="outroDeve" checked={filtroTransacao === 'outroDeve'} onChange={() => setFiltroTransacao('outroDeve')} />
+              {' '}O que o outro deve
+            </label>
+          </div>
           {items.length === 0 ? (
             <EmptyState message="Nenhuma transação conjunta" />
           ) : (
@@ -235,6 +280,46 @@ const DetalheVinculoPage = () => {
         </Card>
       </div>
 
+      <div className="detalhe-vinculo-extrato">
+        <Card>
+          <SectionHeader title="Extrato financeiro" icon={<FaReceipt />} />
+          {extratoItems.length === 0 ? (
+            <EmptyState message="Nenhum lançamento no extrato" />
+          ) : (
+            <ul className="lista-extrato">
+              {extratoItems.map((item) => (
+                <li key={`${item.tipo}-${item._id}`} className={`extrato-item extrato-${item.tipo}`}>
+                  {item.tipo === 'transacao' ? (
+                    <>
+                      <span className="extrato-data">{formatarData(item.data)}</span>
+                      <span className="extrato-desc">{item.descricao}</span>
+                      <span className="extrato-detalhe">
+                        {item.contaConjunta?.pagoPor === 'outro' ? 'Outro pagou' : 'Eu paguei'} · {formatarMoeda(item.contaConjunta?.valorTotal || item.valor)}
+                      </span>
+                      <Badge variant={item.contaConjunta?.acertadoEm ? 'success' : 'warning'}>
+                        {item.contaConjunta?.acertadoEm ? 'Quitado' : 'Pendente'}
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <span className="extrato-data">{formatarData(item.data)}</span>
+                      <span className="extrato-desc">
+                        Acerto: {item.direcao === 'paguei' ? 'Paguei' : 'Recebi'} {formatarMoeda(item.valor)}
+                      </span>
+                      {item.tipo && (
+                        <Badge variant={item.tipo === 'pagamento_individual' ? 'info' : 'neutral'}>
+                          {item.tipo === 'pagamento_individual' ? 'Individual' : 'Compensação'}
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
       <div className="detalhe-vinculo-acertos">
         <Card>
           <SectionHeader title="Histórico de acertos" icon={<FaReceipt />} />
@@ -247,6 +332,11 @@ const DetalheVinculoPage = () => {
                   <span className="acerto-data">{formatarData(a.data)}</span>
                   <span className="acerto-dir">{a.direcao === 'paguei' ? 'Paguei' : 'Recebi'}</span>
                   <span className="acerto-valor">{formatarMoeda(a.valor)}</span>
+                  {a.tipo && (
+                    <Badge variant={a.tipo === 'pagamento_individual' ? 'info' : 'neutral'}>
+                      {a.tipo === 'pagamento_individual' ? 'Individual' : 'Compensação'}
+                    </Badge>
+                  )}
                   {a.observacao && <span className="acerto-obs">{a.observacao}</span>}
                   <Button
                     variant="danger"
@@ -264,74 +354,102 @@ const DetalheVinculoPage = () => {
       </div>
 
       {modalAcerto && (
-        <div className="modal-overlay" onClick={() => !salvandoAcerto && setModalAcerto(false)}>
-          <div className="modal-content modal-acerto" onClick={(e) => e.stopPropagation()}>
-            <h3>Registrar Acerto</h3>
-            <form onSubmit={handleRegistrarAcerto}>
-              <div className="form-group">
-                <label>Valor</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={acertoValor}
-                  onChange={(e) => setAcertoValor(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Direção</label>
-                <div className="radio-group">
-                  <label>
-                    <input
-                      type="radio"
-                      name="direcao"
-                      value="paguei"
-                      checked={acertoDirecao === 'paguei'}
-                      onChange={() => setAcertoDirecao('paguei')}
-                    />
-                    {' '}Paguei ao participante
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="direcao"
-                      value="recebi"
-                      checked={acertoDirecao === 'recebi'}
-                      onChange={() => setAcertoDirecao('recebi')}
-                    />
-                    {' '}Recebi do participante
-                  </label>
+        <ModalTransacao onClose={() => !salvandoAcerto && setModalAcerto(false)}>
+          <div className="modal-acerto-container">
+            <h2>Registrar Acerto</h2>
+            <form onSubmit={handleRegistrarAcerto} className="modal-acerto-form">
+              <div className="form-section modal-acerto-section">
+                <div className="form-group">
+                  <label>Valor</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={acertoValor}
+                    onChange={(e) => setAcertoValor(e.target.value)}
+                    required
+                  />
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Data</label>
-                <input
-                  type="date"
-                  value={acertoData}
-                  onChange={(e) => setAcertoData(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Observação (opcional)</label>
-                <input
-                  type="text"
-                  value={acertoObservacao}
-                  onChange={(e) => setAcertoObservacao(e.target.value)}
-                />
-              </div>
-              <div className="modal-actions">
-                <Button type="button" variant="ghost" onClick={() => setModalAcerto(false)} disabled={salvandoAcerto}>
-                  Cancelar
-                </Button>
-                <Button type="submit" variant="primary" disabled={salvandoAcerto}>
-                  {salvandoAcerto ? 'Salvando...' : 'Registrar'}
-                </Button>
+                <div className="form-group">
+                  <label>Tipo de acerto</label>
+                  <div className="radio-group">
+                    <label className="radio-option">
+                      <input
+                        type="radio"
+                        name="tipo"
+                        value="compensacao"
+                        checked={acertoTipo === 'compensacao'}
+                        onChange={() => setAcertoTipo('compensacao')}
+                      />
+                      <span>Compensação (padrão)</span>
+                    </label>
+                    <label className="radio-option">
+                      <input
+                        type="radio"
+                        name="tipo"
+                        value="pagamento_individual"
+                        checked={acertoTipo === 'pagamento_individual'}
+                        onChange={() => setAcertoTipo('pagamento_individual')}
+                      />
+                      <span>Pagamento individual</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Direção</label>
+                  <div className="radio-group">
+                    <label className="radio-option">
+                      <input
+                        type="radio"
+                        name="direcao"
+                        value="paguei"
+                        checked={acertoDirecao === 'paguei'}
+                        onChange={() => setAcertoDirecao('paguei')}
+                      />
+                      <span>Paguei ao participante</span>
+                    </label>
+                    <label className="radio-option">
+                      <input
+                        type="radio"
+                        name="direcao"
+                        value="recebi"
+                        checked={acertoDirecao === 'recebi'}
+                        onChange={() => setAcertoDirecao('recebi')}
+                      />
+                      <span>Recebi do participante</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Data</label>
+                  <input
+                    type="date"
+                    value={acertoData}
+                    onChange={(e) => setAcertoData(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Observação (opcional)</label>
+                  <input
+                    type="text"
+                    value={acertoObservacao}
+                    onChange={(e) => setAcertoObservacao(e.target.value)}
+                    placeholder="Ex: Pagamento via PIX"
+                  />
+                </div>
+                <div className="modal-acerto-actions">
+                  <Button type="button" variant="ghost" onClick={() => setModalAcerto(false)} disabled={salvandoAcerto}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" variant="primary" disabled={salvandoAcerto}>
+                    {salvandoAcerto ? 'Salvando...' : 'Registrar'}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
-        </div>
+        </ModalTransacao>
       )}
     </div>
   );

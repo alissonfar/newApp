@@ -594,11 +594,27 @@ export async function listarTransacoesVinculo(id, params = {}) {
   if (params.dataInicio) q.set('dataInicio', params.dataInicio);
   if (params.dataFim) q.set('dataFim', params.dataFim);
   if (params.pendente !== undefined) q.set('pendente', params.pendente);
+  if (params.euDevo === true) q.set('euDevo', 'true');
+  if (params.outroDeve === true) q.set('outroDeve', 'true');
   const query = q.toString();
   const url = `${API_BASE}/vinculos-conjuntos/${id}/transacoes${query ? '?' + query : ''}`;
   const resposta = await fetch(url, { headers: getHeaders(false) });
   const dados = await resposta.json();
   if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao listar transações.');
+  return dados;
+}
+
+export async function obterExtratoVinculo(id, params = {}) {
+  const q = new URLSearchParams();
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  if (params.limit) q.set('limit', params.limit);
+  if (params.page) q.set('page', params.page);
+  const query = q.toString();
+  const url = `${API_BASE}/vinculos-conjuntos/${id}/extrato${query ? '?' + query : ''}`;
+  const resposta = await fetch(url, { headers: getHeaders(false) });
+  const dados = await resposta.json();
+  if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao obter extrato.');
   return dados;
 }
 

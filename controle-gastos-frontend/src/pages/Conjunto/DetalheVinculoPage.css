@@ -51,6 +51,95 @@
   color: var(--cor-erro, #c62828);
 }
 
+.resumo-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin: 1rem 0;
+}
+
+.metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metrica-label {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave, #555);
+}
+
+.metrica-valor {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.metrica-eu-devo .metrica-valor {
+  color: var(--cor-erro, #c62828);
+}
+
+.metrica-outro-deve .metrica-valor {
+  color: var(--cor-sucesso, #2e7d32);
+}
+
+.metrica-saldo .metrica-valor {
+  color: var(--cor-info, #1565c0);
+}
+
+.filtros-transacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.filtros-transacao label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.detalhe-vinculo-extrato {
+  margin-bottom: 1.5rem;
+}
+
+.lista-extrato {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.extrato-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.extrato-item:last-child {
+  border-bottom: none;
+}
+
+.extrato-data {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+  min-width: 80px;
+}
+
+.extrato-desc {
+  font-weight: 500;
+  flex: 1 1 100%;
+}
+
+.extrato-detalhe {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+}
+
 .detalhe-vinculo-resumo,
 .detalhe-vinculo-transacoes,
 .detalhe-vinculo-acertos {
@@ -116,43 +205,103 @@
   color: var(--cor-texto-suave, #555);
 }
 
-.modal-acerto {
-  background: white;
-  padding: 1.5rem;
+/* Modal Registrar Acerto - alinhado ao padrão do ModalTransacao/NovaTransacaoForm */
+.modal-acerto-container {
+  padding: 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.modal-acerto-container h2 {
+  font-family: var(--fonte-titulos);
+  text-align: center;
+  margin-bottom: 24px;
+  color: var(--cor-primaria);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.modal-acerto-form .form-section {
+  background: var(--cor-fundo);
+  padding: 24px;
   border-radius: var(--borda-radius);
-  max-width: 400px;
-  width: 90%;
+  box-shadow: var(--sombra-card);
+  border: 1px solid rgba(224, 231, 255, 0.4);
 }
 
-.modal-acerto h3 {
-  margin: 0 0 1rem 0;
+.modal-acerto-form .form-group {
+  margin-bottom: 20px;
 }
 
-.modal-acerto .form-group {
-  margin-bottom: 1rem;
+.modal-acerto-form .form-group:last-of-type {
+  margin-bottom: 0;
 }
 
-.modal-acerto .form-group label {
+.modal-acerto-form .form-group > label {
   display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.9rem;
+  font-family: var(--fonte-titulos);
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--cor-texto);
+  font-size: 0.95rem;
 }
 
-.modal-acerto .form-group input {
+.modal-acerto-form .form-group input[type="text"],
+.modal-acerto-form .form-group input[type="number"],
+.modal-acerto-form .form-group input[type="date"] {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px;
+  border: 1px solid rgba(44, 62, 80, 0.2);
+  border-radius: var(--borda-radius);
+  background-color: var(--cor-fundo-card);
+  color: var(--cor-texto);
+  font-size: 0.95rem;
+  font-family: var(--fonte-corpo);
 }
 
-.modal-acerto .radio-group label {
-  display: block;
-  margin-bottom: 0.5rem;
+.modal-acerto-form .form-group input:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px rgba(var(--cor-primaria-rgb, 25, 118, 210), 0.1);
+  outline: none;
 }
 
-.modal-acerto .modal-actions {
+/* Radio group - botão e texto na mesma linha (como NovaTransacaoForm) */
+.modal-acerto-form .radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-top: 4px;
+}
+
+.modal-acerto-form .radio-group .radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 0;
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: var(--cor-texto);
+}
+
+.modal-acerto-form .radio-group .radio-option input[type="radio"] {
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--cor-primaria);
+}
+
+.modal-acerto-form .radio-group .radio-option span {
+  white-space: nowrap;
+}
+
+.modal-acerto-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(44, 62, 80, 0.1);
 }

@@ -117,7 +117,9 @@ exports.listarTransacoes = async (req, res) => {
       limit: req.query.limit,
       dataInicio: req.query.dataInicio,
       dataFim: req.query.dataFim,
-      pendente: req.query.pendente
+      pendente: req.query.pendente,
+      euDevo: req.query.euDevo === 'true',
+      outroDeve: req.query.outroDeve === 'true'
     };
     const resultado = await vinculoService.listarTransacoes(
       req.params.id,
@@ -141,15 +143,31 @@ exports.listarAcertos = async (req, res) => {
   }
 };
 
+exports.obterExtrato = async (req, res) => {
+  try {
+    const filtros = {
+      dataInicio: req.query.dataInicio,
+      dataFim: req.query.dataFim,
+      limit: req.query.limit,
+      page: req.query.page
+    };
+    const resultado = await vinculoService.obterExtrato(req.params.id, req.userId, filtros);
+    res.json(resultado);
+  } catch (error) {
+    console.error('[VinculoConjunto] Erro ao obter extrato:', error);
+    res.status(500).json({ erro: 'Erro ao obter extrato.' });
+  }
+};
+
 exports.registrarAcerto = async (req, res) => {
   try {
-    const { valor, direcao, data, observacao } = req.body;
+    const { valor, direcao, data, observacao, tipo, ladoAfetado } = req.body;
     if (!valor || !direcao || !data) {
       return res.status(400).json({ erro: 'Valor, direção e data são obrigatórios.' });
     }
     const resultado = await vinculoService.registrarAcerto(
       req.params.id,
-      { valor, direcao, data, observacao },
+      { valor, direcao, data, observacao, tipo, ladoAfetado },
       req.userId
     );
     res.status(201).json(resultado);

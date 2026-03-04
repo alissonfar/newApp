@@ -10,6 +10,7 @@ router.get('/', vinculoConjuntoController.listar);
 router.post('/', vinculoConjuntoController.criar);
 router.get('/:id/saldo', vinculoConjuntoController.obterSaldo);
 router.get('/:id/resumo', vinculoConjuntoController.obterResumo);
+router.get('/:id/extrato', vinculoConjuntoController.obterExtrato);
 router.get('/:id/transacoes', vinculoConjuntoController.listarTransacoes);
 router.get('/:id/acertos', vinculoConjuntoController.listarAcertos);
 router.post('/:id/acertos', vinculoConjuntoController.registrarAcerto);
