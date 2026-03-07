@@ -237,7 +237,9 @@ async function processarArquivoOFX(caminhoArquivo, nomeArquivo, subcontaId, usua
 }
 
 /**
- * Finaliza importação OFX: cria HistoricoSaldo, atualiza Subconta, registra no ledger.
+ * Finaliza importação OFX: cria HistoricoSaldo, atualiza Subconta, registra um evento
+ * no ledger para CADA TransacaoOFX (pendente ou aprovada, exceto vinculadas a transferência).
+ * Se a soma dos eventos não bater com o delta, cria evento de correção.
  */
 async function finalizarImportacaoOFX(importacaoId, usuarioId) {
   const importacao = await ImportacaoOFX.findOne({
@@ -260,6 +262,14 @@ async function finalizarImportacaoOFX(importacaoId, usuarioId) {
   const saldoAntes = subconta.saldoAtual ?? 0;
   const saldoNovo = importacao.saldoFinalExtrato;
   const delta = saldoNovo - saldoAntes;
+
+  const transacoesOFX = await TransacaoOFX.find({
+    importacaoOFX: importacaoId,
+    status: { $in: ['pendente', 'aprovada'] },
+    transferencia: null
+  })
+    .sort({ data: 1, createdAt: 1 })
+    .lean();
 
   let session;
   try {
@@ -284,17 +294,36 @@ async function finalizarImportacaoOFX(importacaoId, usuarioId) {
     subconta.dataUltimaConfirmacao = importacao.dataSaldoExtrato;
     await subconta.save(opts);
 
-    if (delta !== 0) {
+    let somaEventos = 0;
+    for (const tofx of transacoesOFX) {
+      const valorDelta = tofx.tipo === 'credito' ? tofx.valor : -tofx.valor;
       await ledgerService.registrarEvento({
         usuarioId,
         subcontaId: importacao.subconta,
-        valor: delta,
-        tipoEvento: 'importacao_ofx',
+        valor: valorDelta,
+        tipoEvento: tofx.tipo === 'credito' ? 'deposito' : 'saque',
+        origemSistema: 'importacao_ofx',
+        referenciaTipo: 'transacao_ofx',
+        referenciaId: tofx._id,
+        descricao: (tofx.descricao || tofx.memo || '').trim() || `OFX ${tofx.tipo} - FITID ${tofx.fitid}`,
+        dataEvento: tofx.data
+      }, session);
+      somaEventos += valorDelta;
+    }
+
+    const diferenca = delta - somaEventos;
+    if (Math.abs(diferenca) > 0.01) {
+      await ledgerService.registrarEvento({
+        usuarioId,
+        subcontaId: importacao.subconta,
+        valor: diferenca,
+        tipoEvento: 'correcao',
         origemSistema: 'importacao_ofx',
         referenciaTipo: 'importacao_ofx',
         referenciaId: importacao._id,
-        descricao: `Importação OFX - ${importacao.nomeArquivo}`,
-        dataEvento: importacao.dataSaldoExtrato
+        descricao: `Ajuste de reconciliação OFX - ${importacao.nomeArquivo}`,
+        dataEvento: importacao.dataSaldoExtrato,
+        metadata: { somaTransacoes: somaEventos, deltaEsperado: delta }
       }, session);
     }
 
