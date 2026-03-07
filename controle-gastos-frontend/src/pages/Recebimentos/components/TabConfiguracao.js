@@ -36,7 +36,8 @@ const TabConfiguracao = () => {
   } = useRecebimentos();
   const { tags } = useData();
 
-  const pessoaRecebimento = recebimentoSelecionado?.pagamentos?.[0]?.pessoa || '-';
+  const pessoasRecebimento = (recebimentoSelecionado?.pagamentos || []).map((p) => p?.pessoa).filter(Boolean);
+  const pessoaRecebimento = pessoasRecebimento.length > 0 ? pessoasRecebimento.join(', ') : '-';
 
   const mensagemVazio = !hasBuscadoRecebimentos
     ? 'Utilize os filtros e clique em Filtrar para buscar transações.'

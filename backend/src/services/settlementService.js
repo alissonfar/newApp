@@ -144,14 +144,25 @@ function aplicarTagEmPagamentoPorIndice(pagamentos, tag, indice) {
 
 /**
  * Cria um settlement (conciliação) com sessão transacional.
- * @param {Object} dados - { receivingTransactionId, appliedTransactionIds, tagId, removeTagId? }
+ * @param {Object} dados - { receivingTransactionId, appliedTransactionIds?, appliedPayments?, tagId, removeTagId? }
+ *   - appliedTransactionIds: array de IDs (transação inteira, retrocompatível)
+ *   - appliedPayments: array de { transactionId, pagamentoIndex?, amountApplied } (conciliação por pagamento)
  * @param {string} usuarioId
  */
 async function criar(dados, usuarioId) {
-  const { receivingTransactionId, appliedTransactionIds, tagId, removeTagId } = dados;
+  const { receivingTransactionId, appliedTransactionIds, appliedPayments, tagId, removeTagId } = dados;
 
-  if (!receivingTransactionId || !appliedTransactionIds || !Array.isArray(appliedTransactionIds) || appliedTransactionIds.length === 0 || !tagId) {
-    throw new Error('Campos obrigatórios: receivingTransactionId, appliedTransactionIds (array não vazio), tagId.');
+  const useAppliedPayments = appliedPayments && Array.isArray(appliedPayments) && appliedPayments.length > 0;
+  const useAppliedTransactionIds = appliedTransactionIds && Array.isArray(appliedTransactionIds) && appliedTransactionIds.length > 0;
+
+  if (!receivingTransactionId || !tagId) {
+    throw new Error('Campos obrigatórios: receivingTransactionId, tagId.');
+  }
+  if (!useAppliedPayments && !useAppliedTransactionIds) {
+    throw new Error('Informe appliedTransactionIds ou appliedPayments (array não vazio).');
+  }
+  if (useAppliedPayments && useAppliedTransactionIds) {
+    throw new Error('Informe apenas appliedTransactionIds ou appliedPayments, não ambos.');
   }
 
   const session = await startTransactionSession();
@@ -199,51 +210,120 @@ async function criar(dados, usuarioId) {
 
     const valorRecebimento = Math.abs(parseFloat(transacaoRecebimento.valor) || 0);
 
-    const transacoesAlvo = await Transacao.find({
-      _id: { $in: appliedTransactionIds },
-      usuario: usuarioId,
-      status: 'ativo',
-      tipo: 'gasto',
-      $or: [{ settlementApplied: null }, { settlementApplied: { $exists: false } }]
-    }).session(session);
-
-    if (transacoesAlvo.length !== appliedTransactionIds.length) {
-      throw new Error('Uma ou mais transações não foram encontradas, não são gastos ativos ou já foram quitadas em outra conciliação.');
-    }
-
-    const appliedTransactions = transacoesAlvo.map(t => ({
-      transactionId: t._id,
-      amountApplied: Math.abs(parseFloat(t.valor) || 0)
-    }));
-
-    const totalApplied = appliedTransactions.reduce((s, a) => s + a.amountApplied, 0);
-
-    if (totalApplied > valorRecebimento) {
-      throw new Error('O total das transações selecionadas excede o valor do recebimento.');
-    }
-
-    const leftoverAmount = Math.round((valorRecebimento - totalApplied) * 100) / 100;
-
+    let appliedTransactions;
+    let transacoesParaAtualizar;
+    let transacoesAlvo;
     const removedTagLog = [];
-    const transacoesParaAtualizar = transacoesAlvo.map((t) => {
-      const pagamentosPlain = (t.pagamentos || []).map(toPlainPagamento);
-      let pagamentosAtualizados = aplicarTagEmPagamentos(pagamentosPlain, tag);
-      if (removeTagId && removeTag) {
-        for (let payerIndex = 0; payerIndex < pagamentosAtualizados.length; payerIndex++) {
-          const { pagamentoAtualizado, foiRemovido } = removerTagDePagamentoUnico(
-            pagamentosAtualizados[payerIndex],
-            removeTag._id
-          );
-          if (foiRemovido) {
-            pagamentosAtualizados = pagamentosAtualizados.map((p, i) =>
-              i === payerIndex ? pagamentoAtualizado : p
-            );
-            removedTagLog.push({ transactionId: t._id, payerIndex });
+
+    if (useAppliedPayments) {
+      const ids = [...new Set(appliedPayments.map((a) => a.transactionId?.toString()).filter(Boolean))];
+      transacoesAlvo = await Transacao.find({
+        _id: { $in: ids.map((id) => new mongoose.Types.ObjectId(id)) },
+        usuario: usuarioId,
+        status: 'ativo',
+        tipo: 'gasto'
+      }).session(session);
+
+      if (transacoesAlvo.length !== ids.length) {
+        throw new Error('Uma ou mais transações não foram encontradas ou não são gastos ativos.');
+      }
+
+      const transacaoMap = new Map(transacoesAlvo.map((t) => [t._id.toString(), t]));
+
+      appliedTransactions = appliedPayments.map((ap) => ({
+        transactionId: ap.transactionId,
+        amountApplied: Math.abs(parseFloat(ap.amountApplied) || 0),
+        pagamentoIndex: ap.pagamentoIndex != null ? parseInt(ap.pagamentoIndex, 10) : undefined
+      }));
+
+      const totalApplied = appliedTransactions.reduce((s, a) => s + a.amountApplied, 0);
+      if (totalApplied > valorRecebimento) {
+        throw new Error('O total das transações selecionadas excede o valor do recebimento.');
+      }
+
+      const updatesByTransaction = new Map();
+      for (const ap of appliedPayments) {
+        const t = transacaoMap.get(String(ap.transactionId));
+        if (!t) continue;
+        const tid = t._id;
+        if (!updatesByTransaction.has(tid)) {
+          updatesByTransaction.set(tid, { transactionId: tid, pagamentos: (t.pagamentos || []).map(toPlainPagamento) });
+        }
+        const entry = updatesByTransaction.get(tid);
+        let pagamentosAtualizados = entry.pagamentos;
+        const idx = ap.pagamentoIndex != null ? parseInt(ap.pagamentoIndex, 10) : -1;
+        if (idx >= 0 && idx < pagamentosAtualizados.length) {
+          pagamentosAtualizados = aplicarTagEmPagamentoPorIndice(pagamentosAtualizados, tag, idx);
+          if (removeTagId && removeTag) {
+            const { pagamentoAtualizado, foiRemovido } = removerTagDePagamentoUnico(pagamentosAtualizados[idx], removeTag._id);
+            if (foiRemovido) {
+              pagamentosAtualizados = pagamentosAtualizados.map((p, i) => (i === idx ? pagamentoAtualizado : p));
+              removedTagLog.push({ transactionId: tid, payerIndex: idx });
+            }
+          }
+        } else {
+          pagamentosAtualizados = aplicarTagEmPagamentos(pagamentosAtualizados, tag);
+          if (removeTagId && removeTag) {
+            for (let i = 0; i < pagamentosAtualizados.length; i++) {
+              const { pagamentoAtualizado, foiRemovido } = removerTagDePagamentoUnico(pagamentosAtualizados[i], removeTag._id);
+              if (foiRemovido) {
+                pagamentosAtualizados = pagamentosAtualizados.map((p, j) => (j === i ? pagamentoAtualizado : p));
+                removedTagLog.push({ transactionId: tid, payerIndex: i });
+              }
+            }
           }
         }
+        entry.pagamentos = pagamentosAtualizados;
       }
-      return { transactionId: t._id, pagamentosAtualizados };
-    });
+      transacoesParaAtualizar = [...updatesByTransaction.values()].map((e) => ({
+        transactionId: e.transactionId,
+        pagamentosAtualizados: e.pagamentos
+      }));
+    } else {
+      transacoesAlvo = await Transacao.find({
+        _id: { $in: appliedTransactionIds },
+        usuario: usuarioId,
+        status: 'ativo',
+        tipo: 'gasto',
+        $or: [{ settlementApplied: null }, { settlementApplied: { $exists: false } }]
+      }).session(session);
+
+      if (transacoesAlvo.length !== appliedTransactionIds.length) {
+        throw new Error('Uma ou mais transações não foram encontradas, não são gastos ativos ou já foram quitadas em outra conciliação.');
+      }
+
+      appliedTransactions = transacoesAlvo.map((t) => ({
+        transactionId: t._id,
+        amountApplied: Math.abs(parseFloat(t.valor) || 0)
+      }));
+
+      const totalApplied = appliedTransactions.reduce((s, a) => s + a.amountApplied, 0);
+      if (totalApplied > valorRecebimento) {
+        throw new Error('O total das transações selecionadas excede o valor do recebimento.');
+      }
+
+      transacoesParaAtualizar = transacoesAlvo.map((t) => {
+        const pagamentosPlain = (t.pagamentos || []).map(toPlainPagamento);
+        let pagamentosAtualizados = aplicarTagEmPagamentos(pagamentosPlain, tag);
+        if (removeTagId && removeTag) {
+          for (let payerIndex = 0; payerIndex < pagamentosAtualizados.length; payerIndex++) {
+            const { pagamentoAtualizado, foiRemovido } = removerTagDePagamentoUnico(
+              pagamentosAtualizados[payerIndex],
+              removeTag._id
+            );
+            if (foiRemovido) {
+              pagamentosAtualizados = pagamentosAtualizados.map((p, i) =>
+                i === payerIndex ? pagamentoAtualizado : p
+              );
+              removedTagLog.push({ transactionId: t._id, payerIndex });
+            }
+          }
+        }
+        return { transactionId: t._id, pagamentosAtualizados };
+      });
+    }
+
+    const leftoverAmount = Math.round((valorRecebimento - appliedTransactions.reduce((s, a) => s + a.amountApplied, 0)) * 100) / 100;
 
     const settlement = new Settlement({
       usuario: usuarioId,
@@ -252,20 +332,27 @@ async function criar(dados, usuarioId) {
       tagId,
       removeTagId: removeTagId || undefined,
       removedTagLog,
-      totalApplied,
+      totalApplied: appliedTransactions.reduce((s, a) => s + a.amountApplied, 0),
       leftoverAmount: leftoverAmount > 0 ? leftoverAmount : 0,
       leftoverTransactionId: null
     });
 
     await settlement.save({ session });
 
-    const bulkOps = transacoesParaAtualizar.map(({ transactionId, pagamentosAtualizados }) => ({
-      updateOne: {
-        filter: { _id: transactionId },
-        update: { $set: { pagamentos: pagamentosAtualizados, settlementApplied: settlement._id } },
-        session
+    const setSettlementApplied = !useAppliedPayments;
+    const bulkOps = transacoesParaAtualizar.map(({ transactionId, pagamentosAtualizados }) => {
+      const update = { $set: { pagamentos: pagamentosAtualizados } };
+      if (setSettlementApplied) {
+        update.$set.settlementApplied = settlement._id;
       }
-    }));
+      return {
+        updateOne: {
+          filter: { _id: transactionId },
+          update,
+          session
+        }
+      };
+    });
 
     await Transacao.updateOne(
       { _id: receivingTransactionId },
@@ -274,8 +361,8 @@ async function criar(dados, usuarioId) {
     );
     if (bulkOps.length > 0) {
       const bulkResult = await Transacao.bulkWrite(bulkOps, { session });
-      if (bulkResult.matchedCount !== transacoesAlvo.length) {
-        throw new Error(`Falha ao aplicar tag: apenas ${bulkResult.matchedCount} de ${transacoesAlvo.length} transações foram atualizadas.`);
+      if (bulkResult.matchedCount !== transacoesParaAtualizar.length) {
+        throw new Error(`Falha ao aplicar tag: apenas ${bulkResult.matchedCount} de ${transacoesParaAtualizar.length} transações foram atualizadas.`);
       }
     }
 
@@ -358,11 +445,21 @@ async function excluir(settlementId, usuarioId) {
       const transacao = await Transacao.findById(app.transactionId).session(session);
       if (transacao && transacao.pagamentos && transacao.pagamentos.length > 0) {
         let pagamentosAtualizados = transacao.pagamentos.map(toPlainPagamento);
-        pagamentosAtualizados = removerTagDePagamentos(pagamentosAtualizados, tagIdToRemove);
+        const idx = app.pagamentoIndex;
+        if (idx != null && idx >= 0 && idx < pagamentosAtualizados.length) {
+          const [pagamentoAtualizado] = removerTagDePagamentos([pagamentosAtualizados[idx]], tagIdToRemove);
+          pagamentosAtualizados = pagamentosAtualizados.map((p, i) => (i === idx ? pagamentoAtualizado : p));
+        } else {
+          pagamentosAtualizados = removerTagDePagamentos(pagamentosAtualizados, tagIdToRemove);
+        }
+        const update = { $set: { pagamentos: pagamentosAtualizados } };
+        if (idx == null) {
+          update.$set.settlementApplied = null;
+        }
         excluirBulkOps.push({
           updateOne: {
             filter: { _id: app.transactionId },
-            update: { $set: { pagamentos: pagamentosAtualizados, settlementApplied: null } },
+            update,
             session
           }
         });
@@ -449,6 +546,7 @@ async function listarRecebimentosDisponiveis(usuarioId, filtros = {}) {
 /**
  * Lista transações de gastos pendentes (não quitadas) para um filtro.
  * São gastos que foram pagos por terceiros e que serão marcados como quitados.
+ * Quando há filtro de pessoa: projeta apenas os pagamentos que batem com o filtro e ajusta valor.
  * @param {Object} filtros.excludeTransactionId - ID da transação a excluir (ex: recebimento selecionado)
  */
 async function listarPendentes(usuarioId, filtros = {}) {
@@ -459,8 +557,10 @@ async function listarPendentes(usuarioId, filtros = {}) {
     $or: [{ settlementApplied: null }, { settlementApplied: { $exists: false } }]
   };
 
+  const hasPessoaFilter = !!(filtros.pessoa || (filtros.pessoas && Array.isArray(filtros.pessoas) && filtros.pessoas.length > 0));
+
   if (filtros.pessoa) {
-    match['pagamentos.pessoa'] = new RegExp('^' + filtros.pessoa + '$', 'i');
+    match['pagamentos.pessoa'] = new RegExp('^' + String(filtros.pessoa).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
   }
   if (filtros.pessoas && Array.isArray(filtros.pessoas) && filtros.pessoas.length > 0) {
     match['pagamentos.pessoa'] = { $in: filtros.pessoas };
@@ -475,7 +575,97 @@ async function listarPendentes(usuarioId, filtros = {}) {
     match._id = { $ne: new mongoose.Types.ObjectId(filtros.excludeTransactionId) };
   }
 
-  const transacoes = await Transacao.find(match).sort({ data: -1 }).limit(500).lean();
+  if (!hasPessoaFilter) {
+    const transacoes = await Transacao.find(match).sort({ data: -1 }).limit(500).lean();
+    return transacoes;
+  }
+
+  const pessoasFilter = filtros.pessoa
+    ? [String(filtros.pessoa).trim()].filter(Boolean)
+    : (filtros.pessoas || []).filter(Boolean);
+  if (pessoasFilter.length === 0) {
+    const transacoes = await Transacao.find(match).sort({ data: -1 }).limit(500).lean();
+    return transacoes;
+  }
+
+  const pessoasLower = pessoasFilter.map((p) => (p || '').toLowerCase());
+  const filterCond =
+    pessoasLower.length === 1
+      ? { $eq: [{ $toLower: { $ifNull: ['$$item.pessoa', ''] } }, pessoasLower[0]] }
+      : { $in: [{ $toLower: { $ifNull: ['$$item.pessoa', ''] } }, pessoasLower] };
+
+  const pipeline = [
+    { $match: match },
+    {
+      $addFields: {
+        pagamentosComIndice: {
+          $map: {
+            input: { $range: [0, { $size: { $ifNull: ['$pagamentos', []] } }] },
+            as: 'i',
+            in: {
+              pagamentoIndex: { $toInt: '$$i' },
+              pessoa: { $arrayElemAt: ['$pagamentos.pessoa', '$$i'] },
+              valor: { $arrayElemAt: ['$pagamentos.valor', '$$i'] },
+              tags: { $arrayElemAt: ['$pagamentos.tags', '$$i'] }
+            }
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        pagamentosFiltrados: {
+          $filter: {
+            input: '$pagamentosComIndice',
+            as: 'item',
+            cond: filterCond
+          }
+        }
+      }
+    },
+    { $match: { $expr: { $gt: [{ $size: '$pagamentosFiltrados' }, 0] } } },
+    {
+      $addFields: {
+        pagamentos: {
+          $map: {
+            input: '$pagamentosFiltrados',
+            as: 'pf',
+            in: {
+              pessoa: '$$pf.pessoa',
+              valor: '$$pf.valor',
+              tags: { $ifNull: ['$$pf.tags', {}] }
+            }
+          }
+        },
+        valor: { $sum: '$pagamentosFiltrados.valor' },
+        pagamentoIndices: '$pagamentosFiltrados.pagamentoIndex'
+      }
+    },
+    { $project: { pagamentosFiltrados: 0, pagamentosComIndice: 0 } },
+    { $sort: { data: -1 } },
+    { $limit: 500 }
+  ];
+
+  let transacoes = await Transacao.aggregate(pipeline);
+
+  const reconciledPairs = await Settlement.find({ usuario: usuarioId })
+    .select('appliedTransactions.transactionId appliedTransactions.pagamentoIndex')
+    .lean();
+  const reconciledSet = new Set();
+  for (const s of reconciledPairs) {
+    for (const at of s.appliedTransactions || []) {
+      if (at.transactionId && at.pagamentoIndex != null) {
+        reconciledSet.add(`${at.transactionId}-${at.pagamentoIndex}`);
+      }
+    }
+  }
+  if (reconciledSet.size > 0) {
+    transacoes = transacoes.filter((t) => {
+      const indices = t.pagamentoIndices || [];
+      return !indices.some((idx) => reconciledSet.has(`${t._id}-${idx}`));
+    });
+  }
+
   return transacoes;
 }
 

@@ -6,7 +6,8 @@ const SettlementSchema = new mongoose.Schema({
   receivingTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transacao', required: true },
   appliedTransactions: [{
     transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transacao', required: true },
-    amountApplied: { type: Number, required: true }
+    amountApplied: { type: Number, required: true },
+    pagamentoIndex: { type: Number, required: false }
   }],
   tagId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag', required: true },
   removeTagId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag', required: false },

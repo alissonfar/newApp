@@ -3,9 +3,9 @@ const settlementService = require('../services/settlementService');
 
 exports.criar = async (req, res) => {
   try {
-    const { receivingTransactionId, appliedTransactionIds, tagId, removeTagId } = req.body;
+    const { receivingTransactionId, appliedTransactionIds, appliedPayments, tagId, removeTagId } = req.body;
     const resultado = await settlementService.criar(
-      { receivingTransactionId, appliedTransactionIds, tagId, removeTagId },
+      { receivingTransactionId, appliedTransactionIds, appliedPayments, tagId, removeTagId },
       req.userId
     );
     res.status(201).json(resultado);

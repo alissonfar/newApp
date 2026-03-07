@@ -155,7 +155,8 @@ const TabSelecao = () => {
                 </thead>
                 <tbody>
                   {pendentes.map((t) => {
-                    const pessoa = t.pagamentos?.[0]?.pessoa || '-';
+                    const pessoas = (t.pagamentos || []).map((p) => p?.pessoa).filter(Boolean);
+                    const pessoa = pessoas.length > 0 ? pessoas.join(', ') : '-';
                     const isSelected = transacoesSelecionadasSet.has(t._id);
                     return (
                       <tr

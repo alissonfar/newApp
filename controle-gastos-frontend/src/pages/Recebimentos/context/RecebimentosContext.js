@@ -230,10 +230,9 @@ export function RecebimentosProvider({ children }) {
   }, []);
 
   const handleConfirmar = useCallback(async () => {
-    const { recebimentoSelecionado, tagSelecionada, transacoesSelecionadas, pendentes, appliedFiltrosRecebimentos } = state;
-    const totalSelecionado = pendentes
-      .filter((t) => transacoesSelecionadas.includes(t._id))
-      .reduce((s, t) => s + Math.abs(parseFloat(t.valor) || 0), 0);
+    const { recebimentoSelecionado, tagSelecionada, transacoesSelecionadas, pendentes, appliedFiltrosRecebimentos, appliedFiltrosPendentes } = state;
+    const selectedPendentes = pendentes.filter((t) => transacoesSelecionadas.includes(t._id));
+    const totalSelecionado = selectedPendentes.reduce((s, t) => s + Math.abs(parseFloat(t.valor) || 0), 0);
     const valorRecebimento = recebimentoSelecionado
       ? Math.abs(parseFloat(recebimentoSelecionado.valor) || 0)
       : 0;
@@ -246,12 +245,26 @@ export function RecebimentosProvider({ children }) {
     if (!podeConfirmar) return;
     dispatch({ type: ACTIONS.SET_CONFIRMANDO, payload: true });
     try {
-      await criarSettlement({
+      const hasPessoaFilter = !!(appliedFiltrosPendentes?.pessoa || (appliedFiltrosPendentes?.pessoas?.length > 0));
+      const payload = {
         receivingTransactionId: recebimentoSelecionado._id,
-        appliedTransactionIds: transacoesSelecionadas,
         tagId: tagSelecionada,
         removeTagId: state.removeTagSelecionada || undefined
-      });
+      };
+      if (hasPessoaFilter && selectedPendentes.length > 0) {
+        payload.appliedPayments = selectedPendentes.flatMap((t) => {
+          const indices = Array.isArray(t.pagamentoIndices) ? t.pagamentoIndices : [0];
+          const pagamentos = t.pagamentos || [];
+          return indices.map((idx, i) => ({
+            transactionId: t._id,
+            pagamentoIndex: idx,
+            amountApplied: Math.abs(parseFloat(pagamentos[i]?.valor ?? t.valor) || 0)
+          }));
+        });
+      } else {
+        payload.appliedTransactionIds = transacoesSelecionadas;
+      }
+      await criarSettlement(payload);
       toast.success('Conciliação realizada com sucesso!');
       dispatch({ type: ACTIONS.RESET_CONCILIACAO });
       carregarRecebimentosDisponiveis(appliedFiltrosRecebimentos ?? state.draftFiltrosRecebimentos);
