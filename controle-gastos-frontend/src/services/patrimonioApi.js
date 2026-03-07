@@ -81,6 +81,30 @@ const patrimonioApi = {
     const response = await api.get(`/patrimonio/evolucao?${params.toString()}`);
     return response.data;
   },
+  // Patrimônio Histórico (baseado em Ledger)
+  obterPatrimonioEmData: async (date, filtros = {}) => {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (filtros.subcontaIds?.length) params.append('subcontaIds', filtros.subcontaIds.join(','));
+    if (filtros.tipo) params.append('tipo', filtros.tipo);
+    if (filtros.proposito) params.append('proposito', filtros.proposito);
+    if (filtros.origem) params.append('origem', filtros.origem);
+    const q = params.toString() ? `?${params.toString()}` : '';
+    const response = await api.get(`/net-worth/at-date${q}`);
+    return response.data;
+  },
+  obterEvolucaoPatrimonioHistorico: async (startDate, endDate, interval = 'month', filtros = {}) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (interval) params.append('interval', interval);
+    if (filtros.subcontaIds?.length) params.append('subcontaIds', filtros.subcontaIds.join(','));
+    if (filtros.tipo) params.append('tipo', filtros.tipo);
+    if (filtros.proposito) params.append('proposito', filtros.proposito);
+    if (filtros.origem) params.append('origem', filtros.origem);
+    const response = await api.get(`/net-worth/history?${params.toString()}`);
+    return response.data;
+  },
   obterTaxaCDI: async (forceRefresh = false) => {
     const params = new URLSearchParams();
     if (forceRefresh) {

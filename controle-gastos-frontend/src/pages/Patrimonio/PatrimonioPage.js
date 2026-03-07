@@ -123,6 +123,9 @@ const PatrimonioPage = () => {
         <Button variant="success" onClick={() => navigate('/patrimonio/evolucao')}>
           Ver Evolução
         </Button>
+        <Button variant="primary" onClick={() => navigate('/patrimonio/historico')}>
+          Patrimônio Histórico
+        </Button>
         <Button variant="primary" onClick={() => navigate('/patrimonio/simulador')}>
           Simulador de Rendimentos
         </Button>

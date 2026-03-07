@@ -8,6 +8,9 @@ const PERIOD_LABELS = {
   [PERIODOS_RAPIDOS.MES_ATUAL]: 'Mês Atual',
   [PERIODOS_RAPIDOS.ULTIMOS_7_DIAS]: 'Últimos 7 dias',
   [PERIODOS_RAPIDOS.ULTIMOS_30_DIAS]: 'Últimos 30 dias',
+  [PERIODOS_RAPIDOS.ULTIMOS_3_MESES]: '3 meses',
+  [PERIODOS_RAPIDOS.ULTIMOS_6_MESES]: '6 meses',
+  [PERIODOS_RAPIDOS.ULTIMOS_12_MESES]: '1 ano',
   [PERIODOS_RAPIDOS.ESTE_ANO]: 'Este Ano',
   [PERIODOS_RAPIDOS.MES_ANTERIOR]: 'Mês Anterior',
   [PERIODOS_RAPIDOS.PERSONALIZADO]: 'Personalizado'
@@ -17,6 +20,14 @@ const PERIOD_LABELS = {
  * Filtro de períodos rápidos - reutilizado por Relatório e Recebimentos.
  * Atualiza dataInicio/dataFim e opcionalmente dispara callback (ex: aplicar filtro).
  */
+const DEFAULT_PERIODS = [
+  PERIODOS_RAPIDOS.MES_ATUAL,
+  PERIODOS_RAPIDOS.ULTIMOS_7_DIAS,
+  PERIODOS_RAPIDOS.ULTIMOS_30_DIAS,
+  PERIODOS_RAPIDOS.ESTE_ANO,
+  PERIODOS_RAPIDOS.MES_ANTERIOR
+];
+
 const PeriodQuickFilter = ({
   value = '',
   dataInicio = '',
@@ -26,7 +37,8 @@ const PeriodQuickFilter = ({
   autoApply = false,
   showCustomInputs = true,
   compact = false,
-  className = ''
+  className = '',
+  periods = DEFAULT_PERIODS
 }) => {
   const handlePeriodClick = (period) => {
     if (period === PERIODOS_RAPIDOS.PERSONALIZADO) {
@@ -47,18 +59,10 @@ const PeriodQuickFilter = ({
     return range && range.dataInicio === dataInicio && range.dataFim === dataFim;
   };
 
-  const periods = [
-    PERIODOS_RAPIDOS.MES_ATUAL,
-    PERIODOS_RAPIDOS.ULTIMOS_7_DIAS,
-    PERIODOS_RAPIDOS.ULTIMOS_30_DIAS,
-    PERIODOS_RAPIDOS.ESTE_ANO,
-    PERIODOS_RAPIDOS.MES_ANTERIOR
-  ];
-
   return (
     <div className={`period-quick-filter ${compact ? 'period-quick-filter--compact' : ''} ${className}`.trim()}>
       <div className="period-quick-filter__buttons">
-        {periods.map((period) => (
+        {periods.map((period) => PERIOD_LABELS[period] && (
           <Button
             key={period}
             variant={isActive(period) ? 'primary' : 'ghost'}

@@ -113,15 +113,15 @@
 ### Módulo de Patrimônio
 - **Responsabilidade**: Gestão de instituições financeiras (bancos, corretoras, carteiras), subcontas (contas dentro de instituições), histórico de saldo, confirmação de saldo, evolução patrimonial, rendimento estimado (CDI) e simulador de rendimentos.
 - **Entidades**: Instituicao, Subconta, HistoricoSaldo, LedgerPatrimonial, TaxaCDI
-- **LedgerPatrimonial**: Camada de eventos append-only que registra todas as alterações de saldo (deltas). Permite reconstruir saldo por soma de eventos, auditoria completa e análise temporal. Integrado em: criação de subconta, confirmação de saldo, finalização importação OFX/CSV, confirmação de transferência.
+- **LedgerPatrimonial**: Camada de eventos append-only que registra todas as alterações de saldo (deltas). Permite reconstruir saldo por soma de eventos, auditoria completa e análise temporal. Integrado em: criação de subconta, confirmação de saldo, finalização importação OFX/CSV, confirmação de transferência. API exposta: `GET /subcontas/:id/eventos-ledger`, `GET /subcontas/:id/saldo-ledger`. Frontend: seção "Eventos do Ledger (Auditoria)" em DetalheSubcontaPage com indicador de consistência (saldoAtual vs soma do ledger).
 - **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo + LedgerPatrimonial) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB); Simulador de Rendimentos (`/patrimonio/simulador`) permite simular rendimento com valor, % CDI e período (usa useCdiData, SimuladorForm, CdiDataCard, ComparacaoRapidaCard)
 - **Dependências**: Usuario; Transacao (vinculação opcional via `subconta`); TaxaCDI (coleção global, não por usuário)
 
 ### Módulo de Importação OFX
 - **Responsabilidade**: Upload de extratos OFX (formato bancário), parse XML, criação de TransacaoOFX por linha, revisão, aprovação/ignorar, conversão em Transacao ou vinculação a Transferência (movimentação interna).
 - **Entidades**: ImportacaoOFX, TransacaoOFX
-- **Fluxos**: Upload OFX → Parse (xml2js, chardet, iconv-lite) → Cria TransacaoOFX (deduplicação por fitid+subconta) → Revisão → Aprovar (cria Transacao e/ou HistoricoSaldo) ou Ignorar; Movimentação interna: detecta padrões (Caixinha, Resgate, Aporte, Transferência para conta) e sugere vínculo com Transferência pendente
-- **Dependências**: Usuario, Subconta, Transacao, HistoricoSaldo, Transferencia; movimentacaoInternaService (sugestão de transferências)
+- **Fluxos**: Upload OFX → Parse (xml2js, chardet, iconv-lite) → Cria TransacaoOFX (deduplicação por fitid+subconta) → Revisão → Aprovar (cria Transacao e/ou HistoricoSaldo) ou Ignorar; Movimentação interna: detecta padrões (Caixinha, Resgate, Aporte, Transferência para conta) e sugere vínculo com Transferência pendente. **Finalização**: cria um evento LedgerPatrimonial para CADA TransacaoOFX (pendente/aprovada, exceto vinculadas a transferência); crédito→deposito, débito→saque; se soma ≠ delta, cria evento correcao.
+- **Dependências**: Usuario, Subconta, Transacao, HistoricoSaldo, LedgerPatrimonial, Transferencia; movimentacaoInternaService (sugestão de transferências)
 
 ### Módulo de Transferências
 - **Responsabilidade**: Transferências entre subcontas do mesmo usuário; registro manual ou vinculação a TransacaoOFX (reconhecimento de movimentação interna).
@@ -166,7 +166,7 @@
 | **Instituicao** | usuario, nome, tipo (banco_digital/banco_tradicional/carteira_digital/corretora), cor, icone, ativo |
 | **Subconta** | usuario, instituicao, nome, tipo (corrente/rendimento_automatico/caixinha/investimento_fixo), proposito (disponivel/reserva_emergencia/objetivo/guardado), rendimento (percentualCDI), saldoAtual, dataUltimaConfirmacao, meta, ativo |
 | **HistoricoSaldo** | usuario, subconta, saldo, data, origem (manual/importacao_ofx/importacao_csv), tipo, observacao |
-| **LedgerPatrimonial** | usuario, subconta, dataEvento, valor (delta), tipoEvento, origemSistema, referenciaTipo, referenciaId, descricao, metadata — append-only, eventos imutáveis |
+| **LedgerPatrimonial** | usuario, subconta, dataEvento, valor (delta), tipoEvento (deposito/saque/transferencia_saida/transferencia_entrada/rendimento/aporte/importacao_ofx/importacao_csv/ajuste_manual/snapshot_inicial/correcao), origemSistema, referenciaTipo (subconta/transferencia/importacao_ofx/importacao/transacao_ofx), referenciaId, descricao, metadata — append-only, eventos imutáveis |
 | **TaxaCDI** | data (unique), taxaDiaria, taxaMensal, taxaAnual, fonte (api.bcb.gov.br) — coleção global, não por usuário |
 | **ImportacaoOFX** | usuario, subconta, nomeArquivo, status (processando/revisao/finalizada/cancelada), dtStart, dtEnd, saldoFinalExtrato, dataSaldoExtrato, totalTransacoes/Creditos/Debitos/Ignoradas |
 | **TransacaoOFX** | importacaoOFX, subconta, usuario, fitid, tipo (credito/debito), valor, data, memo, descricao, status (pendente/aprovada/ignorada/ja_importada), movimentacaoInterna, transferencia (ref), transacaoCriada (ref), deduplicationKey |
@@ -266,12 +266,14 @@
 - Deduplicação OFX: `deduplicationKey` (SHA256 de usuarioId|subcontaId|fitid) evita duplicatas por transação bancária
 - Settlement: transações MongoDB em sessão transacional
 - Finalização de importação: transações criadas em sessão transacional
+- **Ledger**: append-only; deduplicação por (referenciaTipo, referenciaId) ou (referenciaTipo, referenciaId, subconta) para transferências; soma(eventos) deve igualar saldoAtual; importação OFX cria evento por TransacaoOFX (exceto vinculadas a transferência); se soma ≠ delta, cria evento correcao
 
 ### Sincronização
 - Processamento de importação é assíncrono (fire-and-forget após criar registro)
 - Não há fila de jobs; processamento roda em processo do servidor
 
 ### Regras financeiras
+- **Ledger Patrimonial**: saldo = soma(eventos) por subconta; eventos imutáveis; correções via novo evento (tipo correcao); Transação (Transacao) não altera saldo patrimonial — saldo é atualizado por confirmação manual, importação OFX/CSV e confirmação de transferência
 - Transações estornadas não entram em cálculos
 - Settlement: sobra vira nova transação recebível
 - Relatório devedor: totalBruto - totalPago = totalDevido
@@ -338,8 +340,9 @@
 7. Ver evolução → `/patrimonio/evolucao` (gráfico de evolução patrimonial por período)
 8. Transações podem ser vinculadas a subconta (campo opcional na criação/edição)
 9. Transferências: `/patrimonio/transferencias` → criar/listar transferências entre subcontas
-10. Importação OFX: `/patrimonio/importacoes-ofx` → upload OFX por subconta → revisão → aprovar/ignorar; movimentações internas podem vincular a transferências pendentes
+10. Importação OFX: `/patrimonio/importacoes-ofx` → upload OFX por subconta → revisão → aprovar/ignorar; movimentações internas podem vincular a transferências pendentes; finalização cria um evento ledger por transação OFX
 11. Simulador de Rendimentos: `/patrimonio/simulador` → valor, % CDI (presets ou custom), período → cálculo de rendimento estimado; link direto do detalhe da subconta com valor e percentual pré-preenchidos
+12. **Eventos do Ledger**: em `/patrimonio/contas/:subcontaId`, seção "Eventos do Ledger (Auditoria)" com tabela de eventos, filtro por tipo, indicador de consistência (saldoAtual vs soma do ledger)
 
 ### Fluxo 8: Conta Conjunta (Vínculos)
 1. Acessar `/conjunto` → listar vínculos (contas conjuntas)
@@ -365,7 +368,8 @@
 - **Settlement**: Lógica transacional; aplicação/remoção de tags em pagamentos; criação de sobra
 - **Report Engine**: Flatten de pagamentos, regras por tag (add/subtract/ignore), agregações (default/devedor)
 - **Parcelamento**: Preview vs persistência; expansão na importação (1 linha → N transações)
-- **Patrimônio**: Evolução baseada em HistoricoSaldo (último saldo conhecido por subconta por data); TaxaCDI externa (BCB); rendimento estimado por percentualCDI
+- **Patrimônio**: Evolução baseada em HistoricoSaldo (último saldo conhecido por subconta por data); TaxaCDI externa (BCB); rendimento estimado por percentualCDI; vinculação opcional de transações; Simulador de Rendimentos com CDI
+- **Ledger Patrimonial**: ledgerService.registrarEvento centralizado; transações MongoDB nos 5 fluxos de alteração de saldo (fallback sem session se replica set ausente); migração 003 cria snapshot_inicial para subcontas existentes; importação OFX cria evento por TransacaoOFX (referenciaTipo transacao_ofx); evento correcao quando soma ≠ delta
 - **Conta Conjunta**: Cálculo de saldo a partir de transações pendentes; acerto FIFO (transações mais antigas quitadas primeiro); lógica de direção (paguei/recebi) vs saldo
 
 ### Riscos técnicos
@@ -399,8 +403,9 @@
 - Backup/restore (admin)
 - Gerenciamento de usuários (admin)
 - Responsividade
-- **Módulo de Patrimônio**: CRUD instituições e subcontas, resumo (total, por instituição, por propósito), evolução patrimonial, histórico de saldo, confirmação de saldo, rendimento estimado (CDI), vinculação de transações a subcontas, alertas de subcontas desatualizadas, **Simulador de Rendimentos** (valor, % CDI, período)
-- **Importação OFX**: Upload de extratos OFX, parse XML, TransacaoOFX, revisão, aprovação/ignorar, conversão em Transacao, detecção de movimentação interna e sugestão de vínculo com Transferência
+- **Módulo de Patrimônio**: CRUD instituições e subcontas, resumo (total, por instituição, por propósito), evolução patrimonial, histórico de saldo, confirmação de saldo, rendimento estimado (CDI), vinculação de transações a subcontas, alertas de subcontas desatualizadas, **Simulador de Rendimentos** (valor, % CDI, período), **Ledger Patrimonial** (eventos append-only, auditoria, consistência)
+- **Ledger Patrimonial**: Modelo LedgerPatrimonial; ledgerService (registrarEvento, calcularSaldoPorLedger); integração nos 5 fluxos (criar subconta, confirmar saldo, finalizar OFX, finalizar CSV, confirmar transferência); migração 003 (snapshot inicial); API eventos-ledger e saldo-ledger; frontend: seção Eventos do Ledger em DetalheSubcontaPage
+- **Importação OFX**: Upload de extratos OFX, parse XML, TransacaoOFX, revisão, aprovação/ignorar, conversão em Transacao, detecção de movimentação interna e sugestão de vínculo com Transferência; **finalização cria um evento ledger por TransacaoOFX** (deposito/saque), evento correcao se soma ≠ delta
 - **Transferências**: CRUD entre subcontas, vinculação opcional com TransacaoOFX (movimentação interna)
 - **Conta Conjunta (Vínculos)**: CRUD vínculos, transações com divisão (parteUsuario/parteOutro), saldo pendente, acertos FIFO, estorno de acerto
 
@@ -424,7 +429,8 @@
 - Report engine extensível (templates + modelos)
 - Suporte a parcelamento na criação e na importação
 - Módulo Patrimônio bem integrado: instituições → subcontas → histórico; vinculação opcional de transações; TaxaCDI externa para rendimento estimado; Simulador de Rendimentos com CDI
-- Importação OFX completa: parse de extratos bancários, detecção de movimentação interna, sugestão de vínculo com transferências
+- Importação OFX completa: parse de extratos bancários, detecção de movimentação interna, sugestão de vínculo com transferências; um evento ledger por transação OFX na finalização
+- Ledger Patrimonial: append-only, auditoria completa, consistência saldoAtual vs soma(eventos); frontend com seção de eventos e indicador de consistência
 - Módulo Conta Conjunta: divisão de gastos com participante, acertos FIFO, integração com formulário de transação
 
 ### Pontos de melhoria
@@ -446,4 +452,4 @@
 
 ---
 
-*Documento gerado com base na análise do código-fonte. Última atualização: março/2026 (Simulador de Rendimentos, ajustes Settlement/Transacao, correção débito técnico importação).*
+*Documento gerado com base na análise do código-fonte. Última atualização: março/2026 (Ledger Patrimonial: evento por TransacaoOFX na importação OFX; frontend eventos-ledger; migração 003).*

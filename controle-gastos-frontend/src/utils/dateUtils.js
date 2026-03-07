@@ -54,6 +54,9 @@ export const PERIODOS_RAPIDOS = {
   ULTIMOS_15_DIAS: 'ULTIMOS_15_DIAS',
   ULTIMOS_30_DIAS: 'ULTIMOS_30_DIAS',
   ULTIMOS_60_DIAS: 'ULTIMOS_60_DIAS',
+  ULTIMOS_3_MESES: 'ULTIMOS_3_MESES',
+  ULTIMOS_6_MESES: 'ULTIMOS_6_MESES',
+  ULTIMOS_12_MESES: 'ULTIMOS_12_MESES',
   ESTE_ANO: 'ESTE_ANO',
   PERSONALIZADO: 'PERSONALIZADO'
 };
@@ -101,6 +104,21 @@ export const getDateRangeForPeriod = (period) => {
       end = new Date(now);
       start = new Date(now);
       start.setDate(start.getDate() - 60);
+      break;
+    case PERIODOS_RAPIDOS.ULTIMOS_3_MESES:
+      end = new Date(now);
+      start = new Date(now);
+      start.setMonth(start.getMonth() - 3);
+      break;
+    case PERIODOS_RAPIDOS.ULTIMOS_6_MESES:
+      end = new Date(now);
+      start = new Date(now);
+      start.setMonth(start.getMonth() - 6);
+      break;
+    case PERIODOS_RAPIDOS.ULTIMOS_12_MESES:
+      end = new Date(now);
+      start = new Date(now);
+      start.setMonth(start.getMonth() - 12);
       break;
     case PERIODOS_RAPIDOS.ESTE_ANO:
       start = new Date(now.getFullYear(), 0, 1);
