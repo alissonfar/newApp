@@ -9,6 +9,7 @@ const Subconta = require('../models/subconta');
 const HistoricoSaldo = require('../models/historicoSaldo');
 const installmentUtils = require('../utils/installmentUtils');
 const transacaoService = require('../services/transacaoService');
+const ledgerService = require('../services/ledgerService');
 
 class ImportacaoController {
     static async criar(req, res) {
@@ -384,6 +385,11 @@ class ImportacaoController {
                 }
             }
 
+            const { subcontaId, saldo } = req.body || {};
+            const saldoNum = (subcontaId && saldo != null && !isNaN(parseFloat(saldo)))
+                ? parseFloat(saldo)
+                : null;
+
             const session = await mongoose.startSession();
             session.startTransaction();
             try {
@@ -399,36 +405,49 @@ class ImportacaoController {
 
                 importacao.status = 'finalizada';
                 await importacao.save({ session });
+
+                if (subcontaId && saldoNum != null) {
+                    const subconta = await Subconta.findOne({ _id: subcontaId, usuario: req.userId }).session(session);
+                    if (subconta) {
+                        const saldoAntes = subconta.saldoAtual ?? 0;
+                        const delta = saldoNum - saldoAntes;
+
+                        subconta.saldoAtual = saldoNum;
+                        subconta.dataUltimaConfirmacao = new Date();
+                        await subconta.save({ session });
+
+                        await HistoricoSaldo.create([{
+                            usuario: req.userId,
+                            subconta: subconta._id,
+                            saldo: saldoNum,
+                            data: new Date(),
+                            origem: 'importacao_csv',
+                            tipo: 'ajuste',
+                            observacao: `Importação #${importacao._id}`
+                        }], { session });
+
+                        if (delta !== 0) {
+                            await ledgerService.registrarEvento({
+                                usuarioId: req.userId,
+                                subcontaId: subconta._id,
+                                valor: delta,
+                                tipoEvento: 'importacao_csv',
+                                origemSistema: 'importacao_csv',
+                                referenciaTipo: 'importacao',
+                                referenciaId: importacao._id,
+                                descricao: `Importação #${importacao._id}`,
+                                dataEvento: new Date()
+                            }, session);
+                        }
+                    }
+                }
+
                 await session.commitTransaction();
             } catch (err) {
                 await session.abortTransaction();
                 throw err;
             } finally {
                 session.endSession();
-            }
-
-            // Opcional: atualizar saldo de subconta se subcontaId e saldo forem enviados
-            const { subcontaId, saldo } = req.body || {};
-            if (subcontaId && saldo != null && !isNaN(parseFloat(saldo))) {
-                try {
-                    const subconta = await Subconta.findOne({ _id: subcontaId, usuario: req.userId });
-                    if (subconta) {
-                        subconta.saldoAtual = parseFloat(saldo);
-                        subconta.dataUltimaConfirmacao = new Date();
-                        await subconta.save();
-                        await HistoricoSaldo.create({
-                            usuario: req.userId,
-                            subconta: subconta._id,
-                            saldo: parseFloat(saldo),
-                            data: new Date(),
-                            origem: 'importacao_csv',
-                            tipo: 'ajuste',
-                            observacao: `Importação #${importacao._id}`
-                        });
-                    }
-                } catch (errSaldo) {
-                    console.warn('[ImportacaoController] Erro ao atualizar saldo pós-importação:', errSaldo);
-                }
             }
 
             res.json({ 

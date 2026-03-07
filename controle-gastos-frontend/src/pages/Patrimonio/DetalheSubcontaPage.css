@@ -181,6 +181,14 @@
   font-weight: 600;
 }
 
+.tabela-eventos-ledger {
+  margin-top: 0.5rem;
+}
+
+.tabela-eventos-ledger td:nth-child(3) {
+  font-weight: 500;
+}
+
 .detalhe-loading {
   display: flex;
   flex-direction: column;

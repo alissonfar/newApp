@@ -16,6 +16,7 @@ import patrimonioApi from '../../services/patrimonioApi';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
+import EventosLedgerTable, { LABEL_POR_TIPO_EVENTO } from '../../components/Patrimonio/EventosLedgerTable';
 import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
@@ -39,28 +40,35 @@ const DetalheSubcontaPage = () => {
   const [tipoRegistro, setTipoRegistro] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [agruparPorTipo, setAgruparPorTipo] = useState(false);
+  const [eventosLedger, setEventosLedger] = useState([]);
+  const [saldoLedger, setSaldoLedger] = useState(null);
+  const [filtroTipoLedger, setFiltroTipoLedger] = useState('');
 
   const carregar = useCallback(async () => {
     if (!subcontaId) return;
     try {
       setCarregando(true);
-      const [sc, hist, rend, trans] = await Promise.all([
+      const [sc, hist, rend, trans, eventos, saldoL] = await Promise.all([
         patrimonioApi.obterSubconta(subcontaId),
         patrimonioApi.obterHistorico(subcontaId, filtroTipo ? { tipo: filtroTipo } : {}),
         patrimonioApi.obterRendimentoEstimado(subcontaId),
-        patrimonioApi.listarTransacoesPorSubconta(subcontaId)
+        patrimonioApi.listarTransacoesPorSubconta(subcontaId),
+        patrimonioApi.obterEventosLedger(subcontaId, filtroTipoLedger ? { tipoEvento: filtroTipoLedger } : {}),
+        patrimonioApi.obterSaldoPorLedger(subcontaId)
       ]);
       setSubconta(sc);
       setHistorico(hist);
       setRendimento(rend);
       setTransacoes(trans);
+      setEventosLedger(eventos);
+      setSaldoLedger(saldoL?.saldo ?? null);
       setNovoSaldo(String(sc?.saldoAtual || 0));
     } catch (err) {
       console.error(err);
     } finally {
       setCarregando(false);
     }
-  }, [subcontaId, filtroTipo]);
+  }, [subcontaId, filtroTipo, filtroTipoLedger]);
 
   useEffect(() => {
     carregar();
@@ -86,6 +94,13 @@ const DetalheSubcontaPage = () => {
   ];
 
   const LABEL_POR_TIPO = Object.fromEntries(TIPOS_OPCOES.filter((o) => o.value).map((o) => [o.value, o.label]));
+
+  const TIPOS_EVENTO_OPCOES = [
+    { value: '', label: 'Todos' },
+    ...Object.entries(LABEL_POR_TIPO_EVENTO).map(([value, label]) => ({ value, label }))
+  ];
+
+  const consistente = saldoLedger != null && subconta && Math.abs((subconta.saldoAtual ?? 0) - saldoLedger) <= 0.01;
 
   const calcularEstatisticas = () => {
     const stats = { aportes: 0, rendimentos: 0, transferenciasEntrada: 0, transferenciasSaida: 0 };
@@ -188,6 +203,10 @@ const DetalheSubcontaPage = () => {
           label="Saldo Confirmado"
           valor={formatarMoeda(subconta.saldoAtual)}
           icon="piggybank"
+          badge={saldoLedger != null ? {
+            label: consistente ? 'Consistente com ledger' : 'Verificar consistência',
+            variant: consistente ? 'success' : 'warning'
+          } : null}
         />
         {subconta.percentualCDI > 0 && rendimento && (
           <div className="projecao-rendimento-card">
@@ -358,6 +377,35 @@ const DetalheSubcontaPage = () => {
           </table>
           )
         ) : null}
+      </div>
+
+      <div className="detalhe-section">
+        <SectionHeader title="Eventos do Ledger (Auditoria)" />
+        {eventosLedger.length > 0 ? (
+          <>
+            <div className="historico-filtros">
+              <div className="historico-filtro-item">
+                <label htmlFor="filtro-tipo-ledger">Filtro por tipo:</label>
+                <select
+                  id="filtro-tipo-ledger"
+                  value={filtroTipoLedger}
+                  onChange={(e) => setFiltroTipoLedger(e.target.value)}
+                >
+                  {TIPOS_EVENTO_OPCOES.map((opt) => (
+                    <option key={opt.value || 'todos'} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <EventosLedgerTable
+              eventos={eventosLedger}
+              formatarMoeda={formatarMoeda}
+              formatarData={formatarData}
+            />
+          </>
+        ) : (
+          <EmptyState message="Nenhum evento no ledger ainda. Eventos são criados ao confirmar saldo, transferências e importações." />
+        )}
       </div>
 
       <div className="detalhe-section">

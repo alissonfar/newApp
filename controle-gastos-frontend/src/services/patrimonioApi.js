@@ -51,6 +51,21 @@ const patrimonioApi = {
     const response = await api.get(`/subcontas/${id}/historico${params}`);
     return response.data;
   },
+  obterEventosLedger: async (subcontaId, { tipoEvento, dataInicio, dataFim, limit } = {}) => {
+    const params = new URLSearchParams();
+    if (tipoEvento) params.append('tipoEvento', tipoEvento);
+    if (dataInicio) params.append('dataInicio', dataInicio);
+    if (dataFim) params.append('dataFim', dataFim);
+    if (limit) params.append('limit', limit);
+    const q = params.toString() ? `?${params.toString()}` : '';
+    const response = await api.get(`/subcontas/${subcontaId}/eventos-ledger${q}`);
+    return response.data;
+  },
+  obterSaldoPorLedger: async (subcontaId, ateData) => {
+    const params = ateData ? `?ateData=${encodeURIComponent(ateData)}` : '';
+    const response = await api.get(`/subcontas/${subcontaId}/saldo-ledger${params}`);
+    return response.data;
+  },
   obterRendimentoEstimado: async (id) => {
     const response = await api.get(`/subcontas/${id}/rendimento-estimado`);
     return response.data;

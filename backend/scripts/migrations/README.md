@@ -1,5 +1,15 @@
 # Como Executar Scripts de Migração do Banco de Dados
 
+## Migrações disponíveis
+
+| Script | Descrição |
+|--------|-----------|
+| 001-add-default-user-role.js | Adiciona role padrão em usuários |
+| 002-historico-saldo-tipo.js | Adiciona tipo="ajuste" em HistoricoSaldo |
+| 003-ledger-snapshot-inicial.js | Cria eventos snapshot_inicial no LedgerPatrimonial para subcontas existentes (implementação do Ledger Patrimonial) |
+
+---
+
 Este documento detalha como executar os scripts de migração localizados nesta pasta (`backend/scripts/migrations`). As migrações são usadas para atualizar o schema ou os dados do banco de dados de forma controlada, especialmente ao introduzir novas funcionalidades ou alterações no modelo de dados.
 
 ## Pré-requisitos

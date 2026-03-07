@@ -12,6 +12,8 @@ const HistoricoSaldo = require('../models/historicoSaldo');
 const Transacao = require('../models/transacao');
 const Usuario = require('../models/usuarios');
 const { detectarMovimentacaoInterna } = require('./movimentacaoInternaService');
+const ledgerService = require('./ledgerService');
+const { startTransactionSession } = require('../utils/transactionHelper');
 
 /**
  * Gera chave de deduplicação para OFX: SHA256(usuarioId|subcontaId|fitid)
@@ -235,7 +237,7 @@ async function processarArquivoOFX(caminhoArquivo, nomeArquivo, subcontaId, usua
 }
 
 /**
- * Finaliza importação OFX: cria HistoricoSaldo, atualiza Subconta.
+ * Finaliza importação OFX: cria HistoricoSaldo, atualiza Subconta, registra no ledger.
  */
 async function finalizarImportacaoOFX(importacaoId, usuarioId) {
   const importacao = await ImportacaoOFX.findOne({
@@ -255,22 +257,61 @@ async function finalizarImportacaoOFX(importacaoId, usuarioId) {
     throw new Error('Subconta não encontrada.');
   }
 
-  await HistoricoSaldo.create({
-    usuario: usuarioId,
-    subconta: importacao.subconta,
-    saldo: importacao.saldoFinalExtrato,
-    data: importacao.dataSaldoExtrato,
-    origem: 'importacao_ofx',
-    tipo: 'ajuste',
-    observacao: `Importação OFX #${importacao._id} - ${importacao.nomeArquivo}`
-  });
+  const saldoAntes = subconta.saldoAtual ?? 0;
+  const saldoNovo = importacao.saldoFinalExtrato;
+  const delta = saldoNovo - saldoAntes;
 
-  subconta.saldoAtual = importacao.saldoFinalExtrato;
-  subconta.dataUltimaConfirmacao = importacao.dataSaldoExtrato;
-  await subconta.save();
+  let session;
+  try {
+    session = await startTransactionSession();
+  } catch (txErr) {
+    session = null;
+  }
 
-  importacao.status = 'finalizada';
-  await importacao.save();
+  const opts = session ? { session } : {};
+  try {
+    await HistoricoSaldo.create([{
+      usuario: usuarioId,
+      subconta: importacao.subconta,
+      saldo: importacao.saldoFinalExtrato,
+      data: importacao.dataSaldoExtrato,
+      origem: 'importacao_ofx',
+      tipo: 'ajuste',
+      observacao: `Importação OFX #${importacao._id} - ${importacao.nomeArquivo}`
+    }], opts);
+
+    subconta.saldoAtual = importacao.saldoFinalExtrato;
+    subconta.dataUltimaConfirmacao = importacao.dataSaldoExtrato;
+    await subconta.save(opts);
+
+    if (delta !== 0) {
+      await ledgerService.registrarEvento({
+        usuarioId,
+        subcontaId: importacao.subconta,
+        valor: delta,
+        tipoEvento: 'importacao_ofx',
+        origemSistema: 'importacao_ofx',
+        referenciaTipo: 'importacao_ofx',
+        referenciaId: importacao._id,
+        descricao: `Importação OFX - ${importacao.nomeArquivo}`,
+        dataEvento: importacao.dataSaldoExtrato
+      }, session);
+    }
+
+    importacao.status = 'finalizada';
+    await importacao.save(opts);
+
+    if (session) {
+      await session.commitTransaction();
+    }
+  } catch (err) {
+    if (session) {
+      await session.abortTransaction().catch(() => {});
+    }
+    throw err;
+  } finally {
+    if (session) session.endSession();
+  }
 
   return importacao;
 }

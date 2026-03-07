@@ -4,6 +4,9 @@ const Subconta = require('../models/subconta');
 const Instituicao = require('../models/instituicao');
 const HistoricoSaldo = require('../models/historicoSaldo');
 const taxaCDIService = require('../services/taxaCDIService');
+const ledgerService = require('../services/ledgerService');
+const LedgerPatrimonial = require('../models/ledgerPatrimonial');
+const { startTransactionSession } = require('../utils/transactionHelper');
 
 exports.listar = async (req, res) => {
   try {
@@ -54,18 +57,51 @@ exports.criar = async (req, res) => {
       meta: meta != null ? parseFloat(meta) : null,
       ativo: true
     });
-    await nova.save();
-    if (saldoInicial !== 0) {
-      await HistoricoSaldo.create({
-        usuario: req.userId,
-        subconta: nova._id,
-        saldo: saldoInicial,
-        data: new Date(),
-        origem: 'manual',
-        tipo: 'ajuste',
-        observacao: 'Saldo inicial'
-      });
+
+    let session;
+    try {
+      session = await startTransactionSession();
+    } catch (txErr) {
+      session = null;
     }
+
+    const opts = session ? { session } : {};
+    try {
+      await nova.save(opts);
+      if (saldoInicial !== 0) {
+        await HistoricoSaldo.create([{
+          usuario: req.userId,
+          subconta: nova._id,
+          saldo: saldoInicial,
+          data: new Date(),
+          origem: 'manual',
+          tipo: 'ajuste',
+          observacao: 'Saldo inicial'
+        }], opts);
+        await ledgerService.registrarEvento({
+          usuarioId: req.userId,
+          subcontaId: nova._id,
+          valor: saldoInicial,
+          tipoEvento: 'snapshot_inicial',
+          origemSistema: 'subconta_criacao',
+          referenciaTipo: 'subconta',
+          referenciaId: nova._id,
+          descricao: 'Saldo inicial',
+          dataEvento: new Date()
+        }, session);
+      }
+      if (session) {
+        await session.commitTransaction();
+      }
+    } catch (err) {
+      if (session) {
+        await session.abortTransaction().catch(() => {});
+      }
+      throw err;
+    } finally {
+      if (session) session.endSession();
+    }
+
     const doc = await Subconta.findById(nova._id).populate('instituicao');
     res.status(201).json(doc);
   } catch (error) {
@@ -116,6 +152,14 @@ exports.excluir = async (req, res) => {
 
 const TIPOS_HISTORICO = ['rendimento', 'aporte', 'transferencia_entrada', 'transferencia_saida', 'ajuste'];
 
+const TIPO_HISTORICO_TO_TIPO_EVENTO = {
+  rendimento: 'rendimento',
+  aporte: 'aporte',
+  transferencia_entrada: 'transferencia_entrada',
+  transferencia_saida: 'transferencia_saida',
+  ajuste: 'ajuste_manual'
+};
+
 exports.confirmarSaldo = async (req, res) => {
   try {
     const subconta = await Subconta.findOne({ _id: req.params.id, usuario: req.userId });
@@ -134,26 +178,106 @@ exports.confirmarSaldo = async (req, res) => {
     } else if (origemValida === 'manual') {
       return res.status(400).json({ erro: 'O campo tipo é obrigatório para confirmação manual de saldo.' });
     }
-    subconta.saldoAtual = saldoNum;
-    subconta.dataUltimaConfirmacao = new Date();
-    await subconta.save();
 
-    const historico = new HistoricoSaldo({
-      usuario: req.userId,
-      subconta: subconta._id,
-      saldo: saldoNum,
-      data: new Date(),
-      origem: origemValida,
-      tipo: tipoValido,
-      observacao: observacao || ''
-    });
-    await historico.save();
+    const saldoAntes = subconta.saldoAtual ?? 0;
+    const delta = saldoNum - saldoAntes;
+
+    let session;
+    try {
+      session = await startTransactionSession();
+    } catch (txErr) {
+      session = null;
+    }
+
+    const opts = session ? { session } : {};
+    try {
+      subconta.saldoAtual = saldoNum;
+      subconta.dataUltimaConfirmacao = new Date();
+      await subconta.save(opts);
+
+      const historico = new HistoricoSaldo({
+        usuario: req.userId,
+        subconta: subconta._id,
+        saldo: saldoNum,
+        data: new Date(),
+        origem: origemValida,
+        tipo: tipoValido,
+        observacao: observacao || ''
+      });
+      await historico.save(opts);
+
+      if (delta !== 0) {
+        const tipoEvento = TIPO_HISTORICO_TO_TIPO_EVENTO[tipoValido] || 'ajuste_manual';
+        await ledgerService.registrarEvento({
+          usuarioId: req.userId,
+          subcontaId: subconta._id,
+          valor: delta,
+          tipoEvento,
+          origemSistema: 'confirmacao_manual',
+          descricao: observacao || `Confirmação de saldo: ${tipoValido}`,
+          dataEvento: new Date()
+        }, session);
+      }
+
+      if (session) {
+        await session.commitTransaction();
+      }
+    } catch (err) {
+      if (session) {
+        await session.abortTransaction().catch(() => {});
+      }
+      throw err;
+    } finally {
+      if (session) session.endSession();
+    }
 
     const doc = await Subconta.findById(subconta._id).populate('instituicao');
     res.json(doc);
   } catch (error) {
     console.error('Erro ao confirmar saldo:', error);
     res.status(500).json({ erro: 'Erro ao confirmar saldo.' });
+  }
+};
+
+exports.obterEventosLedger = async (req, res) => {
+  try {
+    const subconta = await Subconta.findOne({ _id: req.params.id, usuario: req.userId });
+    if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
+    const { tipoEvento, dataInicio, dataFim, limit } = req.query;
+    const match = { subconta: req.params.id, usuario: req.userId };
+    if (tipoEvento) match.tipoEvento = tipoEvento;
+    if (dataInicio || dataFim) {
+      match.dataEvento = {};
+      if (dataInicio) match.dataEvento.$gte = new Date(dataInicio);
+      if (dataFim) match.dataEvento.$lte = new Date(dataFim);
+    }
+    const limite = limit ? Math.min(parseInt(limit, 10) || 100, 500) : 100;
+    const eventos = await LedgerPatrimonial.find(match)
+      .sort({ dataEvento: -1, createdAt: -1 })
+      .limit(limite)
+      .lean();
+    res.json(eventos);
+  } catch (error) {
+    console.error('Erro ao obter eventos do ledger:', error);
+    res.status(500).json({ erro: 'Erro ao obter eventos do ledger.' });
+  }
+};
+
+exports.obterSaldoPorLedger = async (req, res) => {
+  try {
+    const subconta = await Subconta.findOne({ _id: req.params.id, usuario: req.userId });
+    if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
+    const { ateData } = req.query;
+    const ateDataDate = ateData ? new Date(ateData) : null;
+    const saldo = await ledgerService.calcularSaldoPorLedger(req.params.id, ateDataDate);
+    res.json({
+      saldo,
+      subcontaId: req.params.id,
+      ...(ateDataDate && { ateData: ateDataDate })
+    });
+  } catch (error) {
+    console.error('Erro ao obter saldo por ledger:', error);
+    res.status(500).json({ erro: 'Erro ao obter saldo por ledger.' });
   }
 };
 
@@ -165,7 +289,7 @@ exports.obterHistorico = async (req, res) => {
     const match = { subconta: req.params.id, usuario: req.userId };
     if (tipo && TIPOS_HISTORICO.includes(tipo)) match.tipo = tipo;
     const historico = await HistoricoSaldo.find(match)
-      .sort({ data: -1 })
+      .sort({ data: -1, createdAt: -1 })
       .limit(100)
       .lean();
     res.json(historico);

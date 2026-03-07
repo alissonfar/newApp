@@ -2,6 +2,8 @@
 const Transferencia = require('../models/transferencia');
 const Subconta = require('../models/subconta');
 const HistoricoSaldo = require('../models/historicoSaldo');
+const ledgerService = require('../services/ledgerService');
+const { startTransactionSession } = require('../utils/transactionHelper');
 
 exports.listar = async (req, res) => {
   try {
@@ -96,37 +98,82 @@ exports.confirmar = async (req, res) => {
     const novoSaldoOrigem = saldoOrigemAntes - valor;
     const novoSaldoDestino = saldoDestinoAntes + valor;
 
-    origem.saldoAtual = novoSaldoOrigem;
-    origem.dataUltimaConfirmacao = transferencia.data;
-    await origem.save();
+    let session;
+    try {
+      session = await startTransactionSession();
+    } catch (txErr) {
+      session = null;
+    }
 
-    destino.saldoAtual = novoSaldoDestino;
-    destino.dataUltimaConfirmacao = transferencia.data;
-    await destino.save();
+    const opts = session ? { session } : {};
+    try {
+      origem.saldoAtual = novoSaldoOrigem;
+      origem.dataUltimaConfirmacao = transferencia.data;
+      await origem.save(opts);
 
-    await HistoricoSaldo.create([
-      {
-        usuario: req.userId,
-        subconta: origemId,
-        saldo: novoSaldoOrigem,
-        data: transferencia.data,
-        origem: 'manual',
-        tipo: 'transferencia_saida',
-        observacao: `Transferência confirmada manualmente → ${destino.nome}`
-      },
-      {
-        usuario: req.userId,
-        subconta: destinoId,
-        saldo: novoSaldoDestino,
-        data: transferencia.data,
-        origem: 'manual',
-        tipo: 'transferencia_entrada',
-        observacao: `Transferência confirmada manualmente ← ${origem.nome}`
+      destino.saldoAtual = novoSaldoDestino;
+      destino.dataUltimaConfirmacao = transferencia.data;
+      await destino.save(opts);
+
+      await HistoricoSaldo.create([
+        {
+          usuario: req.userId,
+          subconta: origemId,
+          saldo: novoSaldoOrigem,
+          data: transferencia.data,
+          origem: 'manual',
+          tipo: 'transferencia_saida',
+          observacao: `Transferência confirmada manualmente → ${destino.nome}`
+        },
+        {
+          usuario: req.userId,
+          subconta: destinoId,
+          saldo: novoSaldoDestino,
+          data: transferencia.data,
+          origem: 'manual',
+          tipo: 'transferencia_entrada',
+          observacao: `Transferência confirmada manualmente ← ${origem.nome}`
+        }
+      ], opts);
+
+      await ledgerService.registrarEvento({
+        usuarioId: req.userId,
+        subcontaId: origemId,
+        valor: -valor,
+        tipoEvento: 'transferencia_saida',
+        origemSistema: 'transferencia',
+        referenciaTipo: 'transferencia',
+        referenciaId: transferencia._id,
+        descricao: `Transferência → ${destino.nome}`,
+        dataEvento: transferencia.data
+      }, session);
+
+      await ledgerService.registrarEvento({
+        usuarioId: req.userId,
+        subcontaId: destinoId,
+        valor,
+        tipoEvento: 'transferencia_entrada',
+        origemSistema: 'transferencia',
+        referenciaTipo: 'transferencia',
+        referenciaId: transferencia._id,
+        descricao: `Transferência ← ${origem.nome}`,
+        dataEvento: transferencia.data
+      }, session);
+
+      transferencia.status = 'concluida';
+      await transferencia.save(opts);
+
+      if (session) {
+        await session.commitTransaction();
       }
-    ]);
-
-    transferencia.status = 'concluida';
-    await transferencia.save();
+    } catch (err) {
+      if (session) {
+        await session.abortTransaction().catch(() => {});
+      }
+      throw err;
+    } finally {
+      if (session) session.endSession();
+    }
 
     const populated = await Transferencia.findById(transferencia._id)
       .populate('subcontaOrigem subcontaDestino', 'nome instituicao')

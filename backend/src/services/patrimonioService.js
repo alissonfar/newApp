@@ -106,7 +106,7 @@ async function obterEvolucao(usuarioId, opts = {}) {
 
   const historicos = await HistoricoSaldo.aggregate([
     { $match: match },
-    { $sort: { data: 1 } },
+    { $sort: { data: 1, createdAt: 1 } },
     {
       $group: {
         _id: {
@@ -144,7 +144,7 @@ async function obterEvolucaoSimplificada(usuarioId, opts = {}) {
   if (opts.dataInicio) match.data = { ...(match.data || {}), $gte: new Date(opts.dataInicio) };
   if (opts.dataFim) match.data = { ...(match.data || {}), $lte: new Date(opts.dataFim) };
 
-  const historicos = await HistoricoSaldo.find(match).sort({ data: 1 }).lean();
+  const historicos = await HistoricoSaldo.find(match).sort({ data: 1, createdAt: 1 }).lean();
   const saldosPorSubconta = new Map();
   const resultadoMap = new Map();
 

@@ -112,8 +112,9 @@
 
 ### Módulo de Patrimônio
 - **Responsabilidade**: Gestão de instituições financeiras (bancos, corretoras, carteiras), subcontas (contas dentro de instituições), histórico de saldo, confirmação de saldo, evolução patrimonial, rendimento estimado (CDI) e simulador de rendimentos.
-- **Entidades**: Instituicao, Subconta, HistoricoSaldo, TaxaCDI
-- **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB); Simulador de Rendimentos (`/patrimonio/simulador`) permite simular rendimento com valor, % CDI e período (usa useCdiData, SimuladorForm, CdiDataCard, ComparacaoRapidaCard)
+- **Entidades**: Instituicao, Subconta, HistoricoSaldo, LedgerPatrimonial, TaxaCDI
+- **LedgerPatrimonial**: Camada de eventos append-only que registra todas as alterações de saldo (deltas). Permite reconstruir saldo por soma de eventos, auditoria completa e análise temporal. Integrado em: criação de subconta, confirmação de saldo, finalização importação OFX/CSV, confirmação de transferência.
+- **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo + LedgerPatrimonial) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB); Simulador de Rendimentos (`/patrimonio/simulador`) permite simular rendimento com valor, % CDI e período (usa useCdiData, SimuladorForm, CdiDataCard, ComparacaoRapidaCard)
 - **Dependências**: Usuario; Transacao (vinculação opcional via `subconta`); TaxaCDI (coleção global, não por usuário)
 
 ### Módulo de Importação OFX
@@ -164,7 +165,8 @@
 | **Backup** | filename, size, type (mongodump/logical), operation, createdBy, status, errorMessage |
 | **Instituicao** | usuario, nome, tipo (banco_digital/banco_tradicional/carteira_digital/corretora), cor, icone, ativo |
 | **Subconta** | usuario, instituicao, nome, tipo (corrente/rendimento_automatico/caixinha/investimento_fixo), proposito (disponivel/reserva_emergencia/objetivo/guardado), rendimento (percentualCDI), saldoAtual, dataUltimaConfirmacao, meta, ativo |
-| **HistoricoSaldo** | usuario, subconta, saldo, data, origem (manual/importacao_ofx/importacao_csv), observacao |
+| **HistoricoSaldo** | usuario, subconta, saldo, data, origem (manual/importacao_ofx/importacao_csv), tipo, observacao |
+| **LedgerPatrimonial** | usuario, subconta, dataEvento, valor (delta), tipoEvento, origemSistema, referenciaTipo, referenciaId, descricao, metadata — append-only, eventos imutáveis |
 | **TaxaCDI** | data (unique), taxaDiaria, taxaMensal, taxaAnual, fonte (api.bcb.gov.br) — coleção global, não por usuário |
 | **ImportacaoOFX** | usuario, subconta, nomeArquivo, status (processando/revisao/finalizada/cancelada), dtStart, dtEnd, saldoFinalExtrato, dataSaldoExtrato, totalTransacoes/Creditos/Debitos/Ignoradas |
 | **TransacaoOFX** | importacaoOFX, subconta, usuario, fitid, tipo (credito/debito), valor, data, memo, descricao, status (pendente/aprovada/ignorada/ja_importada), movimentacaoInterna, transferencia (ref), transacaoCriada (ref), deduplicationKey |
@@ -182,6 +184,7 @@
 - Instituicao N:1 Usuario
 - Subconta N:1 Usuario; N:1 Instituicao
 - HistoricoSaldo N:1 Usuario; N:1 Subconta
+- LedgerPatrimonial N:1 Usuario; N:1 Subconta; referencias opcionais (referenciaTipo, referenciaId) para deduplicação
 - ImportacaoOFX N:1 Usuario; N:1 Subconta; 1:N TransacaoOFX
 - TransacaoOFX N:1 ImportacaoOFX; N:1 Subconta; N:1 Usuario; N:1 Transferencia (opcional); N:1 Transacao (transacaoCriada)
 - Transferencia N:1 Usuario; N:1 Subconta (origem e destino); 1:1 TransacaoOFX (opcional)

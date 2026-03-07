@@ -24,7 +24,8 @@ const HistoricoSaldoSchema = new mongoose.Schema({
 
 HistoricoSaldoSchema.index({ usuario: 1 });
 HistoricoSaldoSchema.index({ subconta: 1 });
-HistoricoSaldoSchema.index({ subconta: 1, data: -1 });
-HistoricoSaldoSchema.index({ subconta: 1, tipo: 1, data: -1 });
+HistoricoSaldoSchema.index({ subconta: 1, data: -1, createdAt: -1 });
+HistoricoSaldoSchema.index({ subconta: 1, tipo: 1, data: -1, createdAt: -1 });
+HistoricoSaldoSchema.index({ usuario: 1, data: 1, createdAt: 1 });
 
 module.exports = mongoose.model('HistoricoSaldo', HistoricoSaldoSchema);
