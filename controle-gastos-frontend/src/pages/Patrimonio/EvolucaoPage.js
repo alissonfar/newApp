@@ -16,7 +16,7 @@ import patrimonioApi from '../../services/patrimonioApi';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import { format, subMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateBR } from '../../utils/dateUtils';
 import './EvolucaoPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -47,7 +47,7 @@ const EvolucaoPage = () => {
   }, [dataInicio, dataFim]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '';
+  const formatarData = (d) => d ? formatDateBR(d) : '';
 
   const dadosGrafico = {
     labels: evolucao.map((e) => formatarData(e.data)),

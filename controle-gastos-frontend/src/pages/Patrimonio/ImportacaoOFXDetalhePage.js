@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaSpinner, FaTimes, FaPlus } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateBR } from '../../utils/dateUtils';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './ImportacaoOFXDetalhePage.css';
 
@@ -36,7 +35,7 @@ const ImportacaoOFXDetalhePage = () => {
   }, [carregar]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
+  const formatarData = (d) => d ? formatDateBR(d) : '-';
 
   const handleFinalizar = async () => {
     const confirmado = await mostrarConfirmacao(

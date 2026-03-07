@@ -13,8 +13,7 @@ import {
 } from 'chart.js';
 import { FaArrowLeft, FaCheck, FaSpinner } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateBR } from '../../utils/dateUtils';
 import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
 import EventosLedgerTable, { LABEL_POR_TIPO_EVENTO } from '../../components/Patrimonio/EventosLedgerTable';
 import SectionHeader from '../../components/shared/SectionHeader';
@@ -75,7 +74,7 @@ const DetalheSubcontaPage = () => {
   }, [carregar, subcontaId]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
+  const formatarData = (d) => d ? formatDateBR(d) : '-';
 
   const obterClasseVariacao = (delta, tipo) => {
     if (tipo === 'rendimento') return 'variacao-rendimento';

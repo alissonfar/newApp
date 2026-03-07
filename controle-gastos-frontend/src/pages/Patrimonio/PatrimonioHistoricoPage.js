@@ -19,7 +19,7 @@ import Card from '../../components/shared/Card';
 import EmptyState from '../../components/shared/EmptyState';
 import PeriodQuickFilter, { PERIODOS_RAPIDOS } from '../../components/shared/PeriodQuickFilter';
 import { format, subMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateBR } from '../../utils/dateUtils';
 import './PatrimonioHistoricoPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -76,7 +76,7 @@ const PatrimonioHistoricoPage = () => {
   });
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '';
+  const formatarData = (d) => d ? formatDateBR(d) : '';
 
   const buildFiltros = useCallback(() => {
     const f = {};

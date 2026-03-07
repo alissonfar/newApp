@@ -4,7 +4,7 @@ import { FaExchangeAlt, FaSpinner, FaArrowRight, FaCheck, FaClock } from 'react-
 import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateBR } from '../../utils/dateUtils';
 import SubcontaSelect from '../../components/shared/SubcontaSelect';
 import './TransferenciasPage.css';
 
@@ -45,7 +45,7 @@ const TransferenciasPage = () => {
   }, [carregar]);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
+  const formatarData = (d) => d ? formatDateBR(d) : '-';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

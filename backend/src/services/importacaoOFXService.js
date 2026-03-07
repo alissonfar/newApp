@@ -25,22 +25,22 @@ function gerarDeduplicationKeyOFX(usuarioId, subcontaId, fitid) {
 
 /**
  * Parse data OFX: YYYYMMDDHHMMSS[±H:tz] -> Date
- * Ex: 20260202000000[-3:BRT] -> Date civil no timezone local (sem conversão UTC)
- * Datas OFX bancárias são "data civil" no fuso informado — não devem sofrer conversão.
+ * Ex: 20260202000000[-3:BRT] -> Date em UTC para preservar data civil em qualquer fuso.
+ * Datas OFX bancárias são "data civil"; armazenar em UTC evita deslocamento na exibição.
  */
 function parsearDataOFX(str) {
   if (!str || typeof str !== 'string') return null;
   const match = str.match(/^(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?(\d{2})?/);
   if (!match) return null;
   const [, ano, mes, dia, h = '0', m = '0', s = '0'] = match;
-  return new Date(
+  return new Date(Date.UTC(
     parseInt(ano, 10),
     parseInt(mes, 10) - 1,
     parseInt(dia, 10),
     parseInt(h, 10),
     parseInt(m, 10),
     parseInt(s, 10)
-  );
+  ));
 }
 
 /**

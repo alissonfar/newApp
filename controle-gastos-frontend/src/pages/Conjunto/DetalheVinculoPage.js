@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaSpinner, FaReceipt } from 'react-icons/fa';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import {
   obterVinculoConjunto,
@@ -13,7 +11,7 @@ import {
   registrarAcertoVinculo,
   estornarAcerto
 } from '../../api';
-import { getDateRangeForPeriod, PERIODOS_RAPIDOS } from '../../utils/dateUtils';
+import { getDateRangeForPeriod, PERIODOS_RAPIDOS, formatDateBR } from '../../utils/dateUtils';
 import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
 import Card from '../../components/shared/Card';
@@ -24,7 +22,7 @@ import PeriodQuickFilter from '../../components/shared/PeriodQuickFilter';
 import './DetalheVinculoPage.css';
 
 const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const formatarData = (d) => d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '-';
+const formatarData = (d) => d ? formatDateBR(d) : '-';
 
 const DetalheVinculoPage = () => {
   const { id } = useParams();
