@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { obterTransacoes } from '../api';
+import { obterTransacoes, obterTagInsights } from '../api';
 import { toast } from 'react-toastify';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -22,6 +22,8 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
   });
   const [semDados, setSemDados] = useState(false);
   const [carregandoDados, setCarregandoDados] = useState(true); // Inicia como true
+  const [tagInsights, setTagInsights] = useState([]);
+  const [carregandoTagInsights, setCarregandoTagInsights] = useState(false);
   const [proprietarioExibicao, setProprietarioExibicao] = useState('');
   const [periodoSelecionado, setPeriodoSelecionado] = useState('mesAtual');
 
@@ -190,10 +192,30 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
   }, [proprietario, usuarioCarregado, calcularDadosDashboard, periodoSelecionado]); // Adiciona periodoSelecionado como dependencia?
   // Não, periodoSelecionado não deve disparar fetch, apenas cálculo.
 
+  // Função para carregar tag insights
+  const fetchTagInsights = useCallback(async () => {
+    if (!usuarioCarregado) return;
+    setCarregandoTagInsights(true);
+    try {
+      const insights = await obterTagInsights();
+      setTagInsights(insights);
+    } catch (error) {
+      console.error('Erro ao carregar tag insights:', error);
+      setTagInsights([]);
+    } finally {
+      setCarregandoTagInsights(false);
+    }
+  }, [usuarioCarregado]);
+
   // Efeito para buscar dados quando proprietario ou status de carregamento do usuário mudar
   useEffect(() => {
     fetchTransacoes();
   }, [fetchTransacoes]); // fetchTransacoes já tem proprietario e usuarioCarregado como deps
+
+  // Efeito para buscar tag insights quando usuário estiver carregado
+  useEffect(() => {
+    fetchTagInsights();
+  }, [fetchTagInsights]);
 
   // Efeito para recalcular quando o período selecionado mudar
   useEffect(() => {
@@ -210,12 +232,15 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
     resumoPeriodo,
     transacoesPorData,
     dadosGrafico,
+    tagInsights,
+    carregandoTagInsights,
     semDados,
     carregandoDados,
     proprietarioExibicao,
     periodoSelecionado,
     setPeriodoSelecionado, // Exporta a função para mudar o período
-    fetchTransacoes // Exporta para permitir refresh manual se necessário
+    fetchTransacoes, // Exporta para permitir refresh manual se necessário
+    fetchTagInsights // Exporta para permitir refresh manual dos insights
   };
 };
 

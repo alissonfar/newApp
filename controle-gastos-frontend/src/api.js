@@ -166,6 +166,17 @@ export async function atualizarTag(codigo, tag) {
   };
 }
 
+export async function obterTagInsights() {
+  const resposta = await fetch(`${API_BASE}/dashboard/tag-insights`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) {
+    throw new Error(dados?.erro || `Erro ${resposta.status} ao obter insights de tags.`);
+  }
+  return Array.isArray(dados) ? dados : [];
+}
+
 export async function excluirTag(codigo) {
   const resposta = await fetch(`${API_BASE}/tags/${codigo}`, {
     method: 'DELETE',

@@ -40,6 +40,7 @@ const TagManagement = () => {
   const [novoTagDescricao, setNovoTagDescricao] = useState('');
   const [novoTagCor, setNovoTagCor] = useState('#000000');
   const [novoTagIcone, setNovoTagIcone] = useState('tag');
+  const [novoTagMostrarNoDashboard, setNovoTagMostrarNoDashboard] = useState(false);
 
   // Estados para edição de tag
   const [editTagCodigo, setEditTagCodigo] = useState(null);
@@ -47,6 +48,7 @@ const TagManagement = () => {
   const [editTagDescricao, setEditTagDescricao] = useState('');
   const [editTagCor, setEditTagCor] = useState('#000000');
   const [editTagIcone, setEditTagIcone] = useState('tag');
+  const [editTagMostrarNoDashboard, setEditTagMostrarNoDashboard] = useState(false);
 
   // Estados para nova categoria
   const [novoCatNome, setNovoCatNome] = useState('');
@@ -108,12 +110,14 @@ const TagManagement = () => {
         descricao: novoTagDescricao.trim(),
         categoria: selectedCategory._id,
         cor: novoTagCor,
-        icone: novoTagIcone
+        icone: novoTagIcone,
+        mostrarNoDashboard: novoTagMostrarNoDashboard
       });
       setNovoTagNome('');
       setNovoTagDescricao('');
       setNovoTagCor('#000000');
       setNovoTagIcone('tag');
+      setNovoTagMostrarNoDashboard(false);
       await refreshData();
       toast.success('Tag criada com sucesso!');
     } catch (error) {
@@ -128,6 +132,7 @@ const TagManagement = () => {
     setEditTagDescricao(tag.descricao || '');
     setEditTagCor(tag.cor || '#000000');
     setEditTagIcone(tag.icone || 'tag');
+    setEditTagMostrarNoDashboard(tag.mostrarNoDashboard ?? false);
   };
 
   const handleSalvarEdicaoTag = async () => {
@@ -141,13 +146,15 @@ const TagManagement = () => {
         descricao: editTagDescricao.trim(),
         categoria: selectedCategory._id,
         cor: editTagCor,
-        icone: editTagIcone
+        icone: editTagIcone,
+        mostrarNoDashboard: editTagMostrarNoDashboard
       });
       setEditTagCodigo(null);
       setEditTagNome('');
       setEditTagDescricao('');
       setEditTagCor('#000000');
       setEditTagIcone('tag');
+      setEditTagMostrarNoDashboard(false);
       await refreshData();
       toast.success('Tag atualizada com sucesso!');
     } catch (error) {
@@ -536,9 +543,19 @@ const TagManagement = () => {
                               />
                             </div>
                           </div>
+                          <div className="form-row">
+                            <label className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={editTagMostrarNoDashboard}
+                                onChange={(e) => setEditTagMostrarNoDashboard(e.target.checked)}
+                              />
+                              Mostrar no Dashboard
+                            </label>
+                          </div>
                           <div className="form-actions">
                             <button onClick={handleSalvarEdicaoTag}>Salvar</button>
-                            <button onClick={() => setEditTagCodigo(null)} className="secondary">Cancelar</button>
+                            <button onClick={() => { setEditTagCodigo(null); setEditTagMostrarNoDashboard(false); }} className="secondary">Cancelar</button>
                           </div>
                         </div>
                       ) : (
@@ -612,6 +629,16 @@ const TagManagement = () => {
                       cor={novoTagCor}
                     />
                   </div>
+                </div>
+                <div className="form-row">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={novoTagMostrarNoDashboard}
+                      onChange={(e) => setNovoTagMostrarNoDashboard(e.target.checked)}
+                    />
+                    Mostrar no Dashboard
+                  </label>
                 </div>
                 <button onClick={handleAdicionarTag}>Adicionar</button>
               </div>

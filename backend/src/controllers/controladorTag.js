@@ -46,7 +46,7 @@ exports.obterTagPorId = async (req, res) => {
 };
 
 exports.criarTag = async (req, res) => {
-  const { nome, descricao, categoria, cor, icone } = req.body;
+  const { nome, descricao, categoria, cor, icone, mostrarNoDashboard } = req.body;
   if (!nome || !categoria) {
     return res.status(400).json({ erro: 'Os campos obrigatórios são: nome e categoria.' });
   }
@@ -57,6 +57,7 @@ exports.criarTag = async (req, res) => {
       categoria,
       cor,
       icone,
+      mostrarNoDashboard: mostrarNoDashboard === true,
       usuario: req.userId 
     });
     await novaTag.save();
@@ -84,6 +85,7 @@ exports.atualizarTag = async (req, res) => {
     if (req.body.categoria) tag.categoria = req.body.categoria;
     if (req.body.cor) tag.cor = req.body.cor;
     if (req.body.icone) tag.icone = req.body.icone;
+    if (req.body.mostrarNoDashboard !== undefined) tag.mostrarNoDashboard = req.body.mostrarNoDashboard === true;
 
     await tag.save();
     res.json(tag);

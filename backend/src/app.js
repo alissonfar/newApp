@@ -73,10 +73,12 @@ const rotasTransferencia = require('./routes/rotasTransferencia');
 const rotasVinculoConjunto = require('./routes/rotasVinculoConjunto');
 const rotasAcertos = require('./routes/rotasAcertos');
 const rotasNetWorth = require('./routes/rotasNetWorth');
+const rotasDashboard = require('./routes/rotasDashboard');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
 app.use('/api/transacoes', rotasTransacao);
+app.use('/api/dashboard', rotasDashboard);
 app.use('/api/tags', rotasTag);
 app.use('/api/categorias', rotasCategoria);
 app.use('/api/email', rotasEmail);

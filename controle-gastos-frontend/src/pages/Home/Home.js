@@ -27,6 +27,7 @@ import SectionHeader from '../../components/shared/SectionHeader';
 import SegmentedControl from '../../components/shared/SegmentedControl';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
+import IconRenderer from '../../components/shared/IconRenderer';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -66,12 +67,15 @@ const Home = () => {
     resumoPeriodo,
     transacoesPorData,
     dadosGrafico,
+    tagInsights,
+    carregandoTagInsights,
     semDados,
     carregandoDados,
     proprietarioExibicao,
     periodoSelecionado,
     setPeriodoSelecionado,
-    fetchTransacoes
+    fetchTransacoes,
+    fetchTagInsights
   } = useDashboardData(proprietario, usuarioCarregado);
 
   const semProprietario = usuarioCarregado && !proprietario;
@@ -479,6 +483,41 @@ const Home = () => {
           </div>
 
           <div className="dashboard-column lg:col-span-1 flex flex-col gap-6">
+            <section className="dashboard-section insights bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-semibold text-gray-700 mb-3">Insights</h2>
+              {carregandoTagInsights ? (
+                <div className="flex items-center justify-center py-6">
+                  <FaSpinner className="spinner text-blue-500 mr-2" />
+                  <span className="text-sm text-gray-500">Carregando...</span>
+                </div>
+              ) : tagInsights.length === 0 ? (
+                <EmptyState message="Nenhuma tag marcada para o dashboard. Edite uma tag e ative 'Mostrar no Dashboard'." />
+              ) : (
+                <div className="insights-cards-grid">
+                  {tagInsights.map((item) => (
+                    <div
+                      key={item.tagId}
+                      className="insight-card"
+                      style={{ '--insight-accent': item.cor || '#6366f1' }}
+                    >
+                      <div className="insight-card__bar" />
+                      <div className="insight-card__content">
+                        <div className="insight-card__icon">
+                          <IconRenderer nome={item.icone || 'tag'} size={20} cor={item.cor || '#6366f1'} />
+                        </div>
+                        <h3 className="insight-card__title">{item.nome}</h3>
+                        <p className="insight-card__value">{formatarMoeda(item.total)}</p>
+                        <div className="insight-card__divider" />
+                        <p className="insight-card__detail">
+                          <span className="insight-card__label">{item.quantidadePagamentos} pagamento{item.quantidadePagamentos !== 1 ? 's' : ''}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
             <section className="dashboard-section calendario bg-white p-4 rounded-lg shadow">
               <h2 className="text-lg font-semibold text-gray-700 mb-2">Calendário</h2>
               <Calendar
@@ -526,11 +565,12 @@ const Home = () => {
           setModalOpen(false);
           setTransacaoDuplicar(null);
         }}>
-          <NovaTransacaoForm
+            <NovaTransacaoForm
             onSuccess={() => {
               setModalOpen(false);
               setTransacaoDuplicar(null);
               fetchTransacoes();
+              fetchTagInsights?.();
             }}
             onClose={() => {
               setModalOpen(false);
