@@ -115,6 +115,7 @@ exports.confirmar = async (req, res) => {
       destino.dataUltimaConfirmacao = transferencia.data;
       await destino.save(opts);
 
+      const historicoOpts = session ? { session, ordered: true } : {};
       await HistoricoSaldo.create([
         {
           usuario: req.userId,
@@ -134,7 +135,7 @@ exports.confirmar = async (req, res) => {
           tipo: 'transferencia_entrada',
           observacao: `Transferência confirmada manualmente ← ${origem.nome}`
         }
-      ], opts);
+      ], historicoOpts);
 
       await ledgerService.registrarEvento({
         usuarioId: req.userId,
