@@ -51,14 +51,6 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
     };
   };
 
-  // Define o ícone de acordo com o tipo
-  const tipoIcon =
-    transacao.tipo === 'gasto' ? (
-      <FaArrowDown className="tipo-icon gasto" />
-    ) : (
-      <FaArrowUp className="tipo-icon recebivel" />
-    );
-
   return (
     <div className="transaction-card">
       <div className="card-header">

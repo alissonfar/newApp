@@ -19,6 +19,7 @@ import ModalTransacao from '../../components/Modal/ModalTransacao';
 import EmptyState from '../../components/shared/EmptyState';
 import Badge from '../../components/shared/Badge';
 import PeriodQuickFilter from '../../components/shared/PeriodQuickFilter';
+import { useBreadcrumbOverride } from '../../context/BreadcrumbContext';
 import './DetalheVinculoPage.css';
 
 const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -89,6 +90,8 @@ const DetalheVinculoPage = () => {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  useBreadcrumbOverride(vinculo?.nome);
 
   useEffect(() => {
     if (!carregando && periodo.dataInicio) {

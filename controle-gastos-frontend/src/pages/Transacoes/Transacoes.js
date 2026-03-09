@@ -1,6 +1,5 @@
 // src/pages/Transacoes/Transacoes.js
 import React, { useEffect, useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';                     // Import SweetAlert2 para confirmações
 import { toast } from 'react-toastify';             // Import Toastify para mensagens
 import { obterTransacoes, excluirTransacao, estornarParcelamento } from '../../api';

@@ -5,6 +5,7 @@ import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
 import { formatDateBR } from '../../utils/dateUtils';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
+import { useBreadcrumbOverride } from '../../context/BreadcrumbContext';
 import './ImportacaoOFXDetalhePage.css';
 
 const ImportacaoOFXDetalhePage = () => {
@@ -33,6 +34,8 @@ const ImportacaoOFXDetalhePage = () => {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  useBreadcrumbOverride(importacao?.nomeArquivo);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? formatDateBR(d) : '-';

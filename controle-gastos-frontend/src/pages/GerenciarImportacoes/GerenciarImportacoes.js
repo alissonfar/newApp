@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { FaTrash, FaEdit, FaUndo, FaDownload, FaEye } from 'react-icons/fa';
-import api from '../../services/api';
+import { FaUndo, FaDownload, FaEye } from 'react-icons/fa';
 import './GerenciarImportacoes.css';
 
 const GerenciarImportacoes = () => {

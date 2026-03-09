@@ -8,15 +8,15 @@ import EditarTransacaoItem from './EditarTransacaoItem';
 import './ImportarTransacoesForm.css';
 
 const ImportarTransacoesForm = ({ onSuccess, onClose, standalonePage = false }) => {
-  const { user } = useContext(AuthContext);
+  const { usuario } = useContext(AuthContext);
   const fileInputRef = useRef(null);
   
   // Estado dos dados
   const [formato, setFormato] = useState('csv');
   const [transacoes, setTransacoes] = useState([]);
-  const [original, setOriginal] = useState(null);
+  const [, setOriginal] = useState(null);
   const [erros, setErros] = useState([]);
-  const [estaEditando, setEstaEditando] = useState(false);
+  const [, setEstaEditando] = useState(false);
   const [showJsonInfo, setShowJsonInfo] = useState(false);
   const [transacoesSalvas, setTransacoesSalvas] = useState(new Set());
   
@@ -91,10 +91,10 @@ const ImportarTransacoesForm = ({ onSuccess, onClose, standalonePage = false }) 
   // Processa as transações usando o middleware
   const processarTransacoes = (dados) => {
     try {
-      // Criar um objeto de usuário seguro, mesmo que user seja undefined ou não tenha id
+      // Criar um objeto de usuário seguro, mesmo que usuario seja undefined ou não tenha id
       const usuarioInfo = { 
-        id: user?.id || 'temp-id', // Use um ID temporário se não houver user.id
-        nome: user?.nome || 'Usuário' 
+        id: usuario?.id || usuario?._id || 'temp-id',
+        nome: usuario?.nome || 'Usuário' 
       };
       
       const transacoesProcessadas = processarDados(dados, formato, usuarioInfo);
@@ -378,7 +378,7 @@ A saída deve ser um JSON formatado conforme a estrutura especificada, com campo
                 data: new Date().toISOString().split('T')[0],
                 observacao: '',
                 pagamentos: [{
-                  pessoa: user?.nome || 'Eu',
+                  pessoa: usuario?.nome || 'Eu',
                   valor: 0,
                   tags: { 'Geral': ['Nova'] }
                 }],

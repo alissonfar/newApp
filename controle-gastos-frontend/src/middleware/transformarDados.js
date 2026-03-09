@@ -174,29 +174,6 @@ const normalizarData = (data) => {
 };
 
 /**
- * Processa tags de uma string para o formato de objeto
- * @param {String} tagsString - String contendo tags separadas por vírgula ou outro delimitador
- * @returns {Object} Objeto com categorias e tags
- */
-const processarTags = (tagsString) => {
-  if (!tagsString || typeof tagsString !== 'string') {
-    return {};
-  }
-  
-  // Formato padrão de retorno: { Categoria: [tag1, tag2] }
-  // Aqui assumimos um formato simples onde todas as tags pertencem a uma categoria "Geral"
-  const tags = tagsString.split(',').map(tag => tag.trim()).filter(tag => tag);
-  
-  if (tags.length === 0) {
-    return {};
-  }
-  
-  return {
-    'Geral': tags
-  };
-};
-
-/**
  * Valida um conjunto de transações
  * @param {Array} transacoes - Array de transações a serem validadas
  * @returns {Object} Resultado da validação com status e mensagens de erro

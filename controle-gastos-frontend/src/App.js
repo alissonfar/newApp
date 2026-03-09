@@ -39,6 +39,7 @@ import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
 import AdminRoute from './AdminRoute';
 import { AuthProvider } from './context/AuthContext';
+import { BreadcrumbProvider } from './context/BreadcrumbContext';
 import { ImportacaoProvider } from './contexts/ImportacaoContext';
 import { DataProvider } from './context/DataContext';
 
@@ -50,8 +51,9 @@ function App() {
     <AuthProvider>
       <DataProvider>
         <Router>
-          <ImportacaoProvider>
-            <Routes>
+          <BreadcrumbProvider>
+            <ImportacaoProvider>
+              <Routes>
               {/* Rotas Públicas (sem MainLayout) */}
               <Route path="/login" element={<Login />} />
               <Route path="/registro" element={<Registro />} />
@@ -323,6 +325,7 @@ function App() {
               theme="light"
             />
           </ImportacaoProvider>
+          </BreadcrumbProvider>
         </Router>
       </DataProvider>
     </AuthProvider>

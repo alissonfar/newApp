@@ -19,6 +19,7 @@ import EventosLedgerTable, { LABEL_POR_TIPO_EVENTO } from '../../components/Patr
 import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
+import { useBreadcrumbOverride } from '../../context/BreadcrumbContext';
 import '../../components/Patrimonio/PatrimonioForm.css';
 import './DetalheSubcontaPage.css';
 
@@ -72,6 +73,8 @@ const DetalheSubcontaPage = () => {
   useEffect(() => {
     carregar();
   }, [carregar, subcontaId]);
+
+  useBreadcrumbOverride(subconta?.nome);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatarData = (d) => d ? formatDateBR(d) : '-';

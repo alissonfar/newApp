@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Select from 'react-select';
-import { Tooltip } from '@mui/material';
 import { obterCategorias, obterTags } from '../../api';
 import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils';
 import { toast } from 'react-toastify';

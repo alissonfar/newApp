@@ -1,13 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
 import ImportarTransacoesForm from '../../components/Transaction/ImportarTransacoesForm';
 import './ImportacaoEmMassa.css';
 
 const ImportacaoEmMassa = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
   
   // Handler para quando a importação for concluída com sucesso
   const handleImportacaoSuccess = () => {

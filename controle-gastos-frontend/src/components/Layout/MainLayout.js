@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank, FaUsers, FaCalculator, FaBuilding, FaChartArea, FaExchangeAlt, FaCalendarAlt } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
+import BreadcrumbsNav from '../navigation/BreadcrumbsNav';
 import './MainLayout.css';
 
 // Hook para detectar o tamanho da tela
@@ -349,6 +350,7 @@ const MainLayout = ({ children }) => {
       )}
 
       <main className={mainContentClasses}>
+        <BreadcrumbsNav />
         {children}
       </main>
     </div>

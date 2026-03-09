@@ -1,103 +1,110 @@
 # Relatório de Build para Produção
 
-**Data:** Março 2026  
-**Projeto:** controle-gastos-frontend  
-**Comando:** `npm run build`
+**Data:** 2025-03-09  
+**Status:** BUILD OK
 
 ---
 
-## 1. Erros Encontrados (Inicial)
+## 1. Erros Iniciais Encontrados
 
-### ESLint - no-unused-vars
+### Classificação por Tipo
 
-| Arquivo | Linha | Erro | Causa |
-|---------|-------|------|-------|
-| `src/hooks/useSimulacao.js` | 4:7 | `DIAS_UTEIS_ANO` is assigned a value but never used | Constante declarada mas não utilizada no cálculo |
+| Tipo | Quantidade | Arquivos |
+|------|------------|----------|
+| Imports não utilizados | 5 | EditarTransacaoItem, GerenciarImportacoes, ImportacaoEmMassa, Transacoes |
+| Variáveis não utilizadas | 4 | ImportarTransacoesForm, TransactionCard, transformarDados |
+| Uso incorreto de variável | 1 | ImportarTransacoesForm (user vs usuario) |
+| eslint-disable desnecessário | 1 | useDashboardData |
 
 ---
 
 ## 2. Correções Aplicadas
 
-### 2.1 useSimulacao.js - Constantes financeiras
+### 2.1 EditarTransacaoItem.js
+- **Problema:** Import `Tooltip` do MUI não utilizado
+- **Correção:** Remoção do import
+- **Justificativa:** Código morto que polui o bundle
 
-**Problema:** A constante `DIAS_UTEIS_ANO` (ou similar) estava declarada sem uso, gerando warning no build.
+### 2.2 ImportarTransacoesForm.js
+- **Problema:** Variáveis `original` e `estaEditando` declaradas mas não lidas
+- **Correção:** Uso de `[, setOriginal]` e `[, setEstaEditando]` para omitir valores não usados
+- **Problema:** Uso de `user` em vez de `usuario` (AuthContext)
+- **Correção:** Troca para `usuario` e ajuste de `usuario?.id || usuario?._id` para compatibilidade com API
+- **Justificativa:** O AuthContext expõe `usuario`, não `user`. O backend pode retornar `_id` ou `id`.
 
-**Solução aplicada:** Introdução de constantes alinhadas ao backend (`taxaCDIService`, `financial.service`):
+### 2.3 TransactionCard.js
+- **Problema:** Variável `tipoIcon` atribuída mas não utilizada
+- **Correção:** Remoção da variável (já havia lógica inline no JSX)
+- **Justificativa:** Código duplicado removido
 
-```javascript
-const DIAS_UTEIS_ANO = 252;
-const DIAS_UTEIS_MES = 21;
-const MESES_NO_ANO = DIAS_UTEIS_ANO / DIAS_UTEIS_MES; // 12
-```
+### 2.4 transformarDados.js
+- **Problema:** Função `processarTags` não utilizada
+- **Correção:** Remoção da função (código morto)
+- **Justificativa:** TransactionsTable.js possui sua própria função local com o mesmo nome
 
-A fórmula `pow(1 / 12)` foi substituída por `pow(1 / MESES_NO_ANO)`, mantendo o mesmo resultado (12 meses) e usando as constantes de forma consistente com o backend.
+### 2.5 GerenciarImportacoes.js
+- **Problema:** Imports `FaTrash`, `FaEdit` e `api` não utilizados
+- **Correção:** Remoção dos imports
+- **Justificativa:** Código morto; página usa dados mockados
 
-**Justificativa:** Mantém semântica financeira e remove o warning sem desativar regras do ESLint.
+### 2.6 ImportacaoEmMassa.js
+- **Problema:** Import `useState` e variável `user` não utilizados
+- **Correção:** Remoção de `useContext`, `AuthContext` e `user`
+- **Justificativa:** `user` não era usado nesta página
 
----
+### 2.7 Transacoes.js
+- **Problema:** Import `Link` do react-router não utilizado
+- **Correção:** Remoção do import
+- **Justificativa:** Código morto
 
-## 3. Resultado Final do Build
-
-```
-Compiled successfully.
-
-File sizes after gzip:
-  902.34 kB  build/static/js/main.a34759b6.js
-  27.66 kB   build/static/css/main.994d9a02.css
-
-The build folder is ready to be deployed.
-```
-
-**Status:** BUILD OK
-
----
-
-## 4. Pontos Sensíveis Revisados
-
-### 4.1 Console.log / console.error
-
-- **console.error** e **console.warn** em blocos `catch` foram mantidos para diagnóstico em produção.
-- Não há **console.log** de debug aparente no código.
-- **Recomendação:** Em produção, considerar um serviço de logging (ex.: Sentry) em vez de `console.error` puro.
-
-### 4.2 Uso de .map() e dados possivelmente undefined
-
-- Padrão observado: `items.map()` com `items = transacoes?.items || []`.
-- Arrays de listas (transações, acertos, extrato) são inicializados como `[]`.
-- **Risco baixo** nos fluxos principais.
-
-### 4.3 Bundle size (902 kB gzipped)
-
-- Tamanho acima do recomendado (~244 kB).
-- Principais contribuintes: React, MUI, Chart.js, react-pdf, react-select.
-- **Sugestão:** Code splitting com `React.lazy()` para rotas (Patrimônio, Importação, Relatórios, Admin).
+### 2.8 useDashboardData.js
+- **Problema:** `eslint-disable-next-line react-hooks/exhaustive-deps` sem dependências completas
+- **Correção:** Inclusão de `carregandoDados` e `calcularDadosDashboard` no array de dependências
+- **Justificativa:** `calcularDadosDashboard` é memoizado com `useCallback` estável; incluir dependências evita bugs e remove a necessidade do disable
 
 ---
 
-## 5. Melhorias Arquiteturais Sugeridas
-
-1. **Code splitting:** Lazy load de rotas pesadas (Patrimônio, Importação, Relatórios).
-2. **Tree shaking:** Revisar imports do MUI (ex.: `import X from '@mui/material/X'` em vez de `@mui/material`).
-3. **Centralização de erros:** Criar um `ErrorBoundary` e um serviço de logging.
-4. **Variáveis de ambiente:** Garantir uso de `REACT_APP_*` para configurações públicas.
-
----
-
-## 6. Checklist Final de Produção
+## 3. Pontos Sensíveis Verificados
 
 | Item | Status |
 |------|--------|
-| Build sem erros | OK |
-| Build sem warnings | OK |
-| Nenhum `@ts-ignore` ou `eslint-disable` desnecessário | OK |
-| Console.error em catch (aceitável) | OK |
-| Estrutura em camadas preservada | OK |
-| Compatibilidade com NODE_ENV=production | OK |
-| Bundle gerado em `build/` | OK |
+| Uso de `useEffect` com dependências | OK – corrigido em useDashboardData |
+| `setState` durante render | OK – não identificado |
+| Loops infinitos | OK – não identificado |
+| Acesso a dados possivelmente undefined | OK – uso de optional chaining (`?.`) |
+| Variáveis de ambiente | OK – projeto usa Create React App (sem NEXT_PUBLIC_) |
+| `console.log` esquecidos | OK – nenhum encontrado |
+| `console.error` em catch | Mantido – apropriado para debug em produção |
 
 ---
 
-## 7. Comandos para Deploy
+## 4. Bundle Size
+
+| Arquivo | Tamanho (gzip) |
+|---------|----------------|
+| main.js | 907.72 kB |
+| main.css | 28.2 kB |
+
+**Recomendação:** O bundle está acima do ideal (~244 kB). Sugestões futuras:
+- Code splitting por rotas (React.lazy + Suspense)
+- Análise com `source-map-explorer` ou `webpack-bundle-analyzer`
+- Lazy load de Chart.js, react-pdf, sweetalert2
+
+---
+
+## 5. Checklist Final de Produção
+
+- [x] Build executa sem erros
+- [x] ESLint sem warnings (--max-warnings 0)
+- [x] Sem erros de tipagem (projeto JS)
+- [x] Sem `console.log` esquecidos
+- [x] Dependências de hooks corretas
+- [x] Imports e variáveis não utilizados removidos
+- [x] Uso correto de AuthContext (usuario vs user)
+
+---
+
+## 6. Comandos para Deploy
 
 ```bash
 # Build
@@ -109,4 +116,4 @@ npx serve -s build
 
 ---
 
-**Conclusão:** O frontend está pronto para deploy em produção, com build limpo e sem warnings.
+**Status:** Frontend pronto para deploy em produção com NODE_ENV=production.

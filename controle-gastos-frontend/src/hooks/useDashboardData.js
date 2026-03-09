@@ -217,15 +217,12 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
     fetchTagInsights();
   }, [fetchTagInsights]);
 
-  // Efeito para recalcular quando o período selecionado mudar
+  // Efeito para recalcular quando o período selecionado, transações ou proprietário mudar
   useEffect(() => {
     if (transacoes.length > 0 && !carregandoDados && proprietario) {
-       // Recalcula APENAS se tiver transações, não estiver carregando e tiver proprietario
       calcularDadosDashboard(transacoes, periodoSelecionado, proprietario);
     }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodoSelecionado, transacoes, proprietario]); // Recalcula se período, transações ou proprietário (caso recalcular seja necessário ao mudar proprietario também)
-   // A dependência de transações aqui garante que rode após fetch inicial
+  }, [periodoSelecionado, transacoes, proprietario, carregandoDados, calcularDadosDashboard]);
 
   return {
     transacoes,
