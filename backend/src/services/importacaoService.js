@@ -177,7 +177,8 @@ class ImportacaoService {
         throw new Error('Formato de arquivo JSON inválido. Esperado: { transacoes: [] }');
       }
 
-      const importacao = await Importacao.findById(importacaoId);
+      const importacao = await Importacao.findOne({ _id: importacaoId, usuario: usuarioId });
+      if (!importacao) throw new Error('Importação não encontrada ou não pertence ao usuário.');
       importacao.totalRegistros = dados.transacoes.length;
       await importacao.save();
 
@@ -196,10 +197,12 @@ class ImportacaoService {
       importacao.status = 'finalizada';
       await importacao.save();
     } catch (error) {
-      const importacao = await Importacao.findById(importacaoId);
-      importacao.status = 'erro';
-      importacao.erro = error.message;
-      await importacao.save();
+      const importacao = await Importacao.findOne({ _id: importacaoId, usuario: usuarioId });
+      if (importacao) {
+        importacao.status = 'erro';
+        importacao.erro = error.message;
+        await importacao.save();
+      }
       throw error;
     }
   }
@@ -235,7 +238,8 @@ class ImportacaoService {
         from_line: 1 // Começa da primeira linha
       });
 
-      const importacao = await Importacao.findById(importacaoId);
+      const importacao = await Importacao.findOne({ _id: importacaoId, usuario: usuarioId });
+      if (!importacao) throw new Error('Importação não encontrada ou não pertence ao usuário.');
       const linhas = conteudo.split('\n').length - 1; // -1 para excluir o cabeçalho
       importacao.totalRegistros = linhas;
       await importacao.save();
@@ -275,10 +279,12 @@ class ImportacaoService {
       await importacao.save();
     } catch (error) {
       console.error('Erro geral no processamento:', error); // Debug
-      const importacao = await Importacao.findById(importacaoId);
-      importacao.status = 'erro';
-      importacao.erro = error.message;
-      await importacao.save();
+      const importacao = await Importacao.findOne({ _id: importacaoId, usuario: usuarioId });
+      if (importacao) {
+        importacao.status = 'erro';
+        importacao.erro = error.message;
+        await importacao.save();
+      }
       throw error;
     }
   }
@@ -410,12 +416,12 @@ class ImportacaoService {
     await importacao.save();
   }
 
-  static async processarArquivo(importacaoId) {
+  static async processarArquivo(importacaoId, usuarioId) {
     try {
-      // Busca a importação
-      const importacao = await Importacao.findById(importacaoId);
+      // Busca a importação validando ownership (defesa em profundidade)
+      const importacao = await Importacao.findOne({ _id: importacaoId, usuario: usuarioId });
       if (!importacao) {
-        throw new Error('Importação não encontrada');
+        throw new Error('Importação não encontrada ou não pertence ao usuário.');
       }
 
       console.log('[DEBUG] Iniciando processamento do arquivo:', importacao.nomeArquivo);
@@ -570,8 +576,8 @@ class ImportacaoService {
     } catch (erro) {
       console.error('[DEBUG] Erro geral no processamento:', erro);
       
-      // Atualiza status da importação para erro
-      const importacao = await Importacao.findById(importacaoId);
+      // Atualiza status da importação para erro (valida ownership)
+      const importacao = await Importacao.findOne({ _id: importacaoId, usuario: usuarioId });
       if (importacao) {
         importacao.status = 'erro';
         importacao.erro = erro.message;

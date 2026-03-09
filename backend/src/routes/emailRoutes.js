@@ -3,7 +3,13 @@ const router = express.Router();
 const emailService = require('../services/emailService');
 
 // Rota de teste para verificar a conexão com o serviço de email
-router.post('/teste', async (req, res) => {
+// Disponível apenas em ambiente não-produção (evita abuso/spam)
+router.post('/teste', (req, res, next) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(404).json({ erro: 'Rota não encontrada.' });
+    }
+    next();
+}, async (req, res) => {
     try {
         const { email } = req.body;
         

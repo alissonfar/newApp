@@ -107,6 +107,7 @@ exports.sugerirTransferencias = async (req, res) => {
 
     const sugestoes = await sugerirTransferencias(
       transacao.subconta.toString(),
+      req.userId,
       transacao.valor,
       transacao.data,
       { toleranciaValor: 0.01, toleranciaDias: 3 }

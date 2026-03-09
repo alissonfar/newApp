@@ -64,8 +64,8 @@ class ImportacaoController {
             await importacao.save();
             console.log('[Importação] Nova importação criada:', importacao._id);
 
-            // Inicia o processamento do arquivo
-            ImportacaoService.processarArquivo(importacao._id)
+            // Inicia o processamento do arquivo (passa usuarioId para validação de ownership)
+            ImportacaoService.processarArquivo(importacao._id, usuario)
                 .then(resultado => {
                     console.log('[Importação] Processamento concluído:', resultado);
                 })
@@ -397,7 +397,7 @@ class ImportacaoController {
 
                 for (const { ti, transacaoIndex } of mapeamentoTiParaTransacao) {
                     await TransacaoImportada.updateOne(
-                        { _id: ti._id },
+                        { _id: ti._id, usuario: req.userId },
                         { $set: { status: 'processada', transacaoCriada: transacoesCriadas[transacaoIndex]._id } },
                         { session }
                     );
@@ -472,9 +472,10 @@ class ImportacaoController {
                 return res.status(404).json({ erro: 'Importação não encontrada ou não está finalizada.' });
             }
 
-            // Buscar todas as transações desta importação
+            // Buscar todas as transações desta importação (filtro usuario para isolamento)
             const transacoesImportadas = await TransacaoImportada.find({
                 importacao: importacao._id,
+                usuario: req.userId,
                 status: 'processada'
             });
 
@@ -486,7 +487,7 @@ class ImportacaoController {
             for (const transacaoImportada of transacoesImportadas) {
                 if (transacaoImportada.transacaoCriada) {
                     await Transacao.updateOne(
-                        { _id: transacaoImportada.transacaoCriada, status: 'ativo' },
+                        { _id: transacaoImportada.transacaoCriada, usuario: req.userId, status: 'ativo' },
                         { $set: { status: 'estornado' } }
                     );
                 } else {
@@ -507,9 +508,9 @@ class ImportacaoController {
             importacao.status = 'estornada';
             await importacao.save();
 
-            // Atualizar status das transações importadas
+            // Atualizar status das transações importadas (filtro usuario)
             await TransacaoImportada.updateMany(
-                { importacao: importacao._id, status: 'processada' },
+                { importacao: importacao._id, usuario: req.userId, status: 'processada' },
                 { $set: { status: 'estornada' } }
             );
 

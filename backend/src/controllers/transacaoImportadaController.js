@@ -173,17 +173,14 @@ const transacaoImportadaController = {
 
       await transacao.save();
       
-      // Busca a transação atualizada do banco para confirmar
-      const transacaoAtualizada = await TransacaoImportada.findById(transacao._id);
-      
-      // Log da transação após salvar
+      // Log da transação após salvar (transacao já atualizado em memória pelo save)
       console.log('[DEBUG] Estado após salvar no banco:', {
-        _id: transacaoAtualizada._id,
-        pagamentos: transacaoAtualizada.pagamentos,
-        dadosOriginais: transacaoAtualizada.dadosOriginais
+        _id: transacao._id,
+        pagamentos: transacao.pagamentos,
+        dadosOriginais: transacao.dadosOriginais
       });
       
-      res.json(transacaoAtualizada);
+      res.json(transacao);
     } catch (error) {
       console.error('[TransacaoImportada] Erro ao atualizar transação:', error);
       res.status(500).json({ erro: 'Erro ao atualizar transação.' });
@@ -375,7 +372,7 @@ const transacaoImportadaController = {
               });
             }
             await TransacaoImportada.updateOne(
-              { _id: transacao._id },
+              { _id: transacao._id, usuario: usuarioId },
               { $set: { status: 'ignorada', deduplicationKey: dedupKey } }
             );
             resultados.push({ id: transacao._id, sucesso: true });

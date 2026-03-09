@@ -347,7 +347,7 @@ async function criar(dados, usuarioId) {
       }
       return {
         updateOne: {
-          filter: { _id: transactionId },
+          filter: { _id: transactionId, usuario: usuarioId },
           update,
           session
         }
@@ -355,7 +355,7 @@ async function criar(dados, usuarioId) {
     });
 
     await Transacao.updateOne(
-      { _id: receivingTransactionId },
+      { _id: receivingTransactionId, usuario: usuarioId },
       { $set: { settlementAsSource: settlement._id } },
       { session }
     );
@@ -385,7 +385,7 @@ async function criar(dados, usuarioId) {
       leftoverTransactionId = transacaoSobra._id;
 
       await Settlement.updateOne(
-        { _id: settlement._id },
+        { _id: settlement._id, usuario: usuarioId },
         { $set: { leftoverTransactionId, leftoverAmount } },
         { session }
       );
@@ -393,7 +393,7 @@ async function criar(dados, usuarioId) {
 
     await session.commitTransaction();
 
-    const settlementPopulado = await Settlement.findById(settlement._id)
+    const settlementPopulado = await Settlement.findOne({ _id: settlement._id, usuario: usuarioId })
       .populate('receivingTransactionId', 'descricao valor data')
       .populate('tagId', 'nome codigo')
       .populate('removeTagId', 'nome codigo cor icone')
@@ -434,7 +434,7 @@ async function excluir(settlementId, usuarioId) {
     }
 
     await Transacao.updateOne(
-      { _id: settlement.receivingTransactionId },
+      { _id: settlement.receivingTransactionId, usuario: usuarioId },
       { $set: { settlementAsSource: null } },
       { session }
     );
@@ -442,7 +442,7 @@ async function excluir(settlementId, usuarioId) {
     const tagIdToRemove = settlement.tagId?._id || settlement.tagId;
     const excluirBulkOps = [];
     for (const app of settlement.appliedTransactions) {
-      const transacao = await Transacao.findById(app.transactionId).session(session);
+      const transacao = await Transacao.findOne({ _id: app.transactionId, usuario: usuarioId }).session(session);
       if (transacao && transacao.pagamentos && transacao.pagamentos.length > 0) {
         let pagamentosAtualizados = transacao.pagamentos.map(toPlainPagamento);
         const idx = app.pagamentoIndex;
@@ -458,7 +458,7 @@ async function excluir(settlementId, usuarioId) {
         }
         excluirBulkOps.push({
           updateOne: {
-            filter: { _id: app.transactionId },
+            filter: { _id: app.transactionId, usuario: usuarioId },
             update,
             session
           }
@@ -475,12 +475,12 @@ async function excluir(settlementId, usuarioId) {
       if (removeTag && (removeTag._id || removeTag.categoria)) {
         tagParaRestaurar = { _id: removeTag._id || removeTag, categoria: removeTag.categoria, nome: removeTag.nome };
       } else if (removeTag) {
-        const tagDoc = await Tag.findById(removeTag).select('_id categoria nome').lean().session(session);
+        const tagDoc = await Tag.findOne({ _id: removeTag, usuario: usuarioId }).select('_id categoria nome').lean().session(session);
         if (tagDoc) tagParaRestaurar = tagDoc;
       }
       if (tagParaRestaurar) {
         for (const entry of settlement.removedTagLog) {
-          const transacao = await Transacao.findById(entry.transactionId).session(session);
+          const transacao = await Transacao.findOne({ _id: entry.transactionId, usuario: usuarioId }).session(session);
           if (transacao && transacao.pagamentos && entry.payerIndex >= 0 && entry.payerIndex < transacao.pagamentos.length) {
             const pagamentosAtualizados = aplicarTagEmPagamentoPorIndice(
               transacao.pagamentos.map(toPlainPagamento),
@@ -488,7 +488,7 @@ async function excluir(settlementId, usuarioId) {
               entry.payerIndex
             );
             await Transacao.updateOne(
-              { _id: entry.transactionId },
+              { _id: entry.transactionId, usuario: usuarioId },
               { $set: { pagamentos: pagamentosAtualizados } },
               { session }
             );
@@ -499,13 +499,13 @@ async function excluir(settlementId, usuarioId) {
 
     if (settlement.leftoverTransactionId) {
       await Transacao.updateOne(
-        { _id: settlement.leftoverTransactionId },
+        { _id: settlement.leftoverTransactionId, usuario: usuarioId },
         { $set: { status: 'estornado' } },
         { session }
       );
     }
 
-    await Settlement.deleteOne({ _id: settlementId }).session(session);
+    await Settlement.deleteOne({ _id: settlementId, usuario: usuarioId }).session(session);
 
     await session.commitTransaction();
     return { mensagem: 'Conciliação excluída com sucesso.' };

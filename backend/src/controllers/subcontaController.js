@@ -281,7 +281,7 @@ exports.obterSaldoPorLedger = async (req, res) => {
     if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
     const { ateData } = req.query;
     const ateDataDate = ateData ? new Date(ateData) : null;
-    const saldo = await ledgerService.calcularSaldoPorLedger(req.params.id, ateDataDate);
+    const saldo = await ledgerService.calcularSaldoPorLedger(req.params.id, req.userId, ateDataDate);
     res.json({
       saldo,
       subcontaId: req.params.id,

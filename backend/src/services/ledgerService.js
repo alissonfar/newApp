@@ -44,7 +44,7 @@ async function registrarEvento(
   }
 
   if (referenciaTipo && referenciaId) {
-    const q = { referenciaTipo, referenciaId };
+    const q = { referenciaTipo, referenciaId, usuario: usuarioId };
     if (referenciaTipo === 'transferencia') {
       q.subconta = subcontaId;
     }
@@ -76,11 +76,12 @@ async function registrarEvento(
  * Calcula o saldo de uma subconta pela soma dos eventos do ledger.
  *
  * @param {string} subcontaId - ID da subconta
+ * @param {string} usuarioId - ID do usuário (isolamento multi-tenant)
  * @param {Date} [ateData] - Opcional: calcular saldo até esta data (inclusive)
  * @returns {Promise<number>}
  */
-async function calcularSaldoPorLedger(subcontaId, ateData = null) {
-  const match = { subconta: subcontaId };
+async function calcularSaldoPorLedger(subcontaId, usuarioId, ateData = null) {
+  const match = { subconta: subcontaId, usuario: usuarioId };
   if (ateData) {
     match.dataEvento = { $lte: new Date(ateData) };
   }

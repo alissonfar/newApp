@@ -1,4 +1,5 @@
 // src/api.js
+import api from './services/api';
 
 const API_BASE = process.env.REACT_APP_API_BASE;
 
@@ -167,14 +168,8 @@ export async function atualizarTag(codigo, tag) {
 }
 
 export async function obterTagInsights() {
-  const resposta = await fetch(`${API_BASE}/dashboard/tag-insights`, {
-    headers: getHeaders(false)
-  });
-  const dados = await resposta.json();
-  if (!resposta.ok) {
-    throw new Error(dados?.erro || `Erro ${resposta.status} ao obter insights de tags.`);
-  }
-  return Array.isArray(dados) ? dados : [];
+  const { data } = await api.get('/dashboard/tag-insights');
+  return Array.isArray(data) ? data : [];
 }
 
 export async function excluirTag(codigo) {

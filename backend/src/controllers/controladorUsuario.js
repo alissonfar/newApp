@@ -277,11 +277,19 @@ module.exports = {
   },
 
   // Atualizar perfil do usuário
+  // Whitelist de campos permitidos - impede mass assignment (role, status, etc)
   async atualizarPerfil(req, res) {
     try {
-      const atualizacoes = { ...req.body };
-      delete atualizacoes.senha; // Não permite atualizar senha por esta rota
-      delete atualizacoes.email; // Não permite atualizar email por esta rota
+      const CAMPOS_PERMITIDOS = [
+        'nome', 'fotoPerfil', 'telefone', 'dataNascimento', 'genero',
+        'biografia', 'cargo', 'empresa', 'redesSociais', 'preferencias'
+      ];
+      const atualizacoes = {};
+      for (const campo of CAMPOS_PERMITIDOS) {
+        if (req.body[campo] !== undefined) {
+          atualizacoes[campo] = req.body[campo];
+        }
+      }
 
       const usuario = await Usuario.findByIdAndUpdate(
         req.userId,

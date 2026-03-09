@@ -43,7 +43,7 @@ exports.criar = async (req, res) => {
       usuario: req.userId
     });
     await modelo.save();
-    const populated = await ModeloRelatorio.findById(modelo._id)
+    const populated = await ModeloRelatorio.findOne({ _id: modelo._id, usuario: req.userId })
       .populate('regras.tag', 'nome codigo categoria cor');
     res.status(201).json(populated);
   } catch (error) {
@@ -67,7 +67,7 @@ exports.atualizar = async (req, res) => {
     if (aggregation && ['default', 'devedor'].includes(aggregation)) modelo.aggregation = aggregation;
     if (Array.isArray(regras)) modelo.regras = regras.filter(r => r.tag && r.effect);
     await modelo.save();
-    const populated = await ModeloRelatorio.findById(modelo._id)
+    const populated = await ModeloRelatorio.findOne({ _id: modelo._id, usuario: req.userId })
       .populate('regras.tag', 'nome codigo categoria cor');
     res.json(populated);
   } catch (error) {

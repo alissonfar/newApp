@@ -7,7 +7,7 @@ const ledgerService = require('../ledgerService');
 describe('ledgerService', () => {
   describe('calcularSaldoPorLedger', () => {
     it('retorna 0 quando subcontaId não existe ou não tem eventos', async () => {
-      const saldo = await ledgerService.calcularSaldoPorLedger('000000000000000000000000');
+      const saldo = await ledgerService.calcularSaldoPorLedger('000000000000000000000000', '000000000000000000000001');
       expect(saldo).toBe(0);
     });
   });

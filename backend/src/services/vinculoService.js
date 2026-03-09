@@ -348,7 +348,7 @@ async function registrarAcerto(vinculoId, dados, usuarioId) {
 
     if (transacoesQuitadas.length > 0) {
       await Transacao.updateMany(
-        { _id: { $in: transacoesQuitadas } },
+        { _id: { $in: transacoesQuitadas }, usuario: usuarioId },
         { $set: { 'contaConjunta.acertadoEm': acerto._id } },
         { session }
       );
@@ -375,12 +375,12 @@ async function estornarAcerto(acertoId, usuarioId) {
   try {
     if (acerto.transacoesQuitadas && acerto.transacoesQuitadas.length > 0) {
       await Transacao.updateMany(
-        { _id: { $in: acerto.transacoesQuitadas } },
+        { _id: { $in: acerto.transacoesQuitadas }, usuario: usuarioId },
         { $unset: { 'contaConjunta.acertadoEm': '' } },
         { session }
       );
     }
-    await AcertoConjunto.deleteOne({ _id: acertoId }, { session });
+    await AcertoConjunto.deleteOne({ _id: acertoId, usuario: usuarioId }, { session });
     await session.commitTransaction();
     return { mensagem: 'Acerto estornado com sucesso.' };
   } catch (err) {

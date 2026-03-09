@@ -230,8 +230,8 @@ async function processarArquivoOFX(caminhoArquivo, nomeArquivo, subcontaId, usua
 
     return importacao;
   } catch (err) {
-    await TransacaoOFX.deleteMany({ importacaoOFX: importacao._id }).catch(() => {});
-    await ImportacaoOFX.deleteOne({ _id: importacao._id }).catch(() => {});
+    await TransacaoOFX.deleteMany({ importacaoOFX: importacao._id, usuario: usuarioId }).catch(() => {});
+    await ImportacaoOFX.deleteOne({ _id: importacao._id, usuario: usuarioId }).catch(() => {});
     throw err;
   }
 }

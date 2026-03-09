@@ -51,14 +51,15 @@ const EditarTransacaoItem = ({
     fetchData();
   }, []);
   
-  // Agrupa as tags do backend por categoria para popular o React-Select
+  // Agrupa as tags do backend por categoria (cat._id) para popular o React-Select
   const tagsPorCategoria = allTags.reduce((acc, tag) => {
     if (tag.categoria) {
-      if (!acc[tag.categoria]) {
-        acc[tag.categoria] = [];
-      }
-      acc[tag.categoria].push({
-        value: tag.codigo,
+      const catId = (tag.categoria && tag.categoria.toString)
+        ? tag.categoria.toString()
+        : String(tag.categoria || '');
+      if (!acc[catId]) acc[catId] = [];
+      acc[catId].push({
+        value: tag._id,
         label: tag.nome,
         cor: tag.cor,
         icone: tag.icone,
@@ -303,12 +304,15 @@ const EditarTransacaoItem = ({
                   <div className="form-section payment-tags">
                     <h4>Tags para Pagamento</h4>
                     {categorias.map((cat) => {
-                      const options = (tagsPorCategoria[cat.nome] || []);
-                      const selectedValues = ((pag.paymentTags && pag.paymentTags[cat.nome]) || [])
-                        .map(tagCodigo => {
-                          const tag = allTags.find(t => t.codigo === tagCodigo);
+                      const catId = (cat._id && cat._id.toString) ? cat._id.toString() : String(cat._id || '');
+                      const options = (tagsPorCategoria[catId] || []);
+                      // Suporta formato legado (cat.nome + tag.codigo) e canônico (cat._id + tag._id)
+                      const rawValues = (pag.paymentTags && (pag.paymentTags[catId] || pag.paymentTags[cat.nome])) || [];
+                      const selectedValues = rawValues
+                        .map(v => {
+                          const tag = allTags.find(t => t._id === v || t.codigo === v || t.nome === v);
                           return tag ? {
-                            value: tag.codigo,
+                            value: tag._id,
                             label: tag.nome,
                             cor: tag.cor,
                             icone: tag.icone,
@@ -332,7 +336,7 @@ const EditarTransacaoItem = ({
                             value={selectedValues}
                             onChange={(selected) => {
                               const newPaymentTags = { ...pag.paymentTags };
-                              newPaymentTags[cat.nome] = selected.map(s => s.value);
+                              newPaymentTags[catId] = selected.map(s => s.value);
                               handlePagamentoChange(idx, 'paymentTags', newPaymentTags);
                             }}
                             styles={customStyles}

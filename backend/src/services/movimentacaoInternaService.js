@@ -29,12 +29,13 @@ function detectarMovimentacaoInterna(memo) {
  * Busca Transferências pendentes que possam corresponder a uma TransacaoOFX.
  * Nunca vincula automaticamente — retorna apenas sugestões.
  * @param {string} subcontaId - ID da subconta
+ * @param {string} usuarioId - ID do usuário (isolamento multi-tenant)
  * @param {number} valor - Valor da transação (sempre positivo)
  * @param {Date} data - Data da transação
  * @param {Object} opts - { toleranciaValor: number, toleranciaDias: number }
  * @returns {Promise<Array>} Lista de Transferências sugeridas
  */
-async function sugerirTransferencias(subcontaId, valor, data, opts = {}) {
+async function sugerirTransferencias(subcontaId, usuarioId, valor, data, opts = {}) {
   const toleranciaValor = opts.toleranciaValor != null ? opts.toleranciaValor : 0.01;
   const toleranciaDias = opts.toleranciaDias != null ? opts.toleranciaDias : 3;
 
@@ -45,6 +46,7 @@ async function sugerirTransferencias(subcontaId, valor, data, opts = {}) {
   endDate.setDate(endDate.getDate() + toleranciaDias);
 
   const transferencias = await Transferencia.find({
+    usuario: usuarioId,
     $or: [
       { subcontaOrigem: subcontaId },
       { subcontaDestino: subcontaId }

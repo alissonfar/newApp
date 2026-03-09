@@ -5,7 +5,6 @@ const CategoriaSchema = new mongoose.Schema({
   codigo: { 
     type: String, 
     required: true,
-    unique: true,
     default: function() {
       return 'CAT_' + Math.random().toString(36).substr(2, 9).toUpperCase();
     }
@@ -28,18 +27,19 @@ const CategoriaSchema = new mongoose.Schema({
 // Adicionar o plugin de paginação
 CategoriaSchema.plugin(mongoosePaginate);
 
-// Cria um índice composto único para { nome, usuario }
+// Índices multi-tenant: unique por (usuario, campo)
 CategoriaSchema.index({ nome: 1, usuario: 1 }, { unique: true });
+CategoriaSchema.index({ usuario: 1, codigo: 1 }, { unique: true });
 
 // Configura para incluir virtuals no JSON, criando o campo "id"
 CategoriaSchema.set('toJSON', { virtuals: true });
 
-// Middleware pre-save para garantir que o código seja único
+// Middleware pre-save: código único por usuário (multi-tenant)
 CategoriaSchema.pre('save', async function(next) {
-  if (this.isNew) {
+  if (this.isNew && this.usuario) {
     let codigoUnico = false;
     while (!codigoUnico) {
-      const existente = await this.constructor.findOne({ codigo: this.codigo });
+      const existente = await this.constructor.findOne({ codigo: this.codigo, usuario: this.usuario });
       if (!existente) {
         codigoUnico = true;
       } else {

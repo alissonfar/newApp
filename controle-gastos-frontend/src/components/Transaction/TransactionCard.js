@@ -25,9 +25,11 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
     fetchData();
   }, []);
 
-  // Função para converter IDs em nomes
+  // Função para converter IDs ou códigos em nomes (suporta formato canônico _id e legado codigo)
   const getTagInfo = (tagId) => {
-    const tag = tags.find(t => t._id === tagId);
+    const tag = tags.find(t =>
+      String(t._id) === String(tagId) || t.codigo === tagId
+    );
     
     if (!tag) return null;
     

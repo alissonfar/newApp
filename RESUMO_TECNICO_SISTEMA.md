@@ -51,6 +51,12 @@
 ### Estratégia offline
 - **Não implementada**. Existe apenas `manifest.json` genérico (PWA metadata) sem Service Worker ou cache offline.
 
+### Migrações
+- **001-add-default-user-role.js**: Adiciona role padrão em usuários
+- **002-historico-saldo-tipo.js**: Adiciona tipo="ajuste" em HistoricoSaldo
+- **003-ledger-snapshot-inicial.js**: Cria eventos snapshot_inicial no LedgerPatrimonial para subcontas existentes
+- Execução: `node backend/scripts/migrations/XXX.js` (uma vez por ambiente)
+
 ### Integrações externas
 - **Email**: Nodemailer (Gmail) para verificação de email, redefinição de senha e testes
 - **MongoDB**: Conexão via `DB_URI`; suporte a transações MongoDB (requer replica set)
@@ -114,7 +120,7 @@
 - **Responsabilidade**: Gestão de instituições financeiras (bancos, corretoras, carteiras), subcontas (contas dentro de instituições), histórico de saldo, confirmação de saldo, evolução patrimonial, rendimento estimado (CDI) e simulador de rendimentos.
 - **Entidades**: Instituicao, Subconta, HistoricoSaldo, LedgerPatrimonial, TaxaCDI
 - **LedgerPatrimonial**: Camada de eventos append-only que registra todas as alterações de saldo (deltas). Permite reconstruir saldo por soma de eventos, auditoria completa e análise temporal. Integrado em: criação de subconta, confirmação de saldo, finalização importação OFX/CSV, confirmação de transferência. API exposta: `GET /subcontas/:id/eventos-ledger`, `GET /subcontas/:id/saldo-ledger`. Frontend: seção "Eventos do Ledger (Auditoria)" em DetalheSubcontaPage com indicador de consistência (saldoAtual vs soma do ledger).
-- **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo + LedgerPatrimonial) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB); Simulador de Rendimentos (`/patrimonio/simulador`) permite simular rendimento com valor, % CDI e período (usa useCdiData, SimuladorForm, CdiDataCard, ComparacaoRapidaCard)
+- **Fluxos**: CRUD Instituição → CRUD Subconta (por instituição) → Confirmar saldo (cria HistoricoSaldo + LedgerPatrimonial) → Visualizar resumo/evolução; Rendimento estimado usa TaxaCDI (BCB); Simulador de Rendimentos (`/patrimonio/simulador`) permite simular rendimento com valor, % CDI e período (usa useCdiData, SimuladorForm, CdiDataCard, ComparacaoRapidaCard); netWorthService.patrimonioEmData usa Ledger como fonte de verdade para evolução patrimonial em data específica
 - **Dependências**: Usuario; Transacao (vinculação opcional via `subconta`); TaxaCDI (coleção global, não por usuário)
 
 ### Módulo de Importação OFX
@@ -136,9 +142,10 @@
 - **Dependências**: Usuario, Transacao (campo contaConjunta opcional)
 
 ### Módulo de Insights
-- **Responsabilidade**: Placeholder para funcionalidade futura (análises, tendências).
-- **Estado**: Em desenvolvimento (página vazia com mensagem "Esta funcionalidade está em desenvolvimento").
-- **Dependências**: Nenhuma (ainda)
+- **Responsabilidade**: Insights por tag (total consolidado e quantidade de pagamentos) para tags marcadas com `mostrarNoDashboard`.
+- **Entidades**: Tag (campo `mostrarNoDashboard`), Transacao
+- **Fluxos**: tagInsightsService.calcularTagInsights → GET /api/dashboard/tag-insights; Home exibe cards por tag na seção "Insights"; página dedicada `/insights` é placeholder (em desenvolvimento)
+- **Dependências**: Usuario, Tag, Transacao
 
 ### Módulo de Email
 - **Responsabilidade**: Envio de emails (teste, verificação, redefinição de senha).
@@ -157,7 +164,7 @@
 | **Transacao** | tipo (gasto/recebivel), descricao, valor, data, observacao, pagamentos[], status (ativo/estornado), usuario, deduplicationKey, campos de parcelamento, settlementAsSource, settlementApplied, settlementLeftoverFrom, subconta (opcional, ref Subconta), contaConjunta (ativo, vinculoId, pagoPor, valorTotal, parteUsuario, parteOutro, acertadoEm) |
 | **Pagamento** | pessoa, valor, tags (objeto { categoriaId: [tagIds] }) |
 | **Categoria** | codigo, nome, descricao, cor, icone, ativo, usuario |
-| **Tag** | codigo, nome, descricao, categoria (string), cor, icone, ativo, usuario |
+| **Tag** | codigo, nome, descricao, categoria (string), cor, icone, ativo, mostrarNoDashboard, usuario |
 | **Importacao** | descricao, status, nomeArquivo, caminhoArquivo, totalProcessado/Sucesso/Erro/Ignoradas, tagsPadrao, tipoImportacao (normal/complementar), usuario |
 | **TransacaoImportada** | importacao, descricao, valor, data, categoria, tipo, status, pagamentos, dadosOriginais, deduplicationKey, transacaoCriada, campos de parcelamento, usuario |
 | **Settlement** | usuario, receivingTransactionId, appliedTransactions[] (transactionId, amountApplied), tagId, removeTagId, removedTagLog, totalApplied, leftoverAmount, leftoverTransactionId |
@@ -376,6 +383,7 @@
 - Processamento de importação assíncrono sem fila: falha silenciosa se processo morrer
 - CORS `origin: '*'` em produção (configuração atual)
 - Backup depende de `mongodump` no PATH (fallback para lógico)
+- **Multi-tenant**: Vulnerabilidades de isolamento (ver RELATORIO_AUDITORIA_MULTI_TENANT.md): pre-save Categoria/Tag sem filtro `usuario`; Transacao.updateOne no estorno de importação sem `usuario`; HistoricoSaldo.find em obterHistorico sem `usuario`; sugerirTransferencias, settlementService e vinculoService com queries sem `usuario`; índice `codigo` unique global em Categoria/Tag (deveria ser composto com usuario)
 
 ### Gargalos conhecidos
 - `fetchFilteredTransactions`: limite 50.000 linhas (MAX_EXPORT)
@@ -413,6 +421,7 @@
 - Export PDF de relatórios (frontend; backend retorna JSON)
 - Modelos de relatório (CRUD existe; integração com report engine)
 - PWA (apenas manifest; sem Service Worker)
+- **Insights**: tagInsightsService + cards no Home implementados; página dedicada `/insights` é placeholder
 
 ### Planejado mas não implementado
 - **Não informado** explicitamente no código
@@ -440,6 +449,7 @@
 - Remover código legacy `importacaoApi` em api.js (não utilizado; importacaoService é o correto)
 - Implementar geração de PDF no backend
 - Remover logs de debug em produção
+- **Multi-tenant**: Corrigir vulnerabilidades de isolamento (pre-save Categoria/Tag, updates sem usuario, índices compostos); implementar testes de isolamento
 
 ### Grau de maturidade
 - **Médio-alto**: funcionalidades core estáveis; módulos avançados (importação, settlement, relatórios) operacionais com débitos técnicos pontuais.
@@ -452,4 +462,4 @@
 
 ---
 
-*Documento gerado com base na análise do código-fonte. Última atualização: março/2026 (Ledger Patrimonial: evento por TransacaoOFX na importação OFX; frontend eventos-ledger; migração 003).*
+*Documento gerado com base na análise do código-fonte. Última atualização: março/2026 (Insights: tagInsightsService + cards no Home; netWorthService; vulnerabilidades multi-tenant; migrações 001–003).*

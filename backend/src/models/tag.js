@@ -5,7 +5,6 @@ const TagSchema = new mongoose.Schema({
   codigo: { 
     type: String, 
     required: true,
-    unique: true,
     default: function() {
       return this.categoria + '_TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
     }
@@ -30,19 +29,20 @@ const TagSchema = new mongoose.Schema({
 // Adicionar o plugin de paginação
 TagSchema.plugin(mongoosePaginate);
 
-// Cria um índice composto único para { nome, usuario }
+// Índices multi-tenant: unique por (usuario, campo)
 TagSchema.index({ nome: 1, usuario: 1 }, { unique: true });
+TagSchema.index({ usuario: 1, codigo: 1 }, { unique: true });
 
 // Adiciona virtual para que o JSON inclua o campo "id" (baseado em _id)
 TagSchema.set('toJSON', { virtuals: true });
 
-// Middleware pre-save para garantir que o código seja único
+// Middleware pre-save: código único por usuário (multi-tenant)
 TagSchema.pre('save', async function(next) {
-  if (this.isNew || this.isModified('categoria')) {
+  if ((this.isNew || this.isModified('categoria')) && this.usuario) {
     this.codigo = this.categoria + '_TAG_' + Math.random().toString(36).substr(2, 9).toUpperCase();
     let codigoUnico = false;
     while (!codigoUnico) {
-      const existente = await this.constructor.findOne({ codigo: this.codigo });
+      const existente = await this.constructor.findOne({ codigo: this.codigo, usuario: this.usuario });
       if (!existente) {
         codigoUnico = true;
       } else {

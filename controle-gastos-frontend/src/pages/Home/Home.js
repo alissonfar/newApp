@@ -1,5 +1,5 @@
 // src/pages/Home/Home.js
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from 'react-calendar';
 import { FaPlus, FaCopy, FaArrowDown, FaArrowUp, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote, FaExclamationTriangle, FaUserTie, FaSpinner, FaCalendarDay, FaCalendarWeek, FaCalendarAlt } from 'react-icons/fa';
@@ -58,6 +58,7 @@ const Home = () => {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [buscaTransacao, setBuscaTransacao] = useState('');
   const [transacaoDuplicar, setTransacaoDuplicar] = useState(null);
+  const insightValueRef = useRef(null);
 
   const proprietario = usuario?.preferencias?.proprietario || '';
   const usuarioCarregado = !carregandoUsuario;
@@ -307,8 +308,9 @@ const Home = () => {
         )}
       </div>
 
-      {!carregandoUsuario && !semProprietario && (
+      {!carregandoUsuario && (
         <div className="dashboard-grid grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {!semProprietario && (
           <div className="dashboard-column lg:col-span-2 flex flex-col gap-6">
             <section className="dashboard-section atalhos bg-white p-4 rounded-lg shadow">
               <h2 className="text-lg font-semibold text-gray-700 mb-2">Atalhos</h2>
@@ -481,8 +483,9 @@ const Home = () => {
               </CardContent>
             </Card>
           </div>
+          )}
 
-          <div className="dashboard-column lg:col-span-1 flex flex-col gap-6">
+          <div className={`dashboard-column flex flex-col gap-6 ${!semProprietario ? 'lg:col-span-1' : 'lg:col-span-full'}`}>
             <section className="dashboard-section insights bg-white p-4 rounded-lg shadow">
               <h2 className="text-lg font-semibold text-gray-700 mb-3">Insights</h2>
               {carregandoTagInsights ? (
@@ -494,26 +497,36 @@ const Home = () => {
                 <EmptyState message="Nenhuma tag marcada para o dashboard. Edite uma tag e ative 'Mostrar no Dashboard'." />
               ) : (
                 <div className="insights-cards-grid">
-                  {tagInsights.map((item) => (
-                    <div
-                      key={item.tagId}
-                      className="insight-card"
-                      style={{ '--insight-accent': item.cor || '#6366f1' }}
-                    >
-                      <div className="insight-card__bar" />
-                      <div className="insight-card__content">
-                        <div className="insight-card__icon">
-                          <IconRenderer nome={item.icone || 'tag'} size={20} cor={item.cor || '#6366f1'} />
+                  {tagInsights.map((item, idx) => {
+                    const total = Number(item.total) ?? 0;
+                    const qtd = Number(item.quantidadePagamentos) ?? 0;
+                    const isFirst = idx === 0;
+                    return (
+                      <div
+                        key={item.tagId}
+                        className="insight-card"
+                        style={{ '--insight-accent': item.cor || '#6366f1' }}
+                      >
+                        <div className="insight-card__bar" />
+                        <div className="insight-card__content">
+                          <div className="insight-card__icon">
+                            <IconRenderer nome={item.icone || 'tag'} size={20} cor={item.cor || '#6366f1'} />
+                          </div>
+                          <h3 className="insight-card__title">{item.nome}</h3>
+                          <p
+                            ref={isFirst ? insightValueRef : undefined}
+                            className="insight-card__value"
+                          >
+                            {formatarMoeda(total)}
+                          </p>
+                          <div className="insight-card__divider" />
+                          <p className="insight-card__detail">
+                            <span className="insight-card__label">{qtd} pagamento{qtd !== 1 ? 's' : ''}</span>
+                          </p>
                         </div>
-                        <h3 className="insight-card__title">{item.nome}</h3>
-                        <p className="insight-card__value">{formatarMoeda(item.total)}</p>
-                        <div className="insight-card__divider" />
-                        <p className="insight-card__detail">
-                          <span className="insight-card__label">{item.quantidadePagamentos} pagamento{item.quantidadePagamentos !== 1 ? 's' : ''}</span>
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
