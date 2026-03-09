@@ -162,6 +162,9 @@ const TIPO_HISTORICO_TO_TIPO_EVENTO = {
 
 exports.confirmarSaldo = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ erro: 'ID da subconta inválido.' });
+    }
     const subconta = await Subconta.findOne({ _id: req.params.id, usuario: req.userId });
     if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
     const { saldo, observacao, origem, tipo } = req.body;
@@ -214,6 +217,8 @@ exports.confirmarSaldo = async (req, res) => {
           valor: delta,
           tipoEvento,
           origemSistema: 'confirmacao_manual',
+          referenciaTipo: 'confirmacao_manual',
+          referenciaId: historico._id,
           descricao: observacao || `Confirmação de saldo: ${tipoValido}`,
           dataEvento: new Date()
         }, session);
@@ -234,7 +239,14 @@ exports.confirmarSaldo = async (req, res) => {
     const doc = await Subconta.findById(subconta._id).populate('instituicao');
     res.json(doc);
   } catch (error) {
-    console.error('Erro ao confirmar saldo:', error);
+    console.error('Erro ao confirmar saldo:', error.name, error.message, process.env.NODE_ENV === 'development' ? error.stack : '');
+    if (error.name === 'ValidationError') {
+      const msg = error.message || 'Dados inválidos.';
+      return res.status(400).json({ erro: msg });
+    }
+    if (error.code === 11000) {
+      return res.status(409).json({ erro: 'Registro duplicado. Tente novamente.' });
+    }
     res.status(500).json({ erro: 'Erro ao confirmar saldo.' });
   }
 };
