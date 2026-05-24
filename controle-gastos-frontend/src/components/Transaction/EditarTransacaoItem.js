@@ -1,264 +1,146 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Select from 'react-select';
+import React, { useState, useEffect, useCallback } from 'react';
 import { obterCategorias, obterTags } from '../../api';
 import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils';
 import { toast } from 'react-toastify';
+import TagSelector from './TagSelector';
+import DateFieldWithShortcuts from './DateFieldWithShortcuts';
 import './NovaTransacaoForm.css';
 import './EditarTransacaoItem.css';
 
-const EditarTransacaoItem = ({ 
-  transacao, 
-  onSave, 
-  onClose, 
-  index 
-}) => {
-  // Estados dos dados gerais
+const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
   const [tipo, setTipo] = useState(transacao ? transacao.tipo : 'gasto');
   const [descricao, setDescricao] = useState(transacao ? transacao.descricao : '');
   const [data, setData] = useState(transacao ? (transacao.data.includes('T') ? transacao.data.split('T')[0] : transacao.data) : '');
   const [valorTotal, setValorTotal] = useState(transacao ? String(transacao.valor) : '');
   const [observacao, setObservacao] = useState(transacao ? transacao.observacao : '');
-  
-  // Pagamentos: mapeamento das tags para formato compatível
+
   const [pagamentos, setPagamentos] = useState(
-    transacao && transacao.pagamentos && transacao.pagamentos.length > 0
-      ? transacao.pagamentos.map(p => ({
-          ...p,
-          paymentTags: p.tags || {}
-        }))
+    transacao?.pagamentos?.length > 0
+      ? transacao.pagamentos.map(p => ({ ...p, paymentTags: p.tags || {} }))
       : [{ pessoa: '', valor: '', paymentTags: {} }]
   );
-  
-  // Categorias e tags (usadas para os dropdowns dos pagamentos)
+
   const [categorias, setCategorias] = useState([]);
   const [allTags, setAllTags] = useState([]);
-  
-  // Refs para focar
-  const descricaoRef = useRef(null);
-  
-  // Carrega categorias e tags do backend
+
   useEffect(() => {
-    async function fetchData() {
+    (async () => {
       try {
-        const cats = await obterCategorias();
+        const [cats, tgs] = await Promise.all([obterCategorias(), obterTags()]);
         setCategorias(cats);
-        const tgs = await obterTags();
         setAllTags(tgs);
       } catch (error) {
         console.error('Erro ao carregar categorias ou tags:', error);
       }
-    }
-    fetchData();
+    })();
   }, []);
-  
-  // Agrupa as tags do backend por categoria (cat._id) para popular o React-Select
-  const tagsPorCategoria = allTags.reduce((acc, tag) => {
-    if (tag.categoria) {
-      const catId = (tag.categoria && tag.categoria.toString)
-        ? tag.categoria.toString()
-        : String(tag.categoria || '');
-      if (!acc[catId]) acc[catId] = [];
-      acc[catId].push({
-        value: tag._id,
-        label: tag.nome,
-        cor: tag.cor,
-        icone: tag.icone,
-        categoria: tag.categoria
-      });
-    }
-    return acc;
-  }, {});
-  
-  // Manipulação dos pagamentos
-  const handlePagamentoChange = (index, field, value) => {
-    const novosPagamentos = [...pagamentos];
-    novosPagamentos[index][field] = value;
-    setPagamentos(novosPagamentos);
-  };
-  
-  const addPagamento = () => {
-    setPagamentos([...pagamentos, { pessoa: '', valor: '', paymentTags: {} }]);
-  };
-  
-  const removePagamento = (index) => {
-    const novosPagamentos = pagamentos.filter((_, i) => i !== index);
-    setPagamentos(novosPagamentos);
-  };
-  
-  // Se houver apenas 1 pagamento, replica o valor total
-  const handleValorTotalChange = (e) => {
+
+  const handlePagamentoChange = useCallback((indexP, field, value) => {
+    setPagamentos(prev => {
+      const novos = [...prev];
+      novos[indexP] = { ...novos[indexP], [field]: value };
+      return novos;
+    });
+  }, []);
+
+  const addPagamento = useCallback(() => {
+    setPagamentos(prev => [...prev, { pessoa: '', valor: '', paymentTags: {} }]);
+  }, []);
+
+  const removePagamento = useCallback((idx) => {
+    setPagamentos(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const handleValorTotalChange = useCallback((e) => {
     const raw = e.target.value;
     setValorTotal(raw);
-    if (pagamentos.length === 1) {
-      handlePagamentoChange(0, 'valor', raw);
-    }
-  };
-  
-  // Validação: a soma dos pagamentos deve ser igual ao valor total
-  const validatePagamentos = () => {
+    setPagamentos(prev => {
+      if (prev.length !== 1) return prev;
+      const novos = [...prev];
+      novos[0] = { ...novos[0], valor: raw };
+      return novos;
+    });
+  }, []);
+
+  const validatePagamentos = useCallback(() => {
     const soma = pagamentos.reduce((acc, pag) => {
       const v = parseFloat(pag.valor || 0);
       return acc + (isNaN(v) ? 0 : v);
     }, 0);
     return parseFloat(valorTotal || 0) === soma;
-  };
-  
-  const setHoje = () => {
-    setData(getTodayBR());
-  };
+  }, [pagamentos, valorTotal]);
 
-  const setOntem = () => {
-    setData(getYesterdayBR());
-  };
-
-  // Customização do Select para mostrar ícones e cores
-  const customStyles = {
-    option: (provided, state) => ({
-      ...provided,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      color: state.data.cor || provided.color,
-      backgroundColor: state.isFocused ? '#f0f0f0' : 'white',
-      '&:hover': {
-        backgroundColor: '#f0f0f0'
-      }
-    }),
-    multiValue: (provided, state) => ({
-      ...provided,
-      backgroundColor: state.data.cor + '20', // Adiciona transparência à cor
-      borderRadius: '12px',
-      padding: '2px'
-    }),
-    multiValueLabel: (provided, state) => ({
-      ...provided,
-      color: state.data.cor,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '4px'
-    })
-  };
-
-  const formatOptionLabel = ({ value, label, cor, icone }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <i className={`fas fa-${icone || 'tag'}`} style={{ color: cor }}></i>
-      <span>{label}</span>
-    </div>
-  );
-
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    
-    if (!descricao.trim() || 
-        !valorTotal || 
-        isNaN(parseFloat(valorTotal)) || 
-        parseFloat(valorTotal) <= 0 ||
-        !data) {
-      toast.error('Por favor, preencha todos os campos obrigatórios.');
+
+    if (!descricao.trim() || !valorTotal || isNaN(parseFloat(valorTotal)) || parseFloat(valorTotal) <= 0 || !data) {
+      toast.error('Por favor, preencha todos os campos obrigatorios.');
       return false;
     }
-    
-    const pagamentosValidos = pagamentos.every(p => 
-      p.pessoa.trim() && 
-      !isNaN(parseFloat(p.valor)) && 
-      parseFloat(p.valor) > 0
+
+    const pagamentosValidos = pagamentos.every(p =>
+      p.pessoa.trim() && !isNaN(parseFloat(p.valor)) && parseFloat(p.valor) > 0
     );
-    
+
     if (!pagamentosValidos || !validatePagamentos()) {
       toast.error('Por favor, verifique os valores dos pagamentos.');
       return false;
     }
-    
+
     const transacaoAtualizada = {
       tipo,
       descricao,
       data: data.includes('T') ? data : toISOStringBR(data),
       valor: Number(parseFloat(valorTotal).toFixed(2)),
       observacao,
-      pagamentos: pagamentos.map((pag) => ({
-        pessoa: pag.pessoa,
-        valor: Number(parseFloat(pag.valor).toFixed(2)),
-        tags: pag.paymentTags || {}
+      pagamentos: pagamentos.map(p => ({
+        pessoa: p.pessoa,
+        valor: Number(parseFloat(p.valor).toFixed(2)),
+        tags: p.paymentTags || {}
       })),
       identificador: transacao.identificador || `import-${Date.now()}-${index}`,
       dataImportacao: transacao.dataImportacao || new Date().toISOString(),
       usuario: transacao.usuario
     };
-    
-    try {
-      onSave(index, transacaoAtualizada);
-      return true;
-    } catch (error) {
-      console.error('Erro ao salvar transação:', error);
-      toast.error('Erro ao salvar transação.');
-      return false;
-    }
-  };
-  
+
+    onSave(index, transacaoAtualizada);
+    return true;
+  }, [tipo, descricao, data, valorTotal, observacao, pagamentos, transacao, index, onSave, validatePagamentos]);
+
+  const setHoje = useCallback(() => setData(getTodayBR()), []);
+  const setOntem = useCallback(() => setData(getYesterdayBR()), []);
+
   return (
     <div className="editar-transacao-item">
       <div className="transacao-numero">
-        <span className="transacao-badge">Transação #{index + 1}</span>
+        <span className="transacao-badge">Transacao #{index + 1}</span>
       </div>
-      
+
       <form className="nova-transacao-form-container" onSubmit={handleSubmit}>
         <div className="form-grid">
           <div className="left-column">
             <div className="form-section">
               <label>Tipo:</label>
-              <select
-                value={tipo}
-                onChange={e => setTipo(e.target.value)}
-                required
-              >
+              <select value={tipo} onChange={e => setTipo(e.target.value)} required>
                 <option value="gasto">Gasto</option>
-                <option value="recebivel">Recebível</option>
+                <option value="recebivel">Recebivel</option>
               </select>
             </div>
             <div className="form-section">
-              <label>Descrição:</label>
-              <input
-                type="text"
-                value={descricao}
-                onChange={e => setDescricao(e.target.value)}
-                required
-                ref={descricaoRef}
-              />
+              <label>Descricao:</label>
+              <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required />
             </div>
-            <div className="form-section">
-              <label>Data:</label>
-              <input
-                type="date"
-                value={data}
-                onChange={e => setData(e.target.value)}
-                required
-              />
-              <div className="date-shortcuts">
-                <button type="button" onClick={setHoje}>Hoje</button>
-                <button type="button" onClick={setOntem}>Ontem</button>
-              </div>
-            </div>
+            <DateFieldWithShortcuts value={data} onChange={setData} onToday={setHoje} onYesterday={setOntem} />
             <div className="form-section">
               <label>Valor Total:</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={valorTotal}
-                onChange={handleValorTotalChange}
-                required
-              />
+              <input type="number" step="0.01" min="0" value={valorTotal} onChange={handleValorTotalChange} required />
             </div>
             <div className="form-section">
-              <label>Observação:</label>
-              <textarea
-                value={observacao}
-                onChange={e => setObservacao(e.target.value)}
-                rows={3}
-              />
+              <label>Observacao:</label>
+              <textarea value={observacao} onChange={e => setObservacao(e.target.value)} rows={3} />
             </div>
           </div>
-          
+
           <div className="right-column">
             <div className="form-section payment-section">
               <h3>Pagamentos</h3>
@@ -267,100 +149,32 @@ const EditarTransacaoItem = ({
                   <div className="payment-header">
                     <h4>Pagamento {idx + 1}</h4>
                     {pagamentos.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePagamento(idx)}
-                        className="remove-payment"
-                      >
-                        Remover
-                      </button>
+                      <button type="button" onClick={() => removePagamento(idx)} className="remove-payment">Remover</button>
                     )}
                   </div>
-                  
                   <div className="payment-fields">
                     <div className="form-section">
                       <label>Pessoa:</label>
-                      <input
-                        type="text"
-                        value={pag.pessoa}
-                        onChange={e => handlePagamentoChange(idx, 'pessoa', e.target.value)}
-                        required
-                      />
+                      <input type="text" value={pag.pessoa} onChange={e => handlePagamentoChange(idx, 'pessoa', e.target.value)} required />
                     </div>
                     <div className="form-section">
                       <label>Valor:</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={pag.valor}
-                        onChange={e => handlePagamentoChange(idx, 'valor', e.target.value)}
-                        required
-                      />
+                      <input type="number" step="0.01" min="0" value={pag.valor} onChange={e => handlePagamentoChange(idx, 'valor', e.target.value)} required />
                     </div>
                   </div>
-                  
-                  {/* Seletor de tags */}
-                  <div className="form-section payment-tags">
-                    <h4>Tags para Pagamento</h4>
-                    {categorias.map((cat) => {
-                      const catId = (cat._id && cat._id.toString) ? cat._id.toString() : String(cat._id || '');
-                      const options = (tagsPorCategoria[catId] || []);
-                      // Suporta formato legado (cat.nome + tag.codigo) e canônico (cat._id + tag._id)
-                      const rawValues = (pag.paymentTags && (pag.paymentTags[catId] || pag.paymentTags[cat.nome])) || [];
-                      const selectedValues = rawValues
-                        .map(v => {
-                          const tag = allTags.find(t => t._id === v || t.codigo === v || t.nome === v);
-                          return tag ? {
-                            value: tag._id,
-                            label: tag.nome,
-                            cor: tag.cor,
-                            icone: tag.icone,
-                            categoria: tag.categoria
-                          } : null;
-                        })
-                        .filter(Boolean);
-
-                      return (
-                        <div key={cat.codigo} className="tag-category-group">
-                          <label>
-                            <i 
-                              className={`fas fa-${cat.icone || 'folder'}`} 
-                              style={{ color: cat.cor }}
-                            ></i>
-                            {cat.nome}:
-                          </label>
-                          <Select
-                            isMulti
-                            options={options}
-                            value={selectedValues}
-                            onChange={(selected) => {
-                              const newPaymentTags = { ...pag.paymentTags };
-                              newPaymentTags[catId] = selected.map(s => s.value);
-                              handlePagamentoChange(idx, 'paymentTags', newPaymentTags);
-                            }}
-                            styles={customStyles}
-                            formatOptionLabel={formatOptionLabel}
-                            placeholder="Selecione as tags..."
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <TagSelector
+                    categorias={categorias}
+                    allTags={allTags}
+                    paymentTags={pag.paymentTags}
+                    onTagsChange={(newTags) => handlePagamentoChange(idx, 'paymentTags', newTags)}
+                  />
                 </div>
               ))}
-              
-              <button
-                type="button"
-                onClick={addPagamento}
-                className="add-payment"
-              >
-                Adicionar Pagamento
-              </button>
+              <button type="button" onClick={addPagamento} className="add-payment">Adicionar Pagamento</button>
             </div>
           </div>
         </div>
-        
+
         <div className="form-actions">
           <button type="submit">Salvar</button>
           <button type="button" onClick={onClose}>Cancelar</button>
@@ -370,4 +184,4 @@ const EditarTransacaoItem = ({
   );
 };
 
-export default EditarTransacaoItem; 
+export default EditarTransacaoItem;

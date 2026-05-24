@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FaSpinner, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
+import ModalTransacao from '../../components/Modal/ModalTransacao';
 import importacaoService from '../../services/importacaoService';
 import patrimonioApi from '../../services/patrimonioApi';
 import SubcontaSelect from '../../components/shared/SubcontaSelect';
@@ -846,20 +847,21 @@ const DetalhesImportacaoPage = () => {
             </div>
 
             {showFormTransacao && (
-                <div className="modal">
-                    <div className="modal-content">
-                        <NovaTransacaoForm
-                            transacao={transacaoEmEdicao}
-                            onSuccess={handleSaveTransacao}
-                            onClose={() => {
-                                setShowFormTransacao(false);
-                                setTransacaoEmEdicao(null);
-                            }}
-                            proprietarioPadrao={proprietario}
-                            mostrarParcelamentoEmEdicao={true}
-                        />
-                    </div>
-                </div>
+                <ModalTransacao onClose={() => {
+                    setShowFormTransacao(false);
+                    setTransacaoEmEdicao(null);
+                }}>
+                    <NovaTransacaoForm
+                        transacao={transacaoEmEdicao}
+                        onSuccess={handleSaveTransacao}
+                        onClose={() => {
+                            setShowFormTransacao(false);
+                            setTransacaoEmEdicao(null);
+                        }}
+                        proprietarioPadrao={proprietario}
+                        mostrarParcelamentoEmEdicao={true}
+                    />
+                </ModalTransacao>
             )}
 
             {modalAtualizarSaldo && (

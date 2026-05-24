@@ -68,6 +68,30 @@ For production: `$env:NODE_ENV="production"; node backend/scripts/migrations/NNN
 - **_id → codigo/id mapping**: The fetch-based API layer maps mongo `_id` to `codigo` (categories, tags) or `id` (transactions) for UI compatibility.
 - **Context providers** hierarchy: `AuthProvider > DataProvider > BreadcrumbProvider > ImportacaoProvider`.
 
+### Transaction form architecture (refactored)
+
+```
+hooks/                        Domain logic (no UI)
+  useTransacaoForm.js         Core form state: tipo, descricao, data, valor, etc.
+  usePagamentos.js            Payment array CRUD, sum validation, splitEqually
+  useContaConjunta.js         Conta conjunta state, fluxo A/B, validation
+  useParcelamento.js          Installment preview, debounced backend fetch
+
+components/Transaction/
+  NovaTransacaoForm.js        ~230 lines — orchestrates hooks, renders tabs, handles submit
+  EditarTransacaoItem.js      ~170 lines — inline editor for bulk import (uses TagSelector)
+  TransacaoTabs.js            Tab bar + sticky footer (Salvar/Salvar+Continuar)
+  TabPrincipal.js             Tipo, Descricao, Data, Valor, Observacao
+  TabPagamentos.js            Payment list with add/remove/duplicate/rateio + TagSelector
+  TabAvancado.js              Parcelamento, Conta Conjunta, Subconta
+  TagSelector.js              Reusable react-select for payment tags (React.memo)
+  DateFieldWithShortcuts.js   Date input + Hoje/Ontem buttons
+  ValorMonetarioInput.js      Numeric input with validation warning indicator
+  ShortcutsHelp.js            Keyboard shortcuts overlay
+```
+
+The form is used in 5 contexts (`Home`, `Transacoes`, `Relatorio`, `DetalhesImportacaoPage`, `ImportarTransacoesForm`). All props and contracts are preserved. When editing import transactions, `NovaTransacaoForm` uses a dynamic `import()` of `importacaoService` to avoid circular dependencies.
+
 ## Backend conventions
 
 - CORS allows all origins (`origin: '*'`).

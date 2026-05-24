@@ -1,0 +1,120 @@
+.transacao-tabs-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.transacao-tabs-bar {
+  display: flex;
+  border-bottom: 2px solid rgba(44, 62, 80, 0.12);
+  margin-bottom: 10px;
+  gap: 2px;
+}
+
+.transacao-tab {
+  position: relative;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--cor-texto);
+  cursor: pointer;
+  font-family: var(--fonte-titulos);
+  font-weight: 500;
+  font-size: 0.85rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.transacao-tab:hover {
+  opacity: 1;
+  background: rgba(44, 62, 80, 0.04);
+}
+
+.transacao-tab.active {
+  opacity: 1;
+  color: var(--cor-primaria);
+  border-bottom-color: var(--cor-primaria);
+}
+
+.transacao-tab.has-error {
+  color: #d32f2f;
+}
+
+.tab-error-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d32f2f;
+}
+
+.transacao-tab-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.tab-panel {
+  animation: tab-fade-in 0.15s ease;
+}
+
+@keyframes tab-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.transacao-tabs-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(44, 62, 80, 0.1);
+  margin-top: 10px;
+  position: sticky;
+  bottom: 0;
+  background: var(--cor-fundo-card);
+  z-index: 10;
+}
+
+.transacao-tabs-footer .submit-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--borda-radius);
+  cursor: pointer;
+  font-weight: 600;
+  font-family: var(--fonte-titulos);
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  background: var(--cor-primaria);
+  color: var(--cor-branca);
+}
+
+.transacao-tabs-footer .submit-btn:hover {
+  background: var(--cor-primaria-hover, #1a5276);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.transacao-tabs-footer .submit-btn:last-child {
+  background: var(--cor-secundaria, #2ecc71);
+}
+
+.transacao-tabs-footer .submit-btn:last-child:hover {
+  background: #27ae60;
+}
+
+@media (max-width: 600px) {
+  .transacao-tab {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .transacao-tabs-footer {
+    flex-direction: column;
+  }
+}

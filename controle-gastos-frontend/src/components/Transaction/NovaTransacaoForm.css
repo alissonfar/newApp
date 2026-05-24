@@ -1,6 +1,6 @@
 /* src/components/Transaction/NovaTransacaoForm.css */
 .nova-transacao-form-container {
-  padding: 20px;
+  padding: 6px 0;
   max-width: 1200px;
   margin: 0 auto;
   font-family: var(--fonte-corpo);
@@ -9,95 +9,51 @@
 .nova-transacao-form-container h2 {
   font-family: var(--fonte-titulos);
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 12px;
   color: var(--cor-primaria);
-  font-size: 1.8rem;
+  font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
+/* Form grid base */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 25px;
-  margin-bottom: 30px;
+  gap: 14px;
+  margin-bottom: 12px;
 }
 
+/* Compact form section — replaces old .form-section */
 .form-section {
   background: var(--cor-fundo);
-  padding: 25px;
+  padding: 8px 12px;
   border-radius: var(--borda-radius);
-  box-shadow: var(--sombra-card);
-  transition: var(--transicao-padrao);
   border: 1px solid rgba(224, 231, 255, 0.4);
-}
-
-.form-section:hover {
-  box-shadow: var(--sombra-hover);
-  border-color: var(--cor-primaria-hover);
-}
-
-.pagamentos-section {
-  grid-column: 1 / -1;
-  margin-top: 20px;
-}
-
-.parcelamento-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.parcelamento-section label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.parcelamento-section input[type="checkbox"] {
-  width: auto;
-  margin-bottom: 0;
-}
-
-.parcelamento-campos {
-  display: flex;
-  gap: 20px;
-  margin-top: 8px;
-}
-
-.parcelamento-campos .form-section {
-  flex: 1;
-}
-
-.parcela-valor-info {
-  font-size: 0.9rem;
-  color: var(--cor-texto);
-  opacity: 0.9;
 }
 
 .form-section label {
   display: block;
   font-family: var(--fonte-titulos);
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-weight: 600;
+  margin-bottom: 3px;
   color: var(--cor-texto);
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
 }
 
 .form-section input,
 .form-section select,
 .form-section textarea {
   width: 100%;
-  padding: 12px;
+  padding: 6px 10px;
   border: 1px solid rgba(44, 62, 80, 0.2);
   border-radius: var(--borda-radius);
   background-color: var(--cor-fundo-card);
   color: var(--cor-texto);
-  font-size: 0.95rem;
-  transition: var(--transicao-padrao);
-  margin-bottom: 15px;
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 4px;
   font-family: var(--fonte-corpo);
 }
 
@@ -109,293 +65,343 @@
   outline: none;
 }
 
-.pagamento-item {
-  background: var(--cor-fundo-card);
-  border: 1px solid rgba(44, 62, 80, 0.15);
-  padding: 20px;
-  border-radius: var(--borda-radius);
-  margin-bottom: 20px;
-  box-shadow: var(--sombra-card);
+.form-section textarea {
+  resize: vertical;
+  min-height: 56px;
+  font-family: var(--fonte-corpo);
 }
 
-.pagamento-item:hover {
-  border-color: var(--cor-primaria);
-  box-shadow: var(--sombra-hover);
-}
-
-.payment-tags {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(44, 62, 80, 0.1);
-}
-
-.payment-tags h4 {
+.form-section h3 {
   font-family: var(--fonte-titulos);
   font-size: 1rem;
+  color: var(--cor-primaria);
   margin-bottom: 10px;
-  color: var(--cor-texto);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
-.form-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.submit-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.date-shortcuts button {
-  margin: 0 5px;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .pagamentos-section {
-    grid-column: 1;
-  }
-  
-  .form-buttons {
-    flex-direction: column;
-  }
-  
-  .submit-btn {
-    width: 100%;
-  }
-}
-
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .form-group:last-child {
   margin-bottom: 0;
 }
 
-.form-section textarea {
-  resize: vertical;
-  min-height: 100px;
-  font-family: var(--fonte-corpo);
-}
-
-.form-section h3 {
-  font-family: var(--fonte-titulos);
-  font-size: 1.2rem;
-  color: var(--cor-primaria);
-  margin-bottom: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-/* Estilização do React-Select */
-.mySelect__control {
-  border: 1px solid rgba(44, 62, 80, 0.2) !important;
-  border-radius: var(--borda-radius) !important;
-  background-color: var(--cor-fundo-card) !important;
-  transition: var(--transicao-padrao) !important;
-}
-
-.mySelect__control:hover {
-  border-color: var(--cor-primaria) !important;
-}
-
-.mySelect__control--is-focused {
-  border-color: var(--cor-primaria) !important;
-  box-shadow: 0 0 0 2px rgba(var(--cor-primaria-rgb), 0.1) !important;
-}
-
-.mySelect__menu {
-  background-color: var(--cor-fundo-card) !important;
-  border: 1px solid rgba(44, 62, 80, 0.1) !important;
-  border-radius: var(--borda-radius) !important;
-  box-shadow: var(--sombra-card) !important;
-}
-
-.mySelect__option {
-  font-family: var(--fonte-corpo) !important;
-  color: var(--cor-texto) !important;
-  background-color: transparent !important;
-  transition: var(--transicao-padrao) !important;
-}
-
-.mySelect__option:hover {
-  background-color: var(--cor-fundo-hover) !important;
-}
-
-.mySelect__option--is-selected {
-  background-color: var(--cor-primaria) !important;
-  color: var(--cor-branca) !important;
-}
-
-.mySelect__value-container {
-  font-family: var(--fonte-corpo) !important;
-}
-
-/* Modal de Atalhos */
-.shortcuts-help-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.shortcuts-help-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  max-width: 500px;
-  width: 90%;
-}
-
-.shortcuts-list {
-  margin: 20px 0;
-}
-
-.shortcut-item {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 4px;
-}
-
-.shortcut-item kbd {
-  background-color: #e0e0e0;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  padding: 2px 6px;
-  margin: 0 4px;
-  font-family: monospace;
-  font-size: 14px;
-}
-
-.shortcut-item span {
-  margin-left: 12px;
-  color: #666;
-}
-
-.close-shortcuts-btn {
-  width: 100%;
-  padding: 8px;
-  background: #1976d2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.close-shortcuts-btn:hover {
-  background: #1565c0;
-}
-
-/* Ícone de ajuda */
-.help-icon {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-}
-
-/* Tooltips personalizados */
-.tooltip {
-  font-size: 12px;
-}
-
-/* Preview das parcelas */
-.preview-parcelas-section {
+/* Pagamentos section */
+.pagamentos-section {
   grid-column: 1 / -1;
-  margin-top: 16px;
-  padding: 20px;
-  background: var(--cor-fundo);
-  border-radius: var(--borda-radius);
-  box-shadow: var(--sombra-card);
-  border: 1px solid rgba(224, 231, 255, 0.4);
+  margin-top: 0;
+  padding: 10px 14px;
 }
 
-.preview-parcelas-section h4 {
+.pagamentos-section h3 {
+  margin-bottom: 8px;
+}
+
+/* Pagamento item — compact */
+.pagamento-item {
+  background: var(--cor-fundo-card);
+  border: 1px solid rgba(44, 62, 80, 0.12);
+  padding: 10px 12px;
+  border-radius: var(--borda-radius);
+  margin-bottom: 8px;
+}
+
+.pagamento-item:last-child {
+  margin-bottom: 8px;
+}
+
+/* Pessoa + valor inline */
+.pagamento-campos-principais {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.pagamento-campos-principais .pagamento-field-pessoa {
+  flex: 1;
+  min-width: 0;
+}
+
+.pagamento-campos-principais .pagamento-field-valor {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.pagamento-campos-principais .form-section {
+  margin-bottom: 0;
+}
+
+/* Pagamento header bar */
+.pagamento-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.pagamento-numero {
+  font-weight: 600;
   font-family: var(--fonte-titulos);
-  font-size: 1rem;
-  margin-bottom: 12px;
+  color: var(--cor-texto);
+  opacity: 0.7;
+  font-size: 0.8rem;
+}
+
+.pagamento-item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.pagamento-item-actions button {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: var(--borda-radius);
+  cursor: pointer;
+  border: 1px solid rgba(44, 62, 80, 0.15);
+  background: transparent;
+  color: var(--cor-texto);
+  transition: all 0.15s;
+}
+
+.pagamento-item-actions button:hover {
+  background: rgba(44, 62, 80, 0.06);
+  border-color: var(--cor-primaria);
+}
+
+/* Tags section — compact */
+.pagamento-tags-summary {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(44, 62, 80, 0.08);
+}
+
+.tags-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-height: 20px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-chip-category {
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.tags-expand-btn {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border: 1px dashed rgba(44, 62, 80, 0.2);
+  border-radius: var(--borda-radius);
+  background: transparent;
+  color: var(--cor-texto);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s;
+}
+
+.tags-expand-btn:hover {
+  opacity: 1;
+  border-color: var(--cor-primaria);
+  background: rgba(44, 62, 80, 0.03);
+}
+
+.tags-expanded-section {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(44, 62, 80, 0.08);
+}
+
+.tags-expanded-section .tag-category-group {
+  margin-bottom: 4px;
+}
+
+.tags-expanded-section .tag-category-group label {
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.tag-clear-btn {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border: none;
+  background: none;
+  color: #d32f2f;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.tag-clear-btn:hover {
+  opacity: 1;
+}
+
+/* Tags section (full) */
+.tags-section {
+  margin-top: 6px;
+}
+
+.tags-section h4 {
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.tag-category-group {
+  margin-bottom: 6px;
+}
+
+.tag-category-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+
+/* Payment tags (legacy) */
+.payment-tags {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(44, 62, 80, 0.1);
+}
+
+.payment-tags h4 {
+  font-family: var(--fonte-titulos);
+  font-size: 0.8rem;
+  margin-bottom: 4px;
   color: var(--cor-texto);
   font-weight: 600;
 }
 
+/* Resumo financeiro */
+.pagamentos-resumo {
+  display: flex;
+  gap: 12px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  background: rgba(44, 62, 80, 0.03);
+  border-radius: var(--borda-radius);
+  font-size: 0.78rem;
+  color: var(--cor-texto);
+  flex-wrap: wrap;
+}
+
+.pagamentos-resumo .resumo-diff {
+  color: #ff9800;
+  font-weight: 600;
+}
+
+.pagamentos-resumo .resumo-ok {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+/* Parcelamento section */
+.parcelamento-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.parcelamento-section > label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.parcelamento-section input[type="checkbox"] {
+  width: auto;
+  margin-bottom: 0;
+}
+
+.parcelamento-campos {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.parcelamento-campos .form-section {
+  flex: 1;
+}
+
+.parcela-valor-info {
+  font-size: 0.8rem;
+  color: var(--cor-texto);
+  opacity: 0.8;
+}
+
+/* Preview parcelas */
+.preview-parcelas-section {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: var(--cor-fundo);
+  border-radius: var(--borda-radius);
+  border: 1px solid rgba(224, 231, 255, 0.4);
+}
+
+.preview-parcelas-section h4 {
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
 .preview-parcelas-table-wrapper {
   overflow-x: auto;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .preview-parcelas-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .preview-parcelas-table th,
 .preview-parcelas-table td {
-  padding: 10px 12px;
+  padding: 6px 10px;
   text-align: left;
   border-bottom: 1px solid rgba(44, 62, 80, 0.1);
-}
-
-.preview-parcelas-table th {
-  font-family: var(--fonte-titulos);
-  font-weight: 600;
-  color: var(--cor-texto);
-  background: rgba(44, 62, 80, 0.04);
-}
-
-.preview-parcelas-table tbody tr:hover {
-  background: rgba(44, 62, 80, 0.03);
 }
 
 .preview-parcelas-resumo {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 24px;
-  font-size: 0.9rem;
-  color: var(--cor-texto);
+  gap: 8px 16px;
+  font-size: 0.8rem;
 }
 
 .preview-parcelas-resumo p {
   margin: 0;
 }
 
-/* Conta conjunta - seção e radio buttons */
+/* Conta conjunta */
 .conta-conjunta-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .conta-conjunta-section > label {
   display: flex !important;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   margin-bottom: 0 !important;
+  font-size: 0.85rem;
 }
 
 .conta-conjunta-section input[type="checkbox"] {
@@ -407,30 +413,302 @@
 .conta-conjunta-campos {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 8px;
-  padding-left: 4px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .conta-conjunta-campos .radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 24px;
-  margin-top: 4px;
+  gap: 12px 16px;
+  margin-top: 2px;
 }
 
 .conta-conjunta-campos .radio-group label {
   display: inline-flex !important;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   margin-bottom: 0 !important;
+  font-size: 0.8rem;
 }
 
 .conta-conjunta-campos .radio-group input[type="radio"] {
   width: auto;
   margin: 0;
   flex-shrink: 0;
+}
+
+.parte-outro-info {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--cor-texto);
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* Date shortcuts */
+.date-shortcuts {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.date-shortcuts button {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: var(--borda-radius);
+  cursor: pointer;
+  border: 1px solid rgba(44, 62, 80, 0.15);
+  background: var(--cor-fundo-card);
+  color: var(--cor-texto);
+  transition: all 0.15s;
+}
+
+.date-shortcuts button:hover {
+  border-color: var(--cor-primaria);
+  background: rgba(var(--cor-primaria-rgb), 0.05);
+}
+
+/* Botões de ação */
+.btn-rateio {
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-primaria);
+  color: var(--cor-primaria);
+  padding: 3px 10px;
+  border-radius: var(--borda-radius);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.btn-rateio:hover {
+  background: var(--cor-primaria);
+  color: var(--cor-branca);
+}
+
+.btn-adicionar-pagamento {
+  width: 100%;
+  padding: 6px;
+  border: 2px dashed rgba(44, 62, 80, 0.15);
+  border-radius: var(--borda-radius);
+  background: transparent;
+  color: var(--cor-texto);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.8rem;
+  margin-top: 6px;
+  transition: all 0.15s;
+}
+
+.btn-adicionar-pagamento:hover {
+  border-color: var(--cor-primaria);
+  background: rgba(44, 62, 80, 0.02);
+}
+
+.divide-by-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+}
+
+.divide-by-select select {
+  padding: 2px 6px;
+  font-size: 0.78rem;
+  border: 1px solid rgba(44, 62, 80, 0.2);
+  border-radius: var(--borda-radius);
+  background: var(--cor-fundo-card);
   cursor: pointer;
 }
 
+/* Buttons */
+.form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.submit-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+/* Pagamentos header */
+.pagamentos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pagamentos-header h3 {
+  margin-bottom: 0;
+}
+
+.pagamentos-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Help icon */
+.help-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+/* Shortcuts help overlay */
+.shortcuts-help-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.shortcuts-help-content {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 90%;
+}
+
+.shortcuts-list {
+  margin: 14px 0;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  padding: 6px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.shortcut-item kbd {
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin: 0 3px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.shortcut-item span {
+  margin-left: 10px;
+  color: #666;
+}
+
+.close-shortcuts-btn {
+  width: 100%;
+  padding: 6px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-shortcuts-btn:hover {
+  background: #1565c0;
+}
+
+/* React-Select compact */
+.mySelect__control {
+  border: 1px solid rgba(44, 62, 80, 0.2) !important;
+  border-radius: var(--borda-radius) !important;
+  background-color: var(--cor-fundo-card) !important;
+  min-height: 32px !important;
+}
+
+.mySelect__control:hover {
+  border-color: var(--cor-primaria) !important;
+}
+
+.mySelect__value-container {
+  padding: 2px 8px !important;
+}
+
+.mySelect__input-container {
+  margin: 0;
+  padding: 0;
+}
+
+.mySelect__multi-value {
+  margin: 1px 2px !important;
+}
+
+.mySelect__multi-value__label {
+  font-size: 0.75rem !important;
+  padding: 1px 6px !important;
+}
+
+.mySelect__multi-value__remove {
+  padding: 0 4px !important;
+}
+
+/* Loading / error */
+.loading-indicator {
+  padding: 20px;
+  text-align: center;
+  color: var(--cor-texto);
+}
+
+.error-message {
+  padding: 20px;
+  text-align: center;
+  color: #d32f2f;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pagamentos-section {
+    grid-column: 1;
+  }
+
+  .form-buttons {
+    flex-direction: column;
+  }
+
+  .submit-btn {
+    width: 100%;
+  }
+
+  .pagamento-campos-principais {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pagamento-campos-principais .pagamento-field-valor {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .pagamentos-resumo {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
