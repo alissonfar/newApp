@@ -18,10 +18,10 @@ if errorlevel 1 goto rodar
 :rodar
 echo.
 echo Iniciando Backend...
-start cmd /k "cd /d C:\Users\Alisson\Documents\NEW APP VERSION SERVER\newApp\backend && npm run dev"
+start cmd /k "cd /d C:\PROJETOS\newApp\backend && npm run dev"
 
 echo Iniciando Frontend...
-start cmd /k "cd /d C:\Users\Alisson\Documents\NEW APP VERSION SERVER\newApp\controle-gastos-frontend && npm start"
+start cmd /k "cd /d C:\PROJETOS\newApp\controle-gastos-frontend && npm start"
 
 echo.
 echo Tudo pronto! As janelas abriram separadamente.

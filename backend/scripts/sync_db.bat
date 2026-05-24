@@ -1,6 +1,6 @@
 @echo off
 SET ATLAS_URI="mongodb+srv://alissonfariascamargo:tLltGI5g4Qd4DIiO@newapp-controlefinancei.k98qx.mongodb.net/controle_gastos"
-SET LOCAL_URI="mongodb://localhost:27017"
+SET LOCAL_URI="mongodb://localhost:27017/?replicaSet=rs0"
 
 echo === 1. Iniciando Backup do Atlas (Produção) ===
 mongodump --uri=%ATLAS_URI% --out=./temp_backup

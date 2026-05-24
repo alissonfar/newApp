@@ -1,5 +1,5 @@
 // src/pages/Home/Home.js
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from 'react-calendar';
 import { FaPlus, FaCopy, FaArrowDown, FaArrowUp, FaChartLine, FaFileInvoiceDollar, FaRegStickyNote, FaExclamationTriangle, FaUserTie, FaSpinner, FaCalendarDay, FaCalendarWeek, FaCalendarAlt } from 'react-icons/fa';
@@ -58,7 +58,6 @@ const Home = () => {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [buscaTransacao, setBuscaTransacao] = useState('');
   const [transacaoDuplicar, setTransacaoDuplicar] = useState(null);
-  const insightValueRef = useRef(null);
 
   const proprietario = usuario?.preferencias?.proprietario || '';
   const usuarioCarregado = !carregandoUsuario;
@@ -497,10 +496,9 @@ const Home = () => {
                 <EmptyState message="Nenhuma tag marcada para o dashboard. Edite uma tag e ative 'Mostrar no Dashboard'." />
               ) : (
                 <div className="insights-cards-grid">
-                  {tagInsights.map((item, idx) => {
+                  {tagInsights.map((item) => {
                     const total = Number(item.total) ?? 0;
                     const qtd = Number(item.quantidadePagamentos) ?? 0;
-                    const isFirst = idx === 0;
                     return (
                       <div
                         key={item.tagId}
@@ -513,12 +511,7 @@ const Home = () => {
                             <IconRenderer nome={item.icone || 'tag'} size={20} cor={item.cor || '#6366f1'} />
                           </div>
                           <h3 className="insight-card__title">{item.nome}</h3>
-                          <p
-                            ref={isFirst ? insightValueRef : undefined}
-                            className="insight-card__value"
-                          >
-                            {formatarMoeda(total)}
-                          </p>
+                          <p className="insight-card__value">{formatarMoeda(total)}</p>
                           <div className="insight-card__divider" />
                           <p className="insight-card__detail">
                             <span className="insight-card__label">{qtd} pagamento{qtd !== 1 ? 's' : ''}</span>

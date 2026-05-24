@@ -7,7 +7,8 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "test": "jest",
-    "migrate:004": "node scripts/migrations/004-categoria-tag-indices-multi-tenant.js"
+    "migrate:004": "node scripts/migrations/004-categoria-tag-indices-multi-tenant.js",
+    "migrate:004:prod": "node scripts/migrations/004-categoria-tag-indices-multi-tenant.js --production"
   },
   "keywords": [],
   "author": "",

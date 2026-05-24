@@ -11,19 +11,39 @@
  *     ou: node scripts/migrations/004-categoria-tag-indices-multi-tenant.js
  *
  *   Produção (usa .env.production com DB_URI):
- *     NODE_ENV=production node scripts/migrations/004-categoria-tag-indices-multi-tenant.js
+ *     npm run migrate:004:prod
+ *     ou: node scripts/migrations/004-categoria-tag-indices-multi-tenant.js --production
+ *     ou (Linux/Mac): NODE_ENV=production node scripts/migrations/004-categoria-tag-indices-multi-tenant.js
+ *     ou (Windows PowerShell): $env:NODE_ENV="production"; node scripts/migrations/004-categoria-tag-indices-multi-tenant.js
  *
- *   O script usa a mesma configuração da aplicação: DB_URI em .env.development
- *   ou .env.production (conforme NODE_ENV).
+ *   O script usa DB_URI do .env.development ou .env.production conforme o ambiente.
  */
 const path = require('path');
 const fs = require('fs');
+
+// Suporta --production antes de carregar dotenv (funciona no Windows)
+const forcarProducao = process.argv.includes('--production');
+if (forcarProducao) process.env.NODE_ENV = 'production';
+
 const envPath = process.env.NODE_ENV === 'production'
   ? path.resolve(__dirname, '../../.env.production')
   : path.resolve(__dirname, '../../.env.development');
 
 // Carrega .env.development ou .env.production; fallback para .env se não existir
-const envFile = fs.existsSync(envPath) ? envPath : path.resolve(__dirname, '../../.env');
+let envFile = envPath;
+if (!fs.existsSync(envPath)) {
+  const fallback = path.resolve(__dirname, '../../.env');
+  if (fs.existsSync(fallback)) {
+    envFile = fallback;
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('Aviso: .env.production não encontrado, usando .env como fallback.');
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    console.error('Erro: .env.production não encontrado em', envPath);
+    console.error('Crie o arquivo com DB_URI apontando para o banco de produção.');
+    process.exit(1);
+  }
+}
 require('dotenv').config({ path: envFile });
 
 const mongoose = require('mongoose');
@@ -44,7 +64,9 @@ async function run() {
   // Usa DB_URI (mesma variável da aplicação e das outras migrações)
   const uri = process.env.DB_URI || process.env.MONGODB_URI;
   if (!uri) {
-    console.error('Erro: DB_URI não definida. Configure em', envFile || envPath);
+    console.error('Erro: DB_URI (ou MONGODB_URI) não definida.');
+    console.error('Configure em:', envFile);
+    console.error('Exemplo: DB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/banco');
     process.exit(1);
   }
   const ambiente = detectarAmbiente(uri);
