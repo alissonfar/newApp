@@ -573,8 +573,6 @@ const Home = () => {
         }}>
             <NovaTransacaoForm
             onSuccess={() => {
-              setModalOpen(false);
-              setTransacaoDuplicar(null);
               fetchTransacoes();
               fetchTagInsights?.();
             }}

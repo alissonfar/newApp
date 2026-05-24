@@ -8,16 +8,20 @@ import useTransacaoForm from '../../hooks/useTransacaoForm';
 import usePagamentos from '../../hooks/usePagamentos';
 import useContaConjunta from '../../hooks/useContaConjunta';
 import useParcelamento from '../../hooks/useParcelamento';
+import useDuplicateCheck from '../../hooks/useDuplicateCheck';
 import TransacaoTabs from './TransacaoTabs';
 import TabPrincipal from './TabPrincipal';
 import TabPagamentos from './TabPagamentos';
 import TabAvancado from './TabAvancado';
+import TabResumo from './TabResumo';
 import ShortcutsHelp from './ShortcutsHelp';
 import './NovaTransacaoForm.css';
 import './TransacaoTabs.css';
+import './TabResumo.css';
 import { toISOStringBR } from '../../utils/dateUtils';
 
 const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '', mostrarParcelamentoEmEdicao = false }) => {
+  const containerRef = useRef(null);
   const form = useTransacaoForm({ transacao, proprietarioPadrao });
   const contaConjunta = useContaConjunta({ transacao });
   const parcelamento = useParcelamento({ valorTotal: form.formState.valorTotal, data: form.formState.data, transacao, mostrarParcelamentoEmEdicao });
@@ -33,7 +37,18 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
 
   const { categorias, tags: allTags, loadingData, errorData } = useData();
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const handleSubmitRef = useRef(null);
+  const closeRef = useRef(null);
+
+  const duplicate = useDuplicateCheck({
+    descricao: form.formState.descricao,
+    data: form.formState.data,
+    valorTotal: form.formState.valorTotal,
+    enabled: form.formState.descricao.length >= 3
+  });
+
+  closeRef.current = onClose;
 
   const { formState, setters: fsSetters, refs } = form;
 
@@ -72,6 +87,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       return;
     }
 
+    setIsSaving(true);
     try {
       let valorFinal = parseFloat(formState.valorTotal);
       let contaConjuntaPayload = contaConjunta.buildPayload(formState.valorTotal);
@@ -99,6 +115,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
 
       let response;
       if (formState.isImportada && formState.importacaoId) {
+        transacaoData.status = 'revisada';
         const { default: importacaoService } = await import('../../services/importacaoService');
         response = await importacaoService.atualizarTransacao(formState.importacaoId, formState._id, transacaoData);
       } else if (formState._id) {
@@ -111,44 +128,59 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         throw new Error(response.erro);
       }
 
-      await onSuccess(response);
-
       if (closeModal) {
+        await onSuccess(response);
         onClose();
       } else {
+        await onSuccess(response);
         form.resetForm(true);
         pagamentos.setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
         contaConjunta.reset();
         parcelamento.reset();
-        setTimeout(() => refs.descricaoRef.current?.focus(), 50);
+        toast.success('Salvo! Pronto para a proxima.', { autoClose: 1500 });
+        setTimeout(() => refs.descricaoRef.current?.focus(), 80);
       }
     } catch (error) {
       console.error('Erro ao salvar transacao:', error);
       toast.error(error.message || 'Erro ao salvar transacao.');
+    } finally {
+      setIsSaving(false);
     }
   }, [formState, form, pagamentos, contaConjunta, parcelamento, onSuccess, onClose, proprietarioPadrao, refs]);
 
   handleSubmitRef.current = handleSubmit;
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
     const handleKeyDown = (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
-        if (e.key !== 'Escape' && !e.ctrlKey && !e.altKey) return;
+      if (e.key === 'Escape') { closeRef.current?.(); return; }
+
+      if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); handleSubmitRef.current?.(null, true); return; }
+      if (e.ctrlKey && (e.key === ' ' || e.code === 'Space')) { e.preventDefault(); handleSubmitRef.current?.(null, false); return; }
+      if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); handleSubmitRef.current?.(null, true); return; }
+
+      if (e.altKey) {
+        const tag = e.target?.tagName;
+        const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+        if (!isInput) return;
+        switch (e.key.toLowerCase()) {
+          case 'h': e.preventDefault(); form.setHoje(); break;
+          case 'y': e.preventDefault(); form.setOntem(); break;
+          case 'p': e.preventDefault(); pagamentos.addPagamento(); break;
+          case 'r': e.preventDefault(); pagamentos.removePagamento(); break;
+          case 'd': e.preventDefault(); refs.descricaoRef.current?.focus(); break;
+          case 'v': e.preventDefault(); refs.valorRef.current?.focus(); break;
+          case 't': e.preventDefault(); refs.tipoRef.current?.focus(); break;
+          default: break;
+        }
       }
-      if (e.key === 'Escape') { onClose(); return; }
-      if (e.ctrlKey && e.keyCode === 32) { e.preventDefault(); handleSubmitRef.current?.(null, false); return; }
-      if (e.ctrlKey && e.keyCode === 13) { e.preventDefault(); handleSubmitRef.current?.(null, true); return; }
-      if (e.altKey && e.key.toLowerCase() === 'h') { e.preventDefault(); form.setHoje(); return; }
-      if (e.altKey && e.key.toLowerCase() === 'y') { e.preventDefault(); form.setOntem(); return; }
-      if (e.altKey && e.key.toLowerCase() === 'p') { e.preventDefault(); pagamentos.addPagamento(); return; }
-      if (e.altKey && e.key.toLowerCase() === 'r') { e.preventDefault(); pagamentos.removePagamento(); return; }
-      if (e.altKey && e.key.toLowerCase() === 'd') { e.preventDefault(); refs.descricaoRef.current?.focus(); return; }
-      if (e.altKey && e.key.toLowerCase() === 'v') { e.preventDefault(); refs.valorRef.current?.focus(); return; }
-      if (e.altKey && e.key.toLowerCase() === 't') { e.preventDefault(); refs.tipoRef.current?.focus(); return; }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, form, pagamentos, refs]);
+
+    el.addEventListener('keydown', handleKeyDown);
+    return () => el.removeEventListener('keydown', handleKeyDown);
+  }, [form, pagamentos, refs]);
 
   const onSubmitSaveClose = useCallback((e) => handleSubmit(e, true), [handleSubmit]);
   const onSubmitSaveContinue = useCallback((e) => handleSubmit(e, false), [handleSubmit]);
@@ -161,7 +193,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   }
 
   return (
-    <div className="nova-transacao-form-container">
+    <div className="nova-transacao-form-container" ref={containerRef}>
       <h2>{transacao ? 'Editar Transacao' : 'Nova Transacao'}</h2>
 
       <IconButton className="help-icon" onClick={() => setShowShortcuts(true)} color="primary">
@@ -176,6 +208,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         onSubmitSaveClose={onSubmitSaveClose}
         onSubmitSaveContinue={onSubmitSaveContinue}
         isEditing={!!transacao}
+        isSaving={isSaving}
       >
         <TabPrincipal
           data-tab="principal"
@@ -204,7 +237,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           removePagamento={pagamentos.removePagamento}
           splitEqually={pagamentos.splitEqually}
           splitInto={pagamentos.splitInto}
-          clearPaymentTags={pagamentos.clearPaymentTags}
           duplicatePagamento={pagamentos.duplicatePagamento}
           isParcelado={parcelamento.state.isParcelado}
           totalParcelas={parcelamento.state.totalParcelas}
@@ -223,6 +255,16 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           parteUsuario={contaConjunta.state.parteUsuario}
           setParteUsuario={onParteUsuarioChange}
           transacao={transacao}
+        />
+        <TabResumo
+          data-tab="resumo"
+          formState={formState}
+          pagamentos={pagamentos}
+          parcelamento={parcelamento}
+          contaConjunta={contaConjunta}
+          allTags={allTags}
+          categorias={categorias}
+          duplicate={duplicate}
         />
       </TransacaoTabs>
     </div>

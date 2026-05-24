@@ -146,9 +146,8 @@ const Transacoes = () => {
     setModalOpen(false);
   };
 
-  // Ao salvar/atualizar transação
+  // Ao salvar/atualizar transação — apenas refresh, o fechamento é controlado pelo NovaTransacaoForm
   const handleSuccess = () => {
-    handleCloseModal();
     carregarTransacoes();
   };
 

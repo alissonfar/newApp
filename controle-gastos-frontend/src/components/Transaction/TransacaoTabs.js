@@ -4,7 +4,8 @@ import { Tooltip } from '@mui/material';
 const TABS = [
   { id: 'principal', label: 'Principal' },
   { id: 'pagamentos', label: 'Pagamentos' },
-  { id: 'avancado', label: 'Avançado' }
+  { id: 'avancado', label: 'Avançado' },
+  { id: 'resumo', label: 'Resumo' }
 ];
 
 const TransacaoTabs = ({
@@ -12,6 +13,7 @@ const TransacaoTabs = ({
   onSubmitSaveClose,
   onSubmitSaveContinue,
   isEditing,
+  isSaving = false,
   tabErrors = {}
 }) => {
   const [activeTab, setActiveTab] = useState('principal');
@@ -70,9 +72,10 @@ const TransacaoTabs = ({
             type="button"
             className="submit-btn"
             onClick={onSubmitSaveClose}
+            disabled={isSaving}
             tabIndex={91}
           >
-            {isEditing ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
+            {isSaving ? 'Salvando...' : isEditing ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
           </button>
         </Tooltip>
         <Tooltip title="Ctrl + Space">
@@ -80,9 +83,10 @@ const TransacaoTabs = ({
             type="button"
             className="submit-btn"
             onClick={onSubmitSaveContinue}
+            disabled={isSaving}
             tabIndex={92}
           >
-            {isEditing ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
+            {isSaving ? 'Salvando...' : isEditing ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
           </button>
         </Tooltip>
       </div>

@@ -209,35 +209,10 @@ const DetalhesImportacaoPage = () => {
         setShowFormTransacao(true);
     };
 
-    const handleSaveTransacao = async (transacaoEditada) => {
-        try {
-            // Garantindo que temos o ID da importação
-            const importacaoId = id || transacaoEmEdicao?.importacao;
-            
-            if (!importacaoId) {
-                throw new Error('ID da importação não encontrado');
-            }
-
-            // Garantindo que todos os dados necessários estão presentes e alterando o status para 'revisada'
-            const dadosAtualizados = {
-                ...transacaoEditada,
-                importacao: importacaoId,
-                status: 'revisada' // Força o status para 'revisada' após qualquer edição
-            };
-
-            await importacaoService.atualizarTransacao(
-                importacaoId,
-                transacaoEditada._id || transacaoEditada.id,
-                dadosAtualizados
-            );
-            
-            toast.success('Transação atualizada com sucesso!');
-            setShowFormTransacao(false);
-            await carregarDetalhes();
-        } catch (error) {
-            console.error('Erro ao atualizar transação:', error);
-            toast.error(error.message || 'Erro ao atualizar transação.');
-        }
+    const handleSaveTransacao = async () => {
+        setShowFormTransacao(false);
+        setTransacaoEmEdicao(null);
+        await carregarDetalhes();
     };
 
     const formatarData = (data) => {

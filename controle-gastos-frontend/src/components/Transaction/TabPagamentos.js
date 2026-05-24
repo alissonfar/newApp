@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { Tooltip } from '@mui/material';
 import TagSelector from './TagSelector';
 
@@ -11,7 +11,6 @@ const TabPagamentos = ({
   removePagamento,
   splitEqually,
   splitInto,
-  clearPaymentTags,
   duplicatePagamento,
   isParcelado,
   totalParcelas,
@@ -19,11 +18,6 @@ const TabPagamentos = ({
   allTags,
   proprietarioPadrao
 }) => {
-  const [expandedTagIndex, setExpandedTagIndex] = useState(null);
-
-  const toggleTags = useCallback((index) => {
-    setExpandedTagIndex(prev => prev === index ? null : index);
-  }, []);
 
   return (
     <div data-tab="pagamentos" className="tab-panel tab-pagamentos">
@@ -73,9 +67,6 @@ const TabPagamentos = ({
         </div>
 
         {pagamentos.map((pag, index) => {
-          const hasTags = pag.paymentTags && Object.keys(pag.paymentTags).some(k => (pag.paymentTags[k] || []).length > 0);
-          const isExpanded = expandedTagIndex === index;
-
           return (
             <div key={index} className="pagamento-item">
               <div className="pagamento-item-header">
@@ -124,49 +115,13 @@ const TabPagamentos = ({
 
               {!isParcelado && (
                 <div className="pagamento-tags-summary">
-                  {hasTags ? (
-                    <div className="tags-chips">
-                      {categorias.map(cat => {
-                        const catTags = (pag.paymentTags && pag.paymentTags[cat._id]) || [];
-                        if (catTags.length === 0) return null;
-                        const catColor = cat.cor || '#666';
-                        return (
-                          <span
-                            key={cat._id}
-                            className="tag-chip"
-                            style={{ backgroundColor: catColor + '18', color: catColor, border: '1px solid ' + catColor + '30' }}
-                          >
-                            <span className="tag-chip-category">{cat.nome}:</span>
-                            {catTags.length}
-                          </span>
-                        );
-                      })}
-                      <button type="button" className="tag-clear-btn" onClick={() => clearPaymentTags(index)} title="Limpar tags">
-                        limpar
-                      </button>
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>Sem tags</span>
-                  )}
-                  <button
-                    type="button"
-                    className="tags-expand-btn"
-                    onClick={() => toggleTags(index)}
-                  >
-                    {isExpanded ? 'Fechar tags' : 'Editar tags'}
-                  </button>
-
-                  {isExpanded && (
-                    <div className="tags-expanded-section">
-                      <TagSelector
-                        categorias={categorias}
-                        allTags={allTags}
-                        paymentTags={pag.paymentTags}
-                        onTagsChange={(newTags) => handlePagamentoChange(index, 'paymentTags', newTags)}
-                        tabIndex={50 + (index * 10)}
-                      />
-                    </div>
-                  )}
+                  <TagSelector
+                    categorias={categorias}
+                    allTags={allTags}
+                    paymentTags={pag.paymentTags}
+                    onTagsChange={(newTags) => handlePagamentoChange(index, 'paymentTags', newTags)}
+                    tabIndex={50 + (index * 10)}
+                  />
                 </div>
               )}
             </div>

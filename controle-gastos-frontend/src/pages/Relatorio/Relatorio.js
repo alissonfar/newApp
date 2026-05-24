@@ -465,7 +465,6 @@ const Relatorio = () => {
   };
 
   const handleSuccess = () => {
-    handleCloseModal();
     fetchData(page, appliedFilters ?? draftFilters);
   };
 
