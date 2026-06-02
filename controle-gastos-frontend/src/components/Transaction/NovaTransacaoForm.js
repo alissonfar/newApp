@@ -24,16 +24,24 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   const containerRef = useRef(null);
   const form = useTransacaoForm({ transacao, proprietarioPadrao });
   const contaConjunta = useContaConjunta({ transacao });
-  const parcelamento = useParcelamento({ valorTotal: form.formState.valorTotal, data: form.formState.data, transacao, mostrarParcelamentoEmEdicao });
+  const parcelamento = useParcelamento({
+    valorTotal: form.formState.valorTotal,
+    data: form.formState.data,
+    transacao,
+    mostrarParcelamentoEmEdicao
+  });
   const pagamentos = usePagamentos({
     transacao,
     proprietarioPadrao,
     valorTotal: form.formState.valorTotal,
-    isParcelado: parcelamento.state.isParcelado,
     isContaConjunta: contaConjunta.state.isContaConjunta,
     pagoPor: contaConjunta.state.pagoPor,
-    parteUsuario: contaConjunta.state.parteUsuario
+    parteUsuario: contaConjunta.state.parteUsuario,
+    parcelamentos: parcelamento.state.parcelamentos
   });
+
+  // Keep parcelamento hook in sync with current pagamentos for preview generation
+  parcelamento.pagamentosRef.current = pagamentos.pagamentos;
 
   const { categorias, tags: allTags, loadingData, errorData } = useData();
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -95,6 +103,26 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         valorFinal = contaConjunta.getValorFinal(formState.valorTotal);
       }
 
+      const pagamentosPayload = pagamentos.buildPagamentosPayload();
+
+      const pagamentosComParcelamento = pagamentosPayload.map(p => {
+        const idx = pagamentos.pagamentos.findIndex(
+          pg => pg.pessoa === p.pessoa && Math.abs(parseFloat(pg.valor || 0) - (p.valor || 0)) < 0.01
+        );
+        if (idx >= 0 && parcelamento.state.parcelamentos[idx]?.ativo) {
+          const conf = parcelamento.state.parcelamentos[idx];
+          return {
+            ...p,
+            parcelamento: {
+              ativo: true,
+              quantidade: parseInt(conf.quantidade, 10) || 2,
+              intervaloDias: parseInt(conf.intervaloDias, 10) || 30
+            }
+          };
+        }
+        return p;
+      });
+
       const transacaoData = {
         _id: formState._id,
         tipo: formState.tipo,
@@ -102,16 +130,11 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         data: toISOStringBR(formState.data),
         valor: valorFinal,
         observacao: formState.observacao,
-        pagamentos: pagamentos.buildPagamentosPayload()
+        pagamentos: pagamentosComParcelamento
       };
       if (formState.subconta) transacaoData.subconta = formState.subconta;
       else transacaoData.subconta = null;
       if (contaConjuntaPayload) transacaoData.contaConjunta = contaConjuntaPayload;
-
-      const parcelamentoPayload = parcelamento.buildPayload();
-      if (parcelamentoPayload) {
-        Object.assign(transacaoData, parcelamentoPayload);
-      }
 
       let response;
       if (formState.isImportada && formState.importacaoId) {
@@ -238,11 +261,14 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           splitEqually={pagamentos.splitEqually}
           splitInto={pagamentos.splitInto}
           duplicatePagamento={pagamentos.duplicatePagamento}
-          isParcelado={parcelamento.state.isParcelado}
-          totalParcelas={parcelamento.state.totalParcelas}
+          parcelamentos={parcelamento.state.parcelamentos}
+          previews={parcelamento.state.previews}
+          toggleParcelamento={parcelamento.toggleParcelamento}
+          setParcelamentoField={parcelamento.setParcelamentoField}
           categorias={categorias}
           allTags={allTags}
           proprietarioPadrao={proprietarioPadrao}
+          showInForm={parcelamento.state.showInForm}
         />
         <TabAvancado
           data-tab="avancado"

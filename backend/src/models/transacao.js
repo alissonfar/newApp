@@ -1,10 +1,20 @@
 // src/models/transacao.js
 const mongoose = require('mongoose');
 
+const ParcelamentoConfigSchema = new mongoose.Schema({
+  ativo: { type: Boolean, default: false },
+  quantidade: { type: Number, default: null, min: 2, max: 60 },
+  intervaloDias: { type: Number, default: 30, min: 1, max: 365 }
+}, { _id: false });
+
 const PagamentoSchema = new mongoose.Schema({
   pessoa: { type: String, required: true },
   valor: { type: Number, required: true },
-  tags: { type: Object }
+  tags: { type: Object },
+  parcelamento: { type: ParcelamentoConfigSchema, default: null },
+  installmentNumber: { type: Number, default: null },
+  installmentTotal: { type: Number, default: null },
+  installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null }
 });
 
 const TransacaoSchema = new mongoose.Schema({
@@ -17,7 +27,8 @@ const TransacaoSchema = new mongoose.Schema({
   status: { type: String, enum: ['ativo', 'estornado'], default: 'ativo' },
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
   deduplicationKey: { type: String, sparse: true },
-  // Parcelamento - campos opcionais (null = transação avulsa)
+  parentTransactionId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  // Parcelamento - campos opcionais (null = transação avulsa) — LEGACY mantidos para compatibilidade
   isInstallment: { type: Boolean, default: false },
   installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null },
   installmentNumber: { type: Number, default: null },
@@ -46,6 +57,7 @@ TransacaoSchema.index({ usuario: 1, settlementAsSource: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, settlementApplied: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, deduplicationKey: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, installmentGroupId: 1 }, { sparse: true });
+TransacaoSchema.index({ usuario: 1, parentTransactionId: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, status: 1, data: -1 });
 TransacaoSchema.index({ usuario: 1, 'pagamentos.pessoa': 1 });
 TransacaoSchema.index({ usuario: 1, 'contaConjunta.ativo': 1, 'contaConjunta.vinculoId': 1, 'contaConjunta.acertadoEm': 1 }, { sparse: true });

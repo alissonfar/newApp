@@ -72,9 +72,18 @@ const TabResumo = ({ formState, pagamentos, parcelamento, contaConjunta, allTags
             <div className="resumo-field"><span className="resumo-label">Qtd. pagamentos</span><span className="resumo-value">{pagamentos.pagamentos.length}</span></div>
             <div className="resumo-field"><span className="resumo-label">Pessoas distintas</span><span className="resumo-value">{new Set(pessoas).size}</span></div>
           </div>
-          {parcelamento.state.isParcelado && (
+          {parcelamento.state.temAlgumParcelamento && (
             <div className="resumo-row">
-              <Badge label={`${parcelamento.state.totalParcelas} parcelas a cada ${parcelamento.state.intervaloDias} dias`} />
+              <Badge label={`Parcelamento por participante ativo`} />
+              {Object.entries(parcelamento.state.parcelamentos || {}).map(([idx, conf]) => {
+                if (!conf?.ativo) return null;
+                const pag = pagamentos.pagamentos[parseInt(idx, 10)];
+                return (
+                  <span key={idx} style={{ fontSize: '0.75rem', color: 'var(--cor-texto)', opacity: 0.7, marginLeft: 8 }}>
+                    {pag?.pessoa || `Pag. ${idx}`}: {conf.quantidade}x a cada {conf.intervaloDias}d
+                  </span>
+                );
+              })}
             </div>
           )}
           {contaConjunta.state.isContaConjunta && contaConjunta.state.vinculoId && (

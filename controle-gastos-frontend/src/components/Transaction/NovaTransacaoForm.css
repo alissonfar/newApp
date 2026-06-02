@@ -388,6 +388,109 @@
   margin: 0;
 }
 
+/* Parcelamento inline por pagamento (dentro do TabPagamentos) */
+.pagamento-parcelamento-toggle {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: var(--cor-fundo);
+  border-radius: var(--borda-radius);
+  font-size: 0.82rem;
+}
+
+.pagamento-parcelamento-toggle > label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.pagamento-parcelamento-toggle input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.parcelamento-campos-inline {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.parcelamento-campos-inline .form-section-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.parcelamento-campos-inline .form-section-inline label {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+.parcelamento-campos-inline input {
+  width: 60px;
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  text-align: center;
+  border: 1px solid rgba(44, 62, 80, 0.2);
+  border-radius: var(--borda-radius);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+.parcelamento-qtd-input {
+  width: 50px !important;
+}
+
+.parcelamento-intervalo-input {
+  width: 65px !important;
+}
+
+/* Preview mini por pagamento */
+.preview-parcelas-mini {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: var(--cor-fundo);
+  border-radius: var(--borda-radius);
+  border: 1px solid rgba(224, 231, 255, 0.4);
+}
+
+.preview-parcelas-mini-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.preview-parcelas-mini .preview-parcelas-table {
+  font-size: 0.72rem;
+}
+
+.preview-parcelas-mini .preview-parcelas-table th,
+.preview-parcelas-mini .preview-parcelas-table td {
+  padding: 3px 6px;
+}
+
+/* Badge de parcela no pagamento */
+.parcela-badge-pagamento {
+  display: inline;
+  margin-left: 4px;
+}
+
+/* Badge de grupo */
+.parcela-badge-grupo {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+/* Parcelamento resumo */
+.parcelamento-resumo-texto {
+  font-size: 0.82rem;
+  color: var(--cor-texto);
+  opacity: 0.8;
+  margin: 0;
+}
+
 /* Conta conjunta */
 .conta-conjunta-section {
   display: flex;

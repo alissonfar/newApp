@@ -1,9 +1,19 @@
 const mongoose = require('mongoose');
 
+const ParcelamentoConfigSchema = new mongoose.Schema({
+  ativo: { type: Boolean, default: false },
+  quantidade: { type: Number, default: null, min: 2, max: 60 },
+  intervaloDias: { type: Number, default: 30, min: 1, max: 365 }
+}, { _id: false });
+
 const PagamentoSchema = new mongoose.Schema({
   pessoa: { type: String, required: true },
   valor: { type: Number, required: true },
-  tags: { type: Object }
+  tags: { type: Object },
+  parcelamento: { type: ParcelamentoConfigSchema, default: null },
+  installmentNumber: { type: Number, default: null },
+  installmentTotal: { type: Number, default: null },
+  installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null }
 });
 
 const TransacaoImportadaSchema = new mongoose.Schema({
@@ -70,6 +80,7 @@ const TransacaoImportadaSchema = new mongoose.Schema({
   installmentTotal: { type: Number, default: null },
   installmentIntervalMonths: { type: Number, default: null },
   installmentIntervalDays: { type: Number, default: null },
+  parentTransactionId: { type: mongoose.Schema.Types.ObjectId, default: null },
   usuario: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Usuario', 
@@ -117,7 +128,8 @@ TransacaoImportadaSchema.methods.paraTransacao = function() {
     installmentNumber: this.installmentNumber,
     installmentTotal: this.installmentTotal,
     installmentIntervalMonths: this.installmentIntervalMonths,
-    installmentIntervalDays: this.installmentIntervalDays
+    installmentIntervalDays: this.installmentIntervalDays,
+    parentTransactionId: this.parentTransactionId || undefined
   };
   if (this.contaConjunta?.ativo) {
     result.contaConjunta = {

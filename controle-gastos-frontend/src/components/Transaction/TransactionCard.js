@@ -4,11 +4,10 @@ import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCard.css';
 import { obterCategorias, obterTags } from '../../api';
 
-const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }) => {
+const TransactionCard = ({ transacao, onEdit, onDelete }) => {
   const [categorias, setCategorias] = useState([]);
   const [tags, setTags] = useState([]);
 
-  // Carrega categorias (incluindo inativas) e tags para exibir histórico
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -25,7 +24,6 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
     fetchData();
   }, []);
 
-  // Função para converter IDs ou códigos em nomes (suporta formato canônico _id e legado codigo)
   const getTagInfo = (tagId) => {
     const tag = tags.find(t =>
       String(t._id) === String(tagId) || t.codigo === tagId
@@ -33,14 +31,10 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
     
     if (!tag) return null;
     
-    // Tenta encontrar a categoria primeiro pelo ID, depois pelo nome
     let categoria = categorias.find(c => c._id === tag.categoria);
     if (!categoria) {
-      // Se não encontrou pelo ID, tenta pelo nome (compatibilidade)
       categoria = categorias.find(c => c.nome === tag.categoria);
     }
-
-    // Se ainda não encontrou, verifica se o próprio campo categoria é um objeto
     if (!categoria && typeof tag.categoria === 'object' && tag.categoria._id) {
       categoria = categorias.find(c => c._id === tag.categoria._id);
     }
@@ -52,6 +46,9 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
       icone: tag.icone || categoria?.icone || 'tag'
     };
   };
+
+  const hasLegacyInstallment = transacao.isInstallment && transacao.installmentNumber != null && transacao.installmentTotal != null;
+  const hasParentGroup = !!transacao.parentTransactionId;
 
   return (
     <div className="transaction-card">
@@ -66,8 +63,11 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
           </span>
           <h3>
             {transacao.descricao}
-            {transacao.isInstallment && transacao.installmentNumber != null && transacao.installmentTotal != null && (
+            {hasLegacyInstallment && (
               <span className="parcela-badge">Parcela {transacao.installmentNumber}/{transacao.installmentTotal}</span>
+            )}
+            {hasParentGroup && (
+              <span className="parcela-badge parcela-badge-grupo">Grupo</span>
             )}
           </h3>
         </div>
@@ -88,15 +88,20 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
           )}
         </div>
 
-        {/* Exibe cada pagamento, incluindo as tags associadas */}
         {transacao.pagamentos && transacao.pagamentos.length > 0 && (
           <div className="payments-container">
             {transacao.pagamentos.map((pg, idx) => {
+              const pagInstallment = pg.installmentNumber != null && pg.installmentTotal != null;
               return (
                 <div key={idx} className="payment-item">
                   <div className="payment-header">
                     <span className="person">
                       {pg.pessoa}
+                      {pagInstallment && (
+                        <span className="parcela-badge parcela-badge-pagamento">
+                          {pg.installmentNumber}/{pg.installmentTotal}
+                        </span>
+                      )}
                     </span>
                     <span className="value">
                       R$ {parseFloat(pg.valor).toFixed(2)}
@@ -140,16 +145,7 @@ const TransactionCard = ({ transacao, onEdit, onDelete, onEstornarParcelamento }
         <button className="action-btn edit-btn" onClick={() => onEdit(transacao)}>
           <FaEdit /> Editar
         </button>
-        {transacao.isInstallment && transacao.installmentGroupId && onEstornarParcelamento && (
-          <button
-            className="action-btn parcelamento-btn"
-            onClick={() => onEstornarParcelamento(transacao.installmentGroupId)}
-            title="Estornar todas as parcelas"
-          >
-            <FaTrash /> Estornar parcelamento
-          </button>
-        )}
-        <button className="action-btn delete-btn" onClick={() => onDelete(transacao.id || transacao._id)}>
+        <button className="action-btn delete-btn" onClick={() => onDelete(transacao)}>
           <FaTrash /> Excluir
         </button>
       </div>

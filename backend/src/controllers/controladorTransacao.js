@@ -293,11 +293,78 @@ exports.obterTransacaoPorId = async (req, res) => {
   }
 };
 
+exports.obterTransacoesPorGrupo = async (req, res) => {
+  try {
+    const { parentTransactionId } = req.params;
+    const transacoes = await Transacao.find({
+      usuario: req.userId,
+      parentTransactionId,
+      status: 'ativo'
+    })
+      .sort({ data: 1 })
+      .select('descricao data valor pagamentos isInstallment');
+    res.json({ transacoes });
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao obter transações do grupo.', detalhe: error.message });
+  }
+};
+
 const installmentUtils = require('../utils/installmentUtils');
 
 exports.previewParcelas = async (req, res) => {
   try {
-    const { totalAmount, totalInstallments, intervalInDays, startDate } = req.query;
+    const { totalAmount, totalInstallments, intervalInDays, startDate, pagamentos } = req.query;
+
+    const parsedPagamentos = (() => {
+      if (!pagamentos) return null;
+      try {
+        return typeof pagamentos === 'string' ? JSON.parse(pagamentos) : pagamentos;
+      } catch {
+        return null;
+      }
+    })();
+
+    if (parsedPagamentos && Array.isArray(parsedPagamentos) && parsedPagamentos.some(p => p.parcelamento?.ativo)) {
+      const resultado = installmentUtils.previewParcelamento({
+        pagamentos: parsedPagamentos,
+        startDate: startDate || new Date().toISOString().split('T')[0]
+      });
+      if (resultado.erro) {
+        return res.status(400).json({ erro: resultado.erro });
+      }
+      return res.json(resultado);
+    }
+
+    const resultado = installmentUtils.generateInstallments({
+      totalAmount: parseFloat(totalAmount) || 0,
+      totalInstallments: parseInt(totalInstallments, 10) || 2,
+      intervalInDays: parseInt(intervalInDays, 10) || 30,
+      startDate: startDate || new Date().toISOString().split('T')[0]
+    });
+    if (resultado.erro) {
+      return res.status(400).json({ erro: resultado.erro });
+    }
+    res.json(resultado);
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao gerar preview.', detalhe: error.message });
+  }
+};
+
+exports.previewParcelasPost = async (req, res) => {
+  try {
+    const { totalAmount, totalInstallments, intervalInDays, startDate, pagamentos } = req.body;
+
+    if (pagamentos && Array.isArray(pagamentos) && pagamentos.some(p => p.parcelamento?.ativo)) {
+      const resultado = installmentUtils.previewParcelamento({
+        pagamentos,
+        startDate: startDate || new Date().toISOString().split('T')[0]
+      });
+      if (resultado.erro) {
+        return res.status(400).json({ erro: resultado.erro });
+      }
+      return res.json(resultado);
+    }
+
     const resultado = installmentUtils.generateInstallments({
       totalAmount: parseFloat(totalAmount) || 0,
       totalInstallments: parseInt(totalInstallments, 10) || 2,
@@ -326,16 +393,17 @@ exports.criarTransacao = async (req, res) => {
     subcontaId = null;
   }
 
+  // Detecta parcelamento: NOVO modelo (por pagamento) ou LEGADO (top-level isInstallment)
+  const temParcelamentoPorPagamento = Array.isArray(pagamentos) && pagamentos.some(p => p.parcelamento?.ativo);
   const numParcelas = parseInt(totalInstallments, 10) || 1;
-  const ehParcelado = isInstallment === true && numParcelas > 1;
-  // Priorizar intervalInDays; fallback para meses (retrocompatibilidade)
+  const ehParceladoLegado = isInstallment === true && numParcelas > 1;
   const intervalDays = req.body.installmentIntervalDays != null
     ? parseInt(req.body.installmentIntervalDays, 10)
     : (parseInt(installmentIntervalMonths, 10) || 1) * 30;
 
   try {
-    if (!ehParcelado) {
-      // Conta Conjunta: validar e preparar valor e contaConjunta
+    if (!temParcelamentoPorPagamento && !ehParceladoLegado) {
+      // Fluxo transação única (sem parcelamento)
       let valorFinal = parseFloat(valor) || 0;
       let contaConjuntaParaSalvar = undefined;
       if (req.body.contaConjunta?.ativo) {
@@ -366,53 +434,108 @@ exports.criarTransacao = async (req, res) => {
       return res.status(201).json(novaTransacao);
     }
 
-    if (intervalDays < 1) {
-      return res.status(400).json({ erro: 'Intervalo em dias deve ser >= 1.' });
+    // Fluxo parcelado: suporta NOVO modelo (por pagamento) e LEGADO (top-level)
+    let valorFinal = parseFloat(valor) || 0;
+    let contaConjuntaParaSalvar = undefined;
+    if (req.body.contaConjunta?.ativo) {
+      await transacaoService.validarContaConjunta({
+        contaConjunta: req.body.contaConjunta,
+        usuarioId: req.userId
+      });
+      const preparado = transacaoService.prepararValorEContaConjunta(req.body);
+      valorFinal = preparado.valor;
+      contaConjuntaParaSalvar = preparado.contaConjunta;
     }
 
-    const valorTotal = Math.abs(parseFloat(valor) || 0);
-    const resultado = installmentUtils.generateInstallments({
-      totalAmount: valorTotal,
-      totalInstallments: numParcelas,
-      intervalInDays: intervalDays,
-      startDate: data
-    });
-
-    if (resultado.erro) {
-      return res.status(400).json({ erro: resultado.erro });
-    }
-
-    // Fluxo parcelado: criar N transações em sessão atômica
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const installmentGroupId = new mongoose.Types.ObjectId();
+      let transacoesParaInserir;
+      let parentTransactionId;
 
-      const pagamentoBase = Array.isArray(pagamentos) && pagamentos.length > 0
-        ? pagamentos[0]
-        : { pessoa: 'Titular', valor: 0, tags: {} };
-      const pessoaBase = pagamentoBase.pessoa || 'Titular';
-      const tagsBase = pagamentoBase.tags || {};
+      if (temParcelamentoPorPagamento) {
+        // NOVO modelo: parcelamento por pagamento/participante
+        const resultado = installmentUtils.gerarTransacoesComParcelamento({
+          pagamentos,
+          startDate: data,
+          baseTransacao: {
+            tipo,
+            descricao,
+            observacao: observacao || '',
+            usuario: req.userId,
+            subconta: subcontaId,
+            contaConjunta: contaConjuntaParaSalvar
+          }
+        });
 
-      const transacoesParaInserir = resultado.parcelas.map((p) => {
-        const dataParcela = new Date(p.date + 'T12:00:00.000Z');
-        return {
-          tipo,
-          descricao,
-          valor: p.value,
-          data: dataParcela,
-          pagamentos: [{ pessoa: pessoaBase, valor: p.value, tags: tagsBase }],
-          observacao: observacao || '',
-          usuario: req.userId,
-          subconta: subcontaId,
-          isInstallment: true,
-          installmentGroupId,
-          installmentNumber: p.installmentNumber,
-          installmentTotal: numParcelas,
-          installmentIntervalDays: intervalDays
-        };
-      });
+        if (resultado.erro) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ erro: resultado.erro });
+        }
+
+        transacoesParaInserir = resultado.transacoes;
+        parentTransactionId = resultado.parentTransactionId;
+      } else {
+        // LEGADO: parcelamento top-level (compatibilidade retroativa)
+        if (intervalDays < 1) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ erro: 'Intervalo em dias deve ser >= 1.' });
+        }
+
+        const valorTotal = Math.abs(valorFinal);
+        const resultado = installmentUtils.generateInstallments({
+          totalAmount: valorTotal,
+          totalInstallments: numParcelas,
+          intervalInDays: intervalDays,
+          startDate: data
+        });
+
+        if (resultado.erro) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ erro: resultado.erro });
+        }
+
+        parentTransactionId = new mongoose.Types.ObjectId();
+        const installmentGroupId = new mongoose.Types.ObjectId();
+
+        const pagamentoBase = Array.isArray(pagamentos) && pagamentos.length > 0
+          ? pagamentos[0]
+          : { pessoa: 'Titular', valor: 0, tags: {} };
+        const pessoaBase = pagamentoBase.pessoa || 'Titular';
+        const tagsBase = pagamentoBase.tags || {};
+
+        transacoesParaInserir = resultado.parcelas.map((p) => {
+          const dataParcela = new Date(p.date + 'T12:00:00.000Z');
+          return {
+            tipo,
+            descricao,
+            valor: p.value,
+            data: dataParcela,
+            pagamentos: [{
+              pessoa: pessoaBase,
+              valor: p.value,
+              tags: tagsBase,
+              installmentNumber: p.installmentNumber,
+              installmentTotal: numParcelas,
+              installmentGroupId
+            }],
+            observacao: observacao || '',
+            usuario: req.userId,
+            subconta: subcontaId,
+            contaConjunta: contaConjuntaParaSalvar,
+            parentTransactionId,
+            isInstallment: true,
+            installmentGroupId,
+            installmentNumber: p.installmentNumber,
+            installmentTotal: numParcelas,
+            installmentIntervalDays: intervalDays
+          };
+        });
+      }
 
       const transacoesCriadas = await Transacao.insertMany(transacoesParaInserir, { session });
       await session.commitTransaction();
@@ -420,7 +543,7 @@ exports.criarTransacao = async (req, res) => {
       res.status(201).json({
         transacoes: transacoesCriadas,
         totalParcelas: transacoesCriadas.length,
-        installmentGroupId
+        parentTransactionId
       });
     } catch (err) {
       await session.abortTransaction();
@@ -499,19 +622,61 @@ exports.excluirTransacao = async (req, res) => {
 exports.estornarParcelamento = async (req, res) => {
   try {
     const { installmentGroupId } = req.params;
-    const resultado = await Transacao.updateMany(
-      { usuario: req.userId, installmentGroupId, status: 'ativo' },
-      { $set: { status: 'estornado' } }
-    );
-    if (resultado.modifiedCount === 0) {
+
+    // Busca tanto no nível da transação (legado) quanto no nível do pagamento (novo modelo)
+    const [resultTransacao, resultPagamentos] = await Promise.all([
+      Transacao.updateMany(
+        { usuario: req.userId, installmentGroupId, status: 'ativo' },
+        { $set: { status: 'estornado' } }
+      ),
+      Transacao.updateMany(
+        { usuario: req.userId, 'pagamentos.installmentGroupId': installmentGroupId, status: 'ativo' },
+        { $set: { status: 'estornado' } }
+      )
+    ]);
+
+    const totalEstornadas = resultTransacao.modifiedCount + resultPagamentos.modifiedCount;
+
+    if (totalEstornadas === 0) {
       return res.status(404).json({ erro: 'Nenhuma parcela ativa encontrada para este parcelamento.' });
     }
     res.json({
-      mensagem: `${resultado.modifiedCount} parcela(s) estornada(s) com sucesso.`,
-      totalEstornadas: resultado.modifiedCount
+      mensagem: `${totalEstornadas} parcela(s) estornada(s) com sucesso.`,
+      totalEstornadas
     });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao estornar parcelamento.', detalhe: error.message });
+  }
+};
+
+exports.estornarGrupoPai = async (req, res) => {
+  try {
+    const { parentTransactionId } = req.params;
+    const resultado = await Transacao.updateMany(
+      { usuario: req.userId, parentTransactionId, status: 'ativo' },
+      { $set: { status: 'estornado' } }
+    );
+    if (resultado.modifiedCount === 0) {
+      return res.status(404).json({ erro: 'Nenhuma transação ativa encontrada para este grupo.' });
+    }
+    res.json({
+      mensagem: `${resultado.modifiedCount} transação(ões) estornada(s) com sucesso.`,
+      totalEstornadas: resultado.modifiedCount
+    });
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao estornar grupo.', detalhe: error.message });
+  }
+};
+
+exports.reativarTransacao = async (req, res) => {
+  try {
+    const transacao = await Transacao.findOne({ _id: req.params.id, usuario: req.userId, status: 'estornado' });
+    if (!transacao) return res.status(404).json({ erro: 'Transação estornada não encontrada.' });
+    transacao.status = 'ativo';
+    await transacao.save();
+    res.json({ mensagem: 'Transação reativada com sucesso.', transacao });
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao reativar transação.', detalhe: error.message });
   }
 };
 

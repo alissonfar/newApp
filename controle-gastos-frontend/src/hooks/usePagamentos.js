@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export default function usePagamentos({ transacao, proprietarioPadrao, valorTotal, isParcelado, isContaConjunta, pagoPor, parteUsuario }) {
+export default function usePagamentos({ transacao, proprietarioPadrao, valorTotal, isContaConjunta, pagoPor, parteUsuario, parcelamentos }) {
   const [pagamentos, setPagamentos] = useState(() => {
     if (transacao?.pagamentos?.length > 0) {
       return transacao.pagamentos.map(p => ({
         ...p,
-        paymentTags: p.tags || {}
+        paymentTags: p.tags || {},
+        parcelamento: p.parcelamento || null,
+        installmentNumber: p.installmentNumber || null,
+        installmentTotal: p.installmentTotal || null
       }));
     }
-    return [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }];
+    return [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null }];
   });
 
   const [showValidationWarning, setShowValidationWarning] = useState(false);
@@ -23,28 +26,21 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
         transacao.pagamentos.map(p => ({
           pessoa: p.pessoa,
           valor: String(p.valor),
-          paymentTags: p.tags || {}
+          paymentTags: p.tags || {},
+          parcelamento: p.parcelamento || null,
+          installmentNumber: p.installmentNumber || null,
+          installmentTotal: p.installmentTotal || null
         }))
       );
     } else if (!transacao) {
-      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
+      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null }]);
     }
   }, [transacao, proprietarioPadrao]);
 
-  useEffect(() => {
-    if (isParcelado && !transacao) {
-      const expectedValor = valorTotal || '';
-      setPagamentos(prev => {
-        const current = prev[0];
-        if (!current || String(current.valor) !== String(expectedValor)) {
-          const pessoa = current?.pessoa || proprietarioPadrao || '';
-          const tags = current?.paymentTags || {};
-          return [{ pessoa, valor: expectedValor, paymentTags: tags }];
-        }
-        return prev;
-      });
-    }
-  }, [isParcelado, transacao, valorTotal, proprietarioPadrao]);
+  const isPagamentoParcelado = useCallback((index) => {
+    const conf = parcelamentos && parcelamentos[index];
+    return !!(conf?.ativo) || !!(pagamentos[index]?.parcelamento?.ativo);
+  }, [parcelamentos, pagamentos]);
 
   useEffect(() => {
     if (pagamentos.length === 0) {
@@ -68,7 +64,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
   }, []);
 
   const addPagamento = useCallback(() => {
-    setPagamentos(prev => [...prev, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
+    setPagamentos(prev => [...prev, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null }]);
   }, [proprietarioPadrao]);
 
   const removePagamento = useCallback((index = null) => {
@@ -109,7 +105,8 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
         newPayments.push({
           pessoa,
           valor: String(i === n - 1 ? remainder : share),
-          paymentTags: i === 0 ? { ...tags } : {}
+          paymentTags: i === 0 ? { ...tags } : {},
+          parcelamento: null
         });
       }
       return newPayments;
@@ -129,7 +126,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     setPagamentos(prev => {
       const source = prev[index];
       if (!source) return prev;
-      const copy = { ...source, paymentTags: { ...(source.paymentTags || {}) } };
+      const copy = { ...source, paymentTags: { ...(source.paymentTags || {}) }, parcelamento: null };
       const novos = [...prev];
       novos.splice(index + 1, 0, copy);
       return novos;
@@ -145,11 +142,25 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
   }, [pagamentos, valorEsperadoParaSoma]);
 
   const buildPagamentosPayload = useCallback(() => {
-    return pagamentos.map(p => ({
-      pessoa: p.pessoa,
-      valor: parseFloat(p.valor),
-      tags: p.paymentTags
-    }));
+    return pagamentos
+      .filter(p => p.pessoa && p.pessoa.trim() !== '')
+      .map(p => {
+        const payload = {
+          pessoa: p.pessoa,
+          valor: parseFloat(p.valor) || 0,
+          tags: p.paymentTags || {}
+        };
+
+        if (p.parcelamento?.ativo) {
+          payload.parcelamento = {
+            ativo: true,
+            quantidade: parseInt(p.parcelamento.quantidade, 10) || 2,
+            intervaloDias: parseInt(p.parcelamento.intervaloDias, 10) || 30
+          };
+        }
+
+        return payload;
+      });
   }, [pagamentos]);
 
   return {
@@ -165,6 +176,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     isValid,
     showValidationWarning,
     valorEsperadoParaSoma,
-    buildPagamentosPayload
+    buildPagamentosPayload,
+    isPagamentoParcelado
   };
 }

@@ -44,6 +44,20 @@
   border-radius: 4px;
 }
 
+.parcela-badge-grupo {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.parcela-badge-pagamento {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #666;
+  background: #f0f0f0;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
 .tipo-badge {
   display: flex;
   align-items: center;

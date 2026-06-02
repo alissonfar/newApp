@@ -407,6 +407,13 @@ export async function atualizarTransacao(id, transacao) {
   return await resposta.json();
 }
 
+export async function obterTransacoesPorGrupo(parentTransactionId) {
+  const resposta = await fetch(`${API_BASE}/transacoes/grupo/${parentTransactionId}`, {
+    headers: getHeaders(false)
+  });
+  return await resposta.json();
+}
+
 export async function excluirTransacao(id) {
   const resposta = await fetch(`${API_BASE}/transacoes/${id}`, {
     method: 'DELETE',
@@ -423,7 +430,38 @@ export async function estornarParcelamento(installmentGroupId) {
   return await resposta.json();
 }
 
-export async function obterPreviewParcelas({ totalAmount, totalInstallments, intervalInDays, startDate }) {
+export async function estornarGrupoPai(parentTransactionId) {
+  const resposta = await fetch(`${API_BASE}/transacoes/transacao-pai/${parentTransactionId}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  return await resposta.json();
+}
+
+export async function reativarTransacao(id) {
+  const resposta = await fetch(`${API_BASE}/transacoes/reativar/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(false)
+  });
+  return await resposta.json();
+}
+
+export async function obterPreviewParcelas({ totalAmount, totalInstallments, intervalInDays, startDate, pagamentos }) {
+  if (pagamentos && Array.isArray(pagamentos) && pagamentos.length > 0) {
+    const resposta = await fetch(`${API_BASE}/transacoes/preview-parcelas`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        totalAmount: totalAmount || 0,
+        totalInstallments: totalInstallments || 2,
+        intervalInDays: intervalInDays || 30,
+        startDate: startDate || new Date().toISOString().split('T')[0],
+        pagamentos
+      })
+    });
+    return await resposta.json();
+  }
+
   const params = new URLSearchParams({
     totalAmount: String(totalAmount || 0),
     totalInstallments: String(totalInstallments || 2),

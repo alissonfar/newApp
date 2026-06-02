@@ -97,7 +97,11 @@ const transacaoImportadaController = {
                 _id: pagamentoExistente?._id || p._id, // Mantém o ID original se existir
                 pessoa: p.pessoa || pagamentoExistente?.pessoa || 'Não especificado',
                 valor: parseFloat(p.valor || transacao.valor),
-                tags: p.tags || p.paymentTags || pagamentoExistente?.tags || {}
+                tags: p.tags || p.paymentTags || pagamentoExistente?.tags || {},
+                parcelamento: p.parcelamento || pagamentoExistente?.parcelamento || undefined,
+                installmentNumber: p.installmentNumber != null ? p.installmentNumber : pagamentoExistente?.installmentNumber,
+                installmentTotal: p.installmentTotal != null ? p.installmentTotal : pagamentoExistente?.installmentTotal,
+                installmentGroupId: p.installmentGroupId || pagamentoExistente?.installmentGroupId || undefined
               };
 
               console.log('[DEBUG] Pagamento processado:', {

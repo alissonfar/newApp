@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import Swal from 'sweetalert2';                     // Import SweetAlert2 para confirmações
 import { toast } from 'react-toastify';             // Import Toastify para mensagens
-import { obterTransacoes, excluirTransacao, estornarParcelamento } from '../../api';
+import { obterTransacoes, excluirTransacao, estornarGrupoPai, obterTransacoesPorGrupo } from '../../api';
 import TransactionCard from '../../components/Transaction/TransactionCard';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
@@ -151,36 +151,86 @@ const Transacoes = () => {
     carregarTransacoes();
   };
 
-  // Estornar parcelamento inteiro
-  const handleEstornarParcelamento = async (installmentGroupId) => {
-    Swal.fire({
-      title: 'Estornar parcelamento inteiro?',
-      text: 'Todas as parcelas deste grupo serão estornadas.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sim, estornar todas',
-      cancelButtonText: 'Cancelar'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await estornarParcelamento(installmentGroupId);
-          toast.success('Parcelamento estornado com sucesso!');
-          carregarTransacoes();
-        } catch (error) {
-          console.error('Erro ao estornar parcelamento:', error);
-          toast.error(error?.erro || 'Erro ao estornar parcelamento.');
-        }
-      }
-    });
-  };
+  // Excluir transação — com cascata automática se pertence a um grupo
+  const handleDelete = async (transacao) => {
+    const id = transacao.id || transacao._id;
+    const parentId = transacao.parentTransactionId;
 
-  // Excluir transação utilizando SweetAlert2 para confirmação e Toastify para feedback
-  const handleDelete = async (id) => {
+    if (parentId) {
+      let htmlLista = '<p style="text-align:left">Buscando transações do grupo...</p>';
+      Swal.fire({
+        title: 'Esta transação pertence a um grupo',
+        html: htmlLista,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, estornar o grupo inteiro',
+        cancelButtonText: 'Cancelar',
+        didOpen: async () => {
+          try {
+            const grupo = await obterTransacoesPorGrupo(parentId);
+            const transacoes = grupo.transacoes || [];
+            const totalValor = transacoes.reduce((s, t) => s + (parseFloat(t.valor) || 0), 0);
+
+            if (transacoes.length === 0) {
+              htmlLista = '<p style="text-align:left;color:#999">Nenhuma transação ativa encontrada no grupo.</p>';
+            } else {
+              const linhas = transacoes.map(t => {
+                const data = t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '—';
+                const pessoas = (t.pagamentos || []).map(p => {
+                  const parcela = p.installmentNumber != null ? ` (${p.installmentNumber}/${p.installmentTotal})` : '';
+                  return `${p.pessoa || '—'}: R$ ${parseFloat(p.valor || 0).toFixed(2)}${parcela}`;
+                }).join('<br>');
+                return `<tr>
+                  <td style="padding:4px 8px;text-align:left;white-space:nowrap">${data}</td>
+                  <td style="padding:4px 8px;text-align:left">${t.descricao || '—'}</td>
+                  <td style="padding:4px 8px;text-align:right;white-space:nowrap">R$ ${parseFloat(t.valor || 0).toFixed(2)}</td>
+                  <td style="padding:4px 8px;text-align:left;font-size:0.8em">${pessoas}</td>
+                </tr>`;
+              }).join('');
+
+              htmlLista = `
+                <p style="text-align:left;margin-bottom:8px">As seguintes transações serão estornadas:</p>
+                <div style="max-height:200px;overflow-y:auto;margin-bottom:8px">
+                  <table style="width:100%;border-collapse:collapse;font-size:0.82em">
+                    <thead><tr style="background:#f5f5f5">
+                      <th style="padding:4px 8px;text-align:left">Data</th>
+                      <th style="padding:4px 8px;text-align:left">Descrição</th>
+                      <th style="padding:4px 8px;text-align:right">Valor</th>
+                      <th style="padding:4px 8px;text-align:left">Pagamentos</th>
+                    </tr></thead>
+                    <tbody>${linhas}</tbody>
+                  </table>
+                </div>
+                <p style="text-align:left;font-weight:bold">
+                  Total: ${transacoes.length} transação${transacoes.length > 1 ? 'ões' : ''}, R$ ${totalValor.toFixed(2)}
+                </p>`;
+            }
+
+            Swal.getHtmlContainer().innerHTML = htmlLista;
+          } catch {
+            Swal.getHtmlContainer().innerHTML = '<p style="color:#d33">Erro ao carregar transações do grupo.</p>';
+          }
+        }
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            await estornarGrupoPai(parentId);
+            toast.success('Grupo estornado com sucesso!');
+            carregarTransacoes();
+          } catch (error) {
+            console.error('Erro ao estornar grupo:', error);
+            toast.error(error?.erro || 'Erro ao estornar grupo.');
+          }
+        }
+      });
+      return;
+    }
+
     Swal.fire({
       title: 'Tem certeza que deseja excluir esta transação?',
-      text: 'Esta ação não poderá ser desfeita.',
+      text: 'A transação será estornada.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -247,7 +297,6 @@ const Transacoes = () => {
               transacao={tr}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onEstornarParcelamento={handleEstornarParcelamento}
             />
           ))
         ) : (

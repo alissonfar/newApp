@@ -104,9 +104,174 @@ function generateInstallments({ totalAmount, totalInstallments, intervalInDays, 
   };
 }
 
+/**
+ * Gera transações a partir de pagamentos com parcelamento por participante.
+ * Cada pagamento pode ter seu próprio plano de parcelamento (ou nenhum = à vista).
+ * Agrupa todos os pagamentos (à vista + parcelas) por data e gera uma Transacao por data.
+ *
+ * @param {Object} params
+ * @param {Array} params.pagamentos - Array de pagamentos com estrutura:
+ *   { pessoa, valor, tags?, parcelamento?: { ativo, quantidade, intervaloDias } }
+ * @param {string|Date} params.startDate - Data base para início do parcelamento
+ * @param {Object} params.baseTransacao - Campos base para todas as transações geradas
+ *   { tipo, descricao, observacao, usuario, subconta, contaConjunta? }
+ * @returns {{ transacoes: Array, parentTransactionId: ObjectId }}
+ */
+function gerarTransacoesComParcelamento({ pagamentos, startDate, baseTransacao }) {
+  const mongoose = require('mongoose');
+  const parentTransactionId = new mongoose.Types.ObjectId();
+
+  const allEntries = [];
+
+  for (const pag of pagamentos) {
+    const valorPag = Math.abs(parseFloat(pag.valor) || 0);
+    if (valorPag <= 0) continue;
+
+    if (pag.parcelamento && pag.parcelamento.ativo) {
+      const planGroupId = new mongoose.Types.ObjectId();
+      const resultado = generateInstallments({
+        totalAmount: valorPag,
+        totalInstallments: pag.parcelamento.quantidade,
+        intervalInDays: pag.parcelamento.intervaloDias || 30,
+        startDate
+      });
+
+      if (resultado.erro) {
+        return { erro: `Erro no parcelamento de "${pag.pessoa}": ${resultado.erro}` };
+      }
+
+      for (const parcela of resultado.parcelas) {
+        allEntries.push({
+          date: parcela.date,
+          pessoa: pag.pessoa,
+          valor: parcela.value,
+          tags: pag.tags || {},
+          installmentNumber: parcela.installmentNumber,
+          installmentTotal: pag.parcelamento.quantidade,
+          installmentGroupId: planGroupId,
+          installmentIntervalDays: pag.parcelamento.intervaloDias || 30
+        });
+      }
+    } else {
+      const dataStr = formatDateToYYYYMMDD(parseStartDateUTC(startDate));
+      allEntries.push({
+        date: dataStr,
+        pessoa: pag.pessoa,
+        valor: valorPag,
+        tags: pag.tags || {},
+        installmentNumber: null,
+        installmentTotal: null,
+        installmentGroupId: null,
+        installmentIntervalDays: null
+      });
+    }
+  }
+
+  if (allEntries.length === 0) {
+    return { erro: 'Nenhum pagamento válido para gerar transações.' };
+  }
+
+  const groupedByDate = new Map();
+  for (const entry of allEntries) {
+    if (!groupedByDate.has(entry.date)) {
+      groupedByDate.set(entry.date, []);
+    }
+    groupedByDate.get(entry.date).push(entry);
+  }
+
+  const sortedDates = Array.from(groupedByDate.keys()).sort();
+  const transacoes = sortedDates.map((dateStr) => {
+    const entries = groupedByDate.get(dateStr);
+    const dataParcela = new Date(dateStr + 'T12:00:00.000Z');
+
+    const pagamentosDaTransacao = entries.map((e) => {
+      const pag = {
+        pessoa: e.pessoa,
+        valor: Math.round(e.valor * 100) / 100,
+        tags: e.tags
+      };
+      if (e.installmentNumber != null) {
+        pag.installmentNumber = e.installmentNumber;
+        pag.installmentTotal = e.installmentTotal;
+        pag.installmentGroupId = e.installmentGroupId;
+      }
+      return pag;
+    });
+
+    const valorTotal = entries.reduce((sum, e) => sum + e.valor, 0);
+
+    const hasInstallmentPayment = entries.some((e) => e.installmentNumber != null);
+
+    return {
+      ...baseTransacao,
+      valor: Math.round(valorTotal * 100) / 100,
+      data: dataParcela,
+      pagamentos: pagamentosDaTransacao,
+      parentTransactionId,
+      isInstallment: hasInstallmentPayment,
+      installmentGroupId: null,
+      installmentNumber: null,
+      installmentTotal: null,
+      installmentIntervalDays: null,
+      installmentIntervalMonths: null
+    };
+  });
+
+  return { transacoes, parentTransactionId };
+}
+
+/**
+ * Versão de preview: gera parcelas agrupadas por data sem criar transações.
+ * Usado pelo endpoint /preview-parcelas para que o frontend possa exibir o preview.
+ *
+ * @param {Object} params
+ * @param {number} params.valorTotal - Valor total a dividir (para compatibilidade legada)
+ * @param {number} params.totalInstallments - Quantidade de parcelas (legado)
+ * @param {number} params.intervalInDays - Intervalo em dias (legado)
+ * @param {string|Date} params.startDate - Data inicial
+ * @param {Array} [params.pagamentos] - Array de pagamentos com parcelamento por participante (novo modelo).
+ *   Se fornecido, usa o novo algoritmo. Caso contrário, usa o legado.
+ * @returns {Object} Preview com parcelas agrupadas
+ */
+function previewParcelamento({ valorTotal, totalInstallments, intervalInDays, startDate, pagamentos }) {
+  if (pagamentos && Array.isArray(pagamentos) && pagamentos.length > 0 && pagamentos.some(p => p.parcelamento?.ativo)) {
+    const fakeBase = {};
+    const result = gerarTransacoesComParcelamento({
+      pagamentos,
+      startDate,
+      baseTransacao: fakeBase
+    });
+
+    if (result.erro) return { erro: result.erro };
+
+    const allParcelasFlat = [];
+    for (const t of result.transacoes) {
+      for (const p of t.pagamentos) {
+        allParcelasFlat.push({
+          date: t.data instanceof Date ? formatDateToYYYYMMDD(t.data) : String(t.data).split('T')[0],
+          pessoa: p.pessoa,
+          valor: p.valor,
+          installmentNumber: p.installmentNumber,
+          installmentTotal: p.installmentTotal
+        });
+      }
+    }
+
+    return {
+      parcelas: allParcelasFlat,
+      transacoesGeradas: result.transacoes.length,
+      parentTransactionId: result.parentTransactionId
+    };
+  }
+
+  return generateInstallments({ totalAmount: valorTotal, totalInstallments, intervalInDays, startDate });
+}
+
 module.exports = {
   dividirParcelas,
   generateInstallments,
   parseStartDateUTC,
-  formatDateToYYYYMMDD
+  formatDateToYYYYMMDD,
+  gerarTransacoesComParcelamento,
+  previewParcelamento
 };

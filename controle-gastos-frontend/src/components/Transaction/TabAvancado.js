@@ -1,6 +1,5 @@
 import React from 'react';
 import SubcontaSelect from '../shared/SubcontaSelect';
-import { formatDateBR } from '../../utils/dateUtils';
 
 export const TAB_AVANCADO = 'avancado';
 
@@ -15,78 +14,18 @@ const TabAvancado = ({
   setParteUsuario,
   transacao
 }) => {
-  const { state: pState, setters: pSetters } = parcelamento;
   const { state: cState, setters: cSetters, toggle: ccToggle, parteOutro } = contaConjunta;
+
+  const temParcelamento = Object.values(parcelamento.state.parcelamentos || {}).some(c => c?.ativo);
 
   return (
     <div data-tab="avancado" className="tab-panel tab-avancado">
-      {pState.showInForm && (
-        <div className="form-section parcelamento-section">
-          <label>
-            <input
-              type="checkbox"
-              checked={pState.isParcelado}
-              onChange={(e) => pSetters.setIsParcelado(e.target.checked)}
-              tabIndex={41}
-            />
-            {' '}Parcelado?
-          </label>
-          {pState.isParcelado && (
-            <div className="parcelamento-campos">
-              <div className="form-section">
-                <label>Quantidade de parcelas:</label>
-                <input
-                  type="number"
-                  min="2"
-                  max="60"
-                  value={pState.totalParcelas}
-                  onChange={(e) => pSetters.setTotalParcelas(e.target.value)}
-                  tabIndex={42}
-                />
-              </div>
-              <div className="form-section">
-                <label>Intervalo (dias):</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={pState.intervaloDias}
-                  onChange={(e) => pSetters.setIntervaloDias(e.target.value)}
-                  tabIndex={43}
-                />
-              </div>
-            </div>
-          )}
-          {pState.previewParcelas && pState.previewParcelas.parcelas && pState.previewParcelas.parcelas.length > 0 && (
-            <div className="preview-parcelas-section">
-              <h4>Preview das parcelas</h4>
-              <div className="preview-parcelas-table-wrapper">
-                <table className="preview-parcelas-table">
-                  <thead>
-                    <tr>
-                      <th>Parcela</th>
-                      <th>Data</th>
-                      <th>Valor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pState.previewParcelas.parcelas.map((p) => (
-                      <tr key={p.installmentNumber}>
-                        <td>{p.installmentNumber}/{pState.previewParcelas.parcelas.length}</td>
-                        <td>{formatDateBR(p.date)}</td>
-                        <td>R$ {parseFloat(p.value).toFixed(2).replace('.', ',')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="preview-parcelas-resumo">
-                <p><strong>Valor total:</strong> R$ {parseFloat(pState.previewParcelas.valorTotal || 0).toFixed(2).replace('.', ',')}</p>
-                <p><strong>Intervalo:</strong> {pState.previewParcelas.intervalInDays} dias</p>
-                <p><strong>Data inicial:</strong> {formatDateBR(pState.previewParcelas.startDate)}</p>
-              </div>
-            </div>
-          )}
+      {temParcelamento && (
+        <div className="form-section parcelamento-resumo">
+          <p className="parcelamento-resumo-texto">
+            <strong>Parcelamento configurado nos pagamentos.</strong> {' '}
+            Cada participante pode ter seu proprio plano de parcelamento.
+          </p>
         </div>
       )}
 

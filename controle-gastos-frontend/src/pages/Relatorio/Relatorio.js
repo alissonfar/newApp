@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useContext } from 'react';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
-import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, gerarRelatorioAvancado, listarTemplatesRelatorio } from '../../api.js';
+import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, estornarGrupoPai, obterTransacoesPorGrupo, gerarRelatorioAvancado, listarTemplatesRelatorio } from '../../api.js';
 import { useData } from '../../context/DataContext';
 import { AuthContext } from '../../context/AuthContext';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
@@ -36,6 +36,10 @@ function flattenTransactions(transArray) {
       pagoPor: tr.contaConjunta.pagoPor,
       vinculo: tr.contaConjunta.vinculoId?.nome || tr.vinculoNome || (tr.contaConjunta.vinculoId?._id || tr.contaConjunta.vinculoId) || ''
     } : {};
+    const baseParcelamento = {
+      parentTransactionId: tr.parentTransactionId || null,
+      isInstallment: tr.isInstallment || false
+    };
     if (!tr.pagamentos || tr.pagamentos.length === 0) {
       flattened.push({
         id,
@@ -46,7 +50,10 @@ function flattenTransactions(transArray) {
         pessoa: null,
         valorPagamento: 0,
         tagsPagamento: {},
-        ...baseContaConjunta
+        ...baseContaConjunta,
+        ...baseParcelamento,
+        installmentNumber: null,
+        installmentTotal: null
       });
     } else {
       tr.pagamentos.forEach((p) => {
@@ -59,7 +66,10 @@ function flattenTransactions(transArray) {
           pessoa: p.pessoa,
           valorPagamento: p.valor,
           tagsPagamento: p.tags || {},
-          ...baseContaConjunta
+          ...baseContaConjunta,
+          ...baseParcelamento,
+          installmentNumber: p.installmentNumber || null,
+          installmentTotal: p.installmentTotal || null
         });
       });
     }
@@ -431,9 +441,80 @@ const Relatorio = () => {
   };
 
   const handleDelete = async (row) => {
+    if (row.parentTransactionId) {
+      let htmlLista = '<p style="text-align:left">Buscando transações do grupo...</p>';
+      Swal.fire({
+        title: 'Esta transação pertence a um grupo',
+        html: htmlLista,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, estornar o grupo inteiro',
+        cancelButtonText: 'Cancelar',
+        didOpen: async () => {
+          try {
+            const grupo = await obterTransacoesPorGrupo(row.parentTransactionId);
+            const transacoes = grupo.transacoes || [];
+            const totalValor = transacoes.reduce((s, t) => s + (parseFloat(t.valor) || 0), 0);
+
+            if (transacoes.length === 0) {
+              htmlLista = '<p style="text-align:left;color:#999">Nenhuma transação ativa encontrada no grupo.</p>';
+            } else {
+              const linhas = transacoes.map(t => {
+                const data = t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '—';
+                const pessoas = (t.pagamentos || []).map(p => {
+                  const parcela = p.installmentNumber != null ? ` (${p.installmentNumber}/${p.installmentTotal})` : '';
+                  return `${p.pessoa || '—'}: R$ ${parseFloat(p.valor || 0).toFixed(2)}${parcela}`;
+                }).join('<br>');
+                return `<tr>
+                  <td style="padding:4px 8px;text-align:left;white-space:nowrap">${data}</td>
+                  <td style="padding:4px 8px;text-align:left">${t.descricao || '—'}</td>
+                  <td style="padding:4px 8px;text-align:right;white-space:nowrap">R$ ${parseFloat(t.valor || 0).toFixed(2)}</td>
+                  <td style="padding:4px 8px;text-align:left;font-size:0.8em">${pessoas}</td>
+                </tr>`;
+              }).join('');
+
+              htmlLista = `
+                <p style="text-align:left;margin-bottom:8px">As seguintes transações serão estornadas:</p>
+                <div style="max-height:200px;overflow-y:auto;margin-bottom:8px">
+                  <table style="width:100%;border-collapse:collapse;font-size:0.82em">
+                    <thead><tr style="background:#f5f5f5">
+                      <th style="padding:4px 8px;text-align:left">Data</th>
+                      <th style="padding:4px 8px;text-align:left">Descrição</th>
+                      <th style="padding:4px 8px;text-align:right">Valor</th>
+                      <th style="padding:4px 8px;text-align:left">Pagamentos</th>
+                    </tr></thead>
+                    <tbody>${linhas}</tbody>
+                  </table>
+                </div>
+                <p style="text-align:left;font-weight:bold">
+                  Total: ${transacoes.length} transação${transacoes.length > 1 ? 'ões' : ''}, R$ ${totalValor.toFixed(2)}
+                </p>`;
+            }
+
+            Swal.getHtmlContainer().innerHTML = htmlLista;
+          } catch {
+            Swal.getHtmlContainer().innerHTML = '<p style="color:#d33">Erro ao carregar transações do grupo.</p>';
+          }
+        }
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            await estornarGrupoPai(row.parentTransactionId);
+            toast.success('Grupo estornado com sucesso!');
+            fetchData(page, appliedFilters ?? draftFilters);
+          } catch (error) {
+            toast.error('Erro ao estornar grupo.');
+          }
+        }
+      });
+      return;
+    }
+
     const result = await Swal.fire({
       title: 'Tem certeza que deseja excluir esta transação?',
-      text: 'Esta ação não poderá ser desfeita.',
+      text: 'A transação será estornada.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
