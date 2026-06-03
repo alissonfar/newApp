@@ -486,6 +486,26 @@ const DetalhesImportacaoPage = () => {
                             <span>{importacao.periodoCompetencia}</span>
                         </div>
                     )}
+                    {importacao.vencimento && (
+                        <div className="info-item">
+                            <label>Vencimento</label>
+                            <span>{formatarData(importacao.vencimento)}</span>
+                        </div>
+                    )}
+                    {importacao.numeroComplemento != null && importacao.numeroComplemento > 0 && (
+                        <div className="info-item">
+                            <label>N° Complemento</label>
+                            <span>{importacao.numeroComplemento}° Complemento</span>
+                        </div>
+                    )}
+                    {importacao.tagSugeridaId && (
+                        <div className="info-item">
+                            <label>Tag inferida</label>
+                            <span>
+                                {importacao.tagSugeridaId?.nome || (importacao.metadadosInferidos?.tagSugerida?.tagNome) || 'Tag salva'}
+                            </span>
+                        </div>
+                    )}
                     {(importacao.totalCreditos > 0 || importacao.totalDebitos > 0) && (
                         <>
                             <div className="info-item">

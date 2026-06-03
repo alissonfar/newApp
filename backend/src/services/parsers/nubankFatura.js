@@ -81,6 +81,7 @@ module.exports = {
   id: 'nubank_fatura',
   nome: 'Fatura Nubank',
   extensao: ['csv'],
+  tipoDestino: 'fatura_cartao',
   match,
   parse
 };

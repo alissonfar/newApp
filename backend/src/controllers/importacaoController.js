@@ -13,6 +13,9 @@ const ledgerService = require('../services/ledgerService');
 const previewStorage = require('../utils/previewStorage');
 const parserRegistry = require('../services/parsers');
 const inferencia = require('../services/inferenciaImportacaoService');
+const Categoria = require('../models/categoria');
+const Tag = require('../models/tag');
+const Usuario = require('../models/usuarios');
 
 class ImportacaoController {
     static async previewArquivo(req, res) {
@@ -63,17 +66,89 @@ class ImportacaoController {
                 console.warn('[Preview] Falha ao detectar complementar:', compErr.message);
             }
 
+            // Inferência avançada: tag sugerida + nº complemento (apenas para nubank_fatura)
+            let tagSugerida = null;
+            let numeroComplemento = null;
+            let categoriaCartaoNaoConfigurada = false;
+            let categoriaCartaoDeletada = false;
+            let motivoFalhaTag = null;
+            if (meta.isFaturaCartao && meta.mesVencimento) {
+                try {
+                    const usuario = await Usuario.findById(req.userId)
+                        .select('preferencias.categoriaCartaoCreditoId')
+                        .lean();
+                    const categoriaCartaoId = usuario?.preferencias?.categoriaCartaoCreditoId || null;
+                    if (!categoriaCartaoId) {
+                        categoriaCartaoNaoConfigurada = true;
+                        motivoFalhaTag = 'categoria_nao_configurada';
+                    } else {
+                        const tags = await Tag.find({ usuario: req.userId }).lean();
+                        const inferenciaTag = await inferencia.inferirTagPorMes({
+                            categoriaCartaoId,
+                            tags,
+                            parserId: deteccao.parser.id,
+                            mesVencimento: meta.mesVencimento,
+                            Categoria,
+                            Tag,
+                            usuarioId: req.userId
+                        });
+                        if (inferenciaTag.motivo === 'categoria_deletada') {
+                            categoriaCartaoDeletada = true;
+                            motivoFalhaTag = 'categoria_deletada';
+                        } else if (inferenciaTag.tagSugerida === null && inferenciaTag.motivo) {
+                            motivoFalhaTag = inferenciaTag.motivo;
+                        } else {
+                            tagSugerida = inferenciaTag;
+                        }
+                        numeroComplemento = await inferencia.contarComplementosAnteriores(Importacao, {
+                            usuarioId: req.userId,
+                            parserId: deteccao.parser.id,
+                            mesVencimento: meta.mesVencimento
+                        });
+                    }
+                } catch (tagErr) {
+                    console.warn('[Preview] Falha ao inferir tag de fatura:', tagErr.message);
+                }
+            }
+
+            // Recalcular título com o nº complemento real (se já calculado)
+            const tituloFinal = (meta.isFaturaCartao && numeroComplemento != null)
+                ? inferencia.sugerirTitulo({
+                    filename: nomeOriginal,
+                    parserId: deteccao.parser.id,
+                    competencia: meta.periodoCompetencia,
+                    dataInicial: meta.dataInicial,
+                    dataFinal: meta.dataFinal,
+                    vencimento: meta.vencimento,
+                    numeroComplemento
+                })
+                : meta.tituloSugerido;
+
             return res.json({
                 previewId,
-                parser: { id: deteccao.parser.id, nome: deteccao.parser.nome, confianca: deteccao.score },
+                parser: {
+                    id: deteccao.parser.id,
+                    nome: deteccao.parser.nome,
+                    confianca: deteccao.score,
+                    tipoDestino: deteccao.parser.tipoDestino || null
+                },
                 metadadosSugeridos: {
-                    titulo: meta.tituloSugerido,
+                    titulo: tituloFinal,
                     dataInicial: meta.dataInicial,
                     dataFinal: meta.dataFinal,
                     periodoCompetencia: meta.periodoCompetencia,
                     totalRegistros: meta.totalRegistros,
                     totalCreditos: meta.totalCreditos,
-                    totalDebitos: meta.totalDebitos
+                    totalDebitos: meta.totalDebitos,
+                    vencimento: meta.vencimento,
+                    mesVencimento: meta.mesVencimento,
+                    isFaturaCartao: meta.isFaturaCartao,
+                    sugerirComplementarAutomaticamente: meta.sugerirComplementarAutomaticamente,
+                    tagSugerida,
+                    numeroComplemento,
+                    categoriaCartaoNaoConfigurada,
+                    categoriaCartaoDeletada,
+                    motivoFalhaTag
                 },
                 sugestaoComplementar: complementar,
                 amostraTransacoes: transacoes.slice(0, 5).map(t => ({
@@ -105,7 +180,7 @@ class ImportacaoController {
         try {
             // Modo 2 (novo): JSON com previewId — reutiliza arquivo já enviado
             if (req.is('application/json')) {
-                const { previewId, descricao, tagsPadrao: tagsPadraoRaw, tipoImportacao: tipoImportacaoRaw } = req.body || {};
+                const { previewId, descricao, tagsPadrao: tagsPadraoRaw, tipoImportacao: tipoImportacaoRaw, metadados: metadadosRaw } = req.body || {};
                 if (!previewId) {
                     return res.status(400).json({ erro: 'previewId é obrigatório' });
                 }
@@ -129,6 +204,13 @@ class ImportacaoController {
                         if (typeof tagsPadrao !== 'object' || tagsPadrao === null) tagsPadrao = {};
                     } catch { tagsPadrao = {}; }
                 }
+                let metadados = {};
+                if (metadadosRaw) {
+                    try {
+                        metadados = typeof metadadosRaw === 'string' ? JSON.parse(metadadosRaw) : metadadosRaw;
+                        if (typeof metadados !== 'object' || metadados === null) metadados = {};
+                    } catch { metadados = {}; }
+                }
 
                 const importacao = new Importacao({
                     descricao,
@@ -137,7 +219,12 @@ class ImportacaoController {
                     caminhoArquivo: novoCaminho,
                     status: 'pendente',
                     tagsPadrao,
-                    tipoImportacao
+                    tipoImportacao,
+                    vencimento: metadados.vencimento || null,
+                    mesVencimento: metadados.mesVencimento || null,
+                    numeroComplemento: (typeof metadados.numeroComplemento === 'number') ? metadados.numeroComplemento : null,
+                    tagSugeridaId: metadados.tagSugeridaId || null,
+                    categoriaSugeridaId: metadados.categoriaSugeridaId || null
                 });
                 await importacao.save();
                 ImportacaoService.processarArquivo(importacao._id, req.userId)

@@ -31,7 +31,8 @@ const UsuarioSchema = new mongoose.Schema({
       push: { type: Boolean, default: true }
     },
     moedaPadrao: { type: String, default: 'BRL' },
-    proprietario: { type: String, default: '' }
+    proprietario: { type: String, default: '' },
+    categoriaCartaoCreditoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', default: null }
   },
   ultimoAcesso: { type: Date },
   status: { type: String, enum: ['ativo', 'inativo', 'bloqueado'], default: 'ativo' },

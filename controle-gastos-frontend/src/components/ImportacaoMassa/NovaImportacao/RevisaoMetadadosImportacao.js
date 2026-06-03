@@ -1,4 +1,5 @@
 import React from 'react';
+import IconRenderer from '../../shared/IconRenderer';
 
 const formatarMoeda = (v) => new Intl.NumberFormat('pt-BR', {
   style: 'currency', currency: 'BRL'
@@ -6,13 +7,14 @@ const formatarMoeda = (v) => new Intl.NumberFormat('pt-BR', {
 
 const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
 
-const Badge = ({ label, cor = '#3b82f6' }) => (
+const Badge = ({ label, cor = '#3b82f6', icone }) => (
   <span style={{
     display: 'inline-flex', alignItems: 'center', gap: 6,
     padding: '4px 10px', borderRadius: 999,
     background: cor + '22', color: cor,
     fontSize: 13, fontWeight: 500, border: `1px solid ${cor}44`
   }}>
+    {icone && <IconRenderer nome={icone} size={14} cor={cor} />}
     {label}
   </span>
 );
@@ -45,7 +47,8 @@ const RevisaoMetadadosImportacao = (props) => {
     onTipoImportacaoChange,
     onConfirmar,
     onCancelar,
-    loading
+    loading,
+    onAbrirConfiguracao
   } = props || {};
 
   if (!preview) return null;
@@ -57,6 +60,12 @@ const RevisaoMetadadosImportacao = (props) => {
 
   const dataInicialFmt = formatarData(meta.dataInicial);
   const dataFinalFmt = formatarData(meta.dataFinal);
+  const vencimentoFmt = formatarData(meta.vencimento);
+  const isFaturaCartao = !!meta.isFaturaCartao;
+  const tagSugerida = meta.tagSugerida || null;
+  const numeroComplemento = meta.numeroComplemento;
+  const categoriaCartaoNaoConfigurada = !!meta.categoriaCartaoNaoConfigurada;
+  const categoriaCartaoDeletada = !!meta.categoriaCartaoDeletada;
 
   return (
     <div className="revisao-metadados">
@@ -72,11 +81,20 @@ const RevisaoMetadadosImportacao = (props) => {
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           <Badge label={`Origem: ${parserInfo.nome || parserInfo.id || '—'}`} cor="#0ea5e9" />
+          {isFaturaCartao && (
+            <Badge label="Fatura de Cartão de Crédito" cor="#f59e0b" icone="credit-card" />
+          )}
           {dataInicialFmt !== '—' && dataFinalFmt !== '—' && (
             <Badge label={`Período: ${dataInicialFmt} a ${dataFinalFmt}`} cor="#8b5cf6" />
           )}
           {meta.periodoCompetencia && (
             <Badge label={`Competência: ${meta.periodoCompetencia}`} cor="#a855f7" />
+          )}
+          {isFaturaCartao && vencimentoFmt !== '—' && (
+            <Badge label={`Vencimento: ${vencimentoFmt}`} cor="#ea580c" icone="calendar" />
+          )}
+          {isFaturaCartao && numeroComplemento != null && numeroComplemento > 0 && (
+            <Badge label={`N° Complemento: ${numeroComplemento}`} cor="#0d9488" />
           )}
           {meta.totalRegistros > 0 && (
             <Badge label={`${meta.totalRegistros} transações`} cor="#0ea5e9" />
@@ -88,9 +106,79 @@ const RevisaoMetadadosImportacao = (props) => {
             <Badge label={`Débitos: ${formatarMoeda(meta.totalDebitos)}`} cor="#dc2626" />
           )}
         </div>
+        {isFaturaCartao && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+            {tagSugerida ? (
+              <Badge
+                label={`Tag: ${tagSugerida.tagNome}`}
+                cor={tagSugerida.cor || '#3b82f6'}
+                icone={tagSugerida.icone}
+              />
+            ) : (
+              <Badge label="Tag: não inferida" cor="#dc2626" />
+            )}
+            {tagSugerida && tagSugerida.autoCriada && (
+              <Badge label="Tag auto-criada" cor="#7c3aed" />
+            )}
+          </div>
+        )}
       </div>
 
-      {complementar && complementar.sugestao && (
+      {isFaturaCartao && (
+        <div style={{
+          background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: 8,
+          padding: 16, marginBottom: 16
+        }}>
+          <h4 style={{ margin: 0, marginBottom: 6, color: '#92400e', fontSize: 16 }}>
+            ⚠️ Fatura de Cartão de Crédito detectada
+          </h4>
+          <p style={{ margin: '0 0 12px 0', color: '#78350f', fontSize: 14 }}>
+            Faturas Nubank devem ser importadas como <strong>complementares</strong> — novas transações
+            serão mescladas com a fatura existente para evitar duplicatas.
+          </p>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={!!tipoImportacaoComplementar}
+              onChange={(e) => onTipoImportacaoChange && onTipoImportacaoChange(e.target.checked)}
+            />
+            <span style={{ fontSize: 14, color: '#78350f', fontWeight: 500 }}>
+              Marcar como importação complementar
+            </span>
+          </label>
+        </div>
+      )}
+
+      {isFaturaCartao && (categoriaCartaoNaoConfigurada || categoriaCartaoDeletada) && (
+        <div style={{
+          background: '#fef2f2', border: '2px solid #dc2626', borderRadius: 8,
+          padding: 16, marginBottom: 16
+        }}>
+          <h4 style={{ margin: 0, marginBottom: 6, color: '#991b1b', fontSize: 16 }}>
+            ⚙️ {categoriaCartaoDeletada
+              ? 'Categoria de faturas foi deletada'
+              : 'Categoria de faturas não configurada'}
+          </h4>
+          <p style={{ margin: '0 0 12px 0', color: '#7f1d1d', fontSize: 14 }}>
+            {categoriaCartaoDeletada
+              ? 'A categoria que você havia configurado para faturas de cartão de crédito não existe mais. Reconfigure para que a tag do mês seja inferida automaticamente.'
+              : 'Para que o sistema infira automaticamente a tag da fatura (ex: "Junho 2026"), configure a categoria de faturas de cartão de crédito.'}
+          </p>
+          <button
+            type="button"
+            onClick={onAbrirConfiguracao}
+            style={{
+              padding: '8px 16px', border: 'none', borderRadius: 6,
+              background: '#dc2626', color: 'white', cursor: 'pointer',
+              fontSize: 14, fontWeight: 500
+            }}
+          >
+            Configurar agora
+          </button>
+        </div>
+      )}
+
+      {complementar && complementar.sugestao && !isFaturaCartao && (
         <div style={{
           background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8,
           padding: 12, marginBottom: 16, fontSize: 14, color: '#92400e'
@@ -107,15 +195,17 @@ const RevisaoMetadadosImportacao = (props) => {
           editavel
           onChange={onDescricaoChange}
         />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={!!tipoImportacaoComplementar}
-            onChange={(e) => onTipoImportacaoChange && onTipoImportacaoChange(e.target.checked)}
-          />
-          <span style={{ fontSize: 14 }}>Marcar como importação complementar (evitar duplicatas)</span>
-        </label>
-        {complementar && complementar.sugestao && !tipoImportacaoComplementar && (
+        {!isFaturaCartao && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={!!tipoImportacaoComplementar}
+              onChange={(e) => onTipoImportacaoChange && onTipoImportacaoChange(e.target.checked)}
+            />
+            <span style={{ fontSize: 14 }}>Marcar como importação complementar (evitar duplicatas)</span>
+          </label>
+        )}
+        {complementar && complementar.sugestao && !tipoImportacaoComplementar && !isFaturaCartao && (
           <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>
             Recomendamos marcar esta importação como complementar.
           </p>

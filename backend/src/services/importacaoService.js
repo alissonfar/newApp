@@ -587,6 +587,35 @@ class ImportacaoService {
         importacao.totalCreditos = meta.totalCreditos || 0;
         importacao.totalDebitos = meta.totalDebitos || 0;
         if (parserUsado) importacao.origem = parserUsado;
+        // Fatura de Cartão de Crédito
+        if (meta.isFaturaCartao) {
+          if (meta.vencimento) importacao.vencimento = meta.vencimento;
+          if (meta.mesVencimento) importacao.mesVencimento = meta.mesVencimento;
+          // Recalcular nº complemento de forma consistente
+          if (meta.mesVencimento) {
+            try {
+              const numeroRecalc = await inferencia.contarComplementosAnteriores(Importacao, {
+                usuarioId: importacao.usuario,
+                parserId: parserUsado,
+                mesVencimento: meta.mesVencimento
+              });
+              importacao.numeroComplemento = numeroRecalc;
+              // Re-sugerir título com nº correto
+              meta.numeroComplemento = numeroRecalc;
+              importacao.descricao = inferencia.sugerirTitulo({
+                filename: importacao.nomeArquivo,
+                parserId: parserUsado,
+                competencia: meta.periodoCompetencia,
+                dataInicial: meta.dataInicial,
+                dataFinal: meta.dataFinal,
+                vencimento: meta.vencimento,
+                numeroComplemento: numeroRecalc
+              });
+            } catch (nCompErr) {
+              console.warn('[Importação] Falha ao calcular nº complemento:', nCompErr.message);
+            }
+          }
+        }
         importacao.metadadosInferidos = {
           ...meta,
           parserId: parserUsado,

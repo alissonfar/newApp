@@ -80,6 +80,29 @@ const ImportacaoSchema = new mongoose.Schema({
     type: Object,
     default: {}
   },
+  vencimento: {
+    type: Date,
+    default: null
+  },
+  mesVencimento: {
+    type: String,
+    default: null,
+    index: true
+  },
+  numeroComplemento: {
+    type: Number,
+    default: null
+  },
+  tagSugeridaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tag',
+    default: null
+  },
+  categoriaSugeridaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Categoria',
+    default: null
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',

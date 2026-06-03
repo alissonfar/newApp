@@ -13,6 +13,13 @@ const MESES_PT = {
   dezembro: 12, dez: 12
 };
 
+const MESES_NOMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const MESES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
 function parseDataPossivel(token) {
   if (!token) return null;
   const s = String(token).trim();
@@ -98,6 +105,19 @@ function extrairDatasDoNome(filename) {
   });
 }
 
+function extrairVencimentoDoNome(filename) {
+  if (!filename) return null;
+  const datas = extrairDatasDoNome(filename);
+  if (datas.length === 0) return null;
+  // Preferir datas mais "completas" (com dia). Se houver mais de uma, pegar a última
+  // (geralmente Nubank usa sufixo YYYY-MM-DD com vencimento).
+  const comDia = datas.filter(d => d.dia > 1);
+  if (comDia.length > 0) {
+    return comDia[comDia.length - 1];
+  }
+  return datas[datas.length - 1];
+}
+
 function inferirCompetencia(transacoes) {
   const contadores = {};
   for (const t of transacoes) {
@@ -134,7 +154,27 @@ function formatarCompetenciaPT(periodo) {
   return `${nomes[mes - 1]}/${ano}`;
 }
 
-function sugerirTitulo({ filename, parserId, competencia, dataInicial, dataFinal }) {
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function sugerirTitulo({ filename, parserId, competencia, dataInicial, dataFinal, vencimento, numeroComplemento }) {
+  // Caso especial: Fatura de Cartão de Crédito Nubank
+  if (parserId === 'nubank_fatura' && (competencia || vencimento)) {
+    const compFmt = formatarCompetenciaPT(competencia) || 'Fatura';
+    let venceStr = '';
+    if (vencimento) {
+      const v = new Date(vencimento);
+      if (!isNaN(v.getTime())) {
+        venceStr = ` (vence ${pad2(v.getUTCDate())}/${pad2(v.getUTCMonth() + 1)})`;
+      }
+    }
+    const complemento = (numeroComplemento != null && numeroComplemento > 0)
+      ? ` - ${numeroComplemento}° Complemento`
+      : ' - 1° Complemento';
+    return `Fatura Nubank - ${compFmt}${venceStr}${complemento}`;
+  }
+
   const baseSemExtensao = (filename || '').replace(/\.[^.]+$/, '');
   const partesLimpa = baseSemExtensao
     .replace(/[_\-.]+/g, ' ')
@@ -163,7 +203,11 @@ function extrairMetadados({ transacoes, filename, parserId }) {
       totalRegistros: 0,
       totalCreditos: 0,
       totalDebitos: 0,
-      tituloSugerido: null
+      tituloSugerido: null,
+      vencimento: null,
+      mesVencimento: null,
+      isFaturaCartao: false,
+      sugerirComplementarAutomaticamente: false
     };
   }
   const datas = transacoes
@@ -184,12 +228,27 @@ function extrairMetadados({ transacoes, filename, parserId }) {
   totalDebitos = Math.round(totalDebitos * 100) / 100;
 
   const periodoCompetencia = inferirCompetencia(transacoes);
+
+  // Detecção específica de Fatura de Cartão
+  const isFaturaCartao = parserId === 'nubank_fatura';
+  let vencimento = null;
+  let mesVencimento = null;
+  if (isFaturaCartao) {
+    const v = extrairVencimentoDoNome(filename);
+    if (v) {
+      vencimento = new Date(Date.UTC(v.ano, v.mes - 1, v.dia, 12, 0, 0));
+      mesVencimento = `${v.ano}-${pad2(v.mes)}`;
+    }
+  }
+
   const tituloSugerido = sugerirTitulo({
     filename,
     parserId,
     competencia: periodoCompetencia,
     dataInicial,
-    dataFinal
+    dataFinal,
+    vencimento,
+    numeroComplemento: 1 // default no preview inicial
   });
 
   return {
@@ -199,7 +258,11 @@ function extrairMetadados({ transacoes, filename, parserId }) {
     totalRegistros: transacoes.length,
     totalCreditos,
     totalDebitos,
-    tituloSugerido
+    tituloSugerido,
+    vencimento,
+    mesVencimento,
+    isFaturaCartao,
+    sugerirComplementarAutomaticamente: isFaturaCartao
   };
 }
 
@@ -224,12 +287,180 @@ async function detectarPossivelComplementar(Importacao, { usuarioId, dataInicial
   return { sugestao: false, motivo: null, sobrepostas: 0 };
 }
 
+/**
+ * Normaliza o nome de uma tag para comparação (remove acentos, lowercase, normaliza separadores).
+ */
+function normalizarNomeTag(nome) {
+  if (!nome) return '';
+  return String(nome)
+    .toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[_\-\/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Procura uma tag cujo nome normalizado bate com o mês/ano de vencimento.
+ * Tolerante a: "Junho 2026", "Junho/2026", "Jun 2026", "Jun/2026", "06/2026", "2026-06".
+ */
+function tagCorrespondeMes(tag, mesVencimento) {
+  if (!tag || !tag.nome || !mesVencimento) return false;
+  const [anoStr, mesStr] = mesVencimento.split('-');
+  const ano = parseInt(anoStr, 10);
+  const mes = parseInt(mesStr, 10);
+  if (!ano || !mes) return false;
+  const nomeNorm = normalizarNomeTag(tag.nome);
+  if (!nomeNorm) return false;
+  const nomeCompleto = MESES_NOMES[mes - 1].toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const abrev = MESES_ABREV[mes - 1].toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const mesPad = pad2(mes);
+  // Padrões candidatos (todos sem acento, sem separadores não-espaciais)
+  const candidatos = [
+    `${nomeCompleto} ${ano}`,
+    `${abrev} ${ano}`,
+    `${mesPad} ${ano}`,
+    `${ano} ${mesPad}`,
+    `${ano} ${nomeCompleto}`,
+    `${ano} ${abrev}`
+  ];
+  for (const cand of candidatos) {
+    if (nomeNorm === cand) return true;
+  }
+  return false;
+}
+
+/**
+ * Gera o nome canônico da tag: "Junho 2026" (PT-BR, completo).
+ */
+function nomeTagMes(mesVencimento) {
+  if (!mesVencimento) return null;
+  const [anoStr, mesStr] = mesVencimento.split('-');
+  const ano = parseInt(anoStr, 10);
+  const mes = parseInt(mesStr, 10);
+  if (!ano || !mes || mes < 1 || mes > 12) return null;
+  return `${MESES_NOMES[mes - 1]} ${ano}`;
+}
+
+/**
+ * Infere a tag de fatura do mês.
+ * - Se categoriaCartaoId for null → retorna { tagSugerida: null, motivo: 'categoria_nao_configurada' }
+ * - Se a categoria configurada não existir (foi deletada) → retorna { tagSugerida: null, motivo: 'categoria_deletada' }
+ * - Caso contrário, busca tag pelo nome do mês na categoria. Se não existir, auto-cria.
+ *
+ * @param {Object} params
+ * @param {String|null} params.categoriaCartaoId
+ * @param {Array} params.tags - tags do usuário
+ * @param {String} params.parserId
+ * @param {String} params.mesVencimento - 'YYYY-MM'
+ * @param {Object} params.Categoria - model Categoria
+ * @param {Object} params.Tag - model Tag
+ * @param {String} params.usuarioId
+ * @returns {Object} { categoriaId, categoriaNome, tagId, tagNome, cor, icone, autoCriada } | { tagSugerida: null, motivo }
+ */
+async function inferirTagPorMes({ categoriaCartaoId, tags, parserId, mesVencimento, Categoria, Tag, usuarioId }) {
+  if (!categoriaCartaoId) {
+    return { tagSugerida: null, motivo: 'categoria_nao_configurada' };
+  }
+  // Verificar se a categoria configurada ainda existe
+  const categoria = await Categoria.findOne({ _id: categoriaCartaoId, usuario: usuarioId }).lean();
+  if (!categoria) {
+    return { tagSugerida: null, motivo: 'categoria_deletada' };
+  }
+  if (!mesVencimento) {
+    return { tagSugerida: null, motivo: 'mes_vencimento_indisponivel' };
+  }
+
+  // Procura tag existente
+  const tagExistente = (tags || []).find(t => {
+    const catId = (t.categoria && (t.categoria._id || t.categoria)) || t.categoria;
+    return String(catId) === String(categoriaCartaoId) && tagCorrespondeMes(t, mesVencimento);
+  });
+
+  if (tagExistente) {
+    return {
+      categoriaId: categoriaCartaoId,
+      categoriaNome: categoria.nome,
+      tagId: tagExistente._id,
+      tagNome: tagExistente.nome,
+      cor: tagExistente.cor || '#000000',
+      icone: tagExistente.icone || 'tag',
+      autoCriada: false
+    };
+  }
+
+  // Auto-criar tag
+  const nomeTag = nomeTagMes(mesVencimento);
+  if (!nomeTag) {
+    return { tagSugerida: null, motivo: 'mes_invalido' };
+  }
+  try {
+    const novaTag = new Tag({
+      nome: nomeTag,
+      categoria: categoriaCartaoId,
+      cor: '#3b82f6',
+      icone: 'tag',
+      ativo: true,
+      mostrarNoDashboard: false,
+      usuario: usuarioId
+    });
+    await novaTag.save();
+    return {
+      categoriaId: categoriaCartaoId,
+      categoriaNome: categoria.nome,
+      tagId: novaTag._id,
+      tagNome: novaTag.nome,
+      cor: novaTag.cor,
+      icone: novaTag.icone,
+      autoCriada: true
+    };
+  } catch (err) {
+    // Em caso de race condition (índice único), buscar de novo
+    const tagReptica = await Tag.findOne({ nome: nomeTag, usuario: usuarioId }).lean();
+    if (tagReptica) {
+      return {
+        categoriaId: categoriaCartaoId,
+        categoriaNome: categoria.nome,
+        tagId: tagReptica._id,
+        tagNome: tagReptica.nome,
+        cor: tagReptica.cor || '#3b82f6',
+        icone: tagReptica.icone || 'tag',
+        autoCriada: false
+      };
+    }
+    throw err;
+  }
+}
+
+/**
+ * Conta o número sequencial de complemento para uma (parserId, mesVencimento).
+ * Retorna 1 na primeira importação, 2 na segunda, etc.
+ */
+async function contarComplementosAnteriores(Importacao, { usuarioId, parserId, mesVencimento }) {
+  if (!mesVencimento || !parserId) return 1;
+  const total = await Importacao.countDocuments({
+    usuario: usuarioId,
+    origem: parserId,
+    tipoImportacao: 'complementar',
+    mesVencimento
+  });
+  return total + 1;
+}
+
 module.exports = {
   extrairMetadados,
   detectarPossivelComplementar,
   inferirCompetencia,
   extrairDatasDoNome,
+  extrairVencimentoDoNome,
   formatarCompetenciaPT,
   normalizarTitulo,
-  sugerirTitulo
+  normalizarNomeTag,
+  tagCorrespondeMes,
+  nomeTagMes,
+  sugerirTitulo,
+  inferirTagPorMes,
+  contarComplementosAnteriores
 };

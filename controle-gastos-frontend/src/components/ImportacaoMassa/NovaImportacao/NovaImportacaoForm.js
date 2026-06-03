@@ -7,12 +7,13 @@ import { useData } from '../../../context/DataContext';
 import importacaoService from '../../../services/importacaoService';
 import IconRenderer from '../../shared/IconRenderer';
 import RevisaoMetadadosImportacao from './RevisaoMetadadosImportacao';
+import ConfiguracaoImportacaoModal from './ConfiguracaoImportacaoModal';
 import './NovaImportacaoForm.css';
 
 const NovaImportacaoForm = () => {
   const navigate = useNavigate();
   const { iniciarImportacao } = useImportacao();
-  const { categorias = [], tags: allTags = [] } = useData();
+  const { categorias = [], tags: allTags = [], refreshData } = useData();
 
   const [descricao, setDescricao] = useState('');
   const [arquivo, setArquivo] = useState(null);
@@ -24,6 +25,9 @@ const NovaImportacaoForm = () => {
   const [preview, setPreview] = useState(null);
   const [analisando, setAnalisando] = useState(false);
   const [criando, setCriando] = useState(false);
+
+  // Estado do modal de configuração (acionado pelo botão ⚙️ na header OU pelo alerta no preview)
+  const [modalConfigAberto, setModalConfigAberto] = useState(false);
 
   const inferirDescricao = (file) => {
     if (!file) return null;
@@ -66,13 +70,33 @@ const NovaImportacaoForm = () => {
     try {
       const data = await importacaoService.previewArquivo(arquivo);
       setPreview(data);
-      // Auto-sugerir complementar se a inferência indicou sobreposição
-      if (data?.sugestaoComplementar?.sugestao) {
+      const meta = data?.metadadosSugeridos || {};
+
+      // Auto-sugerir tag quando tagSugerida for retornada
+      if (meta.tagSugerida && meta.tagSugerida.categoriaId && meta.tagSugerida.tagId) {
+        setTagsPadrao(prev => ({
+          ...prev,
+          [meta.tagSugerida.categoriaId]: [meta.tagSugerida.tagId]
+        }));
+        if (meta.tagSugerida.autoCriada) {
+          toast.info(`Tag "${meta.tagSugerida.tagNome}" foi criada automaticamente na categoria "${meta.tagSugerida.categoriaNome}".`);
+        }
+      }
+
+      // Auto-marcar como complementar (sempre para fatura, ou se houver sobreposição detectada)
+      if (meta.isFaturaCartao || data?.sugestaoComplementar?.sugestao) {
         setTipoImportacaoComplementar(true);
       }
-      // Se a descrição estava vazia, usar a sugerida
-      if (!descricao.trim() && data?.metadadosSugeridos?.titulo) {
-        setDescricao(data.metadadosSugeridos.titulo);
+
+      // Atualizar a descrição com o título sugerido pelo servidor.
+      // Para faturas, sempre sobrescrever (título é muito mais informativo que o nome do arquivo).
+      // Para outros tipos, só sobrescrever se o usuário não tiver digitado nada.
+      if (meta.titulo) {
+        if (meta.isFaturaCartao) {
+          setDescricao(meta.titulo);
+        } else if (!descricao.trim()) {
+          setDescricao(meta.titulo);
+        }
       }
       setEtapa('preview');
     } catch (error) {
@@ -130,11 +154,19 @@ const NovaImportacaoForm = () => {
       const tagsParaEnviar = Object.fromEntries(
         Object.entries(tagsPadrao).filter(([, ids]) => Array.isArray(ids) && ids.length > 0)
       );
+      const meta = preview.metadadosSugeridos || {};
       const importacao = await importacaoService.confirmarPreview({
         previewId: preview.previewId,
         descricao,
         tipoImportacao: tipoImportacaoComplementar ? 'complementar' : 'normal',
-        tagsPadrao: tagsParaEnviar
+        tagsPadrao: tagsParaEnviar,
+        metadados: {
+          vencimento: meta.vencimento || null,
+          mesVencimento: meta.mesVencimento || null,
+          numeroComplemento: meta.numeroComplemento != null ? meta.numeroComplemento : null,
+          tagSugeridaId: meta.tagSugerida?.tagId || null,
+          categoriaSugeridaId: meta.tagSugerida?.categoriaId || null
+        }
       });
       iniciarImportacao(importacao);
       toast.success('Importação iniciada com sucesso!');
@@ -157,6 +189,17 @@ const NovaImportacaoForm = () => {
 
   const handleVoltar = () => {
     navigate('/importacao');
+  };
+
+  const handleConfigSalva = async (dados) => {
+    setModalConfigAberto(false);
+    // Re-analisar o arquivo (se estivermos no preview) para re-inferir a tag com a nova config
+    if (etapa === 'preview' && arquivo) {
+      // Atualiza tags no estado para mostrar a nova tag
+      try { await refreshData(); } catch (e) { /* silencioso */ }
+      // Re-roda o preview
+      await handleAnalisar();
+    }
   };
 
   // ===== Etapa 1: Upload =====
@@ -294,6 +337,12 @@ const NovaImportacaoForm = () => {
             {analisando ? 'Analisando...' : 'Analisar e revisar'}
           </button>
         </div>
+
+        <ConfiguracaoImportacaoModal
+          aberto={modalConfigAberto}
+          onFechar={() => setModalConfigAberto(false)}
+          onSalvo={handleConfigSalva}
+        />
       </div>
     );
   }
@@ -313,6 +362,13 @@ const NovaImportacaoForm = () => {
         onConfirmar={handleConfirmarPreview}
         onCancelar={handleCancelarPreview}
         loading={criando}
+        onAbrirConfiguracao={() => setModalConfigAberto(true)}
+      />
+
+      <ConfiguracaoImportacaoModal
+        aberto={modalConfigAberto}
+        onFechar={() => setModalConfigAberto(false)}
+        onSalvo={handleConfigSalva}
       />
     </div>
   );

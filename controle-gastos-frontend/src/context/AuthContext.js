@@ -1,7 +1,15 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 
 export const AuthContext = createContext();
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  }
+  return context;
+}
 
 export function AuthProvider({ children }) {
   // --- REMOVER MOCK TEMPORÁRIO ---
@@ -63,16 +71,31 @@ export function AuthProvider({ children }) {
     setEmailVerificado(status);
   };
 
+  const atualizarPreferencias = async (parciais) => {
+    try {
+      const prefsAtuais = usuario?.preferencias || {};
+      const novasPrefs = { ...prefsAtuais, ...parciais };
+      const response = await api.put('/usuarios/perfil/preferencias', { preferencias: novasPrefs });
+      const prefsRetornadas = response.data?.preferencias || novasPrefs;
+      setUsuario(prev => prev ? { ...prev, preferencias: prefsRetornadas } : prev);
+      return prefsRetornadas;
+    } catch (error) {
+      console.error('Erro ao atualizar preferências:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ 
-      token, 
-      setToken, 
-      usuario, 
+    <AuthContext.Provider value={{
+      token,
+      setToken,
+      usuario,
       setUsuario,
       atualizarAutenticacao,
       carregando,
       emailVerificado,
-      atualizarStatusEmail
+      atualizarStatusEmail,
+      atualizarPreferencias
     }}>
       {children}
     </AuthContext.Provider>
