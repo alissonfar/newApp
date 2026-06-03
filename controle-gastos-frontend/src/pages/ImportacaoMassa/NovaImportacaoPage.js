@@ -3,7 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import NovaImportacaoForm from '../../components/ImportacaoMassa/NovaImportacao/NovaImportacaoForm';
 import ConfiguracaoImportacaoModal from '../../components/ImportacaoMassa/NovaImportacao/ConfiguracaoImportacaoModal';
-import IconRenderer from '../../components/shared/IconRenderer';
 import './NovaImportacaoPage.css';
 
 const NovaImportacaoPage = () => {
