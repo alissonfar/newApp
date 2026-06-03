@@ -52,14 +52,42 @@ const ImportacaoSchema = new mongoose.Schema({
     enum: ['normal', 'complementar'],
     default: 'normal'
   },
-  usuario: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Usuario', 
-    required: true 
+  origem: {
+    type: String,
+    default: null
+  },
+  dataInicial: {
+    type: Date,
+    default: null
+  },
+  dataFinal: {
+    type: Date,
+    default: null
+  },
+  periodoCompetencia: {
+    type: String,
+    default: null
+  },
+  totalCreditos: {
+    type: Number,
+    default: 0
+  },
+  totalDebitos: {
+    type: Number,
+    default: 0
+  },
+  metadadosInferidos: {
+    type: Object,
+    default: {}
+  },
+  usuario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true
   }
-}, { 
+}, {
   timestamps: true,
-  toJSON: { 
+  toJSON: {
     virtuals: true,
     transform: function(doc, ret) {
       ret.id = ret._id;

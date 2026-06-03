@@ -10,6 +10,14 @@ require('dotenv').config({
 
 const app = express();
 
+// Limpa previews expirados no startup (não bloqueia)
+try {
+  const previewStorage = require('./utils/previewStorage');
+  previewStorage.limparExpirados()
+    .then(n => { if (n > 0) console.log(`[Startup] ${n} preview(s) expirado(s) removido(s).`); })
+    .catch(e => console.warn('[Startup] Falha limpando previews:', e.message));
+} catch (e) { /* módulo opcional */ }
+
 // Configuração do CORS - permitindo todas as origens
 const corsOptions = {
   origin: '*',

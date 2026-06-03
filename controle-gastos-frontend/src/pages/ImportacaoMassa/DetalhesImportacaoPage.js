@@ -464,6 +464,40 @@ const DetalhesImportacaoPage = () => {
                         <label>Valor Total</label>
                         <span>{formatarValor(transacoes.reduce((sum, t) => sum + (t.valor || 0), 0))}</span>
                     </div>
+                    {importacao.origem && (
+                        <div className="info-item">
+                            <label>Origem detectada</label>
+                            <span>{importacao.origem}</span>
+                        </div>
+                    )}
+                    {(importacao.dataInicial || importacao.dataFinal) && (
+                        <div className="info-item">
+                            <label>Período</label>
+                            <span>
+                                {importacao.dataInicial ? new Date(importacao.dataInicial).toLocaleDateString('pt-BR') : '—'}
+                                {' a '}
+                                {importacao.dataFinal ? new Date(importacao.dataFinal).toLocaleDateString('pt-BR') : '—'}
+                            </span>
+                        </div>
+                    )}
+                    {importacao.periodoCompetencia && (
+                        <div className="info-item">
+                            <label>Competência</label>
+                            <span>{importacao.periodoCompetencia}</span>
+                        </div>
+                    )}
+                    {(importacao.totalCreditos > 0 || importacao.totalDebitos > 0) && (
+                        <>
+                            <div className="info-item">
+                                <label>Total créditos</label>
+                                <span>{formatarValor(importacao.totalCreditos || 0)}</span>
+                            </div>
+                            <div className="info-item">
+                                <label>Total débitos</label>
+                                <span>{formatarValor(importacao.totalDebitos || 0)}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <div className="resumo-status">

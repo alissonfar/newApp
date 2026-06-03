@@ -439,31 +439,40 @@ class ImportacaoService {
       // Lê o arquivo
       const conteudoArquivo = await fs.readFile(importacao.caminhoArquivo, 'utf8');
       let transacoes;
+      let deteccao = null;
 
-      // Parse do arquivo baseado no tipo
-      if (importacao.caminhoArquivo.endsWith('.json')) {
-        console.log('[DEBUG] Processando arquivo JSON');
-        transacoes = JSON.parse(conteudoArquivo);
-        // Se for um objeto com propriedade transacoes, use ela
-        if (transacoes.transacoes && Array.isArray(transacoes.transacoes)) {
-          transacoes = transacoes.transacoes;
-        }
-        // Se não for um array, converta para array com um item
+      // Parse via registry (substitui a detecção hardcoded por CSV Nubank/JSON)
+      try {
+        const parserRegistry = require('./parsers');
+        deteccao = parserRegistry.detectar({
+          filename: importacao.nomeArquivo,
+          conteudo: conteudoArquivo
+        });
+        console.log('[DEBUG] Parser detectado:', deteccao.parser.id, 'score=', deteccao.score);
+        transacoes = deteccao.parser.parse({ conteudo: conteudoArquivo });
         if (!Array.isArray(transacoes)) {
-          transacoes = [transacoes];
+          throw new Error('Parser não retornou um array de transações.');
         }
-        // Ajusta as datas para 12:00
-        transacoes = transacoes.map(t => ({
-          ...t,
-          data: new Date(new Date(t.data).setHours(12, 0, 0, 0))
-        }));
-      } else if (importacao.caminhoArquivo.endsWith('.csv')) {
-        console.log('[DEBUG] Processando arquivo CSV');
-        console.log('[DEBUG] Conteúdo do arquivo:', conteudoArquivo);
-        transacoes = ImportacaoService.parseCSV(conteudoArquivo);
-        console.log('[DEBUG] Transações extraídas do CSV:', transacoes);
-      } else {
-        throw new Error('Formato de arquivo não suportado');
+      } catch (parserErr) {
+        if (importacao.caminhoArquivo.endsWith('.json')) {
+          console.log('[DEBUG] Fallback: processando arquivo JSON direto');
+          transacoes = JSON.parse(conteudoArquivo);
+          if (transacoes && transacoes.transacoes && Array.isArray(transacoes.transacoes)) {
+            transacoes = transacoes.transacoes;
+          }
+          if (!Array.isArray(transacoes)) {
+            transacoes = [transacoes];
+          }
+          transacoes = transacoes.map(t => ({
+            ...t,
+            data: new Date(new Date(t.data).setHours(12, 0, 0, 0))
+          }));
+        } else if (importacao.caminhoArquivo.endsWith('.csv')) {
+          console.log('[DEBUG] Fallback: parseCSV legado');
+          transacoes = ImportacaoService.parseCSV(conteudoArquivo);
+        } else {
+          throw parserErr;
+        }
       }
 
       // Importação complementar: classifica em novas, já importadas e já ignoradas
@@ -562,6 +571,31 @@ class ImportacaoService {
           mensagem: r.erro,
           dados: r.dadosOriginais
         }));
+
+      // Inferência de metadados (nunca bloqueante — falhas são logadas e ignoradas)
+      try {
+        const inferencia = require('./inferenciaImportacaoService');
+        const parserUsado = (deteccao && deteccao.parser) ? deteccao.parser.id : null;
+        const meta = inferencia.extrairMetadados({
+          transacoes,
+          filename: importacao.nomeArquivo,
+          parserId: parserUsado
+        });
+        if (meta.dataInicial) importacao.dataInicial = meta.dataInicial;
+        if (meta.dataFinal) importacao.dataFinal = meta.dataFinal;
+        if (meta.periodoCompetencia) importacao.periodoCompetencia = meta.periodoCompetencia;
+        importacao.totalCreditos = meta.totalCreditos || 0;
+        importacao.totalDebitos = meta.totalDebitos || 0;
+        if (parserUsado) importacao.origem = parserUsado;
+        importacao.metadadosInferidos = {
+          ...meta,
+          parserId: parserUsado,
+          inferidoEm: new Date().toISOString()
+        };
+        console.log('[DEBUG] Metadados inferidos:', meta);
+      } catch (inferenciaErr) {
+        console.warn('[Importação] Falha ao inferir metadados (não-bloqueante):', inferenciaErr.message);
+      }
 
       await importacao.save();
 
@@ -689,6 +723,10 @@ class ImportacaoService {
     }
   }
 
+  /**
+   * @deprecated Mantido por compatibilidade. Use parserRegistry (`./parsers`).
+   * Detecta apenas Fatura/Extrato Nubank hardcoded.
+   */
   static parseCSV(conteudo) {
     const linhas = conteudo.trim().split('\n');
     if (linhas.length < 2) {

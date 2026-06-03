@@ -10,10 +10,143 @@ const HistoricoSaldo = require('../models/historicoSaldo');
 const installmentUtils = require('../utils/installmentUtils');
 const transacaoService = require('../services/transacaoService');
 const ledgerService = require('../services/ledgerService');
+const previewStorage = require('../utils/previewStorage');
+const parserRegistry = require('../services/parsers');
+const inferencia = require('../services/inferenciaImportacaoService');
 
 class ImportacaoController {
+    static async previewArquivo(req, res) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ erro: 'Nenhum arquivo foi enviado' });
+            }
+            const arquivo = req.file;
+            const buffer = await fs.readFile(arquivo.path);
+            const { previewId, caminhoAbsoluto, nomeOriginal } = await previewStorage.salvarPreview({
+                buffer,
+                originalname: arquivo.originalname
+            });
+            // remove o arquivo temporário que multer criou em uploads/importacao
+            await fs.unlink(arquivo.path).catch(() => {});
+
+            let deteccao = null;
+            let transacoes = [];
+            let avisos = [];
+            const conteudo = buffer.toString('utf8');
+
+            try {
+                deteccao = parserRegistry.detectar({ filename: nomeOriginal, conteudo });
+                transacoes = deteccao.parser.parse({ conteudo });
+            } catch (parseErr) {
+                await previewStorage.removerPreview(previewId);
+                return res.status(422).json({
+                    erro: 'Não foi possível identificar o formato do arquivo.',
+                    detalhe: parseErr.message
+                });
+            }
+
+            const meta = inferencia.extrairMetadados({
+                transacoes,
+                filename: nomeOriginal,
+                parserId: deteccao.parser.id
+            });
+
+            let complementar = { sugestao: false, motivo: null, sobrepostas: 0 };
+            try {
+                complementar = await inferencia.detectarPossivelComplementar(Importacao, {
+                    usuarioId: req.userId,
+                    dataInicial: meta.dataInicial,
+                    dataFinal: meta.dataFinal,
+                    origem: deteccao.parser.id
+                });
+            } catch (compErr) {
+                console.warn('[Preview] Falha ao detectar complementar:', compErr.message);
+            }
+
+            return res.json({
+                previewId,
+                parser: { id: deteccao.parser.id, nome: deteccao.parser.nome, confianca: deteccao.score },
+                metadadosSugeridos: {
+                    titulo: meta.tituloSugerido,
+                    dataInicial: meta.dataInicial,
+                    dataFinal: meta.dataFinal,
+                    periodoCompetencia: meta.periodoCompetencia,
+                    totalRegistros: meta.totalRegistros,
+                    totalCreditos: meta.totalCreditos,
+                    totalDebitos: meta.totalDebitos
+                },
+                sugestaoComplementar: complementar,
+                amostraTransacoes: transacoes.slice(0, 5).map(t => ({
+                    descricao: t.descricao,
+                    valor: t.valor,
+                    data: t.data,
+                    tipo: t.tipo
+                })),
+                avisos
+            });
+        } catch (erro) {
+            console.error('[Importação] Erro no preview:', erro);
+            return res.status(500).json({ erro: 'Erro ao analisar arquivo' });
+        }
+    }
+
+    static async cancelarPreview(req, res) {
+        try {
+            const { previewId } = req.params;
+            await previewStorage.removerPreview(previewId);
+            return res.status(204).send();
+        } catch (erro) {
+            console.error('[Importação] Erro ao cancelar preview:', erro);
+            return res.status(500).json({ erro: 'Erro ao cancelar preview' });
+        }
+    }
+
     static async criar(req, res) {
         try {
+            // Modo 2 (novo): JSON com previewId — reutiliza arquivo já enviado
+            if (req.is('application/json')) {
+                const { previewId, descricao, tagsPadrao: tagsPadraoRaw, tipoImportacao: tipoImportacaoRaw } = req.body || {};
+                if (!previewId) {
+                    return res.status(400).json({ erro: 'previewId é obrigatório' });
+                }
+                if (!descricao) {
+                    return res.status(400).json({ erro: 'Descrição é obrigatória' });
+                }
+                const destino = path.join('uploads', 'importacao');
+                let novoCaminho;
+                try {
+                    novoCaminho = await previewStorage.consumirPreview(previewId, destino);
+                } catch (e) {
+                    return res.status(410).json({ erro: e.message });
+                }
+                const nomeOriginal = path.basename(novoCaminho).replace(/^\d+-/, '');
+
+                const tipoImportacao = (tipoImportacaoRaw === 'complementar') ? 'complementar' : 'normal';
+                let tagsPadrao = {};
+                if (tagsPadraoRaw) {
+                    try {
+                        tagsPadrao = typeof tagsPadraoRaw === 'string' ? JSON.parse(tagsPadraoRaw) : tagsPadraoRaw;
+                        if (typeof tagsPadrao !== 'object' || tagsPadrao === null) tagsPadrao = {};
+                    } catch { tagsPadrao = {}; }
+                }
+
+                const importacao = new Importacao({
+                    descricao,
+                    usuario: req.userId,
+                    nomeArquivo: nomeOriginal,
+                    caminhoArquivo: novoCaminho,
+                    status: 'pendente',
+                    tagsPadrao,
+                    tipoImportacao
+                });
+                await importacao.save();
+                ImportacaoService.processarArquivo(importacao._id, req.userId)
+                    .then(r => console.log('[Importação] Processamento concluído:', r))
+                    .catch(e => console.error('[Importação] Erro ao processar arquivo:', e));
+                return res.status(201).json(importacao);
+            }
+
+            // Modo 1 (legado): multipart com arquivo
             if (!req.file) {
                 console.error('[Importação] Erro: Nenhum arquivo enviado');
                 return res.status(400).json({ erro: 'Nenhum arquivo foi enviado' });

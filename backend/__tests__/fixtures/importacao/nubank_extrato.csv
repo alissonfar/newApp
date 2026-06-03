@@ -1,0 +1,4 @@
+Data,Valor,Descrição,Identificador,Grupo,Parcela,TotalParcelas
+02/01/2026,-150.50,Uber,ID-001,,,
+03/01/2026,2500.00,Salário,ID-002,,,
+15/01/2026,-89.90,Compra Parcelada,ID-003,GRP-A,2,3

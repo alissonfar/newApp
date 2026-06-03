@@ -6,46 +6,101 @@ import { useImportacao } from '../../../contexts/ImportacaoContext';
 import { useData } from '../../../context/DataContext';
 import importacaoService from '../../../services/importacaoService';
 import IconRenderer from '../../shared/IconRenderer';
+import RevisaoMetadadosImportacao from './RevisaoMetadadosImportacao';
 import './NovaImportacaoForm.css';
 
 const NovaImportacaoForm = () => {
   const navigate = useNavigate();
   const { iniciarImportacao } = useImportacao();
   const { categorias = [], tags: allTags = [] } = useData();
-  
+
   const [descricao, setDescricao] = useState('');
-  const [tipoArquivo, setTipoArquivo] = useState('json');
   const [arquivo, setArquivo] = useState(null);
   const [tagsPadrao, setTagsPadrao] = useState({});
   const [tipoImportacaoComplementar, setTipoImportacaoComplementar] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  // Estado da máquina de 2 passos
+  const [etapa, setEtapa] = useState('upload'); // 'upload' | 'preview'
+  const [preview, setPreview] = useState(null);
+  const [analisando, setAnalisando] = useState(false);
+  const [criando, setCriando] = useState(false);
+
+  const inferirDescricao = (file) => {
+    if (!file) return null;
+    const semExtensao = file.name.replace(/\.[^.]+$/, '');
+    return semExtensao
+      .replace(/[_\-.]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(' ')
+      .map(p => p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p)
+      .join(' ');
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setArquivo(file);
+      if (!descricao.trim()) {
+        const sugerida = inferirDescricao(file);
+        if (sugerida) setDescricao(sugerida);
+      }
+    }
+  };
+
+  const handleAnalisar = async () => {
+    if (!arquivo) {
+      toast.warn('Selecione um arquivo para analisar.');
+      return;
+    }
+    const extensao = arquivo.name.split('.').pop().toLowerCase();
+    if (!['csv', 'json', 'xlsx'].includes(extensao)) {
+      toast.error('Formato não suportado. Envie um arquivo .csv, .json ou .xlsx.');
+      return;
+    }
     if (!descricao.trim()) {
       toast.warn('Por favor, insira uma descrição para a importação.');
       return;
     }
+    setAnalisando(true);
+    try {
+      const data = await importacaoService.previewArquivo(arquivo);
+      setPreview(data);
+      // Auto-sugerir complementar se a inferência indicou sobreposição
+      if (data?.sugestaoComplementar?.sugestao) {
+        setTipoImportacaoComplementar(true);
+      }
+      // Se a descrição estava vazia, usar a sugerida
+      if (!descricao.trim() && data?.metadadosSugeridos?.titulo) {
+        setDescricao(data.metadadosSugeridos.titulo);
+      }
+      setEtapa('preview');
+    } catch (error) {
+      console.error('Erro no preview:', error);
+      toast.error(error.message || 'Erro ao analisar arquivo');
+    } finally {
+      setAnalisando(false);
+    }
+  };
 
+  const handleCriarDireto = async () => {
+    if (!descricao.trim()) {
+      toast.warn('Por favor, insira uma descrição para a importação.');
+      return;
+    }
     if (!arquivo) {
       toast.warn('Por favor, selecione um arquivo para importar.');
       return;
     }
-
-    // Validar extensão do arquivo
     const extensao = arquivo.name.split('.').pop().toLowerCase();
-    if (extensao !== tipoArquivo) {
-      toast.error(`O arquivo selecionado não é um arquivo ${tipoArquivo.toUpperCase()} válido.`);
+    if (!['csv', 'json', 'xlsx'].includes(extensao)) {
+      toast.error('Formato não suportado. Envie um arquivo .csv, .json ou .xlsx.');
       return;
     }
-
-    setLoading(true);
+    setCriando(true);
     try {
-      // Criar FormData com os dados da importação
       const formData = new FormData();
       formData.append('descricao', descricao);
-      formData.append('tipoArquivo', tipoArquivo);
       formData.append('arquivo', arquivo);
       const tagsParaEnviar = Object.fromEntries(
         Object.entries(tagsPadrao).filter(([, ids]) => Array.isArray(ids) && ids.length > 0)
@@ -56,35 +111,60 @@ const NovaImportacaoForm = () => {
       if (tipoImportacaoComplementar) {
         formData.append('tipoImportacao', 'complementar');
       }
-
-      // Criar nova importação com o arquivo
       const importacao = await importacaoService.criarImportacao(formData);
-      
-      // Iniciar o estado da importação no Context
       iniciarImportacao(importacao);
-      
       toast.success('Importação iniciada com sucesso!');
       navigate(`/importacao/${importacao.id}`);
     } catch (error) {
       console.error('Erro ao criar importação:', error);
       toast.error('Erro ao criar importação. Por favor, tente novamente.');
     } finally {
-      setLoading(false);
+      setCriando(false);
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setArquivo(file);
+  const handleConfirmarPreview = async () => {
+    if (!preview?.previewId) return;
+    setCriando(true);
+    try {
+      const tagsParaEnviar = Object.fromEntries(
+        Object.entries(tagsPadrao).filter(([, ids]) => Array.isArray(ids) && ids.length > 0)
+      );
+      const importacao = await importacaoService.confirmarPreview({
+        previewId: preview.previewId,
+        descricao,
+        tipoImportacao: tipoImportacaoComplementar ? 'complementar' : 'normal',
+        tagsPadrao: tagsParaEnviar
+      });
+      iniciarImportacao(importacao);
+      toast.success('Importação iniciada com sucesso!');
+      navigate(`/importacao/${importacao.id}`);
+    } catch (error) {
+      console.error('Erro ao confirmar preview:', error);
+      toast.error(error.message || 'Erro ao criar importação');
+    } finally {
+      setCriando(false);
     }
   };
 
-  return (
-    <div className="nova-importacao-form">
-      <h2>Nova Importação</h2>
-      
-      <form onSubmit={handleSubmit}>
+  const handleCancelarPreview = async () => {
+    if (preview?.previewId) {
+      await importacaoService.cancelarPreview(preview.previewId);
+    }
+    setPreview(null);
+    setEtapa('upload');
+  };
+
+  const handleVoltar = () => {
+    navigate('/importacao');
+  };
+
+  // ===== Etapa 1: Upload =====
+  if (etapa === 'upload') {
+    return (
+      <div className="nova-importacao-form">
+        <h2>Nova Importação</h2>
+
         <div className="form-group">
           <label htmlFor="descricao">Descrição da Importação</label>
           <input
@@ -93,7 +173,7 @@ const NovaImportacaoForm = () => {
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
             placeholder="Ex: Importação Janeiro/2024"
-            disabled={loading}
+            disabled={analisando || criando}
             required
           />
         </div>
@@ -104,7 +184,7 @@ const NovaImportacaoForm = () => {
               type="checkbox"
               checked={tipoImportacaoComplementar}
               onChange={(e) => setTipoImportacaoComplementar(e.target.checked)}
-              disabled={loading}
+              disabled={analisando || criando}
             />
             <span>Importação complementar (evitar duplicatas)</span>
           </label>
@@ -114,26 +194,13 @@ const NovaImportacaoForm = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="tipoArquivo">Tipo de Arquivo</label>
-          <select
-            id="tipoArquivo"
-            value={tipoArquivo}
-            onChange={(e) => setTipoArquivo(e.target.value)}
-            disabled={loading}
-          >
-            <option value="json">JSON</option>
-            <option value="csv">CSV</option>
-          </select>
-        </div>
-
-        <div className="form-group">
           <label htmlFor="arquivo">Selecionar Arquivo</label>
           <input
             type="file"
             id="arquivo"
-            accept={`.${tipoArquivo}`}
+            accept=".csv,.json,.xlsx"
             onChange={handleFileChange}
-            disabled={loading}
+            disabled={analisando || criando}
             required
           />
           {arquivo && (
@@ -181,7 +248,7 @@ const NovaImportacaoForm = () => {
                     classNamePrefix="tag-select"
                     isClearable
                     isSearchable
-                    isDisabled={loading}
+                    isDisabled={analisando || criando}
                     noOptionsMessage={() => "Nenhuma tag encontrada"}
                     formatOptionLabel={({ label, cor, icone }) => (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -197,25 +264,58 @@ const NovaImportacaoForm = () => {
         )}
 
         <div className="form-actions">
-          <button 
-            type="button" 
-            onClick={() => navigate('/importacao')}
-            disabled={loading}
+          <button
+            type="button"
+            onClick={handleVoltar}
+            disabled={analisando || criando}
             className="btn-cancelar"
           >
             Cancelar
           </button>
-          <button 
-            type="submit"
-            disabled={loading}
+          <button
+            type="button"
+            onClick={handleCriarDireto}
+            disabled={analisando || criando}
+            className="btn-secundario"
+            style={{
+              background: 'transparent',
+              color: '#0ea5e9',
+              border: '1px solid #0ea5e9'
+            }}
+          >
+            {criando ? 'Criando...' : 'Criar sem preview'}
+          </button>
+          <button
+            type="button"
+            onClick={handleAnalisar}
+            disabled={analisando || criando}
             className="btn-importar"
           >
-            {loading ? 'Processando...' : 'Iniciar Importação'}
+            {analisando ? 'Analisando...' : 'Analisar e revisar'}
           </button>
         </div>
-      </form>
+      </div>
+    );
+  }
+
+  // ===== Etapa 2: Revisão de metadados =====
+  return (
+    <div className="nova-importacao-form">
+      <h2>Revisar Metadados</h2>
+      <RevisaoMetadadosImportacao
+        preview={preview}
+        descricao={descricao}
+        onDescricaoChange={setDescricao}
+        tipoImportacaoComplementar={tipoImportacaoComplementar}
+        onTipoImportacaoChange={setTipoImportacaoComplementar}
+        tagsPadrao={tagsPadrao}
+        onTagsPadraoChange={setTagsPadrao}
+        onConfirmar={handleConfirmarPreview}
+        onCancelar={handleCancelarPreview}
+        loading={criando}
+      />
     </div>
   );
 };
 
-export default NovaImportacaoForm; 
+export default NovaImportacaoForm;

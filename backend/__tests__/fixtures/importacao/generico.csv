@@ -1,0 +1,4 @@
+Transacao;Montante;Posted;Ref
+Compra A;100,50;02/01/2026;L1
+Compra B;-45,00;03/01/2026;L2
+Compra C;30,00;04/01/2026;L3

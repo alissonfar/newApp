@@ -1,7 +1,7 @@
 import api from './api';
 
 const importacaoService = {
-  // Criar nova importação
+  // Criar nova importação (modo legado: FormData com arquivo)
   criarImportacao: async (formData) => {
     try {
       const response = await api.post('/importacoes', formData, {
@@ -13,6 +13,46 @@ const importacaoService = {
     } catch (error) {
       throw new Error('Erro ao criar importação: ' + error.message);
     }
+  },
+
+  // Phase 3+4: Analisar arquivo e retornar metadados inferidos (não persiste)
+  previewArquivo: async (file) => {
+    try {
+      const fd = new FormData();
+      fd.append('arquivo', file);
+      const response = await api.post('/importacoes/preview', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    } catch (error) {
+      const msg = error.response?.data?.erro || error.response?.data?.mensagem || error.message;
+      throw new Error(msg);
+    }
+  },
+
+  // Phase 3+4: Confirmar preview (criar Importacao a partir de previewId)
+  confirmarPreview: async ({ previewId, descricao, tipoImportacao, tagsPadrao }) => {
+    try {
+      const body = { previewId, descricao };
+      if (tipoImportacao) body.tipoImportacao = tipoImportacao;
+      if (tagsPadrao && Object.keys(tagsPadrao).length > 0) {
+        body.tagsPadrao = tagsPadrao;
+      }
+      const response = await api.post('/importacoes', body, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return response.data;
+    } catch (error) {
+      const msg = error.response?.data?.erro || error.response?.data?.mensagem || error.message;
+      throw new Error(msg);
+    }
+  },
+
+  // Phase 3+4: Cancelar preview
+  cancelarPreview: async (previewId) => {
+    try {
+      await api.delete(`/importacoes/preview/${previewId}`);
+    } catch (e) { /* silencioso */ }
   },
 
   // Listar importações

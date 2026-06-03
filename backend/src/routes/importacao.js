@@ -23,39 +23,50 @@ const storage = multer.diskStorage({
     }
 });
 
+const fileFilter = function (req, file, cb) {
+    const allowedTypes = [
+        'text/csv',
+        'application/csv',
+        'text/plain',
+        'application/json',
+        'text/json',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel'
+    ];
+    const allowedExts = /\.json$|\.csv$|\.xlsx$/i;
+    const extname = allowedExts.test(path.extname(file.originalname));
+    const mimetype = allowedTypes.includes(file.mimetype);
+    if (extname || mimetype) {
+        return cb(null, true);
+    }
+    cb(new Error('Apenas arquivos JSON, CSV ou XLSX são permitidos'));
+};
+
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB
+        fileSize: 10 * 1024 * 1024,
         files: 1
     },
-    fileFilter: function (req, file, cb) {
-        // Lista de mimetypes permitidos
-        const allowedTypes = [
-            'text/csv',
-            'application/csv',
-            'text/plain', // Alguns sistemas enviam CSV como text/plain
-            'application/json',
-            'text/json'
-        ];
-        
-        // Regex para verificar extensões
-        const allowedExts = /\.json$|\.csv$/i;
-        const extname = allowedExts.test(path.extname(file.originalname));
-        const mimetype = allowedTypes.includes(file.mimetype);
+    fileFilter: fileFilter
+});
 
-        // Aceita se a extensão OU o mimetype for válido
-        if (extname || mimetype) {
-            return cb(null, true);
-        }
-        cb(new Error('Apenas arquivos JSON e CSV são permitidos'));
-    }
+// Multer para preview — usa arquivo temporário em uploads/importacao (será movido para preview/ no controller)
+const uploadPreview = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: fileFilter
 });
 
 // Middleware de autenticação para todas as rotas
 router.use(autenticacao);
 
 // Rotas de Importação
+router.post('/preview', uploadPreview.single('arquivo'), ImportacaoController.previewArquivo);
+router.delete('/preview/:previewId', ImportacaoController.cancelarPreview);
 router.post('/', upload.single('arquivo'), ImportacaoController.criar);
 router.get('/', ImportacaoController.listar);
 router.get('/:id', ImportacaoController.obterDetalhes);
