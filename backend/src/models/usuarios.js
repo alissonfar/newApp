@@ -32,7 +32,9 @@ const UsuarioSchema = new mongoose.Schema({
     },
     moedaPadrao: { type: String, default: 'BRL' },
     proprietario: { type: String, default: '' },
-    categoriaCartaoCreditoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', default: null }
+    categoriaCartaoCreditoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', default: null },
+    tagReceberPadraoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag', default: null },
+    tagRemoverPadraoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag', default: null }
   },
   ultimoAcesso: { type: Date },
   status: { type: String, enum: ['ativo', 'inativo', 'bloqueado'], default: 'ativo' },

@@ -1,9 +1,10 @@
 import React from 'react';
 import Select from 'react-select';
-import { FaReceipt } from 'react-icons/fa';
+import { FaReceipt, FaCheckCircle } from 'react-icons/fa';
 import { CircularProgress } from '@mui/material';
 import { useRecebimentos } from '../context/RecebimentosContext';
 import { useData } from '../../../context/DataContext';
+import { useAuth } from '../../../context/AuthContext';
 import RecebimentoCard from './RecebimentoCard';
 import TagBadge from './TagBadge';
 import IconRenderer from '../../../components/shared/IconRenderer';
@@ -35,6 +36,15 @@ const TabConfiguracao = () => {
     applyFiltrosRecebimentos
   } = useRecebimentos();
   const { tags } = useData();
+  const { usuario } = useAuth();
+
+  // Defaults configurados (podem ser null se não configurados)
+  const tagReceberPadraoId = usuario?.preferencias?.tagReceberPadraoId || null;
+  const tagRemoverPadraoId = usuario?.preferencias?.tagRemoverPadraoId || null;
+
+  // "Pré-preenchido pelas suas configurações" aparece quando o valor atual bate com o default salvo
+  const tagReceberEhDefault = !!(tagReceberPadraoId && tagSelecionada === tagReceberPadraoId);
+  const tagRemoverEhDefault = !!(tagRemoverPadraoId && removeTagSelecionada === tagRemoverPadraoId);
 
   const pessoasRecebimento = (recebimentoSelecionado?.pagamentos || []).map((p) => p?.pessoa).filter(Boolean);
   const pessoaRecebimento = pessoasRecebimento.length > 0 ? pessoasRecebimento.join(', ') : '-';
@@ -100,7 +110,23 @@ const TabConfiguracao = () => {
           <CardContent>
             {recebimentoSelecionado ? (
               <>
-                <SectionHeader title="Tag para aplicar" icon={<IconRenderer nome="tag" size={18} />} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <SectionHeader title="Tag para aplicar" icon={<IconRenderer nome="tag" size={18} />} />
+                  {tagReceberEhDefault && (
+                    <span
+                      title="Pré-preenchido pelas suas configurações de Recebimentos"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: 11, color: '#047857', fontWeight: 500,
+                        background: '#ecfdf5', border: '1px solid #a7f3d0',
+                        borderRadius: 999, padding: '2px 8px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <FaCheckCircle size={10} /> Pré-preenchido pelas suas configurações
+                    </span>
+                  )}
+                </div>
                 <p className="dica">Tag que será aplicada às transações quitadas (ex: Conta Paga).</p>
                 <Select
                   value={(() => {
@@ -127,7 +153,23 @@ const TabConfiguracao = () => {
                 )}
 
                 <div style={{ marginTop: '1.5rem' }}>
-                  <SectionHeader title="Tag para remover (opcional)" icon={<IconRenderer nome="tag" size={18} />} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <SectionHeader title="Tag para remover (opcional)" icon={<IconRenderer nome="tag" size={18} />} />
+                    {tagRemoverEhDefault && (
+                      <span
+                        title="Pré-preenchido pelas suas configurações de Recebimentos"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          fontSize: 11, color: '#047857', fontWeight: 500,
+                          background: '#ecfdf5', border: '1px solid #a7f3d0',
+                          borderRadius: 999, padding: '2px 8px',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <FaCheckCircle size={10} /> Pré-preenchido pelas suas configurações
+                      </span>
+                    )}
+                  </div>
                 <p className="dica">Tag que será removida dos pagamentos ao conciliar.</p>
                 <Select
                   value={(() => {

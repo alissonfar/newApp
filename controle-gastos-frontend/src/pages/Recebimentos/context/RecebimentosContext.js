@@ -6,6 +6,7 @@ import {
   criarSettlement,
   obterPessoasDistintas
 } from '../../../api';
+import { useAuth } from '../../../context/AuthContext';
 
 const initialDraftRecebimentos = { dataInicio: '', dataFim: '' };
 const initialDraftPendentes = { pessoa: '', dataInicio: '', dataFim: '' };
@@ -110,8 +111,30 @@ const RecebimentosContext = createContext(null);
 
 export function RecebimentosProvider({ children }) {
   const [state, dispatch] = useReducer(recebimentosReducer, initialState);
+  const { usuario } = useAuth();
   const abortRecebimentosRef = useRef(null);
   const abortPendentesRef = useRef(null);
+
+  // Defaults do backend (podem ser null se não configurados)
+  const tagReceberPadraoId = usuario?.preferencias?.tagReceberPadraoId || null;
+  const tagRemoverPadraoId = usuario?.preferencias?.tagRemoverPadraoId || null;
+
+  // Aplica defaults APENAS se o state estiver vazio (não sobrescreve escolha manual).
+  // É exposta via context para a NovaConciliacaoPage chamar no onSalvo do modal.
+  const aplicarDefaultsSeVazio = useCallback(() => {
+    if (tagReceberPadraoId && !state.tagSelecionada) {
+      dispatch({ type: ACTIONS.SET_TAG, payload: tagReceberPadraoId });
+    }
+    if (tagRemoverPadraoId && !state.removeTagSelecionada) {
+      dispatch({ type: ACTIONS.SET_REMOVE_TAG, payload: tagRemoverPadraoId });
+    }
+  }, [tagReceberPadraoId, tagRemoverPadraoId, state.tagSelecionada, state.removeTagSelecionada]);
+
+  // Aplica uma vez no mount do Provider (quando o usuário abre a página de nova conciliação)
+  useEffect(() => {
+    aplicarDefaultsSeVazio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const carregarRecebimentosDisponiveis = useCallback(async (filtrosOverride) => {
     if (abortRecebimentosRef.current) abortRecebimentosRef.current.abort();
@@ -287,6 +310,7 @@ export function RecebimentosProvider({ children }) {
     selectAllVisible,
     clearSelection,
     handleConfirmar,
+    aplicarDefaultsSeVazio,
     setRecebimentoSelecionado: (v) =>
       dispatch({ type: ACTIONS.SET_RECEBIMENTO_SELECIONADO, payload: v }),
     setTagSelecionada: (v) => dispatch({ type: ACTIONS.SET_TAG, payload: v }),
