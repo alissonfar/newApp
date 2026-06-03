@@ -365,16 +365,23 @@ class ImportacaoController {
             }
 
             // Busca estatísticas das transações (exclui ignoradas do total exibido)
-            const [totalTransacoes, transacoesSucesso, transacoesErro, transacoesJaImportadas, transacoesIgnoradas] = await Promise.all([
+            const [totalTransacoes, transacoesSucesso, transacoesErro, transacoesJaImportadas, transacoesIgnoradas, transacoesPossivelDuplicata] = await Promise.all([
                 TransacaoImportada.countDocuments({ importacao: id, status: { $ne: 'ignorada' } }),
                 TransacaoImportada.countDocuments({ importacao: id, status: 'validada' }),
                 TransacaoImportada.countDocuments({ importacao: id, status: 'erro' }),
                 TransacaoImportada.countDocuments({ importacao: id, status: 'ja_importada' }),
-                TransacaoImportada.countDocuments({ importacao: id, status: 'ignorada' })
+                TransacaoImportada.countDocuments({ importacao: id, status: 'ignorada' }),
+                TransacaoImportada.countDocuments({ importacao: id, status: 'possivel_duplicata' })
             ]);
 
-            const transacoesNovas = totalTransacoes - transacoesJaImportadas;
+            const transacoesNovas = totalTransacoes - transacoesJaImportadas - transacoesPossivelDuplicata;
             const totalIgnoradasNaImportacao = (importacao.totalIgnoradas || 0) + transacoesIgnoradas;
+            // Fallback de contagem para possível duplicata (defesa em profundidade):
+            // se o importacao.totalPossiveisDuplicatas não foi gravado (versões antigas),
+            // usa a contagem real das transações.
+            const possivelDuplicataFinal = (importacao.totalPossiveisDuplicatas != null)
+                ? importacao.totalPossiveisDuplicatas
+                : transacoesPossivelDuplicata;
 
             const resultado = {
                 ...importacao.toJSON(),
@@ -385,7 +392,8 @@ class ImportacaoController {
                     transacoesNovas,
                     transacoesJaImportadas,
                     transacoesIgnoradas,
-                    totalIgnoradas: totalIgnoradasNaImportacao
+                    totalIgnoradas: totalIgnoradasNaImportacao,
+                    transacoesPossivelDuplicata: possivelDuplicataFinal
                 }
             };
 

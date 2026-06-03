@@ -79,20 +79,67 @@ function gerarDeduplicationKey(usuarioId, dados) {
 }
 
 /**
- * Classifica transações parseadas em novas, já importadas e já ignoradas.
+ * Janela (em dias) para detecção de possível duplicata com data diferente.
+ * Ex: compra dia 5 importada inicialmente; na fatura consolidada do final do mês
+ * a mesma compra pode aparecer com dia 6 (variação de 1 dia). ±7 dias cobre o
+ * caso sem gerar muitos falsos positivos para assinaturas mensais.
+ */
+const JANELA_POSSIVEL_DUPLICATA_DIAS = 7;
+const TOLERANCIA_VALOR = 0.01;
+
+/**
+ * Procura uma transação ativa existente com a mesma descrição (normalizada)
+ * e mesmo valor (±R$ 0.01), mas com data diferente dentro de ±JANELA dias.
+ * Retorna a transação existente mais próxima em data, ou null.
+ */
+async function buscarPossivelDuplicata(usuarioId, transacao) {
+  const valorAbs = Math.abs(parseFloat(transacao.valor) || 0);
+  const dataObj = new Date(transacao.data);
+  if (isNaN(dataObj.getTime())) return null;
+
+  const dataMin = new Date(dataObj.getTime() - JANELA_POSSIVEL_DUPLICATA_DIAS * 86400000);
+  const dataMax = new Date(dataObj.getTime() + JANELA_POSSIVEL_DUPLICATA_DIAS * 86400000);
+
+  const descricaoEscaped = (transacao.descricao || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!descricaoEscaped) return null;
+
+  const candidatas = await Transacao.find({
+    usuario: usuarioId,
+    status: 'ativo',
+    descricao: new RegExp(`^\\s*${descricaoEscaped}\\s*$`, 'i'),
+    valor: { $gte: valorAbs - TOLERANCIA_VALOR, $lte: valorAbs + TOLERANCIA_VALOR },
+    data: { $gte: dataMin, $lte: dataMax, $ne: dataObj }
+  }).lean();
+
+  if (!candidatas || candidatas.length === 0) return null;
+
+  // Pegar a mais próxima em data
+  candidatas.sort((a, b) => {
+    const distA = Math.abs(new Date(a.data).getTime() - dataObj.getTime());
+    const distB = Math.abs(new Date(b.data).getTime() - dataObj.getTime());
+    return distA - distB;
+  });
+  return candidatas[0];
+}
+
+/**
+ * Classifica transações parseadas em novas, já importadas, já ignoradas e possíveis duplicatas.
+ * "Possíveis duplicatas" são transações NOVAS (não bateram no match exato) que têm
+ * uma transação ativa existente com mesma descrição + valor, mas data diferente (≤ ±7 dias).
  * @param {Array} transacoesParseadas - Array retornado por parseCSV
  * @param {string} usuarioId
- * @returns {Promise<{ novas: Array, jaImportadas: Array, jaIgnoradas: Array }>}
+ * @returns {Promise<{ novas: Array, jaImportadas: Array, jaIgnoradas: Array, possiveisDuplicatas: Array }>}
  */
 async function classificarTransacoes(transacoesParseadas, usuarioId) {
   const novas = [];
   const jaImportadas = [];
   const jaIgnoradas = [];
+  const possiveisDuplicatas = [];
 
   for (const transacao of transacoesParseadas) {
     const key = gerarDeduplicationKey(usuarioId, transacao);
 
-    // 1. Busca Transacao ativa (já importada)
+    // 1. Busca Transacao ativa (já importada) - match EXATO
     let existeTransacao = await Transacao.findOne({
       usuario: usuarioId,
       deduplicationKey: key,
@@ -149,12 +196,32 @@ async function classificarTransacoes(transacoesParseadas, usuarioId) {
 
     if (existeIgnorada) {
       jaIgnoradas.push({ ...transacao, deduplicationKey: key });
+      continue;
+    }
+
+    // 3. Match FUZZY: mesma descrição + valor, mas data diferente (±7 dias)
+    //    Detecta casos raros onde Nubank consolida uma transação em outra data
+    //    (ex: compra dia 5 importada antes; na fatura do final do mês vira dia 6).
+    const transacaoSemelhante = await buscarPossivelDuplicata(usuarioId, transacao);
+    if (transacaoSemelhante) {
+      const dataObj = new Date(transacao.data);
+      const dataSem = new Date(transacaoSemelhante.data);
+      const distanciaDias = Math.round(Math.abs(dataSem.getTime() - dataObj.getTime()) / 86400000);
+      possiveisDuplicatas.push({
+        ...transacao,
+        deduplicationKey: key,
+        transacaoSemelhanteId: transacaoSemelhante._id,
+        transacaoSemelhanteDistanciaDias: distanciaDias,
+        transacaoSemelhanteData: transacaoSemelhante.data,
+        transacaoSemelhanteValor: transacaoSemelhante.valor,
+        transacaoSemelhanteDescricao: transacaoSemelhante.descricao
+      });
     } else {
       novas.push({ ...transacao, deduplicationKey: key });
     }
   }
 
-  return { novas, jaImportadas, jaIgnoradas };
+  return { novas, jaImportadas, jaIgnoradas, possiveisDuplicatas };
 }
 
 class ImportacaoService {
@@ -475,17 +542,53 @@ class ImportacaoService {
         }
       }
 
-      // Importação complementar: classifica em novas, já importadas e já ignoradas
+      // Importação complementar: classifica em novas, já importadas, já ignoradas e possíveis duplicatas
       let transacoesParaProcessar = transacoes;
       let totalIgnoradas = 0;
+      let totalPossiveisDuplicatas = 0;
       if (importacao.tipoImportacao === 'complementar') {
         console.log('[DEBUG] Importação complementar: classificando transações');
-        const { novas, jaImportadas, jaIgnoradas } = await classificarTransacoes(transacoes, importacao.usuario.toString());
+        const { novas, jaImportadas, jaIgnoradas, possiveisDuplicatas } = await classificarTransacoes(transacoes, importacao.usuario.toString());
         transacoesParaProcessar = novas.map(t => ({ ...t, _statusComplementar: 'pendente' }))
-          .concat(jaImportadas.map(t => ({ ...t, _statusComplementar: 'ja_importada' })));
+          .concat(jaImportadas.map(t => ({ ...t, _statusComplementar: 'ja_importada' })))
+          .concat(possiveisDuplicatas.map(t => ({ ...t, _statusComplementar: 'possivel_duplicata' })));
         totalIgnoradas = jaIgnoradas.length;
-        console.log('[DEBUG] Classificação:', { novas: novas.length, jaImportadas: jaImportadas.length, jaIgnoradas: totalIgnoradas });
+        totalPossiveisDuplicatas = possiveisDuplicatas.length;
+        console.log('[DEBUG] Classificação:', {
+          novas: novas.length,
+          jaImportadas: jaImportadas.length,
+          jaIgnoradas: totalIgnoradas,
+          possiveisDuplicatas: totalPossiveisDuplicatas
+        });
       }
+
+      // Inicializa progresso ANTES de processar, para que o frontend mostre "0 de Y"
+      importacao.totalEsperado = transacoesParaProcessar.length;
+      importacao.totalProcessado = 0;
+      importacao.totalPossiveisDuplicatas = totalPossiveisDuplicatas;
+      try {
+        await importacao.save();
+      } catch (progressInitErr) {
+        console.warn('[Importação] Falha ao inicializar progresso (não-bloqueante):', progressInitErr.message);
+      }
+
+      // Contador compartilhado para progresso incremental (throttled save a cada 5)
+      let processadosCount = 0;
+      let finalizado = false;
+      const totalEsperado = transacoesParaProcessar.length;
+      const salvarProgresso = async () => {
+        try {
+          // Persiste throttled a cada 5 OU no fim. Nunca sobrescreve o save final.
+          if (finalizado) return;
+          if (processadosCount === totalEsperado || processadosCount % 5 === 0) {
+            importacao.totalProcessado = processadosCount;
+            await importacao.save();
+          }
+        } catch (progErr) {
+          // Não-bloqueante: progresso é best-effort
+          console.warn('[Importação] Falha ao salvar progresso (não-bloqueante):', progErr.message);
+        }
+      };
 
       // Processa cada transação
       const tagsPadrao = importacao.tagsPadrao || {};
@@ -497,9 +600,17 @@ class ImportacaoService {
             const transacaoBase = { ...transacao };
             delete transacaoBase._statusComplementar;
             delete transacaoBase.deduplicationKey;
+            // Campos de snapshot de possível duplicata ficam fora de transacaoBase para não irem em dadosOriginais
+            const snapshotSemelhante = {
+              transacaoSemelhanteId: transacao.transacaoSemelhanteId || null,
+              transacaoSemelhanteDistanciaDias: transacao.transacaoSemelhanteDistanciaDias != null ? transacao.transacaoSemelhanteDistanciaDias : null,
+              transacaoSemelhanteData: transacao.transacaoSemelhanteData || null,
+              transacaoSemelhanteValor: transacao.transacaoSemelhanteValor != null ? transacao.transacaoSemelhanteValor : null,
+              transacaoSemelhanteDescricao: transacao.transacaoSemelhanteDescricao || null
+            };
             const dedupKey = transacao.deduplicationKey || gerarDeduplicationKey(importacao.usuario.toString(), transacaoBase);
 
-            console.log('[DEBUG] Processando transação:', transacaoBase);
+            console.log('[DEBUG] Processando transação:', transacaoBase.descricao, 'status:', statusInicial);
             let pagamentosBase = transacaoBase.pagamentos || [{
               pessoa: proprietarioPadrao,
               valor: transacaoBase.valor,
@@ -532,11 +643,15 @@ class ImportacaoService {
               installmentNumber: transacaoBase.installmentNumber != null ? transacaoBase.installmentNumber : null,
               installmentTotal: transacaoBase.installmentTotal != null ? transacaoBase.installmentTotal : null,
               installmentIntervalMonths: transacaoBase.installmentIntervalMonths != null ? transacaoBase.installmentIntervalMonths : null,
-              installmentIntervalDays: transacaoBase.installmentIntervalDays != null ? transacaoBase.installmentIntervalDays : (transacaoBase.installmentIntervalMonths != null ? transacaoBase.installmentIntervalMonths * 30 : null)
+              installmentIntervalDays: transacaoBase.installmentIntervalDays != null ? transacaoBase.installmentIntervalDays : (transacaoBase.installmentIntervalMonths != null ? transacaoBase.installmentIntervalMonths * 30 : null),
+              ...snapshotSemelhante
             });
 
             await transacaoImportada.validate();
             await transacaoImportada.save();
+            processadosCount++;
+            // Salva progresso throttled (não-await para não bloquear processamento paralelo)
+            salvarProgresso().catch(() => {});
             console.log('[DEBUG] Transação processada com sucesso');
             return { sucesso: true, transacao: transacaoImportada };
           } catch (erro) {
@@ -564,6 +679,7 @@ class ImportacaoService {
       importacao.totalSucesso = sucessos;
       importacao.totalErro = falhas;
       importacao.totalIgnoradas = totalIgnoradas;
+      importacao.totalPossiveisDuplicatas = totalPossiveisDuplicatas;
       importacao.status = falhas > 0 ? 'erro' : 'validado';
       importacao.erros = resultados
         .filter(r => !r.sucesso)
@@ -571,6 +687,7 @@ class ImportacaoService {
           mensagem: r.erro,
           dados: r.dadosOriginais
         }));
+      finalizado = true; // bloqueia saves throttled em voo
 
       // Inferência de metadados (nunca bloqueante — falhas são logadas e ignoradas)
       try {
@@ -862,4 +979,7 @@ class ImportacaoService {
 }
 
 ImportacaoService.gerarDeduplicationKey = gerarDeduplicationKey;
-module.exports = ImportacaoService; 
+module.exports = ImportacaoService;
+module.exports.classificarTransacoes = classificarTransacoes;
+module.exports.JANELA_POSSIVEL_DUPLICATA_DIAS = JANELA_POSSIVEL_DUPLICATA_DIAS;
+module.exports.TOLERANCIA_VALOR = TOLERANCIA_VALOR;

@@ -492,8 +492,26 @@
   background-color: #fff;
 }
 
+.status-badge.possivel_duplicata {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-badge.possivel_duplicata::before {
+  background-color: #f59e0b;
+}
+
 .transacoes-table tr.status-ja_importada {
   background-color: rgba(108, 117, 125, 0.08);
+}
+
+.transacoes-table tr.status-possivel_duplicata {
+  background-color: rgba(245, 158, 11, 0.06);
+}
+
+.transacoes-table tr.status-possivel_duplicata:hover {
+  background-color: rgba(245, 158, 11, 0.14);
 }
 
 /* Ajuste na tabela para os status */

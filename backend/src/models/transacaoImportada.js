@@ -43,9 +43,9 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     enum: ['gasto', 'recebivel'],
     required: true 
   },
-  status: { 
-    type: String, 
-    enum: ['pendente', 'revisada', 'validada', 'erro', 'ja_importada', 'processada', 'estornada', 'ignorada'],
+  status: {
+    type: String,
+    enum: ['pendente', 'revisada', 'validada', 'erro', 'ja_importada', 'possivel_duplicata', 'processada', 'estornada', 'ignorada'],
     default: 'pendente'
   },
   erro: { 
@@ -68,9 +68,31 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  transacaoCriada: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  transacaoCriada: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Transacao',
+    default: null
+  },
+  // Detecção de possível duplicata com data diferente (mesma descricao + valor, data próxima)
+  transacaoSemelhanteId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transacao',
+    default: null
+  },
+  transacaoSemelhanteDistanciaDias: {
+    type: Number,
+    default: null
+  },
+  transacaoSemelhanteData: {
+    type: Date,
+    default: null
+  },
+  transacaoSemelhanteValor: {
+    type: Number,
+    default: null
+  },
+  transacaoSemelhanteDescricao: {
+    type: String,
     default: null
   },
   // Parcelamento (para importação já expandida)

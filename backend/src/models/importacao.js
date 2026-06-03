@@ -35,6 +35,14 @@ const ImportacaoSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  totalEsperado: {
+    type: Number,
+    default: 0
+  },
+  totalPossiveisDuplicatas: {
+    type: Number,
+    default: 0
+  },
   erro: {
     type: String,
     default: null

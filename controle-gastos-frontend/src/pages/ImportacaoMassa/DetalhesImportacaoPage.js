@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useContext, useCallback } from 'react';
+import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaSpinner, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy } from 'react-icons/fa';
+import { FaSpinner, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy, FaExclamationTriangle, FaSync } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
+import ModalPossivelDuplicata from '../../components/ImportacaoMassa/DetalhesImportacao/ModalPossivelDuplicata';
 import importacaoService from '../../services/importacaoService';
 import patrimonioApi from '../../services/patrimonioApi';
 import SubcontaSelect from '../../components/shared/SubcontaSelect';
@@ -12,6 +13,10 @@ import { obterCategorias } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './DetalhesImportacaoPage.css';
+
+const STATUS_PROCESSANDO = ['pendente', 'processando'];
+const POLLING_INTERVAL_MS = 1500;
+const POLLING_AUTOCANCELAR_MS = 30000;
 
 const DetalhesImportacaoPage = () => {
     const { id } = useParams();
@@ -29,7 +34,7 @@ const DetalhesImportacaoPage = () => {
     const [expandedRows, setExpandedRows] = useState(new Set());
     const [expandirTodas, setExpandirTodas] = useState(false);
     const [duplicando, setDuplicando] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState('novas'); // 'novas' | 'ja_importadas' | 'ignoradas'
+    const [abaAtiva, setAbaAtiva] = useState('novas'); // 'novas' | 'ja_importadas' | 'ignoradas' | 'possiveis_duplicatas'
     const [selecionados, setSelecionados] = useState(new Set());
     const [executandoAcaoMassa, setExecutandoAcaoMassa] = useState(false);
     const [modalAtualizarSaldo, setModalAtualizarSaldo] = useState(false);
@@ -37,6 +42,14 @@ const DetalhesImportacaoPage = () => {
     const [saldoSubcontaId, setSaldoSubcontaId] = useState('');
     const [saldoSubcontaValor, setSaldoSubcontaValor] = useState('');
     const [atualizandoSaldo, setAtualizandoSaldo] = useState(false);
+
+    // Polling + loading state para importação em processamento
+    const [pollingAtivo, setPollingAtivo] = useState(false);
+    const [transacaoFlagged, setTransacaoFlagged] = useState(null);
+    const [showControlesPolling, setShowControlesPolling] = useState(false);
+    const pollingTimerRef = useRef(null);
+    const pollingInicioRef = useRef(null);
+    const abortRef = useRef(null);
 
     // Obter tags do contexto; categorias (incluindo inativas) para exibir nomes no histórico
     const { tags: allTags = [] } = useData();
@@ -62,6 +75,8 @@ const DetalhesImportacaoPage = () => {
             const options = {};
             if (abaAtiva === 'ignoradas') {
                 options.status = 'ignorada';
+            } else if (abaAtiva === 'possiveis_duplicatas') {
+                options.status = 'possivel_duplicata';
             } else if (dados?.tipoImportacao === 'complementar') {
                 if (abaAtiva === 'novas') options.status_not = 'ja_importada';
                 else if (abaAtiva === 'ja_importadas') options.status = 'ja_importada';
@@ -81,12 +96,114 @@ const DetalhesImportacaoPage = () => {
         carregarDetalhes();
     }, [carregarDetalhes]);
 
+    // Polling: refetch silencioso a cada 1.5s enquanto a importação está processando.
+    // Não há timeout automático; após 30s aparecem botões de "Recarregar agora" e "Cancelar".
+    useEffect(() => {
+        if (!importacao) return;
+        const emProcessamento = STATUS_PROCESSANDO.includes(importacao.status);
+        if (!emProcessamento) {
+            // Garantir limpeza se saiu de processamento
+            if (pollingTimerRef.current) {
+                clearTimeout(pollingTimerRef.current);
+                pollingTimerRef.current = null;
+            }
+            setPollingAtivo(false);
+            setShowControlesPolling(false);
+            pollingInicioRef.current = null;
+            return;
+        }
+        // Iniciar polling
+        if (!pollingAtivo) {
+            setPollingAtivo(true);
+            pollingInicioRef.current = Date.now();
+        }
+        const tick = async () => {
+            try {
+                // Cancela fetch anterior se ainda em voo
+                if (abortRef.current) abortRef.current.abort();
+                abortRef.current = new AbortController();
+                const dados = await importacaoService.obterImportacao(id);
+                setImportacao(dados);
+                // Recarrega lista da aba ativa
+                const options = {};
+                if (abaAtiva === 'ignoradas') options.status = 'ignorada';
+                else if (abaAtiva === 'possiveis_duplicatas') options.status = 'possivel_duplicata';
+                else if (dados?.tipoImportacao === 'complementar') {
+                    if (abaAtiva === 'novas') options.status_not = 'ja_importada';
+                    else if (abaAtiva === 'ja_importadas') options.status = 'ja_importada';
+                }
+                const response = await importacaoService.listarTransacoes(id, 1, 1000, options);
+                setTransacoes(response.items || []);
+                // Se saiu de processamento, polling para naturalmente
+                if (!STATUS_PROCESSANDO.includes(dados.status)) {
+                    setPollingAtivo(false);
+                    setShowControlesPolling(false);
+                    pollingInicioRef.current = null;
+                    return;
+                }
+                // Após 30s, mostrar controles manuais
+                if (pollingInicioRef.current && (Date.now() - pollingInicioRef.current) > POLLING_AUTOCANCELAR_MS) {
+                    setShowControlesPolling(true);
+                }
+                // Próximo tick
+                pollingTimerRef.current = setTimeout(tick, POLLING_INTERVAL_MS);
+            } catch (err) {
+                if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+                    console.warn('[Polling] Erro ao buscar progresso:', err);
+                }
+                // Continua polling mesmo com erro (best-effort)
+                if (STATUS_PROCESSANDO.includes(importacao?.status)) {
+                    pollingTimerRef.current = setTimeout(tick, POLLING_INTERVAL_MS);
+                }
+            }
+        };
+        pollingTimerRef.current = setTimeout(tick, POLLING_INTERVAL_MS);
+        return () => {
+            if (pollingTimerRef.current) {
+                clearTimeout(pollingTimerRef.current);
+                pollingTimerRef.current = null;
+            }
+            if (abortRef.current) {
+                abortRef.current.abort();
+                abortRef.current = null;
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [importacao?.status, abaAtiva, id]);
+
+    const handleRecarregarAgora = async () => {
+        try {
+            await carregarDetalhes();
+            // Recalcula início para adiar o "showControlesPolling" mais 30s
+            pollingInicioRef.current = Date.now();
+            setShowControlesPolling(false);
+        } catch (e) {
+            toast.error('Erro ao recarregar progresso.');
+        }
+    };
+
+    const handleCancelarPolling = () => {
+        if (pollingTimerRef.current) {
+            clearTimeout(pollingTimerRef.current);
+            pollingTimerRef.current = null;
+        }
+        if (abortRef.current) {
+            abortRef.current.abort();
+            abortRef.current = null;
+        }
+        setPollingAtivo(false);
+        setShowControlesPolling(false);
+        toast.info('Polling pausado. Use "Recarregar agora" para atualizar manualmente.');
+    };
+
     const carregarTransacoes = async (aba = abaAtiva, importacaoRef = null) => {
         const imp = importacaoRef || importacao;
         try {
             const options = {};
             if (aba === 'ignoradas') {
                 options.status = 'ignorada';
+            } else if (aba === 'possiveis_duplicatas') {
+                options.status = 'possivel_duplicata';
             } else if (imp?.tipoImportacao === 'complementar') {
                 if (aba === 'novas') options.status_not = 'ja_importada'; // Backend também exclui ignorada
                 else if (aba === 'ja_importadas') options.status = 'ja_importada';
@@ -439,6 +556,103 @@ const DetalhesImportacaoPage = () => {
                 <h1>Detalhes da Importação</h1>
             </div>
 
+            {STATUS_PROCESSANDO.includes(importacao.status) && (
+                <div
+                    className="estado-processando"
+                    style={{
+                        background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                        border: '1px solid #93c5fd',
+                        borderRadius: 12,
+                        padding: 24,
+                        marginBottom: 16,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 16
+                    }}
+                >
+                    <FaSpinner
+                        className="spinner"
+                        style={{ color: '#1d4ed8', fontSize: 32, flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h3 style={{ margin: 0, fontSize: 16, color: '#0f172a' }}>
+                            Processando importação
+                        </h3>
+                        <p style={{ margin: '4px 0 0', fontSize: 14, color: '#475569' }}>
+                            {pollingAtivo
+                                ? <>Processado <strong>{importacao.totalProcessado ?? 0}</strong> de <strong>{importacao.totalEsperado ?? '?'}</strong> transações.</>
+                                : 'Aguardando início do processamento...'}
+                        </p>
+                        {(importacao.totalEsperado ?? 0) > 0 && (
+                            <div style={{
+                                marginTop: 8,
+                                height: 8, borderRadius: 999,
+                                background: '#bfdbfe',
+                                overflow: 'hidden'
+                            }}>
+                                <div style={{
+                                    height: '100%',
+                                    width: `${Math.min(100, Math.round(((importacao.totalProcessado || 0) / (importacao.totalEsperado || 1)) * 100))}%`,
+                                    background: 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)',
+                                    transition: 'width 0.3s ease-out'
+                                }} />
+                            </div>
+                        )}
+                    </div>
+                    {showControlesPolling && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                            <button
+                                onClick={handleRecarregarAgora}
+                                style={{
+                                    padding: '6px 12px', border: '1px solid #1d4ed8',
+                                    borderRadius: 6, background: 'white',
+                                    color: '#1d4ed8', cursor: 'pointer',
+                                    fontSize: 12, display: 'inline-flex',
+                                    alignItems: 'center', gap: 4
+                                }}
+                            >
+                                <FaSync size={10} /> Recarregar agora
+                            </button>
+                            <button
+                                onClick={handleCancelarPolling}
+                                style={{
+                                    padding: '6px 12px', border: '1px solid #94a3b8',
+                                    borderRadius: 6, background: 'white',
+                                    color: '#475569', cursor: 'pointer', fontSize: 12
+                                }}
+                            >
+                                Cancelar polling
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {importacao.status !== 'pendente' && importacao.status !== 'processando'
+                && (importacao?.estatisticas?.transacoesPossivelDuplicata ?? 0) > 0 && (
+                <div
+                    style={{
+                        background: '#fffbeb',
+                        border: '1px solid #fde68a',
+                        borderRadius: 8,
+                        padding: 12,
+                        marginBottom: 16,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        fontSize: 14,
+                        color: '#78350f'
+                    }}
+                >
+                    <FaExclamationTriangle style={{ color: '#f59e0b', flexShrink: 0 }} />
+                    <span>
+                        <strong>{importacao.estatisticas.transacoesPossivelDuplicata}</strong> possível(is) duplicata(s)
+                        detectada(s) — transações com mesma descrição e valor, mas data diferente (até 7 dias).
+                        Clique em cada linha da aba <strong>Possíveis Duplicatas</strong> para revisar.
+                    </span>
+                </div>
+            )}
+
             <div className="importacao-card">
                 <div className="importacao-header">
                     <h2 className="importacao-titulo">{importacao.descricao}</h2>
@@ -600,7 +814,7 @@ const DetalhesImportacaoPage = () => {
                 <div className="lista-header">
                     <h3>Lista de Transações</h3>
                     <div className="lista-header-actions">
-                        {(importacao?.tipoImportacao === 'complementar' || (importacao?.estatisticas?.totalIgnoradas ?? 0) > 0) && (
+                        {(importacao?.tipoImportacao === 'complementar' || (importacao?.estatisticas?.totalIgnoradas ?? 0) > 0 || (importacao?.estatisticas?.transacoesPossivelDuplicata ?? 0) > 0) && (
                             <div className="abas-transacoes">
                                 <button
                                     className={`aba-btn ${abaAtiva === 'novas' ? 'ativa' : ''}`}
@@ -614,6 +828,23 @@ const DetalhesImportacaoPage = () => {
                                         onClick={() => handleTrocarAba('ja_importadas')}
                                     >
                                         Já Importadas
+                                    </button>
+                                )}
+                                {(importacao?.estatisticas?.transacoesPossivelDuplicata ?? 0) > 0 && (
+                                    <button
+                                        className={`aba-btn ${abaAtiva === 'possiveis_duplicatas' ? 'ativa' : ''}`}
+                                        onClick={() => handleTrocarAba('possiveis_duplicatas')}
+                                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                    >
+                                        <FaExclamationTriangle size={12} style={{ color: '#f59e0b' }} />
+                                        Possíveis Duplicatas
+                                        <span style={{
+                                          background: '#fef3c7', color: '#92400e',
+                                          borderRadius: 999, padding: '0 6px',
+                                          fontSize: 11, fontWeight: 600
+                                        }}>
+                                            {importacao.estatisticas.transacoesPossivelDuplicata}
+                                        </span>
                                     </button>
                                 )}
                                 {(importacao?.estatisticas?.totalIgnoradas ?? 0) > 0 && (
@@ -697,10 +928,18 @@ const DetalhesImportacaoPage = () => {
                             <React.Fragment key={transacao.id}>
                                 <tr
                                     className={`status-${transacao.status}`}
+                                    onClick={() => {
+                                        if (transacao.status === 'possivel_duplicata') {
+                                            setTransacaoFlagged(transacao);
+                                        }
+                                    }}
+                                    style={{
+                                        cursor: transacao.status === 'possivel_duplicata' ? 'pointer' : 'default'
+                                    }}
                                 >
                                     {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
-                                        <td className="checkbox-cell">
-                                            {['pendente', 'revisada', 'erro', 'ja_importada'].includes(transacao.status) && (
+                                        <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
+                                            {['pendente', 'revisada', 'erro', 'ja_importada', 'possivel_duplicata'].includes(transacao.status) && (
                                                 <input
                                                     type="checkbox"
                                                     checked={selecionados.has(transacao.id)}
@@ -712,7 +951,7 @@ const DetalhesImportacaoPage = () => {
                                     <td className="expand-cell">
                                         <button
                                             className="btn-expand"
-                                            onClick={() => toggleRow(transacao.id)}
+                                            onClick={(e) => { e.stopPropagation(); toggleRow(transacao.id); }}
                                             title={expandedRows.has(transacao.id) ? "Recolher detalhes" : "Expandir detalhes"}
                                         >
                                             {expandedRows.has(transacao.id) ? (
@@ -722,15 +961,25 @@ const DetalhesImportacaoPage = () => {
                                             )}
                                         </button>
                                     </td>
-                                    <td>{transacao.descricao}</td>
+                                    <td>
+                                        {transacao.descricao}
+                                        {transacao.status === 'possivel_duplicata' && transacao.transacaoSemelhanteDistanciaDias != null && (
+                                            <div style={{ fontSize: 11, color: '#92400e', marginTop: 2 }}>
+                                                <FaExclamationTriangle size={10} style={{ marginRight: 4 }} />
+                                                {transacao.transacaoSemelhanteDistanciaDias} dia(s) de diferença — clique para comparar
+                                            </div>
+                                        )}
+                                    </td>
                                     <td>{formatarValor(transacao.valor)}</td>
                                     <td>{formatarData(transacao.data)}</td>
                                     <td>
                                         <span className={`status-badge ${transacao.status}`}>
-                                            {transacao.status === 'ja_importada' ? 'Já Importada' : transacao.status.charAt(0).toUpperCase() + transacao.status.slice(1)}
+                                            {transacao.status === 'ja_importada' ? 'Já Importada'
+                                                : transacao.status === 'possivel_duplicata' ? 'Possível Duplicata'
+                                                : transacao.status.charAt(0).toUpperCase() + transacao.status.slice(1)}
                                         </span>
                                     </td>
-                                    <td className="acoes-cell">
+                                    <td className="acoes-cell" onClick={(e) => e.stopPropagation()}>
                                         {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
                                             <>
                                                 <button
@@ -931,8 +1180,15 @@ const DetalhesImportacaoPage = () => {
                     </div>
                 </div>
             )}
+
+            {transacaoFlagged && (
+                <ModalPossivelDuplicata
+                    transacao={transacaoFlagged}
+                    onFechar={() => setTransacaoFlagged(null)}
+                />
+            )}
         </div>
     );
 };
 
-export default DetalhesImportacaoPage; 
+export default DetalhesImportacaoPage;
