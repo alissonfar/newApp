@@ -7,6 +7,7 @@ const Importacao = require('../models/importacao');
 const TransacaoImportada = require('../models/transacaoImportada');
 const Transacao = require('../models/transacao');
 const Usuario = require('../models/usuarios');
+const inferenciaPessoaService = require('./inferenciaPessoaService');
 
 /**
  * Mescla tagsPadrao da importação em cada pagamento, sem duplicar.
@@ -563,6 +564,22 @@ class ImportacaoService {
       }
 
       // Inicializa progresso ANTES de processar, para que o frontend mostre "0 de Y"
+      // Inferência de pessoa responsável a partir do histórico (best-effort)
+      let inferenciasPessoa = [];
+      try {
+        inferenciasPessoa = await inferenciaPessoaService.inferirPessoasEmLote(
+          transacoesParaProcessar,
+          importacao.usuario
+        );
+        const totalInferidas = inferenciasPessoa.filter(Boolean).length;
+        if (totalInferidas > 0) {
+          console.log(`[DEBUG] Inferência de pessoa: ${totalInferidas}/${transacoesParaProcessar.length} sugestões`);
+        }
+      } catch (inferenciaErr) {
+        console.warn('[Importação] Falha na inferência de pessoa (não-bloqueante):', inferenciaErr.message);
+        inferenciasPessoa = [];
+      }
+
       importacao.totalEsperado = transacoesParaProcessar.length;
       importacao.totalProcessado = 0;
       importacao.totalPossiveisDuplicatas = totalPossiveisDuplicatas;
@@ -594,7 +611,7 @@ class ImportacaoService {
       const tagsPadrao = importacao.tagsPadrao || {};
       console.log('[DEBUG] Iniciando processamento das transações', Object.keys(tagsPadrao).length > 0 ? '(com tags padrão)' : '');
       const resultados = await Promise.all(
-        transacoesParaProcessar.map(async (transacao) => {
+        transacoesParaProcessar.map(async (transacao, index) => {
           try {
             const statusInicial = transacao._statusComplementar || 'pendente';
             const transacaoBase = { ...transacao };
@@ -607,6 +624,16 @@ class ImportacaoService {
               transacaoSemelhanteData: transacao.transacaoSemelhanteData || null,
               transacaoSemelhanteValor: transacao.transacaoSemelhanteValor != null ? transacao.transacaoSemelhanteValor : null,
               transacaoSemelhanteDescricao: transacao.transacaoSemelhanteDescricao || null
+            };
+            // Snapshot da inferência de pessoa (best-effort; null quando não há sugestão)
+            const inferencia = inferenciasPessoa[index] || null;
+            const snapshotInferencia = {
+              pessoaSugerida: inferencia ? inferencia.pessoa : null,
+              pessoaSugeridaCount: inferencia ? inferencia.count : null,
+              pessoaSugeridaConfianca: inferencia ? inferencia.confianca : null,
+              pessoaSugeridaSample: inferencia ? inferencia.sample : null,
+              pessoaSugeridaTransacaoIds: inferencia ? inferencia.transacaoIds : null,
+              pessoaSugeridaAplicada: false
             };
             const dedupKey = transacao.deduplicationKey || gerarDeduplicationKey(importacao.usuario.toString(), transacaoBase);
 
@@ -644,7 +671,8 @@ class ImportacaoService {
               installmentTotal: transacaoBase.installmentTotal != null ? transacaoBase.installmentTotal : null,
               installmentIntervalMonths: transacaoBase.installmentIntervalMonths != null ? transacaoBase.installmentIntervalMonths : null,
               installmentIntervalDays: transacaoBase.installmentIntervalDays != null ? transacaoBase.installmentIntervalDays : (transacaoBase.installmentIntervalMonths != null ? transacaoBase.installmentIntervalMonths * 30 : null),
-              ...snapshotSemelhante
+              ...snapshotSemelhante,
+              ...snapshotInferencia
             });
 
             await transacaoImportada.validate();

@@ -95,6 +95,35 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // Sugestão de pessoa responsável inferida do histórico (descrição similar + ≥2 matches)
+  pessoaSugerida: {
+    type: String,
+    default: null
+  },
+  pessoaSugeridaCount: {
+    type: Number,
+    default: null
+  },
+  pessoaSugeridaConfianca: {
+    type: String,
+    enum: ['alta', 'media', 'baixa'],
+    default: null
+  },
+  pessoaSugeridaSample: {
+    _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Transacao' },
+    descricao: { type: String },
+    data: { type: Date },
+    valor: { type: Number },
+    pessoa: { type: String }
+  },
+  pessoaSugeridaTransacaoIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transacao'
+  }],
+  pessoaSugeridaAplicada: {
+    type: Boolean,
+    default: false
+  },
   // Parcelamento (para importação já expandida)
   isInstallment: { type: Boolean, default: false },
   installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null },

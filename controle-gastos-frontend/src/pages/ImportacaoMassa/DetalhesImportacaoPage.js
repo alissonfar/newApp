@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaSpinner, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy, FaExclamationTriangle, FaSync } from 'react-icons/fa';
+import { FaSpinner, FaTrash, FaChevronDown, FaChevronRight, FaUser, FaTag, FaArrowUp, FaArrowDown, FaCopy, FaExclamationTriangle, FaSync, FaLightbulb } from 'react-icons/fa';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import ModalPossivelDuplicata from '../../components/ImportacaoMassa/DetalhesImportacao/ModalPossivelDuplicata';
+import ModalSugestaoPessoa from '../../components/ImportacaoMassa/DetalhesImportacao/ModalSugestaoPessoa';
 import importacaoService from '../../services/importacaoService';
 import patrimonioApi from '../../services/patrimonioApi';
 import SubcontaSelect from '../../components/shared/SubcontaSelect';
@@ -46,6 +47,7 @@ const DetalhesImportacaoPage = () => {
     // Polling + loading state para importação em processamento
     const [pollingAtivo, setPollingAtivo] = useState(false);
     const [transacaoFlagged, setTransacaoFlagged] = useState(null);
+    const [transacaoSugeridaFlagged, setTransacaoSugeridaFlagged] = useState(null);
     const [showControlesPolling, setShowControlesPolling] = useState(false);
     const pollingTimerRef = useRef(null);
     const pollingInicioRef = useRef(null);
@@ -931,10 +933,13 @@ const DetalhesImportacaoPage = () => {
                                     onClick={() => {
                                         if (transacao.status === 'possivel_duplicata') {
                                             setTransacaoFlagged(transacao);
+                                        } else if (transacao.pessoaSugerida && !transacao.pessoaSugeridaAplicada) {
+                                            setTransacaoSugeridaFlagged(transacao);
                                         }
                                     }}
                                     style={{
-                                        cursor: transacao.status === 'possivel_duplicata' ? 'pointer' : 'default'
+                                        cursor: (transacao.status === 'possivel_duplicata' || (transacao.pessoaSugerida && !transacao.pessoaSugeridaAplicada))
+                                            ? 'pointer' : 'default'
                                     }}
                                 >
                                     {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
@@ -967,6 +972,30 @@ const DetalhesImportacaoPage = () => {
                                             <div style={{ fontSize: 11, color: '#92400e', marginTop: 2 }}>
                                                 <FaExclamationTriangle size={10} style={{ marginRight: 4 }} />
                                                 {transacao.transacaoSemelhanteDistanciaDias} dia(s) de diferença — clique para comparar
+                                            </div>
+                                        )}
+                                        {transacao.tipo === 'gasto' && transacao.pessoaSugerida && !transacao.pessoaSugeridaAplicada && (
+                                            <div
+                                                className="sugestao-pessoa-badge"
+                                                onClick={(e) => { e.stopPropagation(); setTransacaoSugeridaFlagged(transacao); }}
+                                                title={`${transacao.pessoaSugeridaCount || 0} ocorrência(s) no histórico com esta descrição`}
+                                                style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                                    marginTop: 4, marginLeft: 0,
+                                                    fontSize: 11, fontWeight: 600,
+                                                    color: '#166534',
+                                                    background: '#dcfce7',
+                                                    border: '1px solid #bbf7d0',
+                                                    borderRadius: 999,
+                                                    padding: '2px 10px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <FaLightbulb size={10} />
+                                                Provavelmente de {transacao.pessoaSugerida}
+                                                <span style={{ color: '#475569', fontWeight: 500 }}>
+                                                    · {transacao.pessoaSugeridaCount || 0} {(transacao.pessoaSugeridaCount || 0) === 1 ? 'vez' : 'vezes'}
+                                                </span>
                                             </div>
                                         )}
                                     </td>
@@ -1185,6 +1214,15 @@ const DetalhesImportacaoPage = () => {
                 <ModalPossivelDuplicata
                     transacao={transacaoFlagged}
                     onFechar={() => setTransacaoFlagged(null)}
+                />
+            )}
+
+            {transacaoSugeridaFlagged && (
+                <ModalSugestaoPessoa
+                    transacao={transacaoSugeridaFlagged}
+                    importacaoId={id}
+                    onFechar={() => setTransacaoSugeridaFlagged(null)}
+                    onAtualizar={carregarDetalhes}
                 />
             )}
         </div>

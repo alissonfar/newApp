@@ -130,6 +130,15 @@ const transacaoImportadaController = {
         }
       });
 
+      // Marca pessoaSugeridaAplicada = true se o usuário aceitou a sugestão (ou seja, a pessoa
+      // do primeiro pagamento bate com a pessoa inferida). Caso o usuário tenha mantido uma
+      // pessoa diferente da sugestão (incluindo o proprietário padrão), o flag fica false.
+      if (transacao.pessoaSugerida && Array.isArray(transacao.pagamentos) && transacao.pagamentos.length > 0) {
+        const pessoaAtual = (transacao.pagamentos[0].pessoa || '').trim().toLowerCase();
+        const pessoaSugeridaNorm = transacao.pessoaSugerida.trim().toLowerCase();
+        transacao.pessoaSugeridaAplicada = pessoaAtual === pessoaSugeridaNorm;
+      }
+
       // Quando marcar como parcelado na edição, gerar installmentGroupId e installmentNumber se necessário
       if (req.body.isInstallment === true) {
         transacao.isInstallment = true;
