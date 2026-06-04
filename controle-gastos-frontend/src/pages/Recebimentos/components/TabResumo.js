@@ -26,7 +26,9 @@ const TabResumo = () => {
     pendentes,
     transacoesSelecionadasSet,
     confirmando,
-    handleConfirmar
+    handleConfirmar,
+    handleConfirmarEContinuar,
+    conciliacoesNaSessao
   } = useRecebimentos();
 
   const transacoesQuitadas = pendentes.filter((t) => transacoesSelecionadasSet.has(t._id));
@@ -45,6 +47,14 @@ const TabResumo = () => {
     tagSelecionada &&
     transacoesQuitadas.length > 0 &&
     totalAplicado <= valorRecebimento;
+
+  const motivoBloqueio = (() => {
+    if (!recebimentoSelecionado) return null;
+    if (!tagSelecionada) return 'Selecione uma tag na aba Configuração — é ela que marca os gastos como quitados.';
+    if (transacoesQuitadas.length === 0) return 'Selecione ao menos uma transação na aba Seleção.';
+    if (totalAplicado > valorRecebimento) return `Total aplicado (R$ ${formatarValor(totalAplicado)}) excede o recebimento (R$ ${formatarValor(valorRecebimento)}).`;
+    return null;
+  })();
 
   if (!recebimentoSelecionado) {
     return (
@@ -99,15 +109,38 @@ const TabResumo = () => {
           )}
         </div>
 
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={handleConfirmar}
-          disabled={!podeConfirmar || confirmando}
-          className="tab-resumo-btn-confirmar"
-        >
-          {confirmando ? 'Processando...' : 'Confirmar Conciliação'}
-        </Button>
+        <div className="tab-resumo-acoes-finais">
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleConfirmar}
+            disabled={!podeConfirmar || confirmando}
+            className="tab-resumo-btn-confirmar"
+            title={motivoBloqueio || 'Confirmar conciliação'}
+          >
+            {confirmando ? 'Processando...' : 'Confirmar Conciliação'}
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={handleConfirmarEContinuar}
+            disabled={!podeConfirmar || confirmando}
+            className="tab-resumo-btn-confirmar-continuar"
+            title={motivoBloqueio || 'Confirma e volta para Configuração, mantendo as tags para iniciar a próxima'}
+          >
+            {confirmando ? 'Processando...' : 'Confirmar e Conciliar Próxima →'}
+          </Button>
+        </div>
+        {motivoBloqueio && (
+          <div className="tab-resumo-aviso-bloqueio" role="alert">
+            <span aria-hidden>⚠️</span> {motivoBloqueio}
+          </div>
+        )}
+        {conciliacoesNaSessao > 0 && (
+          <p className="tab-resumo-sessao-info">
+            {conciliacoesNaSessao} conciliação(ões) já realizada(s) nesta sessão.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

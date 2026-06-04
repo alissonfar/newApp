@@ -501,6 +501,11 @@ export async function listarSettlements(params = {}) {
   const q = new URLSearchParams();
   if (params.page) q.set('page', params.page);
   if (params.limit) q.set('limit', params.limit);
+  if (params.pessoa) q.set('pessoa', params.pessoa);
+  if (params.tagId) q.set('tagId', params.tagId);
+  if (params.dataInicio) q.set('dataInicio', params.dataInicio);
+  if (params.dataFim) q.set('dataFim', params.dataFim);
+  if (params.q) q.set('q', params.q);
   const resposta = await fetch(`${API_BASE}/settlements?${q.toString()}`, {
     headers: getHeaders(false)
   });

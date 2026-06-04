@@ -4,7 +4,6 @@ import { RecebimentosProvider, useRecebimentos } from './context/RecebimentosCon
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import TabConfiguracao from './components/TabConfiguracao';
-import TabFiltro from './components/TabFiltro';
 import TabSelecao from './components/TabSelecao';
 import TabResumo from './components/TabResumo';
 import RecebimentosStepper from './components/RecebimentosStepper';
@@ -33,8 +32,8 @@ function NovaConciliacaoContent() {
   );
   const configurado = !!tagReceber;
 
-  // ⚙️ só aparece nas abas 0 e 1 (decisão: sumir a partir da seleção)
-  const mostrarBotaoConfig = tabAtiva <= 1;
+  // ⚙️ só aparece na aba de Configuração
+  const mostrarBotaoConfig = tabAtiva === 0;
 
   return (
     <div className="recebimentos-novo-page">
@@ -83,7 +82,6 @@ function NovaConciliacaoContent() {
       </header>
       <div className="recebimentos-content-area">
         {tabAtiva === 0 && <TabConfiguracao />}
-        {tabAtiva === 1 && <TabFiltro />}
         {tabAtiva === 2 && <TabSelecao />}
         {tabAtiva === 3 && <TabResumo />}
       </div>

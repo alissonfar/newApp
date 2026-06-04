@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaListUl } from 'react-icons/fa';
+import { FaListUl, FaFilter } from 'react-icons/fa';
 import { CircularProgress } from '@mui/material';
 import { useRecebimentos } from '../context/RecebimentosContext';
 import { useData } from '../../../context/DataContext';
@@ -10,6 +10,7 @@ import Button from '../../../components/shared/Button';
 import Badge from '../../../components/shared/Badge';
 import EmptyState from '../../../components/shared/EmptyState';
 import BulkActionBar from '../../../components/shared/BulkActionBar';
+import PeriodQuickFilter from '../../../components/shared/PeriodQuickFilter';
 import { formatDateBR } from '../../../utils/dateUtils';
 
 const formatarValor = (v) => {
@@ -27,7 +28,13 @@ const TabSelecao = () => {
     toggleSelecao,
     selectAllVisible,
     clearSelection,
-    setTabAtiva
+    setSelecionadas,
+    setTabAtiva,
+    draftFiltrosPendentes,
+    setDraftFiltrosPendentes,
+    applyFiltrosPendentes,
+    pessoasOptions,
+    hasFiltroPendenteAplicado
   } = useRecebimentos();
 
   const selectedCount = transacoesSelecionadasSet.size;
@@ -67,7 +74,7 @@ const TabSelecao = () => {
       <Card>
         <CardContent>
           <EmptyState
-            message="Selecione um recebimento na aba Configuração e configure os filtros."
+            message="Selecione um recebimento na aba Configuração para continuar."
             icon={<FaListUl size={48} />}
           />
         </CardContent>
@@ -75,8 +82,139 @@ const TabSelecao = () => {
     );
   }
 
+  const limparFiltrosPendentes = () => {
+    setDraftFiltrosPendentes({ pessoa: '', dataInicio: '', dataFim: '' });
+    applyFiltrosPendentes({ pessoa: '', dataInicio: '', dataFim: '' });
+  };
+
+  // M2 — Sugestão automática de match exato
+  const matchesExatos = valorRecebimento > 0
+    ? pendentes.filter((t) => Math.abs(Math.abs(parseFloat(t.valor) || 0) - valorRecebimento) < 0.01)
+    : [];
+  const jaTemSelecao = selectedCount > 0;
+  const melhorMatchExato = matchesExatos.length > 0
+    ? [...matchesExatos].sort((a, b) => new Date(b.data) - new Date(a.data))[0]
+    : null;
+
+  // M6 — Selecionar mais antigas até completar valor (FIFO guloso)
+  const somaTodosPendentes = pendentes.reduce((s, t) => s + Math.abs(parseFloat(t.valor) || 0), 0);
+  const autoFillDisabled = pendentes.length === 0 || valorRecebimento <= 0 || somaTodosPendentes < valorRecebimento;
+
+  const handleAutoSelecionarMaisAntigas = () => {
+    const ordenados = [...pendentes].sort((a, b) => new Date(a.data) - new Date(b.data));
+    const ids = [];
+    let soma = 0;
+    for (const t of ordenados) {
+      const v = Math.abs(parseFloat(t.valor) || 0);
+      const ultrapassa = soma + v > valorRecebimento + 1; // tolerância de R$ 1
+      if (ultrapassa) {
+        if (ids.length === 0) {
+          ids.push(t._id);
+          soma += v;
+        }
+        break;
+      }
+      ids.push(t._id);
+      soma += v;
+      if (Math.abs(soma - valorRecebimento) < 0.01) break;
+    }
+    setSelecionadas(ids);
+  };
+
   return (
     <div className="tab-selecao-wrapper">
+      {melhorMatchExato && !jaTemSelecao && (
+        <Card className="tab-selecao-sugestao-card">
+          <CardContent>
+            <div className="tab-selecao-sugestao">
+              <div className="tab-selecao-sugestao-texto">
+                <strong>Sugestão detectada:</strong>{' '}
+                1 gasto de <strong>R$ {formatarValor(melhorMatchExato.valor)}</strong>
+                {matchesExatos.length > 1 && (
+                  <> (mais {matchesExatos.length - 1} opção(ões))</>
+                )}
+                {' '}— <span className="tab-selecao-sugestao-desc">{melhorMatchExato.descricao || 'sem descrição'}</span>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => toggleSelecao(melhorMatchExato._id)}
+              >
+                Usar sugestão
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      <Card className="tab-selecao-filtros-card">
+        <CardContent>
+          <div className="tab-selecao-filtros-header">
+            <SectionHeader title="Filtros" icon={<FaFilter size={18} />} />
+            {(draftFiltrosPendentes?.pessoa || draftFiltrosPendentes?.dataInicio || draftFiltrosPendentes?.dataFim) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={limparFiltrosPendentes}
+                title="Limpar todos os filtros"
+              >
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+          <div className="tab-selecao-filtros-campos">
+            <div className="filtro-grupo">
+              <label>Pessoa</label>
+              <select
+                className="input-field"
+                value={draftFiltrosPendentes?.pessoa || ''}
+                onChange={(e) => {
+                  setDraftFiltrosPendentes({ pessoa: e.target.value });
+                  applyFiltrosPendentes({ pessoa: e.target.value });
+                }}
+              >
+                <option value="">Todas as pessoas</option>
+                {pessoasOptions.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="filtro-grupo filtro-grupo--periodo">
+              <label>Período</label>
+              <PeriodQuickFilter
+                dataInicio={draftFiltrosPendentes?.dataInicio || ''}
+                dataFim={draftFiltrosPendentes?.dataFim || ''}
+                onChange={(range) => setDraftFiltrosPendentes(range)}
+                onPeriodSelect={({ dataInicio, dataFim }) => {
+                  if (dataInicio && dataFim) {
+                    applyFiltrosPendentes({ dataInicio, dataFim });
+                  }
+                }}
+                showCustomInputs={true}
+                compact={true}
+              />
+            </div>
+          </div>
+          {hasFiltroPendenteAplicado && (
+            <div className="tab-selecao-filtros-preview">
+              {loadingPendentes ? (
+                <div className="tab-loading-inline">
+                  <CircularProgress size={16} />
+                  <span>Carregando...</span>
+                </div>
+              ) : (
+                <>
+                  <span><strong>{pendentes.length}</strong> transação(ões) encontrada(s)</span>
+                  <span>·</span>
+                  <span>Soma: <strong>R$ {formatarValor(pendentes.reduce((s, t) => s + Math.abs(parseFloat(t.valor) || 0), 0))}</strong></span>
+                </>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="tab-selecao-totais-card">
         <CardContent>
           <div className="tab-selecao-totais">
@@ -103,6 +241,21 @@ const TabSelecao = () => {
       <Card className="tab-selecao-card">
         <CardContent>
           <SectionHeader title="Transações pendentes" icon={<FaListUl size={18} />} />
+          {pendentes.length > 0 && valorRecebimento > 0 && (
+            <div className="tab-selecao-acoes-rapidas">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAutoSelecionarMaisAntigas}
+                disabled={autoFillDisabled}
+                title={autoFillDisabled
+                  ? 'Soma dos pendentes é menor que o recebimento'
+                  : 'Seleciona os gastos mais antigos (FIFO) até somar o valor do recebimento'}
+              >
+                ✨ Selecionar mais antigas até R$ {formatarValor(valorRecebimento)}
+              </Button>
+            </div>
+          )}
           {selectedCount > 0 && (
             <BulkActionBar
               selectedCount={selectedCount}

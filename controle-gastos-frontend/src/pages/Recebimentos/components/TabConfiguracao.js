@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Select from 'react-select';
-import { FaReceipt, FaCheckCircle } from 'react-icons/fa';
+import { FaReceipt, FaCheckCircle, FaEdit, FaTimes } from 'react-icons/fa';
 import { CircularProgress } from '@mui/material';
 import { useRecebimentos } from '../context/RecebimentosContext';
 import { useData } from '../../../context/DataContext';
@@ -33,7 +33,8 @@ const TabConfiguracao = () => {
     setTagSelecionada,
     setRemoveTagSelecionada,
     setDraftFiltrosRecebimentos,
-    applyFiltrosRecebimentos
+    applyFiltrosRecebimentos,
+    aplicarDefaultsSeVazio
   } = useRecebimentos();
   const { tags } = useData();
   const { usuario } = useAuth();
@@ -45,6 +46,18 @@ const TabConfiguracao = () => {
   // "Pré-preenchido pelas suas configurações" aparece quando o valor atual bate com o default salvo
   const tagReceberEhDefault = !!(tagReceberPadraoId && tagSelecionada === tagReceberPadraoId);
   const tagRemoverEhDefault = !!(tagRemoverPadraoId && removeTagSelecionada === tagRemoverPadraoId);
+
+  // Se o default existe e o usuário não escolheu nada diferente, escondemos o select detalhado.
+  // Só expandimos se o usuário clicar em "Alterar" ou se não houver default configurado.
+  const [editandoTag, setEditandoTag] = useState(false);
+  const [editandoRemoveTag, setEditandoRemoveTag] = useState(false);
+  const tagReceberObrigatoria = !tagReceberPadraoId;
+  const showTagSelect = editandoTag || tagReceberObrigatoria || !tagSelecionada;
+  const showRemoveTagSelect = editandoRemoveTag || (removeTagSelecionada && !tagRemoverPadraoId) || (!removeTagSelecionada && !tagRemoverPadraoId && editandoRemoveTag);
+
+  const tagObj = (id) => (tags || []).find((t) => t._id === id) || null;
+  const tagSelecionadaObj = tagObj(tagSelecionada);
+  const removeTagSelecionadaObj = tagObj(removeTagSelecionada);
 
   const pessoasRecebimento = (recebimentoSelecionado?.pagamentos || []).map((p) => p?.pessoa).filter(Boolean);
   const pessoaRecebimento = pessoasRecebimento.length > 0 ? pessoasRecebimento.join(', ') : '-';
@@ -112,88 +125,132 @@ const TabConfiguracao = () => {
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <SectionHeader title="Tag para aplicar" icon={<IconRenderer nome="tag" size={18} />} />
-                  {tagReceberEhDefault && (
-                    <span
-                      title="Pré-preenchido pelas suas configurações de Recebimentos"
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        fontSize: 11, color: '#047857', fontWeight: 500,
-                        background: '#ecfdf5', border: '1px solid #a7f3d0',
-                        borderRadius: 999, padding: '2px 8px',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      <FaCheckCircle size={10} /> Pré-preenchido pelas suas configurações
-                    </span>
-                  )}
                 </div>
                 <p className="dica">Tag que será aplicada às transações quitadas (ex: Conta Paga).</p>
-                <Select
-                  value={(() => {
-                    const tag = (tags || []).find((t) => t._id === tagSelecionada);
-                    return tag ? { value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone } : null;
-                  })()}
-                  onChange={(opt) => setTagSelecionada(opt?.value || '')}
-                  options={(tags || []).map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
-                  placeholder="-- Escolha uma tag --"
-                  isClearable
-                  className="tag-select-recebimentos"
-                  classNamePrefix="tag-select"
-                  formatOptionLabel={({ label, cor, icone }) => (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <IconRenderer nome={icone || 'tag'} size={18} cor={cor || '#64748b'} />
-                      <span>{label}</span>
-                    </div>
-                  )}
-                />
-                {tagSelecionada && (tags || []).find((t) => t._id === tagSelecionada) && (
-                  <div className="tag-selecionada-preview" style={{ marginTop: '0.75rem' }}>
-                    <TagBadge tag={(tags || []).find((t) => t._id === tagSelecionada)} size={16} />
+
+                {tagSelecionadaObj && !showTagSelect ? (
+                  <div className="tag-compacta-pill">
+                    <TagBadge tag={tagSelecionadaObj} size={16} />
+                    {tagReceberEhDefault && (
+                      <span className="tag-compacta-pill__badge" title="Padrão das configurações de Recebimentos">
+                        <FaCheckCircle size={10} /> padrão
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="tag-compacta-pill__btn"
+                      onClick={() => setEditandoTag(true)}
+                      title="Escolher outra tag"
+                    >
+                      <FaEdit size={11} /> Alterar
+                    </button>
+                    {!tagReceberEhDefault && (
+                      <button
+                        type="button"
+                        className="tag-compacta-pill__btn tag-compacta-pill__btn--danger"
+                        onClick={() => {
+                          setTagSelecionada('');
+                          aplicarDefaultsSeVazio();
+                        }}
+                        title="Voltar para a tag padrão"
+                      >
+                        <FaTimes size={11} /> Limpar
+                      </button>
+                    )}
                   </div>
+                ) : (
+                  <>
+                    <Select
+                      autoFocus={editandoTag}
+                      value={tagSelecionadaObj ? { value: tagSelecionadaObj._id, label: tagSelecionadaObj.nome, cor: tagSelecionadaObj.cor, icone: tagSelecionadaObj.icone } : null}
+                      onChange={(opt) => {
+                        setTagSelecionada(opt?.value || '');
+                        setEditandoTag(false);
+                      }}
+                      options={(tags || []).map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
+                      placeholder="-- Escolha uma tag --"
+                      isClearable
+                      className="tag-select-recebimentos"
+                      classNamePrefix="tag-select"
+                      formatOptionLabel={({ label, cor, icone }) => (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <IconRenderer nome={icone || 'tag'} size={18} cor={cor || '#64748b'} />
+                          <span>{label}</span>
+                        </div>
+                      )}
+                    />
+                    {tagReceberPadraoId && tagSelecionada && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className="tag-link-button"
+                          onClick={() => {
+                            setEditandoTag(false);
+                            setTagSelecionada('');
+                            aplicarDefaultsSeVazio();
+                          }}
+                        >
+                          Cancelar e voltar para o padrão
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div style={{ marginTop: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <SectionHeader title="Tag para remover (opcional)" icon={<IconRenderer nome="tag" size={18} />} />
-                    {tagRemoverEhDefault && (
-                      <span
-                        title="Pré-preenchido pelas suas configurações de Recebimentos"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 4,
-                          fontSize: 11, color: '#047857', fontWeight: 500,
-                          background: '#ecfdf5', border: '1px solid #a7f3d0',
-                          borderRadius: 999, padding: '2px 8px',
-                          whiteSpace: 'nowrap'
-                        }}
+                  </div>
+                  <p className="dica">Tag que será removida dos pagamentos ao conciliar.</p>
+                  {removeTagSelecionadaObj && !showRemoveTagSelect ? (
+                    <div className="tag-compacta-pill">
+                      <TagBadge tag={removeTagSelecionadaObj} size={16} />
+                      {tagRemoverEhDefault && (
+                        <span className="tag-compacta-pill__badge" title="Padrão das configurações de Recebimentos">
+                          <FaCheckCircle size={10} /> padrão
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="tag-compacta-pill__btn"
+                        onClick={() => setEditandoRemoveTag(true)}
+                        title="Escolher outra tag"
                       >
-                        <FaCheckCircle size={10} /> Pré-preenchido pelas suas configurações
-                      </span>
-                    )}
-                  </div>
-                <p className="dica">Tag que será removida dos pagamentos ao conciliar.</p>
-                <Select
-                  value={(() => {
-                    const tag = (tags || []).find((t) => t._id === removeTagSelecionada);
-                    return tag ? { value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone } : null;
-                  })()}
-                  onChange={(opt) => setRemoveTagSelecionada(opt?.value || '')}
-                  options={(tags || []).map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
-                  placeholder="-- Nenhuma (opcional) --"
-                  isClearable
-                  className="tag-select-recebimentos"
-                  classNamePrefix="tag-select"
-                  formatOptionLabel={({ label, cor, icone }) => (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <IconRenderer nome={icone || 'tag'} size={18} cor={cor || '#64748b'} />
-                      <span>{label}</span>
+                        <FaEdit size={11} /> Alterar
+                      </button>
+                      <button
+                        type="button"
+                        className="tag-compacta-pill__btn tag-compacta-pill__btn--danger"
+                        onClick={() => {
+                          setRemoveTagSelecionada('');
+                          aplicarDefaultsSeVazio();
+                        }}
+                        title="Remover a tag selecionada"
+                      >
+                        <FaTimes size={11} /> Limpar
+                      </button>
                     </div>
+                  ) : (
+                    <Select
+                      autoFocus={editandoRemoveTag}
+                      value={removeTagSelecionadaObj ? { value: removeTagSelecionadaObj._id, label: removeTagSelecionadaObj.nome, cor: removeTagSelecionadaObj.cor, icone: removeTagSelecionadaObj.icone } : null}
+                      onChange={(opt) => {
+                        setRemoveTagSelecionada(opt?.value || '');
+                        setEditandoRemoveTag(false);
+                      }}
+                      options={(tags || []).map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
+                      placeholder="-- Nenhuma (opcional) --"
+                      isClearable
+                      className="tag-select-recebimentos"
+                      classNamePrefix="tag-select"
+                      formatOptionLabel={({ label, cor, icone }) => (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <IconRenderer nome={icone || 'tag'} size={18} cor={cor || '#64748b'} />
+                          <span>{label}</span>
+                        </div>
+                      )}
+                    />
                   )}
-                />
-                {removeTagSelecionada && (tags || []).find((t) => t._id === removeTagSelecionada) && (
-                  <div className="tag-selecionada-preview" style={{ marginTop: '0.75rem' }}>
-                    <TagBadge tag={(tags || []).find((t) => t._id === removeTagSelecionada)} size={16} />
-                  </div>
-                )}
                 </div>
 
                 {tags?.length === 0 && (

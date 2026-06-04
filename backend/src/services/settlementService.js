@@ -670,25 +670,65 @@ async function listarPendentes(usuarioId, filtros = {}) {
 }
 
 /**
- * Lista settlements do usuário.
+ * Lista settlements do usuário com filtros opcionais:
+ *  - pessoa: filtra por pessoa no recebimento (pagamentos[].pessoa)
+ *  - tagId: filtra por tag aplicada
+ *  - dataInicio / dataFim: filtra por createdAt
+ *  - q: busca textual em descricao do recebimento
  */
 async function listar(usuarioId, opts = {}) {
   const page = opts.page || 1;
   const limit = Math.min(opts.limit || 20, 50);
   const skip = (page - 1) * limit;
 
-  const settlements = await Settlement.find({ usuario: usuarioId })
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .populate('receivingTransactionId', 'descricao valor data pagamentos')
-    .populate('tagId', 'nome codigo cor icone')
-    .populate('removeTagId', 'nome codigo cor icone')
-    .populate('appliedTransactions.transactionId', 'descricao valor data')
-    .populate('leftoverTransactionId', 'descricao valor')
-    .lean();
+  const match = { usuario: new mongoose.Types.ObjectId(usuarioId) };
 
-  const total = await Settlement.countDocuments({ usuario: usuarioId });
+  if (opts.tagId) {
+    match.tagId = new mongoose.Types.ObjectId(opts.tagId);
+  }
+
+  if (opts.dataInicio || opts.dataFim) {
+    match.createdAt = {};
+    if (opts.dataInicio) match.createdAt.$gte = new Date(opts.dataInicio + 'T00:00:00.000Z');
+    if (opts.dataFim) match.createdAt.$lte = new Date(opts.dataFim + 'T23:59:59.999Z');
+  }
+
+  // Pré-filtrar IDs de Transacao que combinam com pessoa/q
+  const transacaoFilter = { usuario: new mongoose.Types.ObjectId(usuarioId) };
+  const needsTransacaoFilter = opts.pessoa || opts.q;
+  let allowedReceivingIds = null;
+  if (needsTransacaoFilter) {
+    if (opts.pessoa) {
+      transacaoFilter['pagamentos.pessoa'] = new RegExp(
+        '^' + String(opts.pessoa).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$',
+        'i'
+      );
+    }
+    if (opts.q) {
+      const safe = String(opts.q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      transacaoFilter.descricao = new RegExp(safe, 'i');
+    }
+    const matching = await Transacao.find(transacaoFilter).select('_id').lean();
+    allowedReceivingIds = matching.map((t) => t._id);
+    if (allowedReceivingIds.length === 0) {
+      return { items: [], total: 0, page, totalPages: 0 };
+    }
+    match.receivingTransactionId = { $in: allowedReceivingIds };
+  }
+
+  const [settlements, total] = await Promise.all([
+    Settlement.find(match)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('receivingTransactionId', 'descricao valor data pagamentos')
+      .populate('tagId', 'nome codigo cor icone')
+      .populate('removeTagId', 'nome codigo cor icone')
+      .populate('appliedTransactions.transactionId', 'descricao valor data')
+      .populate('leftoverTransactionId', 'descricao valor')
+      .lean(),
+    Settlement.countDocuments(match)
+  ]);
 
   return {
     items: settlements,

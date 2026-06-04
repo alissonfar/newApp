@@ -4,7 +4,6 @@ import './RecebimentosStepper.css';
 
 const STEPS = [
   { id: 0, label: 'Configuração' },
-  { id: 1, label: 'Filtro' },
   { id: 2, label: 'Seleção de Transações' },
   { id: 3, label: 'Resumo e Confirmação' },
 ];

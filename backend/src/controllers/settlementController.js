@@ -29,7 +29,14 @@ exports.listar = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
-    const resultado = await settlementService.listar(req.userId, { page, limit });
+    const filtros = {
+      pessoa: req.query.pessoa || undefined,
+      tagId: req.query.tagId || undefined,
+      dataInicio: req.query.dataInicio || undefined,
+      dataFim: req.query.dataFim || undefined,
+      q: req.query.q || undefined
+    };
+    const resultado = await settlementService.listar(req.userId, { page, limit, ...filtros });
     res.json(resultado);
   } catch (error) {
     console.error('[Settlement] Erro ao listar:', error);

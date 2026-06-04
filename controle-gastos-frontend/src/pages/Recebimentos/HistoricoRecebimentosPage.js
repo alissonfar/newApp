@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaHistory } from 'react-icons/fa';
+import { FaHistory, FaSearch, FaTimes } from 'react-icons/fa';
 import { Accordion, AccordionSummary, AccordionDetails, CircularProgress } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { listarSettlements, excluirSettlement } from '../../api';
+import { listarSettlements, excluirSettlement, obterPessoasDistintas } from '../../api';
 import { useData } from '../../context/DataContext';
 import TagBadge from './components/TagBadge';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import Card, { CardContent } from '../../components/shared/Card';
+import PeriodQuickFilter from '../../components/shared/PeriodQuickFilter';
 import { formatDateBR } from '../../utils/dateUtils';
 import '../../components/shared/Button.css';
 import './Recebimentos.css';
@@ -19,10 +20,16 @@ const formatarValor = (v) => {
   return isNaN(n) ? '0,00' : n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
+const FILTROS_VAZIOS = { q: '', pessoa: '', tagId: '', dataInicio: '', dataFim: '' };
+
 const HistoricoRecebimentosPage = () => {
   const { tags } = useData();
   const [settlements, setSettlements] = useState({ items: [], total: 0, page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(false);
+  const [pessoasOptions, setPessoasOptions] = useState([]);
+  const [filtros, setFiltros] = useState(FILTROS_VAZIOS);
+  const [draftFiltros, setDraftFiltros] = useState(FILTROS_VAZIOS);
+  const debounceRef = useRef(null);
 
   const getTagCompleta = (tagId) => {
     if (!tagId) return null;
@@ -32,10 +39,16 @@ const HistoricoRecebimentosPage = () => {
     return tag || (tagId?.nome ? { nome: tagId.nome, cor: tagId.cor || '#64748b', icone: tagId.icone || 'tag' } : null);
   };
 
-  const carregarSettlements = async (page = 1) => {
+  const carregarSettlements = async (page = 1, filtrosAtivos = filtros) => {
     setLoading(true);
     try {
-      const resultado = await listarSettlements({ page, limit: 15 });
+      const params = { page, limit: 15 };
+      if (filtrosAtivos.q) params.q = filtrosAtivos.q;
+      if (filtrosAtivos.pessoa) params.pessoa = filtrosAtivos.pessoa;
+      if (filtrosAtivos.tagId) params.tagId = filtrosAtivos.tagId;
+      if (filtrosAtivos.dataInicio) params.dataInicio = filtrosAtivos.dataInicio;
+      if (filtrosAtivos.dataFim) params.dataFim = filtrosAtivos.dataFim;
+      const resultado = await listarSettlements(params);
       setSettlements(resultado);
     } catch (err) {
       setSettlements({ items: [], total: 0, page: 1, totalPages: 1 });
@@ -45,8 +58,34 @@ const HistoricoRecebimentosPage = () => {
   };
 
   useEffect(() => {
-    carregarSettlements();
+    carregarSettlements(1, FILTROS_VAZIOS);
+    obterPessoasDistintas()
+      .then((p) => setPessoasOptions(p || []))
+      .catch(() => setPessoasOptions([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const aplicarFiltros = (novos) => {
+    const merged = { ...filtros, ...novos };
+    setFiltros(merged);
+    carregarSettlements(1, merged);
+  };
+
+  const limparFiltros = () => {
+    setDraftFiltros(FILTROS_VAZIOS);
+    setFiltros(FILTROS_VAZIOS);
+    carregarSettlements(1, FILTROS_VAZIOS);
+  };
+
+  const handleBuscaChange = (valor) => {
+    setDraftFiltros((d) => ({ ...d, q: valor }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      aplicarFiltros({ q: valor });
+    }, 300);
+  };
+
+  const filtrosAtivos = filtros.q || filtros.pessoa || filtros.tagId || filtros.dataInicio || filtros.dataFim;
 
   const handleExcluir = async (id, e) => {
     e.stopPropagation();
@@ -76,6 +115,93 @@ const HistoricoRecebimentosPage = () => {
       </header>
 
       <div className="recebimentos-historico-content">
+        <Card className="historico-filtros-card">
+          <CardContent>
+            <div className="historico-filtros-grid">
+              <div className="filtro-grupo historico-filtro-busca">
+                <label>Buscar</label>
+                <div className="historico-busca-wrapper">
+                  <FaSearch size={14} />
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Descrição do recebimento..."
+                    value={draftFiltros.q}
+                    onChange={(e) => handleBuscaChange(e.target.value)}
+                  />
+                  {draftFiltros.q && (
+                    <button
+                      type="button"
+                      onClick={() => handleBuscaChange('')}
+                      className="historico-busca-clear"
+                      title="Limpar busca"
+                    >
+                      <FaTimes size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="filtro-grupo">
+                <label>Pessoa</label>
+                <select
+                  className="input-field"
+                  value={filtros.pessoa}
+                  onChange={(e) => aplicarFiltros({ pessoa: e.target.value })}
+                >
+                  <option value="">Todas</option>
+                  {pessoasOptions.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="filtro-grupo">
+                <label>Tag</label>
+                <select
+                  className="input-field"
+                  value={filtros.tagId}
+                  onChange={(e) => aplicarFiltros({ tagId: e.target.value })}
+                >
+                  <option value="">Todas</option>
+                  {(tags || []).map((t) => (
+                    <option key={t._id} value={t._id}>{t.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="filtro-grupo filtro-grupo--periodo">
+                <label>Período</label>
+                <PeriodQuickFilter
+                  dataInicio={filtros.dataInicio}
+                  dataFim={filtros.dataFim}
+                  onChange={(range) => setDraftFiltros((d) => ({ ...d, ...range }))}
+                  onPeriodSelect={({ dataInicio, dataFim }) => {
+                    if (dataInicio && dataFim) {
+                      aplicarFiltros({ dataInicio, dataFim });
+                    }
+                  }}
+                  showCustomInputs={true}
+                  compact={true}
+                />
+              </div>
+              {filtrosAtivos && (
+                <div className="filtro-grupo filtro-grupo--action">
+                  <label>&nbsp;</label>
+                  <Button variant="ghost" size="sm" onClick={limparFiltros}>
+                    Limpar filtros
+                  </Button>
+                </div>
+              )}
+            </div>
+            {filtrosAtivos && (
+              <div className="historico-filtros-info">
+                {settlements.total} conciliação(ões) encontrada(s)
+                {filtros.q && <> · busca: <strong>"{filtros.q}"</strong></>}
+                {filtros.pessoa && <> · pessoa: <strong>{filtros.pessoa}</strong></>}
+                {filtros.tagId && <> · tag: <strong>{(tags || []).find(t => t._id === filtros.tagId)?.nome || filtros.tagId}</strong></>}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {loading ? (
           <div className="historico-loading">
             <CircularProgress />
@@ -85,7 +211,7 @@ const HistoricoRecebimentosPage = () => {
           <Card>
             <CardContent>
               <EmptyState
-                message="Nenhuma conciliação registrada."
+                message={filtrosAtivos ? 'Nenhuma conciliação para os filtros aplicados.' : 'Nenhuma conciliação registrada.'}
                 icon={<FaHistory size={48} />}
               />
             </CardContent>

@@ -27,7 +27,8 @@ const initialState = {
   transacoesSelecionadas: [],
   pessoasOptions: [],
   tabAtiva: 0,
-  confirmando: false
+  confirmando: false,
+  conciliacoesNaSessao: 0
 };
 
 const ACTIONS = {
@@ -48,7 +49,8 @@ const ACTIONS = {
   SET_PESSOAS_OPTIONS: 'SET_PESSOAS_OPTIONS',
   SET_TAB: 'SET_TAB',
   SET_CONFIRMANDO: 'SET_CONFIRMANDO',
-  RESET_CONCILIACAO: 'RESET_CONCILIACAO'
+  RESET_CONCILIACAO: 'RESET_CONCILIACAO',
+  CONCLUIR_E_CONTINUAR: 'CONCLUIR_E_CONTINUAR'
 };
 
 function recebimentosReducer(state, action) {
@@ -100,7 +102,18 @@ function recebimentosReducer(state, action) {
         removeTagSelecionada: '',
         transacoesSelecionadas: [],
         pendentes: [],
-        appliedFiltrosPendentes: null
+        appliedFiltrosPendentes: null,
+        conciliacoesNaSessao: 0
+      };
+    case ACTIONS.CONCLUIR_E_CONTINUAR:
+      return {
+        ...state,
+        recebimentoSelecionado: null,
+        transacoesSelecionadas: [],
+        pendentes: [],
+        appliedFiltrosPendentes: null,
+        tabAtiva: 0,
+        conciliacoesNaSessao: (state.conciliacoesNaSessao || 0) + 1
       };
     default:
       return state;
@@ -130,11 +143,12 @@ export function RecebimentosProvider({ children }) {
     }
   }, [tagReceberPadraoId, tagRemoverPadraoId, state.tagSelecionada, state.removeTagSelecionada]);
 
-  // Aplica uma vez no mount do Provider (quando o usuário abre a página de nova conciliação)
+  // Re-roda quando os defaults ficam disponíveis (ex: usuario.preferencias carrega após mount).
+  // O guard interno !state.tagSelecionada / !state.removeTagSelecionada impede
+  // sobrescrever escolha manual do usuário em conciliações anteriores.
   useEffect(() => {
     aplicarDefaultsSeVazio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [aplicarDefaultsSeVazio]);
 
   const carregarRecebimentosDisponiveis = useCallback(async (filtrosOverride) => {
     if (abortRecebimentosRef.current) abortRecebimentosRef.current.abort();
@@ -252,6 +266,10 @@ export function RecebimentosProvider({ children }) {
     dispatch({ type: ACTIONS.SET_TRANSACOES_SELECIONADAS, payload: [] });
   }, []);
 
+  const setSelecionadas = useCallback((ids) => {
+    dispatch({ type: ACTIONS.SET_TRANSACOES_SELECIONADAS, payload: Array.isArray(ids) ? ids : [] });
+  }, []);
+
   const handleConfirmar = useCallback(async () => {
     const { recebimentoSelecionado, tagSelecionada, transacoesSelecionadas, pendentes, appliedFiltrosRecebimentos, appliedFiltrosPendentes } = state;
     const selectedPendentes = pendentes.filter((t) => transacoesSelecionadas.includes(t._id));
@@ -298,9 +316,60 @@ export function RecebimentosProvider({ children }) {
     }
   }, [state, carregarRecebimentosDisponiveis]);
 
+  // M3 — Confirma e mantém tags/filtros para iniciar próxima conciliação
+  const handleConfirmarEContinuar = useCallback(async () => {
+    const { recebimentoSelecionado, tagSelecionada, transacoesSelecionadas, pendentes, appliedFiltrosRecebimentos, appliedFiltrosPendentes, conciliacoesNaSessao } = state;
+    const selectedPendentes = pendentes.filter((t) => transacoesSelecionadas.includes(t._id));
+    const totalSelecionado = selectedPendentes.reduce((s, t) => s + Math.abs(parseFloat(t.valor) || 0), 0);
+    const valorRecebimento = recebimentoSelecionado
+      ? Math.abs(parseFloat(recebimentoSelecionado.valor) || 0)
+      : 0;
+    const podeConfirmar =
+      recebimentoSelecionado &&
+      tagSelecionada &&
+      transacoesSelecionadas.length > 0 &&
+      totalSelecionado <= valorRecebimento;
+
+    if (!podeConfirmar) return;
+    dispatch({ type: ACTIONS.SET_CONFIRMANDO, payload: true });
+    try {
+      const hasPessoaFilter = !!(appliedFiltrosPendentes?.pessoa || (appliedFiltrosPendentes?.pessoas?.length > 0));
+      const payload = {
+        receivingTransactionId: recebimentoSelecionado._id,
+        tagId: tagSelecionada,
+        removeTagId: state.removeTagSelecionada || undefined
+      };
+      if (hasPessoaFilter && selectedPendentes.length > 0) {
+        payload.appliedPayments = selectedPendentes.flatMap((t) => {
+          const indices = Array.isArray(t.pagamentoIndices) ? t.pagamentoIndices : [0];
+          const pagamentos = t.pagamentos || [];
+          return indices.map((idx, i) => ({
+            transactionId: t._id,
+            pagamentoIndex: idx,
+            amountApplied: Math.abs(parseFloat(pagamentos[i]?.valor ?? t.valor) || 0)
+          }));
+        });
+      } else {
+        payload.appliedTransactionIds = transacoesSelecionadas;
+      }
+      await criarSettlement(payload);
+      const novaContagem = (conciliacoesNaSessao || 0) + 1;
+      toast.success(
+        `Conciliação #${novaContagem} nesta sessão. Pronto para a próxima.`
+      );
+      dispatch({ type: ACTIONS.CONCLUIR_E_CONTINUAR });
+      carregarRecebimentosDisponiveis(appliedFiltrosRecebimentos ?? state.draftFiltrosRecebimentos);
+    } catch (err) {
+      toast.error(err.message || 'Erro ao criar conciliação.');
+    } finally {
+      dispatch({ type: ACTIONS.SET_CONFIRMANDO, payload: false });
+    }
+  }, [state, carregarRecebimentosDisponiveis]);
+
   const value = {
     ...state,
     transacoesSelecionadasSet: new Set(state.transacoesSelecionadas),
+    hasFiltroPendenteAplicado: state.appliedFiltrosPendentes !== null,
     carregarRecebimentosDisponiveis,
     carregarPendentes,
     applyFiltrosRecebimentos,
@@ -309,7 +378,9 @@ export function RecebimentosProvider({ children }) {
     toggleSelecao,
     selectAllVisible,
     clearSelection,
+    setSelecionadas,
     handleConfirmar,
+    handleConfirmarEContinuar,
     aplicarDefaultsSeVazio,
     setRecebimentoSelecionado: (v) =>
       dispatch({ type: ACTIONS.SET_RECEBIMENTO_SELECIONADO, payload: v }),
