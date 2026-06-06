@@ -22,6 +22,9 @@ export const breadcrumbMap = {
   "/como-utilizar": "Como Utilizar",
   "/recebimentos/novo": "Recebimentos",
   "/recebimentos/historico": "Histórico de Recebimentos",
+  "/pessoas": "Pessoas",
+  "/emprestimos": "Empréstimos",
+  "/emprestimos/": "Detalhes do Empréstimo",
   "/admin": "Administração",
 };
 

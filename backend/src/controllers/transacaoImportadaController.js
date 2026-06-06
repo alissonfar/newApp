@@ -71,7 +71,7 @@ const transacaoImportadaController = {
       });
 
       // Campos permitidos para atualização (installment* tratados separadamente abaixo)
-      const camposPermitidos = ['descricao', 'valor', 'data', 'tipo', 'observacao', 'pagamentos', 'subconta', 'contaConjunta'];
+      const camposPermitidos = ['descricao', 'valor', 'data', 'tipo', 'observacao', 'pagamentos', 'subconta', 'contaConjunta', 'emprestimoId', 'emprestimoConfig'];
       
       // Atualiza apenas os campos permitidos que foram enviados
       camposPermitidos.forEach(campo => {
@@ -265,29 +265,43 @@ const transacaoImportadaController = {
         status: 'pendente'
       });
 
-      const resultados = await Promise.all(
-        transacoes.map(async (transacao) => {
-          try {
-            const novaTransacao = new Transacao(transacao.paraTransacao());
-            await novaTransacao.save();
+      const emprestimosService = require('../services/emprestimoService');
+      const resultados = [];
+      const emprestimosAfetados = new Set();
 
-            transacao.status = 'validada';
-            await transacao.save();
+      for (const transacao of transacoes) {
+        try {
+          const novaTransacao = new Transacao(transacao.paraTransacao());
+          await novaTransacao.save();
 
-            return {
-              id: transacao._id,
-              sucesso: true,
-              transacao: novaTransacao
-            };
-          } catch (error) {
-            return {
-              id: transacao._id,
-              sucesso: false,
-              erro: error.message
-            };
+          transacao.status = 'validada';
+          await transacao.save();
+
+          if (novaTransacao.emprestimoId) {
+            emprestimosAfetados.add(String(novaTransacao.emprestimoId));
           }
-        })
-      );
+
+          resultados.push({
+            id: transacao._id,
+            sucesso: true,
+            transacao: novaTransacao
+          });
+        } catch (error) {
+          resultados.push({
+            id: transacao._id,
+            sucesso: false,
+            erro: error.message
+          });
+        }
+      }
+
+      for (const empId of emprestimosAfetados) {
+        try {
+          await emprestimosService.recalcularStatus(empId, req.userId);
+        } catch (errEmp) {
+          console.error('[TransacaoImportada] Erro ao recalcular empréstimo', empId, errEmp.message);
+        }
+      }
 
       res.json({
         total: resultados.length,

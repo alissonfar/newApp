@@ -363,6 +363,32 @@ const DetalhesImportacaoPage = () => {
         return categoria ? categoria.nome : categoriaId;
     };
 
+    const renderEmprestimoBadge = (transacao) => {
+        if (transacao.emprestimoId) {
+            return (
+                <span
+                    className="emp-badge emp-badge-chip"
+                    title="Esta transação está vinculada a um empréstimo existente"
+                    style={{ fontSize: 10, padding: '2px 8px' }}
+                >
+                    🏦
+                </span>
+            );
+        }
+        if (transacao.emprestimoConfig && transacao.emprestimoConfig.criarEmprestimo) {
+            return (
+                <span
+                    className="emp-badge emp-badge-chip"
+                    title="Esta transação vai criar um novo empréstimo ao finalizar a importação"
+                    style={{ fontSize: 10, padding: '2px 8px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}
+                >
+                    🏦+
+                </span>
+            );
+        }
+        return null;
+    };
+
     // Para importação complementar: pode finalizar se houver pelo menos uma validada
     // Para importação normal: pode finalizar se todas as transações (exceto ja_importada) forem validadas
     const temTransacoesValidadas = importacao?.estatisticas?.transacoesSucesso > 0;
@@ -919,6 +945,7 @@ const DetalhesImportacaoPage = () => {
                             )}
                             <th style={{ width: '40px' }}></th>
                             <th>Descrição</th>
+                            <th style={{ width: '70px' }}>Empréstimo</th>
                             <th>Valor</th>
                             <th>Data</th>
                             <th>Status</th>
@@ -999,6 +1026,9 @@ const DetalhesImportacaoPage = () => {
                                             </div>
                                         )}
                                     </td>
+                                    <td>
+                                        {renderEmprestimoBadge(transacao)}
+                                    </td>
                                     <td>{formatarValor(transacao.valor)}</td>
                                     <td>{formatarData(transacao.data)}</td>
                                     <td>
@@ -1042,7 +1072,7 @@ const DetalhesImportacaoPage = () => {
                                 {/* Linha de resumo expansível */}
                                 {expandedRows.has(transacao.id) && (
                                     <tr className="resumo-row">
-                                        <td colSpan={podeEditar(importacao) && abaAtiva !== 'ignoradas' ? 7 : 6}>
+                                        <td colSpan={podeEditar(importacao) && abaAtiva !== 'ignoradas' ? 8 : 7}>
                                             <div className="mini-resumo">
                                                 {/* Tipo da Transação */}
                                                 <div className="resumo-item">

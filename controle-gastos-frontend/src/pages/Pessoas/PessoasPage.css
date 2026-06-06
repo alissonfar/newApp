@@ -1,0 +1,194 @@
+/* src/pages/Pessoas/PessoasPage.css */
+.pessoas-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.pessoas-header {
+  margin-bottom: 24px;
+}
+
+.pessoas-header h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.pessoas-desc {
+  color: #6b7280;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.pessoas-btn-novo {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pessoas-btn-novo:hover { background: #1d4ed8; }
+
+.pessoas-loading,
+.pessoas-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.pessoas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.pessoa-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: box-shadow .15s;
+}
+
+.pessoa-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+.pessoa-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pessoa-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #111827;
+}
+
+.pessoa-inativa {
+  font-size: 11px;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.pessoa-contato {
+  font-size: 13px;
+  color: #4b5563;
+  margin: 4px 0;
+}
+
+.pessoa-obs {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 4px 0;
+  font-style: italic;
+}
+
+.pessoa-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pessoa-card-actions button {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+}
+
+.pessoa-card-actions button:hover { background: #f9fafb; }
+
+.pessoa-btn-excluir { color: #dc2626 !important; border-color: #fecaca !important; }
+.pessoa-btn-excluir:hover { background: #fef2f2 !important; }
+
+.pessoas-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.pessoas-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.pessoas-modal h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.pessoas-form-group {
+  margin-bottom: 14px;
+}
+
+.pessoas-form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #374151;
+}
+
+.pessoas-form-group input,
+.pessoas-form-group textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.pessoas-form-group input:focus,
+.pessoas-form-group textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.pessoas-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.pessoas-btn-cancelar,
+.pessoas-btn-salvar {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pessoas-btn-cancelar { background: #f3f4f6; color: #374151; }
+.pessoas-btn-cancelar:hover { background: #e5e7eb; }
+
+.pessoas-btn-salvar { background: #2563eb; color: white; }
+.pessoas-btn-salvar:hover { background: #1d4ed8; }

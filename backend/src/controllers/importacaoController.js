@@ -16,6 +16,94 @@ const inferencia = require('../services/inferenciaImportacaoService');
 const Categoria = require('../models/categoria');
 const Tag = require('../models/tag');
 const Usuario = require('../models/usuarios');
+const Emprestimo = require('../models/emprestimo');
+const Pessoa = require('../models/pessoa');
+const emprestimoService = require('../services/emprestimoService');
+
+function chaveAgrupamentoEmprestimo(cfg) {
+  if (!cfg) return null;
+  const pessoa = cfg.pessoaId ? String(cfg.pessoaId) : '';
+  const prazo = cfg.prazoFinal instanceof Date
+    ? cfg.prazoFinal.getTime()
+    : (cfg.prazoFinal ? new Date(cfg.prazoFinal).getTime() : 0);
+  return [
+    pessoa,
+    cfg.direcao || 'concedido',
+    cfg.tipoRetorno || 'valor_fixo',
+    cfg.valorEsperadoRetorno != null ? Number(cfg.valorEsperadoRetorno) : 0,
+    cfg.taxaJurosPercentual != null ? Number(cfg.taxaJurosPercentual) : '',
+    cfg.valorJurosFixo != null ? Number(cfg.valorJurosFixo) : '',
+    prazo
+  ].join('|');
+}
+
+async function criarEmprestimosParaImportacao(transacoesImportadas, usuarioId) {
+  if (!Array.isArray(transacoesImportadas) || transacoesImportadas.length === 0) return;
+
+  const candidatos = transacoesImportadas.filter((ti) => {
+    const cfg = ti.emprestimoConfig;
+    return cfg && cfg.criarEmprestimo === true && !ti.emprestimoId && !cfg.empEmprestimoIdExistente;
+  });
+  if (candidatos.length === 0) return;
+
+  const grupos = new Map();
+  for (const ti of candidatos) {
+    const chave = chaveAgrupamentoEmprestimo(ti.emprestimoConfig);
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave).push(ti);
+  }
+
+  for (const [, grupo] of grupos) {
+    const cfg = grupo[0].emprestimoConfig;
+    const pessoaId = cfg.pessoaId;
+    let pessoa = null;
+    if (pessoaId) {
+      pessoa = await Pessoa.findOne({ _id: pessoaId, usuario: usuarioId, ativo: true });
+    }
+    if (!pessoa) {
+      const pessoaNome = cfg.pessoaNomeSnapshot
+        || (grupo[0].pagamentos?.[0]?.pessoa)
+        || 'Importação';
+      pessoa = await Pessoa.create({
+        usuario: usuarioId,
+        nome: pessoaNome,
+        ativo: true
+      });
+    }
+
+    const novoEmprestimo = await Emprestimo.create({
+      usuario: usuarioId,
+      pessoaId: pessoa._id,
+      pessoaNomeSnapshot: pessoa.nome,
+      pessoaContatoSnapshot: pessoa.contato || null,
+      direcao: cfg.direcao || 'concedido',
+      valorEsperadoRetorno: cfg.valorEsperadoRetorno != null ? Number(cfg.valorEsperadoRetorno) : 0,
+      tipoRetorno: cfg.tipoRetorno || 'valor_fixo',
+      taxaJurosPercentual: cfg.taxaJurosPercentual != null ? Number(cfg.taxaJurosPercentual) : null,
+      valorJurosFixo: cfg.valorJurosFixo != null ? Number(cfg.valorJurosFixo) : null,
+      prazoFinal: cfg.prazoFinal || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      observacao: cfg.observacao || `Criado a partir de importação em ${new Date().toISOString().split('T')[0]}`,
+      status: 'ativo'
+    });
+
+    const ids = grupo.map((ti) => ti._id);
+    await TransacaoImportada.updateMany(
+      { _id: { $in: ids }, usuario: usuarioId },
+      {
+        $set: {
+          emprestimoId: novoEmprestimo._id,
+          emprestimoIdOrigemCriado: novoEmprestimo._id,
+          emprestimoProcessado: true
+        }
+      }
+    );
+    for (const ti of grupo) {
+      ti.emprestimoId = novoEmprestimo._id;
+      ti.emprestimoIdOrigemCriado = novoEmprestimo._id;
+      ti.emprestimoProcessado = true;
+    }
+  }
+}
 
 class ImportacaoController {
     static async previewArquivo(req, res) {
@@ -507,6 +595,12 @@ class ImportacaoController {
             const transacoesReais = [];
             const mapeamentoTiParaTransacao = []; // [{ ti, transacaoIndex }] para saber qual Transacao vincular a cada ti
 
+            // Fase 2.x — Criar Empréstimos a partir de emprestimoConfig preenchido na revisão
+            // 1) Coletar todas as ti com criarEmprestimo: true e sem empEmprestimoIdExistente
+            // 2) Agrupar por chave natural (pessoa + direcao + valorEsperado + tipoRetorno + ...)
+            // 3) Para cada grupo, criar 1 Empréstimo e setar emprestimoId nas ti correspondentes
+            await criarEmprestimosParaImportacao(transacoesImportadas, req.userId);
+
             const montarTransacao = (ti, valor, data, installmentNumber, installmentTotal, installmentGroupId, intervalDays, dedupKeyOverride) => {
                 const pagamentos = ti.pagamentos && ti.pagamentos.length > 0
                     ? ti.pagamentos.map(p => {
@@ -526,6 +620,7 @@ class ImportacaoController {
                     pagamentos,
                     usuario: ti.usuario,
                     subconta: ti.subconta || null,
+                    emprestimoId: ti.emprestimoId || null,
                     deduplicationKey: dedupKeyOverride != null ? dedupKeyOverride : (ti.deduplicationKey || null),
                     isInstallment: !!installmentGroupId,
                     installmentGroupId: installmentGroupId || null,
@@ -678,7 +773,24 @@ class ImportacaoController {
                 session.endSession();
             }
 
-            res.json({ 
+            // Fase 2.y — Após commit, recalcular status de cada empréstimo envolvido.
+            // Se uma transação atingiu o valor esperado, será quitada e a tx de juros auto
+            // será criada/atualizada pelo emprestimoService.
+            const emprestimosParaRecalcular = new Set();
+            for (const tr of transacoesReais) {
+                if (tr.emprestimoId) {
+                    emprestimosParaRecalcular.add(String(tr.emprestimoId));
+                }
+            }
+            for (const empId of emprestimosParaRecalcular) {
+                try {
+                    await emprestimoService.recalcularStatus(empId, req.userId);
+                } catch (errEmp) {
+                    console.error('[ImportacaoController] Erro ao recalcular empréstimo', empId, errEmp.message);
+                }
+            }
+
+            res.json({
                 mensagem: 'Importação finalizada com sucesso',
                 totalTransacoes: transacoesReais.length
             });
@@ -712,29 +824,50 @@ class ImportacaoController {
             }
 
             // Estornar transações reais: por transacaoCriada (preciso) ou fallback por descricao/valor/data
+            const emprestimosAfetados = new Set();
             for (const transacaoImportada of transacoesImportadas) {
                 if (transacaoImportada.transacaoCriada) {
-                    await Transacao.updateOne(
-                        { _id: transacaoImportada.transacaoCriada, usuario: req.userId, status: 'ativo' },
-                        { $set: { status: 'estornado' } }
-                    );
+                    const tx = await Transacao.findOne({
+                        _id: transacaoImportada.transacaoCriada,
+                        usuario: req.userId
+                    });
+                    if (tx) {
+                        tx.status = 'estornado';
+                        await tx.save();
+                        if (tx.emprestimoId) {
+                            emprestimosAfetados.add(String(tx.emprestimoId));
+                        }
+                    }
                 } else {
-                    await Transacao.updateMany(
-                        {
-                            descricao: transacaoImportada.descricao,
-                            valor: transacaoImportada.valor,
-                            data: transacaoImportada.data,
-                            usuario: transacaoImportada.usuario,
-                            status: 'ativo'
-                        },
-                        { $set: { status: 'estornado' } }
-                    );
+                    const encontradas = await Transacao.find({
+                        descricao: transacaoImportada.descricao,
+                        valor: transacaoImportada.valor,
+                        data: transacaoImportada.data,
+                        usuario: transacaoImportada.usuario,
+                        status: 'ativo'
+                    });
+                    for (const tx of encontradas) {
+                        tx.status = 'estornado';
+                        await tx.save();
+                        if (tx.emprestimoId) {
+                            emprestimosAfetados.add(String(tx.emprestimoId));
+                        }
+                    }
                 }
             }
 
             // Atualizar status da importação
             importacao.status = 'estornada';
             await importacao.save();
+
+            // Recalcular status dos empréstimos afetados (reverter quitação se totalReceived < valorEsperado)
+            for (const empId of emprestimosAfetados) {
+                try {
+                    await emprestimoService.recalcularStatus(empId, req.userId);
+                } catch (errEmp) {
+                    console.error('[ImportacaoController] Erro ao recalcular empréstimo no estorno', empId, errEmp.message);
+                }
+            }
 
             // Atualizar status das transações importadas (filtro usuario)
             await TransacaoImportada.updateMany(

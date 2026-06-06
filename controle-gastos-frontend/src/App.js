@@ -34,6 +34,9 @@ import SimuladorRendimentosPage from './pages/Patrimonio/SimuladorRendimentosPag
 import PatrimonioHistoricoPage from './pages/Patrimonio/PatrimonioHistoricoPage';
 import ConjuntoPage from './pages/Conjunto/ConjuntoPage';
 import DetalheVinculoPage from './pages/Conjunto/DetalheVinculoPage';
+import PessoasPage from './pages/Pessoas/PessoasPage';
+import EmprestimosPage from './pages/Emprestimos/EmprestimosPage';
+import EmprestimoDetalhePage from './pages/Emprestimos/EmprestimoDetalhePage';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -291,6 +294,36 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <HistoricoRecebimentosPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/pessoas"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <PessoasPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/emprestimos"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <EmprestimosPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/emprestimos/:id"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <EmprestimoDetalhePage />
                     </MainLayout>
                   </PrivateRoute>
                 }

@@ -1,0 +1,259 @@
+/* src/pages/Emprestimos/EmprestimoDetalhePage.css */
+.emp-detalhe-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.emp-detalhe-loading,
+.emp-detalhe-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.emp-detalhe-voltar {
+  margin-bottom: 16px;
+}
+
+.emp-detalhe-voltar a {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.emp-detalhe-voltar a:hover { text-decoration: underline; }
+
+.emp-detalhe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.emp-detalhe-header h2 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.emp-detalhe-subtitulo {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.emp-detalhe-obs {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.emp-detalhe-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.emp-btn-secundario,
+.emp-btn-perigo {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.emp-btn-secundario {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.emp-btn-secundario:hover { background: #f9fafb; }
+
+.emp-btn-perigo {
+  background: white;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.emp-btn-perigo:hover { background: #fef2f2; }
+
+.emp-detalhe-edicao {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.emp-detalhe-alerta {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.emp-detalhe-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.emp-detalhe-info {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.emp-detalhe-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.emp-detalhe-valor {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.emp-detalhe-totais {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.emp-total-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emp-total-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.emp-total-valor {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.emp-total-pos { background: #f0fdf4; border-color: #bbf7d0; }
+.emp-total-pos .emp-total-valor { color: #15803d; }
+.emp-total-neg { background: #fef2f2; border-color: #fecaca; }
+.emp-total-neg .emp-total-valor { color: #b91c1c; }
+
+.emp-detalhe-secao {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.emp-detalhe-secao h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.emp-detalhe-sem-mov {
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+  font-size: 14px;
+}
+
+.emp-detalhe-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.emp-detalhe-tabela th,
+.emp-detalhe-tabela td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.emp-detalhe-tabela th {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #f9fafb;
+}
+
+.emp-th-valor,
+.emp-td-valor {
+  text-align: right !important;
+}
+
+.emp-td-principal { color: #6b7280; }
+.emp-td-juros { color: #15803d; font-weight: 500; }
+
+.emp-detalhe-tabela tfoot td {
+  background: #f9fafb;
+  border-top: 2px solid #e5e7eb;
+}
+
+.emp-tipo-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.emp-tipo-tag.gasto { background: #fef3c7; color: #92400e; }
+.emp-tipo-tag.recebivel { background: #d1fae5; color: #065f46; }
+
+.emp-status-ok { color: #15803d; font-size: 12px; }
+.emp-status-estornado { color: #6b7280; font-size: 12px; font-style: italic; }
+
+.emp-detalhe-explicacao {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.emp-detalhe-explicacao h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #1e40af;
+}
+
+.emp-detalhe-explicacao ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #1e3a8a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.emp-detalhe-explicacao li { margin-bottom: 4px; }

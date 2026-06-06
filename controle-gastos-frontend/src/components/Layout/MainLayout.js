@@ -1,7 +1,7 @@
 // src/components/Layout/MainLayout.js
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank, FaUsers, FaCalculator, FaBuilding, FaChartArea, FaExchangeAlt, FaCalendarAlt } from 'react-icons/fa';
+import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank, FaUsers, FaCalculator, FaBuilding, FaChartArea, FaExchangeAlt, FaCalendarAlt, FaHandshake, FaAddressBook } from 'react-icons/fa';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import BreadcrumbsNav from '../navigation/BreadcrumbsNav';
@@ -49,7 +49,8 @@ const MainLayout = ({ children }) => {
   // Estado para controlar quais submenus estão expandidos
   const [expandedMenus, setExpandedMenus] = useState({
     transacoes: true,
-    patrimonio: false
+    patrimonio: false,
+    emprestimos: false
   });
 
   // Toggle para expandir/colapsar submenus
@@ -73,9 +74,9 @@ const MainLayout = ({ children }) => {
     { name: 'Relatórios', path: '/relatorio', icon: <FaChartLine /> },
     { name: 'Modelos de Relatório', path: '/modelos-relatorio', icon: <FaFileAlt /> },
     { name: 'Insights', path: '/insights', icon: <FaLightbulb /> },
-    { 
-      name: 'Transações', 
-      path: null, 
+    {
+      name: 'Transações',
+      path: null,
       icon: <FaWallet />,
       hasSubmenu: true,
       key: 'transacoes',
@@ -86,6 +87,17 @@ const MainLayout = ({ children }) => {
       ]
     },
     { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },
+    {
+      name: 'Empréstimos',
+      path: null,
+      icon: <FaHandshake />,
+      hasSubmenu: true,
+      key: 'emprestimos',
+      submenu: [
+        { name: 'Lista de Empréstimos', path: '/emprestimos', icon: <FaHandshake />, isSubItem: true },
+        { name: 'Pessoas', path: '/pessoas', icon: <FaAddressBook />, isSubItem: true }
+      ]
+    },
     {
       name: 'Patrimônio',
       path: null,

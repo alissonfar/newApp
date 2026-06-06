@@ -9,6 +9,8 @@ import usePagamentos from '../../hooks/usePagamentos';
 import useContaConjunta from '../../hooks/useContaConjunta';
 import useParcelamento from '../../hooks/useParcelamento';
 import useDuplicateCheck from '../../hooks/useDuplicateCheck';
+import useEmprestimoForm from '../../hooks/useEmprestimoForm';
+import { criarEmprestimo } from '../../api';
 import TransacaoTabs from './TransacaoTabs';
 import TabPrincipal from './TabPrincipal';
 import TabPagamentos from './TabPagamentos';
@@ -56,6 +58,12 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     enabled: form.formState.descricao.length >= 3
   });
 
+  const emprestimoForm = useEmprestimoForm({
+    transacao,
+    tipoTransacao: form.formState.tipo,
+    valorTotal: form.formState.valorTotal
+  });
+
   closeRef.current = onClose;
 
   const { formState, setters: fsSetters, refs } = form;
@@ -95,12 +103,35 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       return;
     }
 
+    const empError = emprestimoForm.validar();
+    if (empError) {
+      toast.error(empError);
+      return;
+    }
+
     setIsSaving(true);
     try {
       let valorFinal = parseFloat(formState.valorTotal);
       let contaConjuntaPayload = contaConjunta.buildPayload(formState.valorTotal);
       if (contaConjuntaPayload) {
         valorFinal = contaConjunta.getValorFinal(formState.valorTotal);
+      }
+
+      let emprestimoIdParaTransacao = null;
+      if (emprestimoForm.state.ativo) {
+        if (emprestimoForm.state.modo === 'vincular') {
+          emprestimoIdParaTransacao = emprestimoForm.state.emprestimoId;
+        } else {
+          const valorEsperado = parseFloat(emprestimoForm.state.novoValorEsperado) || 0;
+          const novoEmp = await criarEmprestimo({
+            pessoaId: emprestimoForm.state.pessoaId,
+            direcao: emprestimoForm.state.direcao,
+            valorEsperadoRetorno: valorEsperado,
+            tipoRetorno: emprestimoForm.state.novoTipoRetorno,
+            prazoFinal: emprestimoForm.state.novoPrazoFinal
+          });
+          emprestimoIdParaTransacao = novoEmp._id || novoEmp.id;
+        }
       }
 
       const pagamentosPayload = pagamentos.buildPagamentosPayload();
@@ -135,6 +166,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       if (formState.subconta) transacaoData.subconta = formState.subconta;
       else transacaoData.subconta = null;
       if (contaConjuntaPayload) transacaoData.contaConjunta = contaConjuntaPayload;
+      if (emprestimoIdParaTransacao) transacaoData.emprestimoId = emprestimoIdParaTransacao;
+      else transacaoData.emprestimoId = null;
 
       let response;
       if (formState.isImportada && formState.importacaoId) {
@@ -160,6 +193,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         pagamentos.setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
         contaConjunta.reset();
         parcelamento.reset();
+        emprestimoForm.reset();
         toast.success('Salvo! Pronto para a proxima.', { autoClose: 1500 });
         setTimeout(() => refs.descricaoRef.current?.focus(), 80);
       }
@@ -169,7 +203,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     } finally {
       setIsSaving(false);
     }
-  }, [formState, form, pagamentos, contaConjunta, parcelamento, onSuccess, onClose, proprietarioPadrao, refs]);
+  }, [formState, form, pagamentos, contaConjunta, parcelamento, emprestimoForm, onSuccess, onClose, proprietarioPadrao, refs]);
 
   handleSubmitRef.current = handleSubmit;
 
@@ -281,6 +315,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           parteUsuario={contaConjunta.state.parteUsuario}
           setParteUsuario={onParteUsuarioChange}
           transacao={transacao}
+          emprestimoForm={emprestimoForm}
         />
         <TabResumo
           data-tab="resumo"

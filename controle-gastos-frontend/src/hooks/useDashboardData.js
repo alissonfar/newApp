@@ -60,10 +60,16 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
 
     // Calcular resumo do período
     const resumo = transacoesPeriodo.reduce((acc, t) => {
+      // Transações vinculadas a empréstimos concedidos (desembolso ou recebimento)
+      // são marcadas com `esconderNaLista` pelo backend e devem ser ignoradas aqui.
+      // A receita real do empréstimo é a transação de juros auto-criada na quitação,
+      // que NÃO recebe essa flag e entra normalmente em `totalRecebiveis`.
+      if (t.esconderNaLista) return acc;
+
       // Tentativa de encontrar o valor específico para o proprietário no array de pagamentos
       const pagamentoProprietario = t.pagamentos?.find(p => p.pessoa && p.pessoa.toLowerCase() === proprietarioAtual.toLowerCase());
       const valorConsiderado = pagamentoProprietario?.valor ?? t.valor; // Usa valor do pagamento se existir, senão valor total
-      
+
       if (t.tipo === 'gasto') {
         acc.totalGastos += valorConsiderado;
       } else {
@@ -97,14 +103,14 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
       });
 
       const gastosMes = transacoesMesGrafico
-        .filter(t => t.tipo === 'gasto')
+        .filter(t => t.tipo === 'gasto' && !t.esconderNaLista)
         .reduce((acc, t) => {
             const pagamentoProprietario = t.pagamentos?.find(p => p.pessoa && p.pessoa.toLowerCase() === proprietarioAtual.toLowerCase());
             return acc + (pagamentoProprietario?.valor ?? t.valor);
         }, 0);
 
       const recebiveisMes = transacoesMesGrafico
-        .filter(t => t.tipo === 'recebivel' && !t.settlementAsSource)
+        .filter(t => t.tipo === 'recebivel' && !t.settlementAsSource && !t.esconderNaLista)
         .reduce((acc, t) => {
             const pagamentoProprietario = t.pagamentos?.find(p => p.pessoa && p.pessoa.toLowerCase() === proprietarioAtual.toLowerCase());
             return acc + (pagamentoProprietario?.valor ?? t.valor);
@@ -122,8 +128,9 @@ const useDashboardData = (proprietario, usuarioCarregado) => {
       ]
     });
 
-     // Agrupar transações por data para o calendário (usa todas as transações)
+     // Agrupar transações por data para o calendário (usa todas as transações, exceto gastos de empréstimo)
      const porData = transacoesFiltradas.reduce((acc, t) => {
+        if (t.esconderNaLista) return acc;
         const data = t.data.split('T')[0];
         if (!acc[data]) acc[data] = [];
         acc[data].push(t);

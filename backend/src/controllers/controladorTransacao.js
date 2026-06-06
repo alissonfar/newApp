@@ -1,10 +1,12 @@
 // src/controllers/controladorTransacao.js
 const Transacao = require('../models/transacao');
 const Subconta = require('../models/subconta');
+const Emprestimo = require('../models/emprestimo');
 const mongoose = require('mongoose');
 const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
 const { buildPagamentosTagFilterStage } = require('../utils/pagamentosTagFilter');
 const transacaoService = require('../services/transacaoService');
+const emprestimoService = require('../services/emprestimoService');
 
 function getTagsFilterFromReq(req) {
   if (!req.query.tagsFilter) return null;
@@ -105,6 +107,8 @@ exports.obterTodasTransacoes = async (req, res) => {
       }
       addContabilizavelCondition(filtros);
       const transacoes = await Transacao.find(filtros);
+      const { ajustarRecebiveisDeEmprestimo } = require('../utils/emprestimoAjuste');
+      await ajustarRecebiveisDeEmprestimo(transacoes, req.userId);
       return res.json({ transacoes });
     }
 
@@ -194,6 +198,66 @@ exports.obterTodasTransacoes = async (req, res) => {
 
     const result = await Transacao.aggregate(pipeline);
 
+    const dataPage = result[0].data;
+
+    const emprestimoIds = [];
+    for (const t of dataPage) {
+      if (t && t.emprestimoId) {
+        const id = String(t.emprestimoId);
+        if (!emprestimoIds.includes(id)) emprestimoIds.push(id);
+      }
+    }
+
+    if (emprestimoIds.length > 0) {
+      const { ajustarRecebiveisDeEmprestimo, calcularAjusteResumoPorEmprestimo } = require('../utils/emprestimoAjuste');
+      const matchAdicionalResumo = { ...matchStage };
+      delete matchAdicionalResumo.status;
+      delete matchAdicionalResumo.usuario;
+      matchAdicionalResumo.status = 'ativo';
+      matchAdicionalResumo.usuario = new mongoose.Types.ObjectId(req.userId);
+
+      const todasTransacoesEmprestimo = await Transacao.find({
+        emprestimoId: { $in: emprestimoIds.map(id => new mongoose.Types.ObjectId(id)) },
+        usuario: req.userId,
+        status: 'ativo'
+      }).lean();
+
+      const emprestimosParaAjuste = await Emprestimo.find({
+        _id: { $in: emprestimoIds.map(id => new mongoose.Types.ObjectId(id)) },
+        usuario: req.userId,
+        direcao: 'concedido'
+      }).lean();
+      const empPermitidos = new Set(emprestimosParaAjuste.map(e => String(e._id)));
+
+      const todasFiltradas = todasTransacoesEmprestimo.filter(t => empPermitidos.has(String(t.emprestimoId)));
+      await ajustarRecebiveisDeEmprestimo(todasFiltradas, req.userId);
+
+      const ajuste = await calcularAjusteResumoPorEmprestimo(
+        [...empPermitidos],
+        req.userId,
+        matchAdicionalResumo
+      );
+
+      const transacaoOriginalValor = new Map();
+      for (const t of todasTransacoesEmprestimo) {
+        transacaoOriginalValor.set(String(t._id), t.valor);
+      }
+      for (const t of dataPage) {
+        if (t && t.emprestimoId && empPermitidos.has(String(t.emprestimoId))) {
+          const id = String(t._id);
+          t.valor = todasFiltradas.find(ft => String(ft._id) === id)?.valor ?? 0;
+        }
+      }
+
+      const summaryDocRaw = result[0].summary[0];
+      if (summaryDocRaw) {
+        summaryDocRaw.totalGastos = (summaryDocRaw.totalGastos || 0) - ajuste.totalGastosSubtraido;
+        summaryDocRaw.totalRecebiveis = (summaryDocRaw.totalRecebiveis || 0) - ajuste.totalRecebiveisSubtraido;
+        summaryDocRaw.netValue = (summaryDocRaw.totalRecebiveis || 0) - (summaryDocRaw.totalGastos || 0);
+        summaryDocRaw.totalValue = (summaryDocRaw.totalGastos || 0) + (summaryDocRaw.totalRecebiveis || 0);
+      }
+    }
+
     const countDoc = result[0].count[0];
     const total = countDoc ? countDoc.total : 0;
     const totalPages = Math.ceil(total / limit) || 1;
@@ -276,6 +340,8 @@ exports.obterTransacoesExport = async (req, res) => {
     exportPipeline.push({ $sort: sortStage }, { $limit: MAX_EXPORT });
 
     const transacoes = await Transacao.aggregate(exportPipeline);
+    const { ajustarRecebiveisDeEmprestimo } = require('../utils/emprestimoAjuste');
+    await ajustarRecebiveisDeEmprestimo(transacoes, req.userId);
     res.json({ transacoes });
   } catch (error) {
     console.error('Erro ao exportar transações:', error);
@@ -430,7 +496,14 @@ exports.criarTransacao = async (req, res) => {
         subconta: subcontaId,
         contaConjunta: contaConjuntaParaSalvar
       });
+      if (req.body.emprestimoId) {
+        await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
+        novaTransacao.emprestimoId = req.body.emprestimoId;
+      }
       await novaTransacao.save();
+      if (novaTransacao.emprestimoId) {
+        await emprestimoService.recalcularStatus(novaTransacao.emprestimoId, req.userId);
+      }
       return res.status(201).json(novaTransacao);
     }
 
@@ -537,8 +610,16 @@ exports.criarTransacao = async (req, res) => {
         });
       }
 
+      if (req.body.emprestimoId) {
+        await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
+        transacoesParaInserir.forEach((t) => { t.emprestimoId = req.body.emprestimoId; });
+      }
+
       const transacoesCriadas = await Transacao.insertMany(transacoesParaInserir, { session });
       await session.commitTransaction();
+      if (req.body.emprestimoId) {
+        await emprestimoService.recalcularStatus(req.body.emprestimoId, req.userId);
+      }
 
       res.status(201).json({
         transacoes: transacoesCriadas,
@@ -600,7 +681,31 @@ exports.atualizarTransacao = async (req, res) => {
         transacao.subconta = null;
       }
     }
-    await transacao.save();
+    if (req.body.emprestimoId !== undefined) {
+      const emprestimoIdAntes = transacao.emprestimoId ? transacao.emprestimoId.toString() : null;
+      if (req.body.emprestimoId) {
+        await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
+      }
+      transacao.emprestimoId = req.body.emprestimoId || null;
+      await transacao.save();
+      const novoId = transacao.emprestimoId ? transacao.emprestimoId.toString() : null;
+      if (emprestimoIdAntes && emprestimoIdAntes !== novoId) {
+        await emprestimoService.recalcularStatus(emprestimoIdAntes, req.userId);
+      }
+      if (novoId) {
+        await emprestimoService.recalcularStatus(novoId, req.userId);
+      }
+    } else {
+      await transacao.save();
+      // Se a transação tem emprestimoId e o usuário alterou valor/tipo/data/etc,
+      // é necessário recalcular pois isso pode mudar o status do empréstimo.
+      if (transacao.emprestimoId) {
+        await emprestimoService.recalcularStatus(
+          String(transacao.emprestimoId),
+          req.userId
+        );
+      }
+    }
     res.json(transacao);
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao atualizar transação.', detalhe: error.message });
@@ -611,8 +716,12 @@ exports.excluirTransacao = async (req, res) => {
   try {
     const transacao = await Transacao.findOne({ _id: req.params.id, usuario: req.userId });
     if (!transacao) return res.status(404).json({ erro: 'Transação não encontrada.' });
+    const emprestimoIdAntes = transacao.emprestimoId ? transacao.emprestimoId.toString() : null;
     transacao.status = 'estornado';
     await transacao.save();
+    if (emprestimoIdAntes) {
+      await emprestimoService.recalcularStatus(emprestimoIdAntes, req.userId);
+    }
     res.json({ mensagem: 'Transação estornada com sucesso.', transacao });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao excluir transação.', detalhe: error.message });
@@ -622,6 +731,22 @@ exports.excluirTransacao = async (req, res) => {
 exports.estornarParcelamento = async (req, res) => {
   try {
     const { installmentGroupId } = req.params;
+
+    // Coletar emprestimoId distintos das parcelas ANTES do updateMany
+    // (depois não dá pra saber quais tinham empréstimo)
+    const txsComEmprestimo = await Transacao.find({
+      usuario: req.userId,
+      $or: [
+        { installmentGroupId, status: 'ativo' },
+        { 'pagamentos.installmentGroupId': installmentGroupId, status: 'ativo' }
+      ],
+      emprestimoId: { $ne: null }
+    }).select('_id emprestimoId').lean();
+    const emprestimosAfetados = new Set(
+      txsComEmprestimo
+        .filter((t) => t.emprestimoId)
+        .map((t) => String(t.emprestimoId))
+    );
 
     // Busca tanto no nível da transação (legado) quanto no nível do pagamento (novo modelo)
     const [resultTransacao, resultPagamentos] = await Promise.all([
@@ -640,6 +765,16 @@ exports.estornarParcelamento = async (req, res) => {
     if (totalEstornadas === 0) {
       return res.status(404).json({ erro: 'Nenhuma parcela ativa encontrada para este parcelamento.' });
     }
+
+    // Recalcular status dos empréstimos afetados
+    for (const empId of emprestimosAfetados) {
+      try {
+        await emprestimoService.recalcularStatus(empId, req.userId);
+      } catch (errEmp) {
+        console.error('[controladorTransacao] Erro ao recalcular empréstimo', empId, errEmp.message);
+      }
+    }
+
     res.json({
       mensagem: `${totalEstornadas} parcela(s) estornada(s) com sucesso.`,
       totalEstornadas
@@ -652,6 +787,19 @@ exports.estornarParcelamento = async (req, res) => {
 exports.estornarGrupoPai = async (req, res) => {
   try {
     const { parentTransactionId } = req.params;
+
+    const txsComEmprestimo = await Transacao.find({
+      usuario: req.userId,
+      parentTransactionId,
+      status: 'ativo',
+      emprestimoId: { $ne: null }
+    }).select('_id emprestimoId').lean();
+    const emprestimosAfetados = new Set(
+      txsComEmprestimo
+        .filter((t) => t.emprestimoId)
+        .map((t) => String(t.emprestimoId))
+    );
+
     const resultado = await Transacao.updateMany(
       { usuario: req.userId, parentTransactionId, status: 'ativo' },
       { $set: { status: 'estornado' } }
@@ -659,6 +807,15 @@ exports.estornarGrupoPai = async (req, res) => {
     if (resultado.modifiedCount === 0) {
       return res.status(404).json({ erro: 'Nenhuma transação ativa encontrada para este grupo.' });
     }
+
+    for (const empId of emprestimosAfetados) {
+      try {
+        await emprestimoService.recalcularStatus(empId, req.userId);
+      } catch (errEmp) {
+        console.error('[controladorTransacao] Erro ao recalcular empréstimo', empId, errEmp.message);
+      }
+    }
+
     res.json({
       mensagem: `${resultado.modifiedCount} transação(ões) estornada(s) com sucesso.`,
       totalEstornadas: resultado.modifiedCount
@@ -674,6 +831,13 @@ exports.reativarTransacao = async (req, res) => {
     if (!transacao) return res.status(404).json({ erro: 'Transação estornada não encontrada.' });
     transacao.status = 'ativo';
     await transacao.save();
+    if (transacao.emprestimoId) {
+      try {
+        await emprestimoService.recalcularStatus(String(transacao.emprestimoId), req.userId);
+      } catch (errEmp) {
+        console.error('[controladorTransacao] Erro ao recalcular empréstimo', transacao.emprestimoId, errEmp.message);
+      }
+    }
     res.json({ mensagem: 'Transação reativada com sucesso.', transacao });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao reativar transação.', detalhe: error.message });
@@ -682,7 +846,7 @@ exports.reativarTransacao = async (req, res) => {
 
 exports.registrarTransacoesEmMassa = async (req, res) => {
   const { transacoes } = req.body;
-  
+
   if (!transacoes || !Array.isArray(transacoes) || transacoes.length === 0) {
     return res.status(400).json({ erro: 'O formato do payload está incorreto. É necessário enviar um array de transações.' });
   }
@@ -694,37 +858,55 @@ exports.registrarTransacoesEmMassa = async (req, res) => {
       dataImportacao: transacao.dataImportacao || new Date()
     }));
 
-    // Validação básica dos dados
     for (let i = 0; i < transacoesComUsuario.length; i++) {
       const t = transacoesComUsuario[i];
       if (!t.tipo || !t.descricao || !t.valor || !t.data || !t.pagamentos) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           erro: 'Campos obrigatórios ausentes na transação ' + (i + 1),
           transacao: t
         });
       }
-      
-      // Verificar se o tipo é válido
       if (!['gasto', 'recebivel'].includes(t.tipo)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           erro: 'Tipo de transação inválido na transação ' + (i + 1) + '. Valores permitidos: gasto, recebivel',
           transacao: t
         });
       }
+      if (t.emprestimoId) {
+        try {
+          await emprestimoService.validarEmprestimoParaTransacao(t.emprestimoId, req.userId);
+        } catch (errEmp) {
+          return res.status(400).json({
+            erro: `emprestimoId inválido na transação ${i + 1}: ${errEmp.message}`,
+            transacao: t
+          });
+        }
+      }
     }
 
-    // Criar todas as transações
     const transacoesSalvas = await Transacao.insertMany(transacoesComUsuario);
-    
-    res.status(201).json({ 
+
+    const emprestimosAfetados = new Set();
+    for (const t of transacoesSalvas) {
+      if (t.emprestimoId) emprestimosAfetados.add(String(t.emprestimoId));
+    }
+    for (const empId of emprestimosAfetados) {
+      try {
+        await emprestimoService.recalcularStatus(empId, req.userId);
+      } catch (errEmp) {
+        console.error('[controladorTransacao] Erro ao recalcular empréstimo', empId, errEmp.message);
+      }
+    }
+
+    res.status(201).json({
       mensagem: `${transacoesSalvas.length} transações registradas com sucesso.`,
       transacoes: transacoesSalvas
     });
   } catch (error) {
     console.error('Erro ao registrar transações em massa:', error);
-    res.status(500).json({ 
-      erro: 'Erro ao registrar transações em massa.', 
-      detalhe: error.message 
+    res.status(500).json({
+      erro: 'Erro ao registrar transações em massa.',
+      detalhe: error.message
     });
   }
 };

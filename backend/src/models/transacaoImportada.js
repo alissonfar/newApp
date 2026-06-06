@@ -6,6 +6,20 @@ const ParcelamentoConfigSchema = new mongoose.Schema({
   intervaloDias: { type: Number, default: 30, min: 1, max: 365 }
 }, { _id: false });
 
+const EmprestimoConfigSchema = new mongoose.Schema({
+  criarEmprestimo: { type: Boolean, default: false },
+  pessoaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pessoa', default: null },
+  pessoaNomeSnapshot: { type: String, default: null },
+  direcao: { type: String, enum: ['concedido', 'recebido'], default: 'concedido' },
+  valorEsperadoRetorno: { type: Number, default: null, min: 0 },
+  tipoRetorno: { type: String, enum: ['valor_fixo', 'juros_percentual', 'juros_fixo', 'sem_juros'], default: 'valor_fixo' },
+  taxaJurosPercentual: { type: Number, default: null, min: 0, max: 1000 },
+  valorJurosFixo: { type: Number, default: null, min: 0 },
+  prazoFinal: { type: Date, default: null },
+  observacao: { type: String, default: null },
+  empEmprestimoIdExistente: { type: mongoose.Schema.Types.ObjectId, ref: 'Emprestimo', default: null }
+}, { _id: false });
+
 const PagamentoSchema = new mongoose.Schema({
   pessoa: { type: String, required: true },
   valor: { type: Number, required: true },
@@ -132,12 +146,30 @@ const TransacaoImportadaSchema = new mongoose.Schema({
   installmentIntervalMonths: { type: Number, default: null },
   installmentIntervalDays: { type: Number, default: null },
   parentTransactionId: { type: mongoose.Schema.Types.ObjectId, default: null },
-  usuario: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Usuario', 
-    required: true 
+  usuario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true
   },
   subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: false, default: null },
+  emprestimoId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Emprestimo',
+    default: null
+  },
+  emprestimoConfig: {
+    type: EmprestimoConfigSchema,
+    default: null
+  },
+  emprestimoProcessado: {
+    type: Boolean,
+    default: false
+  },
+  emprestimoIdOrigemCriado: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Emprestimo',
+    default: null
+  },
   contaConjunta: {
     ativo: { type: Boolean, default: false },
     vinculoId: { type: mongoose.Schema.Types.ObjectId, ref: 'VinculoConjunto' },
@@ -173,6 +205,7 @@ TransacaoImportadaSchema.methods.paraTransacao = function() {
     pagamentos,
     usuario: this.usuario,
     subconta: this.subconta || undefined,
+    emprestimoId: this.emprestimoId || null,
     deduplicationKey: this.deduplicationKey || undefined,
     isInstallment: this.isInstallment || false,
     installmentGroupId: this.installmentGroupId || undefined,
@@ -210,5 +243,7 @@ TransacaoImportadaSchema.index({ importacao: 1, status: 1, deduplicationKey: 1 }
 TransacaoImportadaSchema.index({ usuario: 1 });
 TransacaoImportadaSchema.index({ usuario: 1, deduplicationKey: 1, status: 1 });
 TransacaoImportadaSchema.index({ data: -1 });
+TransacaoImportadaSchema.index({ emprestimoId: 1 }, { sparse: true });
+TransacaoImportadaSchema.index({ importacao: 1, emprestimoId: 1 }, { sparse: true });
 
 module.exports = mongoose.model('TransacaoImportada', TransacaoImportadaSchema); 

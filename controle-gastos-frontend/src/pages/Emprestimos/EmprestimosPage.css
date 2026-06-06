@@ -1,0 +1,268 @@
+/* src/pages/Emprestimos/EmprestimosPage.css */
+.emprestimos-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.emprestimos-header h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.emprestimos-desc {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.emp-btn-novo {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.emp-btn-novo:hover { background: #1d4ed8; }
+
+.emp-filtros {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 24px;
+  flex-wrap: wrap;
+}
+
+.emp-filtro,
+.emp-filtro-ativo {
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1px solid #d1d5db;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+}
+
+.emp-filtro:hover { background: #f9fafb; }
+.emp-filtro-ativo {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.emp-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.emp-resumo-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emp-resumo-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.emp-resumo-valor {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.emp-resumo-lucro {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.emp-resumo-lucro .emp-resumo-valor {
+  color: #15803d;
+}
+
+.emprestimos-loading,
+.emprestimos-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.emprestimos-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.emprestimo-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .15s, transform .1s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emprestimo-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.emprestimo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.emprestimo-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #111827;
+}
+
+.emp-status-badge {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.emp-status-ativo { background: #dbeafe; color: #1e40af; }
+.emp-status-quitado { background: #d1fae5; color: #065f46; }
+.emp-status-cancelado { background: #f3f4f6; color: #6b7280; }
+
+.emprestimo-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.emp-info-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.emp-info-row span { color: #6b7280; }
+.emp-info-row strong,
+.emp-info-row span:last-child { color: #111827; font-weight: 500; }
+
+.emprestimo-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+
+.emp-lucro-pos { color: #15803d; font-weight: 500; }
+.emp-lucro-neg { color: #b91c1c; font-weight: 500; }
+.emp-saldo { color: #b45309; font-weight: 500; }
+
+.emprestimo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.emprestimo-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.emprestimo-modal h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.emp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.emp-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emp-form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.emp-form-group input,
+.emp-form-group select,
+.emp-form-group textarea {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.emp-form-group small {
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.emp-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.emp-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.emp-btn-cancelar,
+.emp-btn-salvar {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.emp-btn-cancelar { background: #f3f4f6; color: #374151; }
+.emp-btn-cancelar:hover { background: #e5e7eb; }
+.emp-btn-cancelar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.emp-btn-salvar { background: #2563eb; color: white; }
+.emp-btn-salvar:hover { background: #1d4ed8; }
+.emp-btn-salvar:disabled { opacity: 0.5; cursor: not-allowed; }

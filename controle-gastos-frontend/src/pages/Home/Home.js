@@ -28,6 +28,7 @@ import SegmentedControl from '../../components/shared/SegmentedControl';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import IconRenderer from '../../components/shared/IconRenderer';
+import EmprestimoBadge from '../../components/Emprestimos/EmprestimoBadge';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -150,6 +151,7 @@ const Home = () => {
 
   // Filtrar transações para exibição
   const transacoesFiltradas = transacoes.filter(t => {
+    if (t.esconderNaLista) return false;
     const matchTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
     const matchBusca = !buscaTransacao ||
       t.descricao.toLowerCase().includes(buscaTransacao.toLowerCase()) ||
@@ -437,7 +439,10 @@ const Home = () => {
                               {t.tipo === 'gasto' ? <FaArrowDown size={14} /> : <FaArrowUp size={14} />}
                             </div>
                             <div className="transacoes-col-descricao transacao-descricao">
-                              <span className="transacao-descricao-texto">{t.descricao}</span>
+                              <span className="transacao-descricao-texto">
+                                {t.descricao}
+                                {t.emprestimoInfo && <EmprestimoBadge emprestimoInfo={t.emprestimoInfo} variant="chip" />}
+                              </span>
                               {t.pagamentos && t.pagamentos.length > 0 && (
                                 <span className="transacao-pessoas">{t.pagamentos.map(p => p.pessoa).join(', ')}</span>
                               )}

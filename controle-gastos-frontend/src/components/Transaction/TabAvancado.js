@@ -1,5 +1,6 @@
 import React from 'react';
 import SubcontaSelect from '../shared/SubcontaSelect';
+import EmprestimoSecao from '../Emprestimos/EmprestimoSecao';
 
 export const TAB_AVANCADO = 'avancado';
 
@@ -12,7 +13,8 @@ const TabAvancado = ({
   valorTotal,
   parteUsuario,
   setParteUsuario,
-  transacao
+  transacao,
+  emprestimoForm
 }) => {
   const { state: cState, setters: cSetters, toggle: ccToggle, parteOutro } = contaConjunta;
 
@@ -149,6 +151,8 @@ const TabAvancado = ({
           />
         </div>
       )}
+
+      {emprestimoForm && <EmprestimoSecao form={emprestimoForm} valorTotal={valorTotal} />}
     </div>
   );
 };

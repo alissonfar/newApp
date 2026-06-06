@@ -1,0 +1,102 @@
+/* src/components/Emprestimos/EmprestimoSecao.css */
+.emprestimo-secao {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 14px;
+  margin-top: 14px;
+}
+
+.emp-secao-toggle {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.emp-secao-hint {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin: 8px 0 12px;
+}
+
+.emp-secao-campos {
+  margin-top: 12px;
+  padding-left: 24px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.emp-pessoa-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.emp-pessoa-row select {
+  flex: 1;
+}
+
+.emp-btn-mini {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.emp-btn-mini:hover { background: #f9fafb; }
+
+.emp-btn-confirmar {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.emp-btn-confirmar:hover { background: #1d4ed8; }
+
+.emp-nova-pessoa {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.emp-nova-pessoa input {
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.emp-campos-novo {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+
+.emp-campos-novo small {
+  display: block;
+  color: #6b7280;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.emp-secao-loading,
+.emp-secao-vazio {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 4px 0;
+}
+
+.emp-secao-vazio { color: #b45309; }

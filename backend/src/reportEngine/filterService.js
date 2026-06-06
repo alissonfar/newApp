@@ -3,6 +3,7 @@ const Transacao = require('../models/transacao');
 const mongoose = require('mongoose');
 const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
 const { buildPagamentosTagFilterStage } = require('../utils/pagamentosTagFilter');
+const { ajustarRecebiveisDeEmprestimo } = require('../utils/emprestimoAjuste');
 
 const MAX_EXPORT = 50000;
 
@@ -125,6 +126,7 @@ async function fetchFilteredTransactions(filters, userId) {
   pipeline.push({ $sort: sortStage }, { $limit: MAX_EXPORT });
 
   const transacoes = await Transacao.aggregate(pipeline);
+  await ajustarRecebiveisDeEmprestimo(transacoes, userId);
   return transacoes;
 }
 

@@ -11,6 +11,7 @@ import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF, buildReportFilename } from '../../utils/export/exportPDF';
 import IconRenderer from '../../components/shared/IconRenderer';
+import EmprestimoBadge from '../../components/Emprestimos/EmprestimoBadge';
 import './Relatorio.css';
 import { 
   Menu, 
@@ -30,6 +31,10 @@ function flattenTransactions(transArray) {
   const flattened = [];
   (transArray || []).forEach((tr) => {
     const id = tr.id || tr._id;
+    const baseEmprestimo = {
+      esconderNaLista: !!tr.esconderNaLista,
+      emprestimoInfo: tr.emprestimoInfo || null
+    };
     const baseContaConjunta = tr.contaConjunta?.ativo ? {
       valorTotal: tr.contaConjunta.valorTotal,
       parteUsuario: tr.contaConjunta.parteUsuario,
@@ -52,6 +57,7 @@ function flattenTransactions(transArray) {
         tagsPagamento: {},
         ...baseContaConjunta,
         ...baseParcelamento,
+        ...baseEmprestimo,
         installmentNumber: null,
         installmentTotal: null
       });
@@ -68,6 +74,7 @@ function flattenTransactions(transArray) {
           tagsPagamento: p.tags || {},
           ...baseContaConjunta,
           ...baseParcelamento,
+          ...baseEmprestimo,
           installmentNumber: p.installmentNumber || null,
           installmentTotal: p.installmentTotal || null
         });
@@ -205,6 +212,7 @@ const Relatorio = () => {
       };
       const res = await obterTransacoesPaginadas(params);
       let flattened = flattenTransactions(res.data);
+      flattened = flattened.filter(row => !row.esconderNaLista);
       if (pessoas?.length > 0) {
         const pessoasList = pessoas.map(p => (typeof p === 'object' && p?.value != null) ? p.value : p);
         flattened = flattened.filter(row =>
@@ -963,7 +971,10 @@ const Relatorio = () => {
 
                   return (
                     <tr key={idx}>
-                      <td>{row.descricao}</td>
+                      <td>
+                        {row.descricao}
+                        {row.emprestimoInfo && <EmprestimoBadge emprestimoInfo={row.emprestimoInfo} variant="chip" />}
+                      </td>
                       <td>{displayDate}</td>
                       <td>{row.pessoa || '—'}</td>
                       <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>

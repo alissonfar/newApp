@@ -4,6 +4,8 @@ import { getTodayBR, getYesterdayBR, toISOStringBR } from '../../utils/dateUtils
 import { toast } from 'react-toastify';
 import TagSelector from './TagSelector';
 import DateFieldWithShortcuts from './DateFieldWithShortcuts';
+import EmprestimoSecao from '../Emprestimos/EmprestimoSecao';
+import useEmprestimoForm from '../../hooks/useEmprestimoForm';
 import './NovaTransacaoForm.css';
 import './EditarTransacaoItem.css';
 
@@ -22,6 +24,12 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
 
   const [categorias, setCategorias] = useState([]);
   const [allTags, setAllTags] = useState([]);
+
+  const emprestimoForm = useEmprestimoForm({
+    transacao,
+    tipoTransacao: tipo,
+    valorTotal: parseFloat(valorTotal) || 0
+  });
 
   useEffect(() => {
     (async () => {
@@ -70,6 +78,37 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
     return parseFloat(valorTotal || 0) === soma;
   }, [pagamentos, valorTotal]);
 
+  const consolidarEmprestimo = useCallback(() => {
+    const st = emprestimoForm.state;
+    if (!st.ativo) {
+      return { emprestimoId: null, emprestimoConfig: null };
+    }
+    if (st.modo === 'vincular') {
+      return {
+        emprestimoId: st.emprestimoId || null,
+        emprestimoConfig: null
+      };
+    }
+    return {
+      emprestimoId: null,
+      emprestimoConfig: {
+        criarEmprestimo: true,
+        pessoaId: st.pessoaId || null,
+        pessoaNomeSnapshot: st.pessoas?.find((p) => p._id === st.pessoaId)?.nome || null,
+        direcao: st.direcao,
+        valorEsperadoRetorno: st.novoValorEsperado !== '' && st.novoValorEsperado != null
+          ? Number(st.novoValorEsperado)
+          : null,
+        tipoRetorno: st.novoTipoRetorno,
+        taxaJurosPercentual: null,
+        valorJurosFixo: null,
+        prazoFinal: st.novoPrazoFinal || null,
+        observacao: null,
+        empEmprestimoIdExistente: null
+      }
+    };
+  }, [emprestimoForm]);
+
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
 
@@ -87,6 +126,14 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
       return false;
     }
 
+    const empError = emprestimoForm.validar();
+    if (empError) {
+      toast.error(empError);
+      return false;
+    }
+
+    const { emprestimoId, emprestimoConfig } = consolidarEmprestimo();
+
     const transacaoAtualizada = {
       tipo,
       descricao,
@@ -100,12 +147,14 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
       })),
       identificador: transacao.identificador || `import-${Date.now()}-${index}`,
       dataImportacao: transacao.dataImportacao || new Date().toISOString(),
-      usuario: transacao.usuario
+      usuario: transacao.usuario,
+      emprestimoId,
+      emprestimoConfig
     };
 
     onSave(index, transacaoAtualizada);
     return true;
-  }, [tipo, descricao, data, valorTotal, observacao, pagamentos, transacao, index, onSave, validatePagamentos]);
+  }, [tipo, descricao, data, valorTotal, observacao, pagamentos, transacao, index, onSave, validatePagamentos, emprestimoForm, consolidarEmprestimo]);
 
   const setHoje = useCallback(() => setData(getTodayBR()), []);
   const setOntem = useCallback(() => setData(getYesterdayBR()), []);
@@ -172,6 +221,8 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
               ))}
               <button type="button" onClick={addPagamento} className="add-payment">Adicionar Pagamento</button>
             </div>
+
+            <EmprestimoSecao form={emprestimoForm} valorTotal={parseFloat(valorTotal) || 0} />
           </div>
         </div>
 

@@ -207,6 +207,14 @@ export async function loginUsuario({ email, senha }) {
 }
 
 /* ----- Transações ----- */
+function normalizarCamposEmprestimo(t) {
+  if (!t || typeof t !== 'object') return t;
+  const out = { ...t };
+  if (t._emprestimoEsconderNaLista) out.esconderNaLista = true;
+  if (t._emprestimoInfo) out.emprestimoInfo = t._emprestimoInfo;
+  return out;
+}
+
 export async function obterTransacoes(params = {}) {
   const query = new URLSearchParams(params).toString();
   const resposta = await fetch(`${API_BASE}/transacoes?${query}`, {
@@ -221,7 +229,7 @@ export async function obterTransacoes(params = {}) {
 
   if (Array.isArray(dados.transacoes)) {
     dados.transacoes = dados.transacoes.map(t => ({
-      ...t,
+      ...normalizarCamposEmprestimo(t),
       id: t._id,
     }));
   }
@@ -258,7 +266,7 @@ export async function obterTransacoesPaginadas(params = {}) {
   }
 
   if (Array.isArray(dados.data)) {
-    dados.data = dados.data.map(t => ({ ...t, id: t._id }));
+    dados.data = dados.data.map(t => ({ ...normalizarCamposEmprestimo(t), id: t._id }));
   }
   return dados;
 }
@@ -309,7 +317,7 @@ export async function obterTransacoesExport(params = {}) {
   }
 
   if (Array.isArray(dados.transacoes)) {
-    dados.transacoes = dados.transacoes.map(t => ({ ...t, id: t._id }));
+    dados.transacoes = dados.transacoes.map(t => ({ ...normalizarCamposEmprestimo(t), id: t._id }));
   }
   return dados;
 }
@@ -694,6 +702,120 @@ export async function estornarAcerto(acertoId) {
   });
   const dados = await resposta.json();
   if (!resposta.ok || dados?.erro) throw new Error(dados?.erro || 'Erro ao estornar acerto.');
+  return dados;
+}
+
+/* ----- Pessoas (Empréstimos) ----- */
+export async function listarPessoas(incluirInativas = false) {
+  const query = incluirInativas ? '?incluirInativas=true' : '';
+  const resposta = await fetch(`${API_BASE}/pessoas${query}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao listar pessoas.`);
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function obterPessoa(id) {
+  const resposta = await fetch(`${API_BASE}/pessoas/${id}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao obter pessoa.`);
+  return dados;
+}
+
+export async function criarPessoa(pessoa) {
+  const resposta = await fetch(`${API_BASE}/pessoas`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(pessoa)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao criar pessoa.`);
+  return dados;
+}
+
+export async function atualizarPessoa(id, pessoa) {
+  const resposta = await fetch(`${API_BASE}/pessoas/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(pessoa)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao atualizar pessoa.`);
+  return dados;
+}
+
+export async function excluirPessoa(id) {
+  const resposta = await fetch(`${API_BASE}/pessoas/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao excluir pessoa.`);
+  return dados;
+}
+
+/* ----- Empréstimos ----- */
+export async function listarEmprestimos(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  const url = qs ? `${API_BASE}/emprestimos?${qs}` : `${API_BASE}/emprestimos`;
+  const resposta = await fetch(url, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao listar empréstimos.`);
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function obterEmprestimo(id) {
+  const resposta = await fetch(`${API_BASE}/emprestimos/${id}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao obter empréstimo.`);
+  return dados;
+}
+
+export async function criarEmprestimo(emprestimo) {
+  const resposta = await fetch(`${API_BASE}/emprestimos`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(emprestimo)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao criar empréstimo.`);
+  return dados;
+}
+
+export async function atualizarEmprestimo(id, emprestimo) {
+  const resposta = await fetch(`${API_BASE}/emprestimos/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(emprestimo)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao atualizar empréstimo.`);
+  return dados;
+}
+
+export async function cancelarEmprestimo(id) {
+  const resposta = await fetch(`${API_BASE}/emprestimos/${id}/cancelar`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao cancelar empréstimo.`);
+  return dados;
+}
+
+export async function obterTransacoesEmprestimo(id) {
+  const resposta = await fetch(`${API_BASE}/emprestimos/${id}/transacoes`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao obter transações.`);
   return dados;
 }
 

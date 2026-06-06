@@ -50,7 +50,12 @@ const TransacaoSchema = new mongoose.Schema({
     parteUsuario: { type: Number, min: 0 },
     parteOutro: { type: Number, min: 0 },
     acertadoEm: { type: mongoose.Schema.Types.ObjectId, ref: 'AcertoConjunto', default: null }
-  }
+  },
+  // Módulo Empréstimos - quando setado, esta transação é parte de um empréstimo
+  emprestimoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Emprestimo', default: null },
+  // True apenas para a transação adicional de juros auto-criada na quitação.
+  // Identifica transações que NÃO devem ser filtradas/subtraídas como 'recebimento de empréstimo'.
+  emprestimoEhJurosAuto: { type: Boolean, default: false }
 });
 
 TransacaoSchema.index({ usuario: 1, settlementAsSource: 1 }, { sparse: true });
@@ -61,5 +66,6 @@ TransacaoSchema.index({ usuario: 1, parentTransactionId: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, status: 1, data: -1 });
 TransacaoSchema.index({ usuario: 1, 'pagamentos.pessoa': 1 });
 TransacaoSchema.index({ usuario: 1, 'contaConjunta.ativo': 1, 'contaConjunta.vinculoId': 1, 'contaConjunta.acertadoEm': 1 }, { sparse: true });
+TransacaoSchema.index({ usuario: 1, emprestimoId: 1 }, { sparse: true });
 
 module.exports = mongoose.model('Transacao', TransacaoSchema);

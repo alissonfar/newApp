@@ -8,7 +8,9 @@
     "dev": "nodemon src/app.js",
     "test": "jest",
     "migrate:004": "node scripts/migrations/004-categoria-tag-indices-multi-tenant.js",
-    "migrate:004:prod": "node scripts/migrations/004-categoria-tag-indices-multi-tenant.js --production"
+    "migrate:004:prod": "node scripts/migrations/004-categoria-tag-indices-multi-tenant.js --production",
+    "migrate:006": "node scripts/migrations/006-emprestimo-transacao-importada.js",
+    "migrate:006:prod": "node scripts/migrations/006-emprestimo-transacao-importada.js --production"
   },
   "keywords": [],
   "author": "",
