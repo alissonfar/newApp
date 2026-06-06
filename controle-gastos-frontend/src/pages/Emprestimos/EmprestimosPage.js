@@ -13,7 +13,7 @@ const EmprestimosPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('ativo');
 
-  useEffect(() => { load(); }, [filtroStatus]);
+  useEffect(() => { load(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [filtroStatus]);
 
   const load = async () => {
     setLoading(true);

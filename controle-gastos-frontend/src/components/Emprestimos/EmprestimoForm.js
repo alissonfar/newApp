@@ -1,5 +1,5 @@
 // src/components/Emprestimos/EmprestimoForm.js
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { listarPessoas } from '../../api';
 
