@@ -25,7 +25,8 @@ function parse({ conteudo, delimitador = ',' }) {
         ? new Date(Date.UTC(parseInt(ano, 10), parseInt(mes, 10) - 1, parseInt(dia, 10), 12, 0, 0))
         : new Date(Date.UTC(1970, 0, 1, 12, 0, 0));
 
-      const valor = Math.abs(parseFloat(registro['amount']) || 0);
+      const valorStr = String(registro['amount'] || '0');
+      const valor = Math.abs(parseFloat(valorStr.replace(',', '.')) || 0);
       const descricao = registro['title'] || 'Transação Fatura';
       const tipo = 'gasto';
       const identificador = null;

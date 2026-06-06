@@ -941,7 +941,8 @@ class ImportacaoService {
           // Processamento para formato Fatura (date, title, amount)
           const [ano, mes, dia] = registro['date'].split('-');
           data = new Date(Date.UTC(ano, mes - 1, dia, 12, 0, 0)); // Usar UTC para consistência
-          valor = Math.abs(parseFloat(registro['amount']) || 0);
+          const valorStr = String(registro['amount'] || '0');
+          valor = Math.abs(parseFloat(valorStr.replace(',', '.')) || 0);
           descricao = registro['title'] || 'Transação Fatura';
           tipo = 'gasto'; // Faturas geralmente são gastos
           categoria = null;
