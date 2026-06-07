@@ -20,6 +20,7 @@
     "highlight.js": "^11.11.1",
     "jspdf": "^3.0.0",
     "jspdf-autotable": "^5.0.2",
+    "pluggy-sdk": "^0.85.3",
     "react": "^19.0.0",
     "react-calendar": "^5.1.0",
     "react-chartjs-2": "^5.3.0",
