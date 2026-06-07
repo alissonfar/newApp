@@ -20,4 +20,8 @@ router.post('/sync', pluggyController.iniciarSync);
 router.get('/importacoes', pluggyController.listarImportacoes);
 router.get('/importacoes/:id', pluggyController.obterDetalhes);
 
+router.post('/connect-token', pluggyController.criarConnectToken);
+router.post('/items/accounts', pluggyController.obterAccountsDoItem);
+router.get('/sync-status', pluggyController.obterStatusSync);
+
 module.exports = router;

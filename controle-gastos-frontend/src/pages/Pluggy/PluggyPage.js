@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSync, FaCog, FaSpinner, FaChevronRight, FaCheck, FaTimes, FaPlus, FaTrash, FaPlug } from 'react-icons/fa';
+import { FaSync, FaCog, FaSpinner, FaCheck, FaPlus, FaTrash, FaPlug, FaLink, FaTimes } from 'react-icons/fa';
+import { PluggyConnect } from 'react-pluggy-connect';
 import pluggyApi from '../../services/pluggyApi';
 import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
@@ -16,6 +17,7 @@ const PluggyPage = () => {
   const [subcontas, setSubcontas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
 
   const [showConfigForm, setShowConfigForm] = useState(false);
   const [clientId, setClientId] = useState('');
@@ -36,19 +38,26 @@ const PluggyPage = () => {
   const [novoItemId, setNovoItemId] = useState('');
   const [carregandoItemAccounts, setCarregandoItemAccounts] = useState(false);
 
+  const [showWidget, setShowWidget] = useState(false);
+  const [connectToken, setConnectToken] = useState(null);
+  const [widgetLoading, setWidgetLoading] = useState(false);
+  const [widgetConnectorName, setWidgetConnectorName] = useState('');
+
   const carregar = async () => {
     try {
       setCarregando(true);
-      const [cfg, itms, imps, subs] = await Promise.all([
+      const [cfg, itms, imps, subs, status] = await Promise.all([
         pluggyApi.obterConfig(),
         pluggyApi.listarItems(),
         pluggyApi.listarImportacoes(),
-        patrimonioApi.listarSubcontas()
+        patrimonioApi.listarSubcontas(),
+        pluggyApi.obterStatusSync()
       ]);
       setConfig(cfg);
       setItems(itms.items || []);
       setImportacoes(imps);
       setSubcontas(subs);
+      setSyncStatus(status);
       if (cfg.configurado) {
         setClientId(cfg.clientId || '');
         setAmbiente(cfg.ambiente || 'sandbox');
@@ -106,6 +115,57 @@ const PluggyPage = () => {
     } finally {
       setSalvando(false);
     }
+  };
+
+  const handleConectarBanco = async () => {
+    if (!config || !config.configurado) {
+      toast.warn('Configure as credenciais Pluggy primeiro');
+      return;
+    }
+    try {
+      setWidgetLoading(true);
+      const result = await pluggyApi.criarConnectToken();
+      setConnectToken(result.accessToken);
+      setShowWidget(true);
+    } catch (err) {
+      toast.error((err.response && err.response.data && err.response.data.erro) || 'Erro ao abrir widget');
+    } finally {
+      setWidgetLoading(false);
+    }
+  };
+
+  const handleWidgetSuccess = async (data) => {
+    const item = data && data.item;
+    if (!item || !item.id) {
+      toast.error('Item ID nao recebido do widget');
+      return;
+    }
+    setShowWidget(false);
+    setConnectToken(null);
+
+    try {
+      const accountsData = await pluggyApi.obterAccountsDoItem(item.id);
+      const accs = accountsData && accountsData.accounts ? accountsData.accounts : [];
+      setAccounts(accs);
+      setMappingItemId(item.id);
+      setMappingConnectorName(item.connector && item.connector.name ? item.connector.name : '');
+      setShowMappingModal(true);
+      toast.success('Banco conectado com sucesso! Selecione uma conta para mapear.');
+    } catch (err) {
+      toast.error((err.response && err.response.data && err.response.data.erro) || 'Erro ao carregar accounts do item');
+    }
+  };
+
+  const handleWidgetError = (error) => {
+    setShowWidget(false);
+    setConnectToken(null);
+    const msg = error && error.message ? error.message : 'Erro no widget';
+    toast.error('Erro na conexao: ' + msg);
+  };
+
+  const handleWidgetClose = () => {
+    setShowWidget(false);
+    setConnectToken(null);
   };
 
   const handleCarregarAccounts = async (itemId) => {
@@ -203,6 +263,11 @@ const PluggyPage = () => {
     return map[s] || '#9e9e9e';
   };
 
+  const formatarProximoSync = () => {
+    if (!syncStatus || !syncStatus.proximoSync) return 'Aguardando primeiro sync';
+    return formatarDataHora(syncStatus.proximoSync);
+  };
+
   if (carregando) {
     return (
       <div className="pluggy-page">
@@ -282,6 +347,18 @@ const PluggyPage = () => {
 
       <Card className="pluggy-section">
         <div className="section-header">
+          <h2>Conectar Banco</h2>
+          <Button variant="primary" onClick={handleConectarBanco} disabled={widgetLoading || !config || !config.configurado}>
+            {widgetLoading ? <><FaSpinner className="spin" /> Abrindo...</> : <><FaLink /> Conectar banco</>}
+          </Button>
+        </div>
+        <p className="subtitulo" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+          Conecte seu banco diretamente pelo widget da Pluggy. O Item ID sera salvo automaticamente.
+        </p>
+      </Card>
+
+      <Card className="pluggy-section">
+        <div className="section-header">
           <h2>Mapeamentos (Item/Account - Subconta)</h2>
           <div className="header-actions">
             <div className="add-item-inline">
@@ -312,7 +389,7 @@ const PluggyPage = () => {
         </div>
 
         {items.length === 0 ? (
-          <p className="vazio">Nenhum mapeamento cadastrado. Adicione um Item ID acima para comecar.</p>
+          <p className="vazio">Nenhum mapeamento cadastrado. Use "Conectar banco" ou adicione um Item ID acima.</p>
         ) : (
           <ul className="lista-mapeamentos">
             {items.map((item) => {
@@ -348,9 +425,14 @@ const PluggyPage = () => {
       <Card className="pluggy-section">
         <div className="section-header">
           <h2>Sincronizacao</h2>
-          <Button variant="success" onClick={handleSync} disabled={sincronizando || items.length === 0}>
-            {sincronizando ? <><FaSpinner className="spin" /> Sincronizando...</> : <><FaSync /> Sincronizar agora</>}
-          </Button>
+          <div className="sync-header-actions">
+            {syncStatus && syncStatus.proximoSync && (
+              <span className="proximo-sync-label">Proximo sync automatico: {formatarProximoSync()}</span>
+            )}
+            <Button variant="success" onClick={handleSync} disabled={sincronizando || items.length === 0}>
+              {sincronizando ? <><FaSpinner className="spin" /> Sincronizando...</> : <><FaSync /> Sincronizar agora</>}
+            </Button>
+          </div>
         </div>
 
         {importacoes.length === 0 ? (
@@ -375,6 +457,29 @@ const PluggyPage = () => {
           </ul>
         )}
       </Card>
+
+      {showWidget && connectToken && (
+        <div className="widget-overlay">
+          <div className="widget-container">
+            <div className="widget-header">
+              <h3>Conectar Banco</h3>
+              <button className="widget-close" onClick={handleWidgetClose}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="widget-body">
+              <PluggyConnect
+                connectToken={connectToken}
+                onSuccess={handleWidgetSuccess}
+                onError={handleWidgetError}
+                onClose={handleWidgetClose}
+                language="pt"
+                includeSandbox={ambiente === 'sandbox'}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {showMappingModal && (
         <div className="modal-overlay" onClick={() => setShowMappingModal(false)}>

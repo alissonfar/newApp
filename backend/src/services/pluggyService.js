@@ -163,6 +163,32 @@ async function buscarTodasTransacoes(usuarioId, accountId, { dateFrom, dateTo } 
   }
 }
 
+async function criarConnectToken(usuarioId, itemId) {
+  const config = await obterConfig(usuarioId);
+  const client = criarClientAPartirDaConfig(config);
+
+  try {
+    const result = await client.createConnectToken(itemId);
+    return { accessToken: result.accessToken };
+  } catch (err) {
+    const t = traduzirErro(err);
+    throw new Error(t.mensagem);
+  }
+}
+
+async function buscarAccountsDoItem(usuarioId, itemId) {
+  const config = await obterConfig(usuarioId);
+  const client = criarClientAPartirDaConfig(config);
+
+  try {
+    const resp = await client.fetchAccounts(itemId);
+    return Array.isArray(resp?.results) ? resp.results : [];
+  } catch (err) {
+    const t = traduzirErro(err);
+    throw new Error(t.mensagem);
+  }
+}
+
 module.exports = {
   criarClientAPartirDaConfig,
   obterConfig,
@@ -172,5 +198,7 @@ module.exports = {
   listarItemsLocal,
   atualizarStatusItem,
   listarAccounts,
-  buscarTodasTransacoes
+  buscarTodasTransacoes,
+  criarConnectToken,
+  buscarAccountsDoItem
 };

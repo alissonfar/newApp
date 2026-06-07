@@ -274,3 +274,71 @@ exports.obterDetalhes = async (req, res) => {
     return res.status(500).json({ erro: 'Erro ao obter detalhes da importacao Pluggy.' });
   }
 };
+
+exports.criarConnectToken = async (req, res) => {
+  try {
+    const { itemId } = req.body || {};
+    const result = await pluggyService.criarConnectToken(req.userId, itemId || undefined);
+    return res.json(result);
+  } catch (err) {
+    console.error('[Pluggy] Erro ao criar connect token:', err);
+    const t = pluggyService.traduzirErro(err);
+    return res.status(500).json({ erro: t.mensagem });
+  }
+};
+
+exports.obterAccountsDoItem = async (req, res) => {
+  try {
+    const { itemId } = req.body || {};
+    if (!itemId) {
+      return res.status(400).json({ erro: 'itemId e obrigatorio.' });
+    }
+    const accounts = await pluggyService.buscarAccountsDoItem(req.userId, itemId);
+    return res.json({
+      accounts: accounts.map(a => ({
+        id: a.id,
+        type: a.type,
+        subtype: a.subtype,
+        number: a.number,
+        name: a.name,
+        marketingName: a.marketingName,
+        balance: a.balance,
+        currencyCode: a.currencyCode
+      }))
+    });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao buscar accounts do item:', err);
+    const t = pluggyService.traduzirErro(err);
+    return res.status(500).json({ erro: t.mensagem });
+  }
+};
+
+exports.obterStatusSync = async (req, res) => {
+  try {
+    const config = await PluggyConfig.findOne({ usuario: req.userId }).lean();
+    if (!config) {
+      return res.json({ configurado: false, ultimaSync: null, proximoSync: null });
+    }
+    delete config.clientSecretEncrypted;
+    const proximoSync = config.ultimaSync && config.ultimaSync.data
+      ? new Date(new Date(config.ultimaSync.data).getTime() + 12 * 60 * 60 * 1000)
+      : null;
+    return res.json({
+      configurado: true,
+      ultimaSync: config.ultimaSync,
+      proximoSync,
+      items: config.items.map(i => ({
+        itemId: i.itemId,
+        accountId: i.accountId,
+        accountName: i.accountName,
+        connectorName: i.connectorName,
+        status: i.status,
+        lastSyncAt: i.lastSyncAt,
+        lastSyncError: i.lastSyncError
+      }))
+    });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao obter status sync:', err);
+    return res.status(500).json({ erro: 'Erro ao obter status de sincronizacao.' });
+  }
+};

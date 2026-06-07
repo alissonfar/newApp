@@ -119,7 +119,15 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log('Servidor rodando na porta ' + PORT);
+
+  // Inicia cron de sync automatico Pluggy (a cada 12h)
+  try {
+    const pluggyCron = require('./services/pluggyCronService');
+    pluggyCron.iniciarCron();
+  } catch (err) {
+    console.warn('[Startup] Falha ao iniciar cron Pluggy:', err.message);
+  }
 });
 
 module.exports = app;

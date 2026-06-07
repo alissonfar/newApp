@@ -43,7 +43,20 @@ const pluggyApi = {
     return response.data;
   },
   obterDetalhesImportacao: async (id) => {
-    const response = await api.get(`/pluggy/importacoes/${id}`);
+    const response = await api.get('/pluggy/importacoes/' + id);
+    return response.data;
+  },
+  criarConnectToken: async (itemId) => {
+    const body = itemId ? { itemId } : {};
+    const response = await api.post('/pluggy/connect-token', body);
+    return response.data;
+  },
+  obterAccountsDoItem: async (itemId) => {
+    const response = await api.post('/pluggy/items/accounts', { itemId });
+    return response.data;
+  },
+  obterStatusSync: async () => {
+    const response = await api.get('/pluggy/sync-status');
     return response.data;
   }
 };

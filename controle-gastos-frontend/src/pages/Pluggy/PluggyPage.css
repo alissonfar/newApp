@@ -474,3 +474,79 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.widget-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.widget-container {
+  background: white;
+  border-radius: 12px;
+  width: 95%;
+  max-width: 500px;
+  height: 85vh;
+  max-height: 700px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--cor-borda, #e0e0e0);
+}
+
+.widget-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.widget-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--cor-texto-secundario, #666);
+  padding: 0.25rem;
+}
+
+.widget-close:hover {
+  color: #333;
+}
+
+.widget-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.widget-body iframe,
+.widget-body > div {
+  width: 100%;
+  height: 100%;
+}
+
+.sync-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.proximo-sync-label {
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario, #666);
+  font-style: italic;
+}
