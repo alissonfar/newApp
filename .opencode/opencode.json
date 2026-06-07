@@ -8,6 +8,15 @@
       "env": {
         "CONTEXT7_API_KEY": "ctx7sk-52bcbbb5-86e9-42e6-9c2e-34ef291d8608"
       }
+    },
+    "pluggy-mcp": {
+      "type": "local",
+      "command": ["node", "{project_root}/dist/index.js"],
+      "enabled": true,
+      "env": {
+        "PLUGGY_CLIENT_ID": "c9b2b70c-230a-4c53-9666-bbb1a34bcc9f",
+        "PLUGGY_CLIENT_SECRET": "242ddbda-9cb2-42e2-b784-62c492e0809c"
+      }
     }
   }
 }

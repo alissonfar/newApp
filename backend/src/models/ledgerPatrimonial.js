@@ -20,6 +20,7 @@ const ORIGENS_SISTEMA = [
   'confirmacao_manual',
   'importacao_ofx',
   'importacao_csv',
+  'importacao_pluggy',
   'transferencia',
   'correcao'
 ];

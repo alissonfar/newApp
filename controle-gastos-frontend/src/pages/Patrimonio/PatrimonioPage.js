@@ -132,6 +132,9 @@ const PatrimonioPage = () => {
         <Button variant="primary" onClick={() => navigate('/patrimonio/importacoes-ofx')}>
           Importar OFX
         </Button>
+        <Button variant="primary" onClick={() => navigate('/pluggy')}>
+          Open Finance (Pluggy)
+        </Button>
         <Button variant="primary" onClick={() => navigate('/patrimonio/transferencias')}>
           Transferências
         </Button>

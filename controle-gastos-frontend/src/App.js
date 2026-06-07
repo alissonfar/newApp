@@ -37,6 +37,7 @@ import DetalheVinculoPage from './pages/Conjunto/DetalheVinculoPage';
 import PessoasPage from './pages/Pessoas/PessoasPage';
 import EmprestimosPage from './pages/Emprestimos/EmprestimosPage';
 import EmprestimoDetalhePage from './pages/Emprestimos/EmprestimoDetalhePage';
+import PluggyPage from './pages/Pluggy/PluggyPage';
 
 import MainLayout from './components/Layout/MainLayout';
 import PrivateRoute from './components/Rotas/PrivateRoute';
@@ -324,6 +325,16 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <EmprestimoDetalhePage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/pluggy"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <PluggyPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

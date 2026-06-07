@@ -84,6 +84,7 @@ const rotasNetWorth = require('./routes/rotasNetWorth');
 const rotasDashboard = require('./routes/rotasDashboard');
 const rotasPessoa = require('./routes/rotasPessoa');
 const rotasEmprestimo = require('./routes/rotasEmprestimo');
+const rotasPluggy = require('./routes/rotasPluggy');
 
 // Prefixo /api em todas as rotas
 app.use('/api/usuarios', rotasUsuario);
@@ -108,6 +109,7 @@ app.use('/api/vinculos-conjuntos', rotasVinculoConjunto);
 app.use('/api/acertos', rotasAcertos);
 app.use('/api/pessoas', rotasPessoa);
 app.use('/api/emprestimos', rotasEmprestimo);
+app.use('/api/pluggy', rotasPluggy);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {

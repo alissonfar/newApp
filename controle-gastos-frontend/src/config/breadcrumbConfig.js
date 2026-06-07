@@ -12,6 +12,7 @@ export const breadcrumbMap = {
   "/patrimonio/simulador": "Simulador",
   "/patrimonio/importacoes-ofx": "Importação OFX",
   "/patrimonio/transferencias": "Transferências",
+  "/pluggy": "Open Finance",
   "/relatorio": "Relatórios",
   "/modelos-relatorio": "Modelos de Relatório",
   "/importacao": "Importação em Massa",

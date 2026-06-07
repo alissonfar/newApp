@@ -1,0 +1,276 @@
+// src/controllers/pluggyController.js
+const PluggyConfig = require('../models/pluggyConfig');
+const ImportacaoPluggy = require('../models/importacaoPluggy');
+const TransacaoPluggy = require('../models/transacaoPluggy');
+const pluggyService = require('../services/pluggyService');
+const pluggySyncService = require('../services/pluggySyncService');
+const encryptionService = require('../services/encryptionService');
+
+exports.obterConfig = async (req, res) => {
+  try {
+    const config = await PluggyConfig.findOne({ usuario: req.userId }).lean();
+    if (!config) {
+      return res.json({
+        configurado: false,
+        clientId: '',
+        ambiente: 'sandbox',
+        ativo: false,
+        items: [],
+        ultimoTesteConexao: null,
+        ultimaSync: null
+      });
+    }
+    delete config.clientSecretEncrypted;
+    return res.json({ configurado: true, ...config });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao obter config:', err);
+    return res.status(500).json({ erro: 'Erro ao obter configuracao Pluggy.' });
+  }
+};
+
+exports.salvarConfig = async (req, res) => {
+  try {
+    const { clientId, clientSecret, ambiente } = req.body || {};
+    if (!clientId || !clientSecret) {
+      return res.status(400).json({ erro: 'clientId e clientSecret sao obrigatorios.' });
+    }
+
+    const config = await PluggyConfig.findOneAndUpdate(
+      { usuario: req.userId },
+      {
+        $set: {
+          clientId: String(clientId).trim(),
+          clientSecretEncrypted: encryptionService.encrypt(clientSecret),
+          ambiente: ambiente === 'production' ? 'production' : 'sandbox',
+          ativo: true
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    delete config.clientSecretEncrypted;
+    return res.json({
+      mensagem: 'Configuracao Pluggy salva com sucesso.',
+      configuracao: config
+    });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao salvar config:', err);
+    return res.status(500).json({ erro: 'Erro ao salvar configuracao Pluggy.' });
+  }
+};
+
+exports.testarConexao = async (req, res) => {
+  try {
+    let { clientId, clientSecret, ambiente } = req.body || {};
+
+    if ((!clientId || !clientSecret) && req.body?.usarConfigSalva !== false) {
+      const config = await PluggyConfig.findOne({ usuario: req.userId });
+      if (config) {
+        clientId = clientId || config.clientId;
+        clientSecret = clientSecret || encryptionService.decrypt(config.clientSecretEncrypted);
+        ambiente = config.ambiente;
+      }
+    }
+
+    if (!clientId || !clientSecret) {
+      return res.status(400).json({
+        ok: false,
+        mensagem: 'Informe clientId e clientSecret ou salve a configuracao primeiro.'
+      });
+    }
+
+    const resultado = await pluggyService.testarConexao(clientId, clientSecret, ambiente);
+
+    if (resultado.ok) {
+      await PluggyConfig.findOneAndUpdate(
+        { usuario: req.userId },
+        { $set: { ultimoTesteConexao: { data: new Date(), sucesso: true, mensagem: resultado.mensagem } } }
+      ).catch(() => {});
+    } else {
+      await PluggyConfig.findOneAndUpdate(
+        { usuario: req.userId },
+        { $set: { ultimoTesteConexao: { data: new Date(), sucesso: false, mensagem: resultado.mensagem } } }
+      ).catch(() => {});
+    }
+
+    return res.json(resultado);
+  } catch (err) {
+    console.error('[Pluggy] Erro ao testar conexao:', err);
+    return res.status(500).json({ ok: false, mensagem: 'Erro ao testar conexao Pluggy.' });
+  }
+};
+
+exports.listarItems = async (req, res) => {
+  try {
+    const items = await pluggyService.listarItemsLocal(req.userId);
+    return res.json({ items });
+  } catch (err) {
+    if (err.code === 'PLUGGY_NOT_CONFIGURED') {
+      return res.json({ items: [], mensagem: err.message });
+    }
+    console.error('[Pluggy] Erro ao listar items:', err);
+    return res.status(500).json({ erro: 'Erro ao listar items Pluggy.' });
+  }
+};
+
+exports.listarAccountsDoItem = async (req, res) => {
+  try {
+    const incluirCREDIT = String(req.query.incluirCREDIT || '').toLowerCase() === 'true';
+    const accounts = await pluggyService.listarAccounts(req.userId, req.params.itemId, {
+      apenasBank: !incluirCREDIT
+    });
+    return res.json({
+      accounts: accounts.map(a => ({
+        id: a.id,
+        type: a.type,
+        subtype: a.subtype,
+        number: a.number,
+        name: a.name,
+        marketingName: a.marketingName,
+        balance: a.balance,
+        currencyCode: a.currencyCode,
+        itemId: a.itemId
+      }))
+    });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao listar accounts:', err);
+    const t = pluggyService.traduzirErro(err);
+    return res.status(500).json({ erro: t.mensagem });
+  }
+};
+
+exports.adicionarItem = async (req, res) => {
+  try {
+    const {
+      itemId, connectorId, connectorName,
+      accountId, accountType, accountSubtype, accountName, accountNumber,
+      subcontaId
+    } = req.body || {};
+
+    if (!itemId || !accountId || !subcontaId) {
+      return res.status(400).json({ erro: 'itemId, accountId e subcontaId sao obrigatorios.' });
+    }
+
+    const config = await PluggyConfig.findOne({ usuario: req.userId });
+    if (!config) {
+      return res.status(400).json({ erro: 'Pluggy nao configurado. Salve as credenciais primeiro.' });
+    }
+
+    const outros = config.items.filter(
+      i => !(String(i.itemId) === String(itemId) && String(i.accountId) === String(accountId))
+    );
+
+    outros.push({
+      itemId: String(itemId),
+      accountId: String(accountId),
+      accountType: accountType === 'CREDIT' ? 'CREDIT' : 'BANK',
+      accountSubtype: accountSubtype || null,
+      accountName: accountName || '',
+      accountNumber: accountNumber || '',
+      connectorId: connectorId || null,
+      connectorName: connectorName || '',
+      subconta: subcontaId,
+      status: 'DESCONHECIDO',
+      ativo: true
+    });
+
+    config.items = outros;
+    await config.save();
+
+    const adicionado = config.items.find(
+      i => String(i.itemId) === String(itemId) && String(i.accountId) === String(accountId)
+    );
+    return res.status(201).json({
+      mensagem: 'Mapeamento salvo com sucesso.',
+      item: {
+        itemId: adicionado.itemId,
+        accountId: adicionado.accountId,
+        accountType: adicionado.accountType,
+        accountSubtype: adicionado.accountSubtype,
+        accountName: adicionado.accountName,
+        accountNumber: adicionado.accountNumber,
+        connectorId: adicionado.connectorId,
+        connectorName: adicionado.connectorName,
+        subconta: adicionado.subconta,
+        status: adicionado.status,
+        statusDetalhado: pluggyService.traduzirStatusItem(adicionado.status)
+      }
+    });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao adicionar item:', err);
+    return res.status(500).json({ erro: 'Erro ao adicionar mapeamento Pluggy.' });
+  }
+};
+
+exports.removerItem = async (req, res) => {
+  try {
+    const { itemId, accountId } = req.params;
+    const config = await PluggyConfig.findOne({ usuario: req.userId });
+    if (!config) {
+      return res.status(404).json({ erro: 'Configuracao Pluggy nao encontrada.' });
+    }
+    const antes = config.items.length;
+    config.items = config.items.filter(
+      i => !(String(i.itemId) === String(itemId) && String(i.accountId) === String(accountId))
+    );
+    if (config.items.length === antes) {
+      return res.status(404).json({ erro: 'Mapeamento nao encontrado.' });
+    }
+    await config.save();
+    return res.json({ mensagem: 'Mapeamento removido com sucesso.' });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao remover item:', err);
+    return res.status(500).json({ erro: 'Erro ao remover mapeamento Pluggy.' });
+  }
+};
+
+exports.atualizarStatusItem = async (req, res) => {
+  try {
+    const resultado = await pluggyService.atualizarStatusItem(req.userId, req.params.itemId);
+    if (!resultado) {
+      return res.status(404).json({ erro: 'Item nao encontrado na configuracao local.' });
+    }
+    return res.json(resultado);
+  } catch (err) {
+    console.error('[Pluggy] Erro ao atualizar status do item:', err);
+    return res.status(500).json({ erro: err.message || 'Erro ao atualizar status.' });
+  }
+};
+
+exports.iniciarSync = async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.body || {};
+    const importacao = await pluggySyncService.iniciarSincronizacao(req.userId, { dateFrom, dateTo });
+    const finalizada = await pluggySyncService.finalizarSincronizacao(importacao._id, req.userId);
+    return res.json({
+      mensagem: 'Sincronizacao concluida com sucesso.',
+      importacao: finalizada
+    });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao sincronizar:', err);
+    return res.status(500).json({ erro: err.message || 'Erro ao sincronizar Pluggy.' });
+  }
+};
+
+exports.listarImportacoes = async (req, res) => {
+  try {
+    const importacoes = await pluggySyncService.listarImportacoes(req.userId);
+    return res.json(importacoes);
+  } catch (err) {
+    console.error('[Pluggy] Erro ao listar importacoes:', err);
+    return res.status(500).json({ erro: 'Erro ao listar importacoes Pluggy.' });
+  }
+};
+
+exports.obterDetalhes = async (req, res) => {
+  try {
+    const detalhes = await pluggySyncService.obterDetalhesImportacao(req.params.id, req.userId);
+    if (!detalhes) {
+      return res.status(404).json({ erro: 'Importacao Pluggy nao encontrada.' });
+    }
+    return res.json(detalhes);
+  } catch (err) {
+    console.error('[Pluggy] Erro ao obter detalhes:', err);
+    return res.status(500).json({ erro: 'Erro ao obter detalhes da importacao Pluggy.' });
+  }
+};
