@@ -155,7 +155,25 @@ const ListaTransacoesImportadas = ({ importacaoId }) => {
                       step="0.01"
                     />
                   ) : (
-                    formatarValor(transacao.valor)
+                    <>
+                      {formatarValor(transacao.valor)}
+                      {transacao.dadosOriginais?._moedaOriginal && (
+                        <span style={{
+                          fontSize: 11, color: '#6366f1', marginLeft: 6,
+                          background: '#eef2ff', padding: '1px 6px', borderRadius: 4,
+                          whiteSpace: 'nowrap', cursor: 'default'
+                        }}
+                          title={
+                            (transacao.dadosOriginais._cotacaoUsada
+                              ? 'Original: ' + transacao.dadosOriginais._moedaOriginal + ' ' +
+                                Number(transacao.dadosOriginais._valorOriginal || 0).toFixed(2) +
+                                ' (cotação: ' + Number(transacao.dadosOriginais._cotacaoUsada).toFixed(4) + ')'
+                              : 'Cotação indisponível')
+                          }>
+                          {transacao.dadosOriginais._moedaOriginal}
+                        </span>
+                      )}
+                    </>
                   )}
                 </td>
                 <td>

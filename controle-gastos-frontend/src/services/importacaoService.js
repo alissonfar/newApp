@@ -190,6 +190,17 @@ const importacaoService = {
     }
   },
 
+  // Restaurar transação (reverte ignorada/ja_importada para pendente)
+  restaurarTransacao: async (transacaoId) => {
+    try {
+      const response = await api.post(`/importacoes/transacoes/${transacaoId}/restaurar`);
+      return response.data;
+    } catch (error) {
+      const mensagem = error.response?.data?.erro || error.message;
+      throw new Error(mensagem);
+    }
+  },
+
   // Finalizar importação (opcional: { subcontaId, saldo } para atualizar saldo de subconta)
   finalizarImportacao: async (importacaoId, opts = {}) => {
     try {

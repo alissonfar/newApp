@@ -16,18 +16,37 @@ export const toISOStringBR = (date) => {
   return d.toISOString();
 };
 
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
 // Função para formatar uma data ISO ou Date para exibição no formato brasileiro
+// Para timestamps com fuso, converte para o timezone local do navegador
 export const formatDateBR = (isoStringOrDate) => {
   if (!isoStringOrDate) return '';
+
+  if (isoStringOrDate instanceof Date) {
+    return pad2(isoStringOrDate.getDate()) + '/' +
+           pad2(isoStringOrDate.getMonth() + 1) + '/' +
+           isoStringOrDate.getFullYear();
+  }
+
+  if (typeof isoStringOrDate === 'string' && isoStringOrDate.includes('T')) {
+    const d = new Date(isoStringOrDate);
+    if (isNaN(d.getTime())) return '';
+    return pad2(d.getDate()) + '/' +
+           pad2(d.getMonth() + 1) + '/' +
+           d.getFullYear();
+  }
+
   const str = typeof isoStringOrDate === 'string'
     ? isoStringOrDate
-    : (isoStringOrDate instanceof Date ? isoStringOrDate.toISOString() : String(isoStringOrDate));
+    : String(isoStringOrDate);
   const [fullDate] = str.split('T');
   if (!fullDate) return '';
   const parts = fullDate.split('-');
   if (parts.length < 3) return '';
-  const [year, month, day] = parts;
-  return `${day}/${month}/${year}`;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
 };
 
 // Função para obter a data atual no formato YYYY-MM-DD

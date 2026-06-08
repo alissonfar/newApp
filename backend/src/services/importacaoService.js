@@ -47,6 +47,21 @@ function normalizarDescricao(descricao) {
 }
 
 /**
+ * Normaliza descrição para comparação aproximada (mesmo-dia).
+ * Aplica normalizarDescricao + remove padrões comuns de variação entre extrato e Open Finance:
+ *   - " - parcela X/Y" → " X/Y" (padrão Nubank)
+ * @param {string} descricao
+ * @returns {string}
+ */
+function normalizarDescricaoComparacao(descricao) {
+  let s = normalizarDescricao(descricao);
+  if (!s) return s;
+  s = s.replace(/ - parcela (\d+\/\d+)/g, ' $1');
+  s = s.replace(/\s+/g, ' ');
+  return s;
+}
+
+/**
  * Formata data para YYYY-MM-DD (evita timezone).
  * @param {Date} data
  * @returns {string}
@@ -1023,7 +1038,9 @@ class ImportacaoService {
 ImportacaoService.gerarDeduplicationKey = gerarDeduplicationKey;
 ImportacaoService.buscarPossivelDuplicata = buscarPossivelDuplicata;
 ImportacaoService.mergeTagsPadrao = mergeTagsPadrao;
+ImportacaoService.normalizarDescricaoComparacao = normalizarDescricaoComparacao;
 module.exports = ImportacaoService;
 module.exports.classificarTransacoes = classificarTransacoes;
 module.exports.JANELA_POSSIVEL_DUPLICATA_DIAS = JANELA_POSSIVEL_DUPLICATA_DIAS;
 module.exports.TOLERANCIA_VALOR = TOLERANCIA_VALOR;
+module.exports.normalizarDescricaoComparacao = normalizarDescricaoComparacao;

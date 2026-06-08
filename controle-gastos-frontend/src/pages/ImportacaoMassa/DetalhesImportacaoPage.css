@@ -304,6 +304,16 @@
   background-color: var(--cor-erro-escura);
 }
 
+.btn-restaurar {
+  background-color: var(--cor-aviso);
+  color: #000;
+  border: none;
+}
+
+.btn-restaurar:hover {
+  filter: brightness(1.1);
+}
+
 .acoes-principais {
   display: flex;
   gap: 1rem;
@@ -719,6 +729,15 @@
 }
 
 .btn-acao-massa.btn-ignorar:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.btn-acao-massa.btn-restaurar {
+    background: var(--cor-aviso);
+    color: #000;
+}
+
+.btn-acao-massa.btn-restaurar:hover:not(:disabled) {
     filter: brightness(1.1);
 }
 

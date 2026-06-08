@@ -23,6 +23,7 @@ const PluggyConfig = require('../models/pluggyConfig');
 const pluggyService = require('../services/pluggyService');
 const pluggySyncService = require('../services/pluggySyncService');
 const { normalizarDataUTC } = require('../utils/dateUtils');
+const cotacaoService = require('../services/cotacaoService');
 
 function chaveAgrupamentoEmprestimo(cfg) {
   if (!cfg) return null;
@@ -894,11 +895,6 @@ class ImportacaoController {
             const { itemId, accountId, dateFrom, dateTo } = req.body || {};
             const usuarioId = req.userId;
 
-            console.log('[PreviewPluggy] ===== REQUEST =====');
-            console.log('[PreviewPluggy] itemId:', itemId, '| accountId:', accountId);
-            console.log('[PreviewPluggy] dateFrom:', dateFrom, '| dateTo:', dateTo);
-            console.log('[PreviewPluggy] usuarioId:', usuarioId);
-
             if (!itemId || !accountId) {
                 return res.status(400).json({ erro: 'itemId e accountId são obrigatórios.' });
             }
@@ -915,17 +911,13 @@ class ImportacaoController {
                 return res.status(400).json({ erro: 'Conta Pluggy não encontrada ou não mapeada a uma subconta.' });
             }
 
-            console.log('[PreviewPluggy] Item configurado:', item.connectorName, '| tipo:', item.accountType, '| status:', item.status);
-            console.log('[PreviewPluggy] Subconta:', item.subconta, '| lastSyncAt:', item.lastSyncAt, '| lastSyncError:', item.lastSyncError);
-
             // Garante dados frescos: sincroniza antes de consultar
-            console.log('[PreviewPluggy] Disparando sync...');
             const syncInicio = Date.now();
             let syncOk = false;
             try {
                 syncOk = await pluggyService.sincronizarItem(usuarioId, itemId);
                 const syncDur = ((Date.now() - syncInicio) / 1000).toFixed(1);
-                console.log('[PreviewPluggy] Sync concluido em ' + syncDur + 's | resultado:', syncOk);
+                console.log('[PreviewPluggy] Sync concluido em ' + syncDur + 's');
             } catch (syncErr) {
                 console.warn('[PreviewPluggy] Sync falhou, usando cache:', syncErr.message);
             }
@@ -933,12 +925,7 @@ class ImportacaoController {
             // Verificar accounts do item para confirmar accountId existe
             try {
                 const accounts = await pluggyService.buscarAccountsDoItem(usuarioId, itemId);
-                console.log('[PreviewPluggy] Accounts encontradas para o item:', accounts.length);
-                accounts.forEach(a => {
-                    console.log('[PreviewPluggy]   Account:', a.id, '| type:', a.type, '| name:', a.name || a.marketingName, '| balance:', a.balance);
-                });
                 const accountExiste = accounts.some(a => String(a.id) === String(accountId));
-                console.log('[PreviewPluggy] AccountId ' + accountId + ' existe na resposta da API?', accountExiste);
                 if (!accountExiste) {
                     console.warn('[PreviewPluggy] ** ATENCAO: accountId nao encontrado nas accounts retornadas pela API **');
                 }
@@ -948,25 +935,21 @@ class ImportacaoController {
                     const itemAtual = configAtualizada.items.find(i =>
                         String(i.itemId) === String(itemId) && String(i.accountId) === String(accountId)
                     );
-                    if (itemAtual) {
-                        console.log('[PreviewPluggy] Status POS-sync do item:', itemAtual.status, '| lastSyncAt:', itemAtual.lastSyncAt);
-                    }
                 }
             } catch (accErr) {
                 console.warn('[PreviewPluggy] Falha ao verificar accounts:', accErr.message);
             }
 
-            console.log('[PreviewPluggy] Buscando transacoes na API...');
             const txs = await pluggyService.buscarTodasTransacoes(usuarioId, accountId, {
                 dateFrom: dateFrom || undefined,
                 dateTo: dateTo || undefined
             });
 
-            console.log('[PreviewPluggy] API retornou ' + txs.length + ' transacoes brutas');
-
             const isCredit = item.accountType === 'CREDIT';
             const transacoesMapeadas = [];
             let skippedPending = 0, skippedSemData = 0, skippedSemId = 0, pendingIncluidos = 0;
+            let totalMoedaEstrangeira = 0, totalFalhaConversao = 0;
+            const moedasEncontradas = new Set();
             for (const tx of txs) {
                 if (!tx || !tx.id) { skippedSemId++; continue; }
                 if (tx.status === 'PENDING') {
@@ -979,20 +962,44 @@ class ImportacaoController {
                 }
                 const data = tx.date ? normalizarDataUTC(tx.date) : null;
                 if (!data || isNaN(data.getTime())) { skippedSemData++; continue; }
-                transacoesMapeadas.push({
-                    descricao: (tx.description || tx.descriptionRaw || 'Transação Pluggy').trim(),
-                    valor: Math.abs(parseFloat(tx.amount) || 0),
-                    data,
-                    tipo: tx.type === 'CREDIT' ? 'recebivel' : 'gasto',
-                    categoria: tx.category || null,
-                    dadosOriginais: tx
-                });
+
+                const conv = await cotacaoService.converterSeMoedaEstrangeira(tx);
+                const dadosOriginais = Object.assign({}, tx);
+                if (conv.moedaOriginal) {
+                    totalMoedaEstrangeira++;
+                    moedasEncontradas.add(conv.moedaOriginal);
+                    dadosOriginais._moedaOriginal = conv.moedaOriginal;
+                    dadosOriginais._cotacaoUsada = conv.cotacaoUsada;
+                    dadosOriginais._valorOriginal = conv.valorOriginal;
+                    let statusObservacao = null;
+                    if (!conv.cotacaoUsada) {
+                        totalFalhaConversao++;
+                        statusObservacao = 'Moeda ' + conv.moedaOriginal + ' sem cotação disponível';
+                    }
+                    transacoesMapeadas.push({
+                        descricao: (tx.description || tx.descriptionRaw || 'Transação Pluggy').trim(),
+                        valor: conv.valorConvertido,
+                        data,
+                        tipo: tx.type === 'CREDIT' ? 'recebivel' : 'gasto',
+                        categoria: tx.category || null,
+                        dadosOriginais,
+                        moedaOriginal: conv.moedaOriginal,
+                        cotacaoUsada: conv.cotacaoUsada,
+                        statusObservacao
+                    });
+                } else {
+                    transacoesMapeadas.push({
+                        descricao: (tx.description || tx.descriptionRaw || 'Transação Pluggy').trim(),
+                        valor: conv.valorConvertido,
+                        data,
+                        tipo: tx.type === 'CREDIT' ? 'recebivel' : 'gasto',
+                        categoria: tx.category || null,
+                        dadosOriginais
+                    });
+                }
             }
-            console.log('[PreviewPluggy] Transacoes mapeadas:', transacoesMapeadas.length,
-                '| PENDING ignorados:', skippedPending,
-                '| PENDING incluidos (CREDIT):', pendingIncluidos,
-                '| sem data:', skippedSemData,
-                '| sem id:', skippedSemId);
+            console.log('[PreviewPluggy] Transacoes:', transacoesMapeadas.length,
+                '| pendentes:', skippedPending, '| moeda estr.:', totalMoedaEstrangeira);
 
             const parserId = isCredit ? 'pluggy_fatura' : 'pluggy_extrato';
             const parserNome = isCredit ? 'Pluggy Cartão de Crédito' : 'Pluggy Conta Corrente';
@@ -1002,6 +1009,20 @@ class ImportacaoController {
                 filename: item.connectorName || 'Pluggy',
                 parserId
             });
+
+            // Para Pluggy CREDIT: mesVencimento é calculado das datas das transações (mês seguinte)
+            if (isCredit && !meta.mesVencimento && transacoesMapeadas.length > 0) {
+                const ultimaData = transacoesMapeadas.reduce(function(max, t) {
+                    return t.data > max ? t.data : max;
+                }, transacoesMapeadas[0].data);
+                const mes = ultimaData.getUTCMonth();
+                const ano = ultimaData.getUTCFullYear();
+                const proximoMes = mes + 1;
+                const anoProximoMes = proximoMes > 11 ? ano + 1 : ano;
+                const mesStr = String((proximoMes % 12) + 1).padStart(2, '0');
+                meta.mesVencimento = anoProximoMes + '-' + mesStr;
+                console.log('[PreviewPluggy] mesVencimento:', meta.mesVencimento);
+            }
 
             let sugestaoComplementar = { sugestao: false, motivo: null, sobrepostas: 0 };
             try {
@@ -1073,11 +1094,18 @@ class ImportacaoController {
             if (isCredit && pendingIncluidos > 0) {
                 avisos.push(pendingIncluidos + ' transação(ões) PENDING (não confirmadas pelo banco) foram incluídas na prévia, pois são compras recentes do cartão de crédito.');
             }
+            if (totalMoedaEstrangeira > 0) {
+                const moedasList = Array.from(moedasEncontradas).join(', ');
+                avisos.push(totalMoedaEstrangeira + ' transação(ões) em moeda estrangeira (' + moedasList + ') foram convertidas para BRL usando a cotação do banco ou awesomeapi.');
+            }
+            if (totalFalhaConversao > 0) {
+                avisos.push(totalFalhaConversao + ' transação(ões) em moeda estrangeira não puderam ser convertidas (cotação indisponível). Revise o valor manualmente.');
+            }
 
-            console.log('[PreviewPluggy] ===== FIM PREVIEW =====');
+
 
             const tituloFinal = (isCredit && meta.periodoCompetencia)
-                ? 'Fatura ' + (item.connectorName || 'Cartão') + ' - ' + inferencia.formatarCompetenciaPT(meta.periodoCompetencia) + (numeroComplemento ? ' (' + numeroComplemento + 'Â° Complemento)' : '')
+                ? 'Fatura ' + (item.connectorName || 'Cart\u00e3o') + ' - ' + inferencia.formatarCompetenciaPT(meta.periodoCompetencia) + (numeroComplemento ? ' (' + numeroComplemento + '\u00ba Complemento)' : '')
                 : meta.tituloSugerido || 'Importação ' + (item.connectorName || 'Pluggy');
 
             return res.json({
@@ -1126,11 +1154,6 @@ class ImportacaoController {
         try {
             const { itemId, accountId, dateFrom, dateTo, descricao, tagsPadrao, tipoImportacao, metadados } = req.body || {};
             const usuarioId = req.userId;
-
-            console.log('[CriarDaPluggy] ===== REQUEST =====');
-            console.log('[CriarDaPluggy] itemId:', itemId, '| accountId:', accountId);
-            console.log('[CriarDaPluggy] dateFrom:', dateFrom, '| dateTo:', dateTo);
-            console.log('[CriarDaPluggy] descricao:', descricao, '| tipoImportacao:', tipoImportacao);
 
             if (!itemId || !accountId) {
                 return res.status(400).json({ erro: 'itemId e accountId são obrigatórios.' });
@@ -1184,13 +1207,10 @@ class ImportacaoController {
             }
             await importacao.save();
 
-            console.log('[CriarDaPluggy] Buscando transacoes na API...');
             const txs = await pluggyService.buscarTodasTransacoes(usuarioId, accountId, {
                 dateFrom: dateFrom || undefined,
                 dateTo: dateTo || undefined
             });
-
-            console.log('[CriarDaPluggy] API retornou ' + txs.length + ' transacoes brutas');
 
             let totalTransacoes = 0;
             let totalIgnoradas = 0;
@@ -1215,7 +1235,22 @@ class ImportacaoController {
                     }
                 }
 
-                const amount = Math.abs(parseFloat(tx.amount) || 0);
+                let amount = Math.abs(parseFloat(tx.amount) || 0);
+                let moedaOriginal = null, cotacaoUsada = null, valorOriginal = null;
+                if (tx.currencyCode && tx.currencyCode !== 'BRL') {
+                    moedaOriginal = tx.currencyCode;
+                    valorOriginal = amount;
+                    if (tx.amountInAccountCurrency != null) {
+                        amount = Math.abs(parseFloat(tx.amountInAccountCurrency));
+                        cotacaoUsada = valorOriginal !== 0 ? amount / valorOriginal : null;
+                    } else {
+                        const cotacao = await cotacaoService.obterCotacao(tx.currencyCode + '-BRL');
+                        if (cotacao) {
+                            cotacaoUsada = cotacao;
+                            amount = valorOriginal * cotacao;
+                        }
+                    }
+                }
                 const tipo = tx.type === 'CREDIT' ? 'recebivel' : 'gasto';
                 const data = tx.date ? normalizarDataUTC(tx.date) : null;
                 if (!data || isNaN(data.getTime())) { skippedSemData++; totalIgnoradas++; continue; }
@@ -1225,55 +1260,100 @@ class ImportacaoController {
                     usuarioId.toString(), item.subconta.toString(), tx.id
                 );
 
+                let status = 'pendente';
+                const snapshot = {};
+
                 const existeImportada = await TransacaoImportada.findOne({
                     usuario: usuarioId, pluggyTransactionId: tx.id,
                     status: { $in: ['pendente', 'validada', 'processada', 'ja_importada', 'revisada'] }
                 }).lean();
-                if (existeImportada) { totalJaImportadas++; totalIgnoradas++; continue; }
-
                 const existeIgnorada = await TransacaoImportada.findOne({
                     usuario: usuarioId, pluggyTransactionId: tx.id, status: 'ignorada'
                 }).lean();
-                if (existeIgnorada) { totalIgnoradas++; continue; }
 
-                let status = 'pendente';
-                const snapshot = {};
-
-                const fuzzyMatch = await ImportacaoService.buscarPossivelDuplicata(usuarioId, {
-                    descricao: desc, valor: amount, data
-                });
-                if (fuzzyMatch) {
-                    const distDias = Math.round(Math.abs(
-                        new Date(fuzzyMatch.data).getTime() - data.getTime()
-                    ) / 86400000);
-                    status = 'possivel_duplicata';
-                    totalPossiveisDuplicatas++;
-                    snapshot.transacaoSemelhanteId = fuzzyMatch._id;
-                    snapshot.transacaoSemelhanteDistanciaDias = distDias;
-                    snapshot.transacaoSemelhanteData = fuzzyMatch.data;
-                    snapshot.transacaoSemelhanteValor = fuzzyMatch.valor;
-                    snapshot.transacaoSemelhanteDescricao = fuzzyMatch.descricao;
+                if (existeImportada) {
+                    totalJaImportadas++;
+                    status = 'ja_importada';
+                    if (existeImportada.transacaoCriada) {
+                        snapshot.transacaoSemelhanteId = existeImportada.transacaoCriada;
+                    }
+                } else if (existeIgnorada) {
+                    totalIgnoradas++;
+                    status = 'ignorada';
+                } else {
+                    // Mesmo dia calendário: busca match exato em Transacao (não TransacaoImportada)
+                    const msDia = 86400000;
+                    const dataTs = data.getTime();
+                    const mesmoDiaInicio = new Date(Math.floor((dataTs - 12 * 3600000) / msDia) * msDia);
+                    const mesmoDiaFim = new Date(mesmoDiaInicio.getTime() + msDia);
+                    const descExact = desc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const duplicataMesmoDia = await Transacao.findOne({
+                        usuario: usuarioId,
+                        status: 'ativo',
+                        descricao: new RegExp('^\\s*' + descExact + '\\s*$', 'i'),
+                        valor: { $gte: amount - ImportacaoService.TOLERANCIA_VALOR, $lte: amount + ImportacaoService.TOLERANCIA_VALOR },
+                        data: { $gte: mesmoDiaInicio, $lt: mesmoDiaFim }
+                    }).lean();
+                    if (duplicataMesmoDia) {
+                        status = 'possivel_duplicata';
+                        totalPossiveisDuplicatas++;
+                        snapshot.transacaoSemelhanteId = duplicataMesmoDia._id;
+                        snapshot.transacaoSemelhanteDistanciaDias = 0;
+                        snapshot.transacaoSemelhanteData = duplicataMesmoDia.data;
+                        snapshot.transacaoSemelhanteValor = duplicataMesmoDia.valor;
+                        snapshot.transacaoSemelhanteDescricao = duplicataMesmoDia.descricao;
+                    } else {
+                        // Fallback normalizado: busca transações do mesmo dia + mesmo valor,
+                        // compara descrição via normalizarDescricaoComparacao (ignora variações como " - Parcela X/Y")
+                        const descNorm = ImportacaoService.normalizarDescricaoComparacao(desc);
+                        const candidatasNorm = await Transacao.find({
+                            usuario: usuarioId,
+                            status: 'ativo',
+                            valor: { $gte: amount - ImportacaoService.TOLERANCIA_VALOR, $lte: amount + ImportacaoService.TOLERANCIA_VALOR },
+                            data: { $gte: mesmoDiaInicio, $lt: mesmoDiaFim }
+                        }).lean();
+                        const duplicataNorm = candidatasNorm.find(function(t) {
+                            return ImportacaoService.normalizarDescricaoComparacao(t.descricao || '') === descNorm;
+                        });
+                        if (duplicataNorm) {
+                            status = 'possivel_duplicata';
+                            totalPossiveisDuplicatas++;
+                            snapshot.transacaoSemelhanteId = duplicataNorm._id;
+                            snapshot.transacaoSemelhanteDistanciaDias = 0;
+                            snapshot.transacaoSemelhanteData = duplicataNorm.data;
+                            snapshot.transacaoSemelhanteValor = duplicataNorm.valor;
+                            snapshot.transacaoSemelhanteDescricao = duplicataNorm.descricao;
+                        } else {
+                            const fuzzyMatch = await ImportacaoService.buscarPossivelDuplicata(usuarioId, {
+                                descricao: desc, valor: amount, data
+                            });
+                            if (fuzzyMatch) {
+                                const distDias = Math.round(Math.abs(
+                                    new Date(fuzzyMatch.data).getTime() - data.getTime()
+                                ) / 86400000);
+                                status = 'possivel_duplicata';
+                                totalPossiveisDuplicatas++;
+                                snapshot.transacaoSemelhanteId = fuzzyMatch._id;
+                                snapshot.transacaoSemelhanteDistanciaDias = distDias;
+                                snapshot.transacaoSemelhanteData = fuzzyMatch.data;
+                                snapshot.transacaoSemelhanteValor = fuzzyMatch.valor;
+                                snapshot.transacaoSemelhanteDescricao = fuzzyMatch.descricao;
+                            }
+                        }
+                    }
                 }
 
-                transacoesParaProcessar.push({ tx, amount, tipo, data, desc, dedupKey, status, snapshot });
-            }
+                if (moedaOriginal && !cotacaoUsada) {
+                    status = 'erro';
+                }
 
-            console.log('[CriarDaPluggy] Transacoes para processar:', transacoesParaProcessar.length);
-            console.log('[CriarDaPluggy] Ignorados:',
-                'sem_id=' + skippedSemId,
-                '| duplicado_req=', skippedDuplicado,
-                '| PENDING_ignorado=', skippedPending,
-                '| PENDING_incluido(CREDIT)=', pendingIncluidos,
-                '| sem_data=', skippedSemData,
-                '| ja_importada=', totalJaImportadas,
-                '| ja_ignorada=' + (totalIgnoradas - skippedSemId - skippedDuplicado - skippedPending - skippedSemData - totalJaImportadas));
-            if (transacoesParaProcessar.length > 0) {
-                console.log('[CriarDaPluggy] Primeiras 5 descricoes:',
-                    transacoesParaProcessar.slice(0, 5).map(t => t.desc + ' (' + t.tx.date + ')').join(' | '));
+                const txEnriquecido = moedaOriginal
+                    ? Object.assign(Object.assign({}, tx), { _moedaOriginal: moedaOriginal, _cotacaoUsada: cotacaoUsada, _valorOriginal: valorOriginal })
+                    : tx;
+                transacoesParaProcessar.push({ tx: txEnriquecido, amount, tipo, data, desc, dedupKey, status, snapshot });
             }
 
             if (transacoesParaProcessar.length === 0) {
-                console.log('[CriarDaPluggy] NENHUMA transacao nova — finalizando importacao vazia');
                 importacao.status = 'finalizada';
                 await importacao.save();
                 return res.json({

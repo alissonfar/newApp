@@ -22,6 +22,12 @@ module.exports = {
         });
       }
 
+      webpackConfig.ignoreWarnings = [
+        {
+          module: /pluggy-connect-sdk|react-pluggy-connect/,
+          message: /Failed to parse source map/,
+        },
+      ];
       return webpackConfig;
     },
   },

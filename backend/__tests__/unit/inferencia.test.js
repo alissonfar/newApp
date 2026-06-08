@@ -119,7 +119,7 @@ describe('Inferencia Importacao Service', () => {
       expect(meta.mesVencimento).toBeNull();
     });
 
-    test('sugerirTitulo para nubank_fatura: "Fatura Nubank - Mai/2026 (vence 08/06) - 5° Complemento"', () => {
+    test('sugerirTitulo para nubank_fatura: "Fatura Nubank - Mai/2026 (vence 08/06) - 5\u00ba Complemento"', () => {
       const t = inferencia.sugerirTitulo({
         filename: 'Nubank_2026-06-08.csv',
         parserId: 'nubank_fatura',
@@ -129,10 +129,10 @@ describe('Inferencia Importacao Service', () => {
         vencimento: new Date('2026-06-08T12:00:00Z'),
         numeroComplemento: 5
       });
-      expect(t).toBe('Fatura Nubank - Mai/2026 (vence 08/06) - 5° Complemento');
+      expect(t).toBe('Fatura Nubank - Mai/2026 (vence 08/06) - 5\u00ba Complemento');
     });
 
-    test('sugerirTitulo para nubank_fatura sem nº complemento: usa 1°', () => {
+    test('sugerirTitulo para nubank_fatura sem complemento: sem label', () => {
       const t = inferencia.sugerirTitulo({
         filename: 'Nubank_2026-06-08.csv',
         parserId: 'nubank_fatura',
@@ -140,7 +140,7 @@ describe('Inferencia Importacao Service', () => {
         dataInicial: null, dataFinal: null,
         vencimento: new Date('2026-06-08T12:00:00Z')
       });
-      expect(t).toMatch(/1° Complemento/);
+      expect(t).toBe('Fatura Nubank - Mai/2026 (vence 08/06)');
     });
 
     test('nomeTagMes gera nome canônico', () => {
@@ -238,20 +238,20 @@ describe('Inferencia Importacao Service', () => {
       expect(result.autoCriada).toBe(true);
     });
 
-    test('contarComplementosAnteriores: 4 docs + 1 = 5', async () => {
+    test('contarComplementosAnteriores: 4 docs = 4', async () => {
       const FakeImportacao = { countDocuments: async () => 4 };
       const n = await inferencia.contarComplementosAnteriores(FakeImportacao, {
         usuarioId: 'u1', parserId: 'nubank_fatura', mesVencimento: '2026-06'
       });
-      expect(n).toBe(5);
+      expect(n).toBe(4);
     });
 
-    test('contarComplementosAnteriores: 0 docs = 1 (primeira)', async () => {
+    test('contarComplementosAnteriores: 0 docs = 0 (sem complemento)', async () => {
       const FakeImportacao = { countDocuments: async () => 0 };
       const n = await inferencia.contarComplementosAnteriores(FakeImportacao, {
         usuarioId: 'u1', parserId: 'nubank_fatura', mesVencimento: '2026-06'
       });
-      expect(n).toBe(1);
+      expect(n).toBe(0);
     });
   });
 });

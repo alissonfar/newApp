@@ -359,6 +359,36 @@ const transacaoImportadaController = {
     }
   },
 
+  // Restaurar transação (reverte ignorada/ja_importada para pendente)
+  async restaurarTransacao(req, res) {
+    try {
+      const transacao = await TransacaoImportada.findOne({
+        _id: req.params.id,
+        usuario: req.userId
+      });
+
+      if (!transacao) {
+        return res.status(404).json({ erro: 'Transação importada não encontrada ou não pertence ao usuário.' });
+      }
+
+      if (!['ignorada', 'ja_importada'].includes(transacao.status)) {
+        return res.status(400).json({
+          erro: `Não é possível restaurar transação com status "${transacao.status}".`
+        });
+      }
+
+      await TransacaoImportada.updateOne(
+        { _id: req.params.id, usuario: req.userId },
+        { $set: { status: 'pendente' }, $unset: { deduplicationKey: '' } }
+      );
+
+      return res.json({ mensagem: 'Transação restaurada com sucesso.' });
+    } catch (error) {
+      console.error('[TransacaoImportada] Erro ao restaurar transação:', error);
+      return res.status(500).json({ erro: 'Erro interno ao restaurar transação importada.' });
+    }
+  },
+
   // Ações em massa
   async acoesMassa(req, res) {
     try {
@@ -377,7 +407,7 @@ const transacaoImportadaController = {
         usuario: usuarioId
       });
 
-      const STATUS_PODE_IGNORAR = ['pendente', 'revisada', 'erro'];
+      const STATUS_PODE_IGNORAR = ['pendente', 'revisada', 'erro', 'possivel_duplicata', 'estornada'];
       const STATUS_PODE_VALIDAR = ['pendente', 'revisada', 'ja_importada'];
 
       const resultados = [];

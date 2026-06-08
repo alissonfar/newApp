@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { FaSync, FaCog, FaSpinner, FaCheck, FaPlus, FaTrash, FaPlug, FaLink, FaTimes } from 'react-icons/fa';
 import { PluggyConnect } from 'react-pluggy-connect';
 import pluggyApi from '../../services/pluggyApi';
@@ -11,7 +10,6 @@ import './PluggyPage.css';
 import { formatDateBR } from '../../utils/dateUtils';
 
 const PluggyPage = () => {
-  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [items, setItems] = useState([]);
   const [importacoes, setImportacoes] = useState([]);
@@ -31,7 +29,6 @@ const PluggyPage = () => {
   const [mappingItemId, setMappingItemId] = useState('');
   const [mappingConnectorName, setMappingConnectorName] = useState('');
   const [accounts, setAccounts] = useState([]);
-  const [carregandoAccounts, setCarregandoAccounts] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [selectedSubconta, setSelectedSubconta] = useState('');
   const [salvandoMapping, setSalvandoMapping] = useState(false);
@@ -42,8 +39,6 @@ const PluggyPage = () => {
   const [showWidget, setShowWidget] = useState(false);
   const [connectToken, setConnectToken] = useState(null);
   const [widgetLoading, setWidgetLoading] = useState(false);
-  const [widgetConnectorName, setWidgetConnectorName] = useState('');
-
   const carregar = async () => {
     try {
       setCarregando(true);

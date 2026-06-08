@@ -415,6 +415,51 @@ const DetalhesImportacaoPage = () => {
         }
     };
 
+    const handleRestaurarTransacao = async (transacaoId) => {
+        const confirmado = await mostrarConfirmacao(
+            'Restaurar esta transação? Ela voltará para análise como "Pendente".',
+            'finalizar'
+        );
+        if (!confirmado) return;
+        try {
+            await importacaoService.restaurarTransacao(transacaoId);
+            toast.success('Transação restaurada com sucesso!');
+            await carregarDetalhes();
+        } catch (error) {
+            toast.error(error.message || 'Erro ao restaurar transação.');
+        }
+    };
+
+    const handleRestaurarMassa = async () => {
+        const ids = Array.from(selecionados);
+        if (ids.length === 0) return;
+        const confirmado = await mostrarConfirmacao(
+            'Restaurar ' + ids.length + ' transação(ões)? Elas voltarão para análise como "Pendente".',
+            'finalizar'
+        );
+        if (!confirmado) return;
+        try {
+            setExecutandoAcaoMassa(true);
+            let sucessos = 0, erros = 0;
+            for (const id of ids) {
+                try {
+                    await importacaoService.restaurarTransacao(id);
+                    sucessos++;
+                } catch (e) {
+                    erros++;
+                }
+            }
+            toast.success(sucessos + ' transação(ões) restaurada(s) com sucesso.');
+            if (erros > 0) toast.warn(erros + ' transação(ões) não puderam ser restauradas.');
+            setSelecionados(new Set());
+            await carregarDetalhes();
+        } catch (error) {
+            toast.error('Erro ao restaurar transações.');
+        } finally {
+            setExecutandoAcaoMassa(false);
+        }
+    };
+
     // Função para finalizar importação
     const handleFinalizarImportacao = async () => {
         const mensagemConfirmacao = (
@@ -897,25 +942,37 @@ const DetalhesImportacaoPage = () => {
                         </button>
                     </div>
                 </div>
-                {selecionados.size > 0 && podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
+                {selecionados.size > 0 && podeEditar(importacao) && (
                     <div className="barra-acoes-massa">
                         <span className="contador-selecionados">{selecionados.size} selecionada(s)</span>
                         <div className="botoes-acoes-massa">
-                            <button
-                                className="btn-acao-massa btn-validar"
-                                onClick={() => handleAcaoMassa('validar')}
-                                disabled={executandoAcaoMassa}
-                            >
-                                Validar
-                            </button>
-                            <button
-                                className="btn-acao-massa btn-ignorar"
-                                onClick={() => handleAcaoMassa('ignorar')}
-                                disabled={executandoAcaoMassa}
-                                title="Ignorar - não reaparecerão em importações futuras"
-                            >
-                                Ignorar
-                            </button>
+                            {abaAtiva === 'ignoradas' ? (
+                                <button
+                                    className="btn-acao-massa btn-restaurar"
+                                    onClick={handleRestaurarMassa}
+                                    disabled={executandoAcaoMassa}
+                                >
+                                    Restaurar
+                                </button>
+                            ) : (
+                                <>
+                                    <button
+                                        className="btn-acao-massa btn-validar"
+                                        onClick={() => handleAcaoMassa('validar')}
+                                        disabled={executandoAcaoMassa}
+                                    >
+                                        Validar
+                                    </button>
+                                    <button
+                                        className="btn-acao-massa btn-ignorar"
+                                        onClick={() => handleAcaoMassa('ignorar')}
+                                        disabled={executandoAcaoMassa}
+                                        title="Ignorar - não reaparecerão em importações futuras"
+                                    >
+                                        Ignorar
+                                    </button>
+                                </>
+                            )}
                             <button
                                 className="btn-acao-massa btn-limpar"
                                 onClick={() => setSelecionados(new Set())}
@@ -928,7 +985,7 @@ const DetalhesImportacaoPage = () => {
                 <table className="transacoes-table">
                     <thead>
                         <tr>
-                            {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
+                            {podeEditar(importacao) && (
                                 <th style={{ width: '40px' }} className="th-checkbox">
                                     <input
                                         type="checkbox"
@@ -964,9 +1021,9 @@ const DetalhesImportacaoPage = () => {
                                             ? 'pointer' : 'default'
                                     }}
                                 >
-                                    {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
+                                    {podeEditar(importacao) && (
                                         <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
-                                            {['pendente', 'revisada', 'erro', 'ja_importada', 'possivel_duplicata'].includes(transacao.status) && (
+                                            {['pendente', 'revisada', 'erro', 'ja_importada', 'possivel_duplicata', 'ignorada'].includes(transacao.status) && (
                                                 <input
                                                     type="checkbox"
                                                     checked={selecionados.has(transacao.id)}
@@ -1024,7 +1081,25 @@ const DetalhesImportacaoPage = () => {
                                     <td>
                                         {renderEmprestimoBadge(transacao)}
                                     </td>
-                                    <td>{formatarValor(transacao.valor)}</td>
+                                    <td>
+    {formatarValor(transacao.valor)}
+    {transacao.dadosOriginais?._moedaOriginal && (
+        <span style={{
+            fontSize: 11, color: '#6366f1', marginLeft: 6,
+            background: '#eef2ff', padding: '1px 6px', borderRadius: 4,
+            whiteSpace: 'nowrap', cursor: 'default'
+        }}
+            title={
+                (transacao.dadosOriginais._cotacaoUsada
+                    ? 'Original: ' + transacao.dadosOriginais._moedaOriginal + ' ' +
+                      Number(transacao.dadosOriginais._valorOriginal || 0).toFixed(2) +
+                      ' (cotação: ' + Number(transacao.dadosOriginais._cotacaoUsada).toFixed(4) + ')'
+                    : 'Cotação indisponível')
+            }>
+            {transacao.dadosOriginais._moedaOriginal}
+        </span>
+    )}
+</td>
                                     <td>{formatarData(transacao.data)}</td>
                                     <td>
                                         <span className={`status-badge ${transacao.status}`}>
@@ -1034,31 +1109,45 @@ const DetalhesImportacaoPage = () => {
                                         </span>
                                     </td>
                                     <td className="acoes-cell" onClick={(e) => e.stopPropagation()}>
-                                        {podeEditar(importacao) && abaAtiva !== 'ignoradas' && (
+                                        {podeEditar(importacao) && (
                                             <>
-                                                <button
-                                                    onClick={() => handleEditarTransacao(transacao)}
-                                                    className="btn-acao btn-editar"
-                                                    title="Ao editar, a transação voltará para o status 'Revisada'"
-                                                >
-                                                    Editar
-                                                </button>
-                                                {transacao.status !== 'validada' && (
-                                                    <button
-                                                        onClick={() => handleValidarTransacao(transacao.id)}
-                                                        className="btn-acao btn-validar"
-                                                        title={transacao.status === 'ja_importada' ? 'Validar para forçar duplicação' : 'Validar'}
-                                                    >
-                                                        {transacao.status === 'ja_importada' ? 'Validar (duplicar)' : 'Validar'}
-                                                    </button>
+                                                {abaAtiva !== 'ignoradas' ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEditarTransacao(transacao)}
+                                                            className="btn-acao btn-editar"
+                                                            title="Ao editar, a transação voltará para o status 'Revisada'"
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                        {transacao.status !== 'validada' && (
+                                                            <button
+                                                                onClick={() => handleValidarTransacao(transacao.id)}
+                                                                className="btn-acao btn-validar"
+                                                                title={transacao.status === 'ja_importada' ? 'Validar para forçar duplicação' : 'Validar'}
+                                                            >
+                                                                {transacao.status === 'ja_importada' ? 'Validar (duplicar)' : 'Validar'}
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleExcluirTransacao(transacao.id)}
+                                                            className="btn-acao btn-excluir"
+                                                            title="Ignorar - não reaparecerá em importações futuras"
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    ['ignorada', 'ja_importada'].includes(transacao.status) && (
+                                                        <button
+                                                            onClick={() => handleRestaurarTransacao(transacao.id)}
+                                                            className="btn-acao btn-restaurar"
+                                                            title="Restaurar - volta para análise como Pendente"
+                                                        >
+                                                            Restaurar
+                                                        </button>
+                                                    )
                                                 )}
-                                                <button
-                                                    onClick={() => handleExcluirTransacao(transacao.id)}
-                                                    className="btn-acao btn-excluir"
-                                                    title="Ignorar - não reaparecerá em importações futuras"
-                                                >
-                                                    <FaTrash />
-                                                </button>
                                             </>
                                         )}
                                     </td>
@@ -1067,7 +1156,7 @@ const DetalhesImportacaoPage = () => {
                                 {/* Linha de resumo expansível */}
                                 {expandedRows.has(transacao.id) && (
                                     <tr className="resumo-row">
-                                        <td colSpan={podeEditar(importacao) && abaAtiva !== 'ignoradas' ? 8 : 7}>
+                                        <td colSpan={podeEditar(importacao) ? 8 : 7}>
                                             <div className="mini-resumo">
                                                 {/* Tipo da Transação */}
                                                 <div className="resumo-item">

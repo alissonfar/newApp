@@ -170,13 +170,7 @@ const NovaImportacaoForm = () => {
           dateFrom: dateFromPluggy || undefined,
           dateTo: dateToPluggy || undefined
         };
-        console.log('[Frontend Preview] Enviando payload:', JSON.stringify(payload));
         const data = await importacaoService.previewPluggy(payload);
-        console.log('[Frontend Preview] Resposta recebida:',
-          'totalRegistros:', data?.metadadosSugeridos?.totalRegistros,
-          '| dataInicial:', data?.metadadosSugeridos?.dataInicial,
-          '| dataFinal:', data?.metadadosSugeridos?.dataFinal,
-          '| periodoCompetencia:', data?.metadadosSugeridos?.periodoCompetencia);
         if (data?.metadadosSugeridos?.totalRegistros === 0) {
           console.warn('[Frontend Preview] ** ZERO transacoes retornadas no preview **');
         }

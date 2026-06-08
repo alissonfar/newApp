@@ -170,8 +170,8 @@ function sugerirTitulo({ filename, parserId, competencia, dataInicial, dataFinal
       }
     }
     const complemento = (numeroComplemento != null && numeroComplemento > 0)
-      ? ` - ${numeroComplemento}° Complemento`
-      : ' - 1° Complemento';
+      ? ' - ' + numeroComplemento + '\u00ba Complemento'
+      : '';
     return `Fatura Nubank - ${compFmt}${venceStr}${complemento}`;
   }
 
@@ -230,7 +230,7 @@ function extrairMetadados({ transacoes, filename, parserId }) {
   const periodoCompetencia = inferirCompetencia(transacoes);
 
   // Detecção específica de Fatura de Cartão
-  const isFaturaCartao = parserId === 'nubank_fatura';
+  const isFaturaCartao = parserId === 'nubank_fatura' || parserId === 'pluggy_fatura';
   let vencimento = null;
   let mesVencimento = null;
   if (isFaturaCartao) {
@@ -435,18 +435,18 @@ async function inferirTagPorMes({ categoriaCartaoId, tags, parserId, mesVencimen
 }
 
 /**
- * Conta o número sequencial de complemento para uma (parserId, mesVencimento).
- * Retorna 1 na primeira importação, 2 na segunda, etc.
+ * Conta quantas importações complementares já existem para (parserId, mesVencimento).
+ * Retorna 0 se nenhuma (primeira importação), 1 se já há uma, etc.
  */
 async function contarComplementosAnteriores(Importacao, { usuarioId, parserId, mesVencimento }) {
-  if (!mesVencimento || !parserId) return 1;
+  if (!mesVencimento || !parserId) return 0;
   const total = await Importacao.countDocuments({
     usuario: usuarioId,
     origem: parserId,
     tipoImportacao: 'complementar',
     mesVencimento
   });
-  return total + 1;
+  return total;
 }
 
 module.exports = {
