@@ -1,17 +1,7 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import { colors, spacing } from './theme';
-
-const formatDateBR = (dateStr) => {
-  if (!dateStr) return '-';
-  try {
-    const [fullDate] = String(dateStr).split('T');
-    const [year, month, day] = fullDate.split('-');
-    return `${day}/${month}/${year}`;
-  } catch {
-    return dateStr;
-  }
-};
+import { formatDateBR } from '../../utils/dateUtils';
 
 const styles = StyleSheet.create({
   header: {
@@ -37,7 +27,7 @@ const styles = StyleSheet.create({
 });
 
 const ReportHeader = ({ filterDetails }) => {
-  const currentDate = new Date().toLocaleDateString('pt-BR');
+  const currentDate = formatDateBR(new Date());
   const currentTime = new Date().toLocaleTimeString('pt-BR');
 
   const periodoLine =

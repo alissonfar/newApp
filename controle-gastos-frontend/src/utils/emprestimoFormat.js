@@ -1,4 +1,5 @@
 // src/utils/format.js (helpers compartilhados para Empréstimos)
+import { formatDateBR } from './dateUtils';
 export function formatarMoedaBRL(valor) {
   const n = Number(valor) || 0;
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -8,7 +9,7 @@ export function formatarDataBR(data) {
   if (!data) return '';
   const d = new Date(data);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('pt-BR');
+  return formatDateBR(d);
 }
 
 export function calcularDiasAtraso(prazoFinal) {

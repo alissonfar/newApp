@@ -1,13 +1,10 @@
 import React from 'react';
 import { FaExclamationTriangle, FaCalendarAlt, FaMoneyBillWave, FaTag, FaFileSignature } from 'react-icons/fa';
+import { formatDateBR } from '../../../utils/dateUtils';
 
 const formatarData = (data) => {
   if (!data) return '—';
-  return new Date(data).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+  return formatDateBR(data);
 };
 
 const formatarValor = (valor) => {

@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import './PluggyPage.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const PluggyPage = () => {
   const navigate = useNavigate();
@@ -74,7 +75,7 @@ const PluggyPage = () => {
     carregar();
   }, []);
 
-  const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '-';
+  const formatarData = (d) => d ? formatDateBR(d) : '-';
   const formatarDataHora = (d) => d ? new Date(d).toLocaleString('pt-BR') : '-';
   const formatarMoeda = (v) => 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -525,7 +526,7 @@ const PluggyPage = () => {
                           <span className="subconta-option-inst">{s.instituicao ? s.instituicao.nome : 'Sem instituicao'}</span>
                         </div>
                         <div className="subconta-option-meta">
-                          <span className={'subconta-tipo subconta-tipo-' + s.tipo}>{s.tipo === 'corrente' ? 'Corrente' : s.tipo === 'rendimento_automatico' ? 'Rendimento' : s.tipo === 'caixinha' ? 'Caixinha' : s.tipo}</span>
+                          <span className={'subconta-tipo subconta-tipo-' + s.tipo}>{s.tipo === 'corrente' ? 'Corrente' : s.tipo === 'rendimento_automatico' ? 'Rendimento' : s.tipo === 'caixinha' ? 'Caixinha' : s.tipo === 'cartao_credito' ? 'Cartão de Crédito' : s.tipo}</span>
                           <span className="subconta-saldo">Saldo: {formatarMoeda(s.saldoAtual)}</span>
                         </div>
                         {selectedSubconta === s._id && <FaCheck className="check-icon" />}

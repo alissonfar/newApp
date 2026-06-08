@@ -154,13 +154,95 @@ async function buscarTodasTransacoes(usuarioId, accountId, { dateFrom, dateTo } 
   if (dateFrom) options.dateFrom = dateFrom;
   if (dateTo) options.dateTo = dateTo;
 
+  console.log('[PluggyAPI] Buscando transacoes | accountId:', accountId, '| dateFrom:', dateFrom, '| dateTo:', dateTo);
+  const inicio = Date.now();
+
   try {
+    console.log('[PluggyAPI] Chamando fetchAllTransactions com accountId:', accountId, '| options:', JSON.stringify(options));
     const txs = await client.fetchAllTransactions(accountId, options);
+    const count = Array.isArray(txs) ? txs.length : 0;
+    const duration = ((Date.now() - inicio) / 1000).toFixed(1);
+    console.log('[PluggyAPI] Retornou ' + count + ' transacoes em ' + duration + 's');
+    if (count > 0) {
+      const first = txs[0];
+      const last = txs[count - 1];
+      console.log('[PluggyAPI] Primeira:', first.description, '| data:', first.date, '| valor:', first.amount, '| type:', first.type, '| status:', first.status);
+      console.log('[PluggyAPI] Ultima:', last.description, '| data:', last.date, '| valor:', last.amount, '| type:', last.type, '| status:', last.status);
+    } else {
+      console.warn('[PluggyAPI] ** NENHUMA transacao retornada para o periodo solicitado **');
+      console.log('[PluggyAPI] Debug — tipo do retorno:', typeof txs, '| é array?', Array.isArray(txs));
+      if (txs && typeof txs === 'object' && !Array.isArray(txs)) {
+        console.log('[PluggyAPI] Debug — chaves do objeto retornado:', Object.keys(txs));
+      }
+      // Tenta buscar sem filtro de data para ver se há dados
+      try {
+        console.log('[PluggyAPI] Tentando buscar SEM filtro de data para diagnosticar...');
+        const txsSemFiltro = await client.fetchAllTransactions(accountId);
+        console.log('[PluggyAPI] Sem filtro retornou', Array.isArray(txsSemFiltro) ? txsSemFiltro.length : '?', 'transacoes');
+      } catch (semFiltroErr) {
+        console.warn('[PluggyAPI] Busca sem filtro tambem falhou:', semFiltroErr.message);
+      }
+    }
     return Array.isArray(txs) ? txs : [];
   } catch (err) {
     const t = traduzirErro(err);
+    console.error('[PluggyAPI] Erro ao buscar transacoes:', t.mensagem);
+    console.error('[PluggyAPI] Erro completo:', err.message, err.stack ? err.stack.slice(0, 500) : '');
     throw new Error(t.mensagem);
   }
+}
+
+async function sincronizarItem(usuarioId, itemId, timeoutMs = 20000) {
+  const config = await obterConfig(usuarioId);
+  const client = criarClientAPartirDaConfig(config);
+
+  console.log('[PluggySync] ===== INICIANDO SYNC =====');
+  console.log('[PluggySync] itemId:', itemId, '| timeoutMs:', timeoutMs);
+  const inicio = Date.now();
+
+  // Log item status BEFORE update
+  try {
+    const itemPre = await client.fetchItem(itemId);
+    console.log('[PluggySync] Status PRE-sync: status=', itemPre.status, '| executionStatus=', itemPre.executionStatus, '| error=', itemPre.executionStatusError);
+  } catch (preErr) {
+    console.warn('[PluggySync] Falha ao consultar item ANTES do sync:', preErr.message);
+  }
+
+  try {
+    console.log('[PluggySync] Chamando client.updateItem...');
+    const updateResult = await client.updateItem(itemId);
+    console.log('[PluggySync] updateItem retornou:', JSON.stringify(updateResult).slice(0, 300));
+  } catch (err) {
+    const t = traduzirErro(err);
+    console.warn('[PluggySync] Falha ao iniciar sync:', t.mensagem);
+    throw new Error('Falha ao iniciar sincronizacao Pluggy: ' + t.mensagem);
+  }
+
+  let pollCount = 0;
+  while (Date.now() - inicio < timeoutMs) {
+    await new Promise(r => setTimeout(r, 1500));
+    pollCount++;
+    try {
+      const item = await client.fetchItem(itemId);
+      console.log('[PluggySync] Poll #' + pollCount + ': status=', item.status, '| executionStatus=', item.executionStatus, '| error=', item.executionStatusError);
+      if (item.executionStatus === 'COMPLETED' || item.status === 'UPDATED') {
+        const duration = ((Date.now() - inicio) / 1000).toFixed(1);
+        console.log('[PluggySync] Sincronizacao completada em ' + duration + 's (' + pollCount + ' polls)');
+        console.log('[PluggySync] Status final: status=', item.status, '| executionStatus=', item.executionStatus);
+        return true;
+      }
+      if (item.executionStatus === 'ERROR') {
+        console.error('[PluggySync] Erro na sincronizacao:', item.executionStatusError);
+        throw new Error('Erro na sincronizacao Pluggy: ' + (item.executionStatusError || 'desconhecido'));
+      }
+    } catch (err) {
+      if (err.message && err.message.startsWith('Erro na sincronizacao')) throw err;
+      console.warn('[PluggySync] Poll #' + pollCount + ' erro ignorado:', err.message);
+    }
+  }
+  const duration = ((Date.now() - inicio) / 1000).toFixed(1);
+  console.warn('[PluggySync] Timeout apos ' + duration + 's (' + pollCount + ' polls) — usando cache');
+  return false;
 }
 
 async function criarConnectToken(usuarioId, itemId) {
@@ -200,5 +282,6 @@ module.exports = {
   listarAccounts,
   buscarTodasTransacoes,
   criarConnectToken,
-  buscarAccountsDoItem
+  buscarAccountsDoItem,
+  sincronizarItem
 };

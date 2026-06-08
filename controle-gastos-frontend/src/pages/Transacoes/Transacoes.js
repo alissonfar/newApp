@@ -8,6 +8,7 @@ import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import { AuthContext } from '../../context/AuthContext';
 import './Transacoes.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const Transacoes = () => {
   const { usuario } = useContext(AuthContext);
@@ -177,7 +178,7 @@ const Transacoes = () => {
               htmlLista = '<p style="text-align:left;color:#999">Nenhuma transação ativa encontrada no grupo.</p>';
             } else {
               const linhas = transacoes.map(t => {
-                const data = t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '—';
+                const data = t.data ? formatDateBR(t.data) : '—';
                 const pessoas = (t.pagamentos || []).map(p => {
                   const parcela = p.installmentNumber != null ? ` (${p.installmentNumber}/${p.installmentTotal})` : '';
                   return `${p.pessoa || '—'}: R$ ${parseFloat(p.valor || 0).toFixed(2)}${parcela}`;

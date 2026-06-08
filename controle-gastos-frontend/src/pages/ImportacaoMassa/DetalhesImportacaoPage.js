@@ -14,6 +14,7 @@ import { obterCategorias } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './DetalhesImportacaoPage.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const STATUS_PROCESSANDO = ['pendente', 'processando'];
 const POLLING_INTERVAL_MS = 1500;
@@ -335,13 +336,7 @@ const DetalhesImportacaoPage = () => {
     };
 
     const formatarData = (data) => {
-        return new Date(data).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return formatDateBR(data);
     };
 
     const formatarValor = (valor) => {
@@ -716,9 +711,9 @@ const DetalhesImportacaoPage = () => {
                         <div className="info-item">
                             <label>Período</label>
                             <span>
-                                {importacao.dataInicial ? new Date(importacao.dataInicial).toLocaleDateString('pt-BR') : '—'}
+                                {importacao.dataInicial ? formatDateBR(importacao.dataInicial) : '—'}
                                 {' a '}
-                                {importacao.dataFinal ? new Date(importacao.dataFinal).toLocaleDateString('pt-BR') : '—'}
+                                {importacao.dataFinal ? formatDateBR(importacao.dataFinal) : '—'}
                             </span>
                         </div>
                     )}

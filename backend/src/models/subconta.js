@@ -11,7 +11,7 @@ const SubcontaSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   tipo: {
     type: String,
-    enum: ['corrente', 'rendimento_automatico', 'caixinha', 'investimento_fixo'],
+    enum: ['corrente', 'rendimento_automatico', 'caixinha', 'investimento_fixo', 'cartao_credito'],
     required: true
   },
   proposito: {

@@ -37,7 +37,7 @@ exports.criar = async (req, res) => {
   if (!instituicao || !nome || !tipo || !proposito) {
     return res.status(400).json({ erro: 'Os campos obrigatórios são: instituicao, nome, tipo e proposito.' });
   }
-  const tiposValidos = ['corrente', 'rendimento_automatico', 'caixinha', 'investimento_fixo'];
+  const tiposValidos = ['corrente', 'rendimento_automatico', 'caixinha', 'investimento_fixo', 'cartao_credito'];
   const propositosValidos = ['disponivel', 'reserva_emergencia', 'objetivo', 'guardado'];
   if (!tiposValidos.includes(tipo)) return res.status(400).json({ erro: 'Tipo inválido.' });
   if (!propositosValidos.includes(proposito)) return res.status(400).json({ erro: 'Propósito inválido.' });
@@ -118,7 +118,7 @@ exports.atualizar = async (req, res) => {
     if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
     if (req.body.nome !== undefined) subconta.nome = req.body.nome;
     if (req.body.tipo !== undefined) {
-      const tiposValidos = ['corrente', 'rendimento_automatico', 'caixinha', 'investimento_fixo'];
+      const tiposValidos = ['corrente', 'rendimento_automatico', 'caixinha', 'investimento_fixo', 'cartao_credito'];
       if (!tiposValidos.includes(req.body.tipo)) return res.status(400).json({ erro: 'Tipo inválido.' });
       subconta.tipo = req.body.tipo;
     }

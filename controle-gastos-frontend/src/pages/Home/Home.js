@@ -448,7 +448,7 @@ const Home = () => {
                               )}
                             </div>
                             <div className="transacoes-col-data transacao-data">
-                              {new Date(t.data).toLocaleDateString('pt-BR')}
+                              {formatDateBR(t.data)}
                             </div>
                             <div className="transacoes-col-valor transacao-valor-cell">
                               <span className={`transacao-valor ${t.tipo === 'gasto' ? 'transacao-valor--gasto' : 'transacao-valor--recebivel'}`}>

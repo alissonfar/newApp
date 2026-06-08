@@ -8,6 +8,7 @@ const TransacaoImportada = require('../models/transacaoImportada');
 const Transacao = require('../models/transacao');
 const Usuario = require('../models/usuarios');
 const inferenciaPessoaService = require('./inferenciaPessoaService');
+const { normalizarDataUTC } = require('../utils/dateUtils');
 
 /**
  * Mescla tagsPadrao da importação em cada pagamento, sem duplicar.
@@ -98,8 +99,17 @@ async function buscarPossivelDuplicata(usuarioId, transacao) {
   const dataObj = new Date(transacao.data);
   if (isNaN(dataObj.getTime())) return null;
 
-  const dataMin = new Date(dataObj.getTime() - JANELA_POSSIVEL_DUPLICATA_DIAS * 86400000);
-  const dataMax = new Date(dataObj.getTime() + JANELA_POSSIVEL_DUPLICATA_DIAS * 86400000);
+  // Normaliza para meio-dia UTC (elimina viés de timezone entre diferentes origens)
+  const dataNorm = normalizarDataUTC(dataObj);
+  if (!dataNorm) return null;
+
+  const msDia = 86400000;
+  const dataMin = new Date(dataNorm.getTime() - JANELA_POSSIVEL_DUPLICATA_DIAS * msDia);
+  const dataMax = new Date(dataNorm.getTime() + JANELA_POSSIVEL_DUPLICATA_DIAS * msDia);
+
+  // Exclui o mesmo dia calendário (janela de 24h centrada no meio-dia UTC)
+  const excluirInicio = new Date(dataNorm.getTime() - 12 * 3600000);
+  const excluirFim = new Date(dataNorm.getTime() + 12 * 3600000);
 
   const descricaoEscaped = (transacao.descricao || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (!descricaoEscaped) return null;
@@ -109,15 +119,18 @@ async function buscarPossivelDuplicata(usuarioId, transacao) {
     status: 'ativo',
     descricao: new RegExp(`^\\s*${descricaoEscaped}\\s*$`, 'i'),
     valor: { $gte: valorAbs - TOLERANCIA_VALOR, $lte: valorAbs + TOLERANCIA_VALOR },
-    data: { $gte: dataMin, $lte: dataMax, $ne: dataObj }
+    data: { $gte: dataMin, $lte: dataMax, $not: { $gte: excluirInicio, $lte: excluirFim } }
   }).lean();
 
   if (!candidatas || candidatas.length === 0) return null;
 
-  // Pegar a mais próxima em data
+  // Pegar a mais próxima em data (usando data normalizada)
+  const dataNormTs = dataNorm.getTime();
   candidatas.sort((a, b) => {
-    const distA = Math.abs(new Date(a.data).getTime() - dataObj.getTime());
-    const distB = Math.abs(new Date(b.data).getTime() - dataObj.getTime());
+    const na = normalizarDataUTC(a.data);
+    const nb = normalizarDataUTC(b.data);
+    const distA = Math.abs(na.getTime() - dataNormTs);
+    const distB = Math.abs(nb.getTime() - dataNormTs);
     return distA - distB;
   });
   return candidatas[0];
@@ -1008,6 +1021,8 @@ class ImportacaoService {
 }
 
 ImportacaoService.gerarDeduplicationKey = gerarDeduplicationKey;
+ImportacaoService.buscarPossivelDuplicata = buscarPossivelDuplicata;
+ImportacaoService.mergeTagsPadrao = mergeTagsPadrao;
 module.exports = ImportacaoService;
 module.exports.classificarTransacoes = classificarTransacoes;
 module.exports.JANELA_POSSIVEL_DUPLICATA_DIAS = JANELA_POSSIVEL_DUPLICATA_DIAS;

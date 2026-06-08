@@ -12,9 +12,9 @@ const DIAS_ALERTA_DESATUALIZADO = 7;
  * @returns {Promise<{totalGeral: number, porInstituicao: Array, porProposito: Array, rendimentoEstimadoConsolidado: number, subcontasDesatualizadas: Array}>}
  */
 async function obterResumo(usuarioId) {
-  const subcontas = await Subconta.find({ usuario: usuarioId, ativo: true })
+  const subcontas = (await Subconta.find({ usuario: usuarioId, ativo: true })
     .populate('instituicao')
-    .lean();
+    .lean()).filter(s => s.tipo !== 'cartao_credito');
 
   const totalGeral = subcontas.reduce((acc, s) => acc + (s.saldoAtual || 0), 0);
 

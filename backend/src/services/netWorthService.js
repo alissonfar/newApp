@@ -52,7 +52,9 @@ async function patrimonioEmData(usuarioId, data, filtros = {}) {
   const subcontasMatch = { _id: { $in: subcontaIds }, usuario: new mongoose.Types.ObjectId(usuarioId) };
 
   if (filtros.tipoConta) {
-    subcontasMatch.tipo = filtros.tipoConta;
+    subcontasMatch.tipo = { $eq: filtros.tipoConta, $ne: 'cartao_credito' };
+  } else {
+    subcontasMatch.tipo = { $ne: 'cartao_credito' };
   }
   if (filtros.proposito) {
     subcontasMatch.proposito = filtros.proposito;
@@ -182,7 +184,11 @@ async function evolucaoPatrimonio(usuarioId, opts = {}) {
 
   const subcontaIds = [...new Set(eventos.map(e => e.subconta.toString()))];
   const subcontasMatch = { _id: { $in: subcontaIds.map(id => new mongoose.Types.ObjectId(id)) }, usuario: new mongoose.Types.ObjectId(usuarioId) };
-  if (opts.tipoConta) subcontasMatch.tipo = opts.tipoConta;
+  if (opts.tipoConta) {
+    subcontasMatch.tipo = { $eq: opts.tipoConta, $ne: 'cartao_credito' };
+  } else {
+    subcontasMatch.tipo = { $ne: 'cartao_credito' };
+  }
   if (opts.proposito) subcontasMatch.proposito = opts.proposito;
 
   const subcontas = await Subconta.find(subcontasMatch).lean();

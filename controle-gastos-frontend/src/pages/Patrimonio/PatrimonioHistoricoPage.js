@@ -30,6 +30,7 @@ const TIPOS_CONTA = [
   { value: 'rendimento_automatico', label: 'Rendimento Automático' },
   { value: 'caixinha', label: 'Caixinha' },
   { value: 'investimento_fixo', label: 'Investimento Fixo' },
+  { value: 'cartao_credito', label: 'Cartão de Crédito' },
 ];
 
 const PROPOSITOS = [

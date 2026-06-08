@@ -82,6 +82,11 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  pluggyTransactionId: {
+    type: String,
+    default: null,
+    index: true
+  },
   transacaoCriada: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Transacao',

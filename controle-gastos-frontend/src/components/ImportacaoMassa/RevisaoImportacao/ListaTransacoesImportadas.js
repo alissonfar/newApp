@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaEdit, FaTrash, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useImportacao } from '../../../contexts/ImportacaoContext';
+import { formatDateBR } from '../../../utils/dateUtils';
 import './ListaTransacoesImportadas.css';
 
 const ListaTransacoesImportadas = ({ importacaoId }) => {
@@ -102,7 +103,7 @@ const ListaTransacoesImportadas = ({ importacaoId }) => {
   };
 
   const formatarData = (data) => {
-    return new Date(data).toLocaleDateString('pt-BR');
+    return formatDateBR(data);
   };
 
   if (loading) {

@@ -5,6 +5,7 @@ import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
 import SubcontaSelect from '../../components/shared/SubcontaSelect';
 import './ImportacaoOFXPage.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const ImportacaoOFXPage = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const ImportacaoOFXPage = () => {
   }, []);
 
   const formatarMoeda = (v) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '-';
+  const formatarData = (d) => d ? formatDateBR(d) : '-';
 
   const handleUpload = async (e) => {
     e.preventDefault();

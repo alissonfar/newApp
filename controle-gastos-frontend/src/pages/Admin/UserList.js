@@ -5,6 +5,7 @@ import { FaSpinner, FaEye, FaCog } from 'react-icons/fa';
 import UserDetailsModal from './UserDetailsModal';
 import AdminUserActionsModal from './AdminUserActionsModal';
 import './UserList.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 function UserList() {
   const [usuarios, setUsuarios] = useState([]);
@@ -118,7 +119,7 @@ function UserList() {
                   <td>{usuario.email}</td>
                   <td><span className={`role-badge role-${usuario.role}`}>{usuario.role}</span></td>
                   <td><span className={`status-badge status-${usuario.status}`}>{usuario.status}</span></td>
-                  <td>{new Date(usuario.createdAt).toLocaleDateString('pt-BR')}</td>
+                  <td>{formatDateBR(usuario.createdAt)}</td>
                   <td className="actions-cell">
                     <button 
                       className="action-button view-button"

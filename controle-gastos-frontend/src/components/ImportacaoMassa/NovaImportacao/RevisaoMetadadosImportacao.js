@@ -1,11 +1,12 @@
 import React from 'react';
 import IconRenderer from '../../shared/IconRenderer';
+import { formatDateBR } from '../../../utils/dateUtils';
 
 const formatarMoeda = (v) => new Intl.NumberFormat('pt-BR', {
   style: 'currency', currency: 'BRL'
 }).format(v || 0);
 
-const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+const formatarData = (d) => d ? formatDateBR(d) : '—';
 
 const Badge = ({ label, cor = '#3b82f6', icone }) => (
   <span style={{
@@ -60,6 +61,10 @@ const RevisaoMetadadosImportacao = (props) => {
 
   const dataInicialFmt = formatarData(meta.dataInicial);
   const dataFinalFmt = formatarData(meta.dataFinal);
+
+  const pluggyParams = preview.isPluggy ? (preview.pluggyParams || {}) : null;
+  const filtroFromFmt = pluggyParams?.dateFrom ? formatDateBR(pluggyParams.dateFrom) : null;
+  const filtroToFmt = pluggyParams?.dateTo ? formatDateBR(pluggyParams.dateTo) : null;
   const vencimentoFmt = formatarData(meta.vencimento);
   const isFaturaCartao = !!meta.isFaturaCartao;
   const tagSugerida = meta.tagSugerida || null;
@@ -83,6 +88,9 @@ const RevisaoMetadadosImportacao = (props) => {
           <Badge label={`Origem: ${parserInfo.nome || parserInfo.id || '—'}`} cor="#0ea5e9" />
           {isFaturaCartao && (
             <Badge label="Fatura de Cartão de Crédito" cor="#f59e0b" icone="credit-card" />
+          )}
+          {filtroFromFmt && filtroToFmt && (
+            <Badge label={`Filtro: ${filtroFromFmt} a ${filtroToFmt}`} cor="#6366f1" />
           )}
           {dataInicialFmt !== '—' && dataFinalFmt !== '—' && (
             <Badge label={`Período: ${dataInicialFmt} a ${dataFinalFmt}`} cor="#8b5cf6" />

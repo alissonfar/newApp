@@ -5,8 +5,6 @@ const PluggyConfig = require('../models/pluggyConfig');
 const ImportacaoPluggy = require('../models/importacaoPluggy');
 const TransacaoPluggy = require('../models/transacaoPluggy');
 const Subconta = require('../models/subconta');
-const Transacao = require('../models/transacao');
-const Usuario = require('../models/usuarios');
 const ledgerService = require('./ledgerService');
 const { startTransactionSession } = require('../utils/transactionHelper');
 
@@ -262,33 +260,12 @@ async function finalizarSincronizacao(importacaoId, usuarioId) {
   const opts = session ? { session } : {};
 
   try {
-    const usuario = await Usuario.findById(usuarioId).select('preferencias.proprietario').lean();
-    const proprietario = usuario?.preferencias?.proprietario?.trim() || 'Titular';
-
     // Agrupa por subconta para atualizar saldos
     const saldosPorSubconta = {};
 
     for (const tp of transacoesPluggy) {
-      const tipo = tp.tipo === 'credito' ? 'recebivel' : 'gasto';
-      
-      const transacao = await Transacao.create([{
-        tipo,
-        descricao: tp.descricao || 'Importado Pluggy',
-        valor: tp.valor,
-        data: tp.data,
-        observacao: `Importado Pluggy - ID: ${tp.pluggyTransactionId}` +
-          (tp.providerCode ? ` (codigo banco: ${tp.providerCode})` : ''),
-        pagamentos: [{ pessoa: proprietario, valor: tp.valor, tags: {} }],
-        usuario: usuarioId,
-        subconta: tp.subconta,
-        deduplicationKey: tp.deduplicationKey,
-        status: 'ativo'
-      }], opts);
-
-      const transacaoCriada = transacao[0];
-
-      // Registra evento no Ledger
       const valorDelta = tp.tipo === 'credito' ? tp.valor : -tp.valor;
+
       await ledgerService.registrarEvento({
         usuarioId,
         subcontaId: tp.subconta,
@@ -297,21 +274,19 @@ async function finalizarSincronizacao(importacaoId, usuarioId) {
         origemSistema: 'importacao_pluggy',
         referenciaTipo: 'transacao_pluggy',
         referenciaId: tp._id,
-        descricao: tp.descricao || `Pluggy ${tp.tipo} - ${tp.pluggyTransactionId}`,
+        descricao: tp.descricao || 'Pluggy ' + (tp.tipo === 'credito' ? 'credito' : 'debito') + ' - ' + tp.pluggyTransactionId,
         dataEvento: tp.data
       }, session);
 
-      // Acumula saldo por subconta
       const subcontaStr = tp.subconta.toString();
       if (!saldosPorSubconta[subcontaStr]) {
         saldosPorSubconta[subcontaStr] = 0;
       }
       saldosPorSubconta[subcontaStr] += valorDelta;
 
-      // Atualiza TransacaoPluggy
       await TransacaoPluggy.updateOne(
         { _id: tp._id },
-        { $set: { status: 'aprovada', transacaoCriada: transacaoCriada._id } },
+        { $set: { status: 'aprovada' } },
         opts
       );
     }

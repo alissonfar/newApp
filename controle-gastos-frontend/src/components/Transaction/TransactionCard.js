@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCard.css';
 import { obterCategorias, obterTags } from '../../api';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const TransactionCard = ({ transacao, onEdit, onDelete }) => {
   const [categorias, setCategorias] = useState([]);
@@ -79,7 +80,7 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
       <div className="card-details">
         <div className="transaction-info">
           <span className="date">
-            {new Date(transacao.data).toLocaleDateString()}
+            {formatDateBR(transacao.data)}
           </span>
           {transacao.observacao && (
             <span className="observation">

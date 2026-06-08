@@ -74,6 +74,8 @@ router.post('/:id/duplicate', ImportacaoController.duplicar);
 router.delete('/:id', ImportacaoController.excluir);
 router.put('/:id/finalizar', ImportacaoController.finalizarImportacao);
 router.put('/:id/estornar', ImportacaoController.estornarImportacao);
+router.post('/from-pluggy', ImportacaoController.criarDaPluggy);
+router.post('/preview-pluggy', ImportacaoController.previewPluggy);
 
 // Rotas de Transações Importadas
 router.get('/:importacaoId/transacoes', transacaoImportadaController.listarTransacoes);

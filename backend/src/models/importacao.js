@@ -13,11 +13,13 @@ const ImportacaoSchema = new mongoose.Schema({
   },
   nomeArquivo: { 
     type: String, 
-    required: true 
+    required: function() { return this.origem !== 'pluggy'; },
+    default: function() { return this.origem === 'pluggy' ? 'Open Finance' : undefined; }
   },
   caminhoArquivo: {
     type: String,
-    required: true
+    required: function() { return this.origem !== 'pluggy'; },
+    default: function() { return this.origem === 'pluggy' ? 'pluggy' : undefined; }
   },
   totalProcessado: { 
     type: Number, 
@@ -62,6 +64,11 @@ const ImportacaoSchema = new mongoose.Schema({
   },
   origem: {
     type: String,
+    default: null
+  },
+  pluggySyncId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ImportacaoPluggy',
     default: null
   },
   dataInicial: {

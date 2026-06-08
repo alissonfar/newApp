@@ -19,6 +19,10 @@ const Usuario = require('../models/usuarios');
 const Emprestimo = require('../models/emprestimo');
 const Pessoa = require('../models/pessoa');
 const emprestimoService = require('../services/emprestimoService');
+const PluggyConfig = require('../models/pluggyConfig');
+const pluggyService = require('../services/pluggyService');
+const pluggySyncService = require('../services/pluggySyncService');
+const { normalizarDataUTC } = require('../utils/dateUtils');
 
 function chaveAgrupamentoEmprestimo(cfg) {
   if (!cfg) return null;
@@ -536,8 +540,8 @@ class ImportacaoController {
             await TransacaoImportada.deleteMany({ importacao: id, usuario: usuario }); // Garante que só remove do usuário
             console.log('[Importação] Transações importadas removidas:', { id });
 
-            // Remove o arquivo se ainda existir
-            if (importacao.caminhoArquivo) {
+            // Remove o arquivo se ainda existir (ignora importações sem arquivo real, como Pluggy)
+            if (importacao.caminhoArquivo && importacao.caminhoArquivo !== 'pluggy') {
                 try {
                     await fs.unlink(importacao.caminhoArquivo);
                     console.log('[Importação] Arquivo removido:', importacao.caminhoArquivo);
@@ -882,6 +886,469 @@ class ImportacaoController {
         } catch (error) {
             console.error('[ImportacaoController] Erro ao estornar importação:', error);
             res.status(500).json({ erro: 'Erro ao estornar importação.' });
+        }
+    }
+
+    static async previewPluggy(req, res) {
+        try {
+            const { itemId, accountId, dateFrom, dateTo } = req.body || {};
+            const usuarioId = req.userId;
+
+            console.log('[PreviewPluggy] ===== REQUEST =====');
+            console.log('[PreviewPluggy] itemId:', itemId, '| accountId:', accountId);
+            console.log('[PreviewPluggy] dateFrom:', dateFrom, '| dateTo:', dateTo);
+            console.log('[PreviewPluggy] usuarioId:', usuarioId);
+
+            if (!itemId || !accountId) {
+                return res.status(400).json({ erro: 'itemId e accountId são obrigatórios.' });
+            }
+
+            const config = await PluggyConfig.findOne({ usuario: usuarioId, ativo: true });
+            if (!config) {
+                return res.status(400).json({ erro: 'Pluggy não configurado. Configure o Open Finance primeiro.' });
+            }
+
+            const item = config.items.find(i =>
+                String(i.itemId) === String(itemId) && String(i.accountId) === String(accountId) && i.ativo && i.subconta
+            );
+            if (!item) {
+                return res.status(400).json({ erro: 'Conta Pluggy não encontrada ou não mapeada a uma subconta.' });
+            }
+
+            console.log('[PreviewPluggy] Item configurado:', item.connectorName, '| tipo:', item.accountType, '| status:', item.status);
+            console.log('[PreviewPluggy] Subconta:', item.subconta, '| lastSyncAt:', item.lastSyncAt, '| lastSyncError:', item.lastSyncError);
+
+            // Garante dados frescos: sincroniza antes de consultar
+            console.log('[PreviewPluggy] Disparando sync...');
+            const syncInicio = Date.now();
+            let syncOk = false;
+            try {
+                syncOk = await pluggyService.sincronizarItem(usuarioId, itemId);
+                const syncDur = ((Date.now() - syncInicio) / 1000).toFixed(1);
+                console.log('[PreviewPluggy] Sync concluido em ' + syncDur + 's | resultado:', syncOk);
+            } catch (syncErr) {
+                console.warn('[PreviewPluggy] Sync falhou, usando cache:', syncErr.message);
+            }
+
+            // Verificar accounts do item para confirmar accountId existe
+            try {
+                const accounts = await pluggyService.buscarAccountsDoItem(usuarioId, itemId);
+                console.log('[PreviewPluggy] Accounts encontradas para o item:', accounts.length);
+                accounts.forEach(a => {
+                    console.log('[PreviewPluggy]   Account:', a.id, '| type:', a.type, '| name:', a.name || a.marketingName, '| balance:', a.balance);
+                });
+                const accountExiste = accounts.some(a => String(a.id) === String(accountId));
+                console.log('[PreviewPluggy] AccountId ' + accountId + ' existe na resposta da API?', accountExiste);
+                if (!accountExiste) {
+                    console.warn('[PreviewPluggy] ** ATENCAO: accountId nao encontrado nas accounts retornadas pela API **');
+                }
+                // Apos sync, re-ler status do item da config
+                const configAtualizada = await PluggyConfig.findOne({ usuario: usuarioId, ativo: true }).lean();
+                if (configAtualizada) {
+                    const itemAtual = configAtualizada.items.find(i =>
+                        String(i.itemId) === String(itemId) && String(i.accountId) === String(accountId)
+                    );
+                    if (itemAtual) {
+                        console.log('[PreviewPluggy] Status POS-sync do item:', itemAtual.status, '| lastSyncAt:', itemAtual.lastSyncAt);
+                    }
+                }
+            } catch (accErr) {
+                console.warn('[PreviewPluggy] Falha ao verificar accounts:', accErr.message);
+            }
+
+            console.log('[PreviewPluggy] Buscando transacoes na API...');
+            const txs = await pluggyService.buscarTodasTransacoes(usuarioId, accountId, {
+                dateFrom: dateFrom || undefined,
+                dateTo: dateTo || undefined
+            });
+
+            console.log('[PreviewPluggy] API retornou ' + txs.length + ' transacoes brutas');
+
+            const isCredit = item.accountType === 'CREDIT';
+            const transacoesMapeadas = [];
+            let skippedPending = 0, skippedSemData = 0, skippedSemId = 0, pendingIncluidos = 0;
+            for (const tx of txs) {
+                if (!tx || !tx.id) { skippedSemId++; continue; }
+                if (tx.status === 'PENDING') {
+                    if (isCredit) {
+                        pendingIncluidos++;
+                    } else {
+                        skippedPending++;
+                        continue;
+                    }
+                }
+                const data = tx.date ? normalizarDataUTC(tx.date) : null;
+                if (!data || isNaN(data.getTime())) { skippedSemData++; continue; }
+                transacoesMapeadas.push({
+                    descricao: (tx.description || tx.descriptionRaw || 'Transação Pluggy').trim(),
+                    valor: Math.abs(parseFloat(tx.amount) || 0),
+                    data,
+                    tipo: tx.type === 'CREDIT' ? 'recebivel' : 'gasto',
+                    categoria: tx.category || null,
+                    dadosOriginais: tx
+                });
+            }
+            console.log('[PreviewPluggy] Transacoes mapeadas:', transacoesMapeadas.length,
+                '| PENDING ignorados:', skippedPending,
+                '| PENDING incluidos (CREDIT):', pendingIncluidos,
+                '| sem data:', skippedSemData,
+                '| sem id:', skippedSemId);
+
+            const parserId = isCredit ? 'pluggy_fatura' : 'pluggy_extrato';
+            const parserNome = isCredit ? 'Pluggy Cartão de Crédito' : 'Pluggy Conta Corrente';
+
+            const meta = inferencia.extrairMetadados({
+                transacoes: transacoesMapeadas,
+                filename: item.connectorName || 'Pluggy',
+                parserId
+            });
+
+            let sugestaoComplementar = { sugestao: false, motivo: null, sobrepostas: 0 };
+            try {
+                sugestaoComplementar = await inferencia.detectarPossivelComplementar(Importacao, {
+                    usuarioId,
+                    dataInicial: meta.dataInicial,
+                    dataFinal: meta.dataFinal,
+                    origem: parserId
+                });
+            } catch (compErr) {
+                console.warn('[PreviewPluggy] Falha detectar complementar:', compErr.message);
+            }
+
+            let tagSugerida = null;
+            let numeroComplemento = null;
+            let categoriaCartaoNaoConfigurada = false;
+            let categoriaCartaoDeletada = false;
+            let motivoFalhaTag = null;
+
+            if (isCredit && meta.mesVencimento) {
+                try {
+                    const usuario = await Usuario.findById(usuarioId)
+                        .select('preferencias.categoriaCartaoCreditoId')
+                        .lean();
+                    const categoriaCartaoId = usuario?.preferencias?.categoriaCartaoCreditoId || null;
+                    if (!categoriaCartaoId) {
+                        categoriaCartaoNaoConfigurada = true;
+                        motivoFalhaTag = 'categoria_nao_configurada';
+                    } else {
+                        const tags = await Tag.find({ usuario: usuarioId }).lean();
+                        const inferenciaTag = await inferencia.inferirTagPorMes({
+                            categoriaCartaoId,
+                            tags,
+                            parserId,
+                            mesVencimento: meta.mesVencimento,
+                            Categoria,
+                            Tag,
+                            usuarioId
+                        });
+                        if (inferenciaTag.motivo === 'categoria_deletada') {
+                            categoriaCartaoDeletada = true;
+                            motivoFalhaTag = 'categoria_deletada';
+                        } else if (inferenciaTag.tagSugerida === null && inferenciaTag.motivo) {
+                            motivoFalhaTag = inferenciaTag.motivo;
+                        } else {
+                            tagSugerida = inferenciaTag;
+                        }
+                        numeroComplemento = await inferencia.contarComplementosAnteriores(Importacao, {
+                            usuarioId,
+                            parserId,
+                            mesVencimento: meta.mesVencimento
+                        });
+                    }
+                } catch (tagErr) {
+                    console.warn('[PreviewPluggy] Falha inferir tag:', tagErr.message);
+                }
+            }
+
+            console.log('[PreviewPluggy] Metadados inferidos:', {
+                totalRegistros: meta.totalRegistros,
+                dataInicial: meta.dataInicial,
+                dataFinal: meta.dataFinal,
+                periodoCompetencia: meta.periodoCompetencia,
+                totalCreditos: meta.totalCreditos,
+                totalDebitos: meta.totalDebitos,
+                isFaturaCartao: isCredit
+            });
+            const avisos = [];
+            if (isCredit && pendingIncluidos > 0) {
+                avisos.push(pendingIncluidos + ' transação(ões) PENDING (não confirmadas pelo banco) foram incluídas na prévia, pois são compras recentes do cartão de crédito.');
+            }
+
+            console.log('[PreviewPluggy] ===== FIM PREVIEW =====');
+
+            const tituloFinal = (isCredit && meta.periodoCompetencia)
+                ? 'Fatura ' + (item.connectorName || 'Cartão') + ' - ' + inferencia.formatarCompetenciaPT(meta.periodoCompetencia) + (numeroComplemento ? ' (' + numeroComplemento + 'Â° Complemento)' : '')
+                : meta.tituloSugerido || 'Importação ' + (item.connectorName || 'Pluggy');
+
+            return res.json({
+                isPluggy: true,
+                pluggyParams: { itemId, accountId, accountType: item.accountType, dateFrom, dateTo },
+                parser: {
+                    id: parserId,
+                    nome: parserNome,
+                    confianca: 1.0,
+                    tipoDestino: isCredit ? 'fatura' : 'extrato'
+                },
+                metadadosSugeridos: {
+                    titulo: tituloFinal,
+                    dataInicial: meta.dataInicial,
+                    dataFinal: meta.dataFinal,
+                    periodoCompetencia: meta.periodoCompetencia,
+                    totalRegistros: meta.totalRegistros,
+                    totalCreditos: meta.totalCreditos,
+                    totalDebitos: meta.totalDebitos,
+                    vencimento: meta.vencimento,
+                    mesVencimento: meta.mesVencimento,
+                    isFaturaCartao: isCredit,
+                    sugerirComplementarAutomaticamente: isCredit,
+                    tagSugerida,
+                    numeroComplemento,
+                    categoriaCartaoNaoConfigurada,
+                    categoriaCartaoDeletada,
+                    motivoFalhaTag
+                },
+                sugestaoComplementar,
+                amostraTransacoes: transacoesMapeadas.slice(0, 5).map(t => ({
+                    descricao: t.descricao,
+                    valor: t.valor,
+                    data: t.data,
+                    tipo: t.tipo
+                })),
+                avisos
+            });
+        } catch (erro) {
+            console.error('[PreviewPluggy] Erro:', erro);
+            return res.status(500).json({ erro: 'Erro ao analisar transações do Open Finance.' });
+        }
+    }
+
+    static async criarDaPluggy(req, res) {
+        try {
+            const { itemId, accountId, dateFrom, dateTo, descricao, tagsPadrao, tipoImportacao, metadados } = req.body || {};
+            const usuarioId = req.userId;
+
+            console.log('[CriarDaPluggy] ===== REQUEST =====');
+            console.log('[CriarDaPluggy] itemId:', itemId, '| accountId:', accountId);
+            console.log('[CriarDaPluggy] dateFrom:', dateFrom, '| dateTo:', dateTo);
+            console.log('[CriarDaPluggy] descricao:', descricao, '| tipoImportacao:', tipoImportacao);
+
+            if (!itemId || !accountId) {
+                return res.status(400).json({ erro: 'itemId e accountId são obrigatórios.' });
+            }
+            if (!descricao) {
+                return res.status(400).json({ erro: 'Descrição é obrigatória.' });
+            }
+
+            const config = await PluggyConfig.findOne({ usuario: usuarioId, ativo: true });
+            if (!config) {
+                return res.status(400).json({ erro: 'Pluggy não configurado.' });
+            }
+
+            const item = config.items.find(i =>
+                String(i.itemId) === String(itemId) && String(i.accountId) === String(accountId) && i.ativo && i.subconta
+            );
+            if (!item) {
+                return res.status(400).json({ erro: 'Conta Pluggy não encontrada.' });
+            }
+
+            const usuario = await Usuario.findById(usuarioId).select('preferencias.proprietario').lean();
+            const proprietarioPadrao = usuario?.preferencias?.proprietario?.trim() || 'Titular';
+
+            const isCredit = item.accountType === 'CREDIT';
+            const parserId = isCredit ? 'pluggy_fatura' : 'pluggy_extrato';
+
+            let tagsPadraoObj = {};
+            if (tagsPadrao) {
+                try {
+                    tagsPadraoObj = typeof tagsPadrao === 'string' ? JSON.parse(tagsPadrao) : tagsPadrao;
+                } catch (e) { tagsPadraoObj = {}; }
+            }
+
+            const importacao = new Importacao({
+                descricao,
+                usuario: usuarioId,
+                origem: parserId,
+                nomeArquivo: (item.connectorName || 'Pluggy') + ' - ' + (item.accountName || item.accountId),
+                caminhoArquivo: 'pluggy',
+                status: 'pendente',
+                tagsPadrao: tagsPadraoObj,
+                tipoImportacao: tipoImportacao === 'complementar' ? 'complementar' : 'normal'
+            });
+            if (metadados) {
+                const m = typeof metadados === 'string' ? JSON.parse(metadados) : metadados;
+                if (m.vencimento) importacao.vencimento = m.vencimento;
+                if (m.mesVencimento) importacao.mesVencimento = m.mesVencimento;
+                if (typeof m.numeroComplemento === 'number') importacao.numeroComplemento = m.numeroComplemento;
+                if (m.tagSugeridaId) importacao.tagSugeridaId = m.tagSugeridaId;
+                if (m.categoriaSugeridaId) importacao.categoriaSugeridaId = m.categoriaSugeridaId;
+            }
+            await importacao.save();
+
+            console.log('[CriarDaPluggy] Buscando transacoes na API...');
+            const txs = await pluggyService.buscarTodasTransacoes(usuarioId, accountId, {
+                dateFrom: dateFrom || undefined,
+                dateTo: dateTo || undefined
+            });
+
+            console.log('[CriarDaPluggy] API retornou ' + txs.length + ' transacoes brutas');
+
+            let totalTransacoes = 0;
+            let totalIgnoradas = 0;
+            let totalPossiveisDuplicatas = 0;
+            let totalJaImportadas = 0;
+            const txIdsVistos = new Set();
+            const transacoesParaProcessar = [];
+            let skippedSemId = 0, skippedDuplicado = 0, skippedPending = 0, skippedSemData = 0;
+            let pendingIncluidos = 0;
+
+            for (const tx of txs) {
+                if (!tx || !tx.id) { skippedSemId++; totalIgnoradas++; continue; }
+                if (txIdsVistos.has(tx.id)) { skippedDuplicado++; totalIgnoradas++; continue; }
+                txIdsVistos.add(tx.id);
+                if (tx.status === 'PENDING') {
+                    if (isCredit) {
+                        pendingIncluidos++;
+                    } else {
+                        skippedPending++;
+                        totalIgnoradas++;
+                        continue;
+                    }
+                }
+
+                const amount = Math.abs(parseFloat(tx.amount) || 0);
+                const tipo = tx.type === 'CREDIT' ? 'recebivel' : 'gasto';
+                const data = tx.date ? normalizarDataUTC(tx.date) : null;
+                if (!data || isNaN(data.getTime())) { skippedSemData++; totalIgnoradas++; continue; }
+
+                const desc = (tx.description || tx.descriptionRaw || 'Transação Pluggy').trim();
+                const dedupKey = pluggySyncService.gerarDeduplicationKeyPluggy(
+                    usuarioId.toString(), item.subconta.toString(), tx.id
+                );
+
+                const existeImportada = await TransacaoImportada.findOne({
+                    usuario: usuarioId, pluggyTransactionId: tx.id,
+                    status: { $in: ['pendente', 'validada', 'processada', 'ja_importada', 'revisada'] }
+                }).lean();
+                if (existeImportada) { totalJaImportadas++; totalIgnoradas++; continue; }
+
+                const existeIgnorada = await TransacaoImportada.findOne({
+                    usuario: usuarioId, pluggyTransactionId: tx.id, status: 'ignorada'
+                }).lean();
+                if (existeIgnorada) { totalIgnoradas++; continue; }
+
+                let status = 'pendente';
+                const snapshot = {};
+
+                const fuzzyMatch = await ImportacaoService.buscarPossivelDuplicata(usuarioId, {
+                    descricao: desc, valor: amount, data
+                });
+                if (fuzzyMatch) {
+                    const distDias = Math.round(Math.abs(
+                        new Date(fuzzyMatch.data).getTime() - data.getTime()
+                    ) / 86400000);
+                    status = 'possivel_duplicata';
+                    totalPossiveisDuplicatas++;
+                    snapshot.transacaoSemelhanteId = fuzzyMatch._id;
+                    snapshot.transacaoSemelhanteDistanciaDias = distDias;
+                    snapshot.transacaoSemelhanteData = fuzzyMatch.data;
+                    snapshot.transacaoSemelhanteValor = fuzzyMatch.valor;
+                    snapshot.transacaoSemelhanteDescricao = fuzzyMatch.descricao;
+                }
+
+                transacoesParaProcessar.push({ tx, amount, tipo, data, desc, dedupKey, status, snapshot });
+            }
+
+            console.log('[CriarDaPluggy] Transacoes para processar:', transacoesParaProcessar.length);
+            console.log('[CriarDaPluggy] Ignorados:',
+                'sem_id=' + skippedSemId,
+                '| duplicado_req=', skippedDuplicado,
+                '| PENDING_ignorado=', skippedPending,
+                '| PENDING_incluido(CREDIT)=', pendingIncluidos,
+                '| sem_data=', skippedSemData,
+                '| ja_importada=', totalJaImportadas,
+                '| ja_ignorada=' + (totalIgnoradas - skippedSemId - skippedDuplicado - skippedPending - skippedSemData - totalJaImportadas));
+            if (transacoesParaProcessar.length > 0) {
+                console.log('[CriarDaPluggy] Primeiras 5 descricoes:',
+                    transacoesParaProcessar.slice(0, 5).map(t => t.desc + ' (' + t.tx.date + ')').join(' | '));
+            }
+
+            if (transacoesParaProcessar.length === 0) {
+                console.log('[CriarDaPluggy] NENHUMA transacao nova — finalizando importacao vazia');
+                importacao.status = 'finalizada';
+                await importacao.save();
+                return res.json({
+                    importacaoId: importacao._id,
+                    totalTransacoes: 0, totalJaImportadas, totalIgnoradas, totalPossiveisDuplicatas,
+                    mensagem: 'Nenhuma transação nova encontrada.'
+                });
+            }
+
+            for (const t of transacoesParaProcessar) {
+                const pagamentosComTags = ImportacaoService.mergeTagsPadrao(
+                    [{ pessoa: proprietarioPadrao, valor: t.amount, tags: {} }],
+                    tagsPadraoObj
+                );
+                const transacaoImportada = new TransacaoImportada({
+                    importacao: importacao._id, usuario: usuarioId,
+                    descricao: t.desc, valor: t.amount, data: t.data, tipo: t.tipo,
+                    status: t.status,
+                    dadosOriginais: t.tx,
+                    deduplicationKey: t.dedupKey,
+                    pluggyTransactionId: t.tx.id,
+                    subconta: item.subconta,
+                    pagamentos: pagamentosComTags,
+                    ...t.snapshot
+                });
+                await transacaoImportada.save();
+                totalTransacoes++;
+            }
+
+            importacao.totalProcessado = totalTransacoes;
+            importacao.totalSucesso = totalTransacoes;
+            importacao.totalIgnoradas = totalIgnoradas;
+            importacao.totalPossiveisDuplicatas = totalPossiveisDuplicatas;
+            importacao.status = 'validado';
+            await importacao.save();
+
+            try {
+                const inferenciaPessoaService = require('../services/inferenciaPessoaService');
+                const transacoesParaInferir = await TransacaoImportada.find({
+                    importacao: importacao._id, status: 'pendente'
+                }).lean();
+                const inferencias = await inferenciaPessoaService.inferirPessoasEmLote(
+                    transacoesParaInferir.map(t => ({
+                        descricao: t.descricao, valor: t.valor, data: t.data, tipo: t.tipo
+                    })),
+                    usuarioId
+                );
+                for (let i = 0; i < transacoesParaInferir.length; i++) {
+                    const inf = inferencias[i];
+                    if (inf) {
+                        await TransacaoImportada.updateOne(
+                            { _id: transacoesParaInferir[i]._id },
+                            { $set: {
+                                pessoaSugerida: inf.pessoa,
+                                pessoaSugeridaCount: inf.count,
+                                pessoaSugeridaConfianca: inf.confianca,
+                                pessoaSugeridaSample: inf.sample || null,
+                                pessoaSugeridaTransacaoIds: inf.transacaoIds || [],
+                                pessoaSugeridaAplicada: false
+                            }}
+                        );
+                    }
+                }
+            } catch (inferenciaErr) {
+                console.warn('[ImportacaoPluggy] Falha inferência pessoa:', inferenciaErr.message);
+            }
+
+            return res.status(201).json({
+                importacaoId: importacao._id,
+                totalTransacoes, totalJaImportadas, totalIgnoradas, totalPossiveisDuplicatas,
+                mensagem: 'Importação criada com ' + totalTransacoes + ' transações novas.'
+            });
+        } catch (erro) {
+            console.error('[ImportacaoPluggy] Erro:', erro);
+            return res.status(500).json({ erro: 'Erro ao criar importação a partir do Open Finance.' });
         }
     }
 }

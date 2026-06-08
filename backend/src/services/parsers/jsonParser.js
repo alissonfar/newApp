@@ -1,3 +1,5 @@
+const { normalizarDataUTC } = require('../../utils/dateUtils');
+
 function parse({ conteudo }) {
   const dados = JSON.parse(conteudo);
   let transacoes = dados;
@@ -9,7 +11,7 @@ function parse({ conteudo }) {
   }
   return transacoes.map(t => ({
     ...t,
-    data: t.data ? new Date(new Date(t.data).setHours(12, 0, 0, 0)) : t.data,
+    data: t.data ? normalizarDataUTC(t.data) : t.data,
     dadosOriginais: t.dadosOriginais || t
   }));
 }

@@ -219,6 +219,28 @@ const importacaoService = {
       const mensagem = error.response?.data?.erro || error.message;
       throw new Error(mensagem);
     }
+  },
+
+  // Importar transações do Open Finance (Pluggy)
+  importarDaPluggy: async (opcoes = {}) => {
+    try {
+      const response = await api.post('/importacoes/from-pluggy', opcoes);
+      return response.data;
+    } catch (error) {
+      const mensagem = error.response?.data?.erro || error.message;
+      throw new Error(mensagem);
+    }
+  },
+
+  // Preview de importação do Open Finance (Pluggy)
+  previewPluggy: async (dados) => {
+    try {
+      const response = await api.post('/importacoes/preview-pluggy', dados);
+      return response.data;
+    } catch (error) {
+      const msg = error.response?.data?.erro || error.response?.data?.mensagem || error.message;
+      throw new Error(msg);
+    }
   }
 };
 

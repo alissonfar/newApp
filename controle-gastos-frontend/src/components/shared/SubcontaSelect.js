@@ -7,6 +7,7 @@ const TIPOS_LABEL = {
   rendimento_automatico: 'Rendimento Automático',
   caixinha: 'Caixinha',
   investimento_fixo: 'Investimento Fixo',
+  cartao_credito: 'Cartão de Crédito',
 };
 
 const formatLabel = (sc, showTipo = false) => {

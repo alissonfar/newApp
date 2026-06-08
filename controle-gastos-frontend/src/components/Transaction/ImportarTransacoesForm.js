@@ -6,6 +6,7 @@ import { processarDados, validarTransacoes } from '../../middleware/transformarD
 import { registrarTransacoesEmMassa } from '../../api';
 import EditarTransacaoItem from './EditarTransacaoItem';
 import './ImportarTransacoesForm.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const ImportarTransacoesForm = ({ onSuccess, onClose, standalonePage = false }) => {
   const { usuario } = useContext(AuthContext);
@@ -440,7 +441,7 @@ A saída deve ser um JSON formatado conforme a estrutura especificada, com campo
                   
                   <div className="transacao-details">
                     <p>
-                      <strong>Data:</strong> {new Date(transacao.data).toLocaleDateString()}
+                      <strong>Data:</strong> {formatDateBR(transacao.data)}
                     </p>
                     {transacao.observacao && (
                       <p>

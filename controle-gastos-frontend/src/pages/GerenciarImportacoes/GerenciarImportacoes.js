@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { FaUndo, FaDownload, FaEye } from 'react-icons/fa';
 import './GerenciarImportacoes.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const GerenciarImportacoes = () => {
   // Estados
@@ -117,8 +118,9 @@ const GerenciarImportacoes = () => {
   
   // Função para formatar a data
   const formatarData = (dataString) => {
+    if (!dataString) return '';
     const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return formatDateBR(data) + ' ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
   
   return (

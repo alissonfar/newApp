@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { criarPessoa } from '../../api';
 import { formatarMoedaBRL, labelTipoRetorno } from '../../utils/emprestimoFormat';
 import './EmprestimoSecao.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const EmprestimoSecao = ({ form, valorTotal }) => {
   const { state, setters, adicionarPessoa, avisoEmprestimoSemDesembolso } = form;
@@ -177,7 +178,7 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
                       <option value="">Selecione...</option>
                       {state.emprestimosPessoa.map((emp) => (
                         <option key={emp.id} value={emp.id}>
-                          {formatarMoedaBRL(emp.valorEsperadoRetorno)} — {labelTipoRetorno(emp.tipoRetorno)} (prazo {emp.prazoFinal ? new Date(emp.prazoFinal).toLocaleDateString('pt-BR') : '—'})
+                          {formatarMoedaBRL(emp.valorEsperadoRetorno)} — {labelTipoRetorno(emp.tipoRetorno)} (prazo {emp.prazoFinal ? formatDateBR(emp.prazoFinal) : '—'})
                         </option>
                       ))}
                     </select>

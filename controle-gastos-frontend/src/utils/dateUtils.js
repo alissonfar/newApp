@@ -7,13 +7,12 @@ export const getCurrentDateBR = () => {
   return brasiliaTime;
 };
 
-// Função para converter uma data para o formato ISO mantendo o fuso horário de Brasília
+// Converte uma string YYYY-MM-DD para ISO string com horário meio-dia UTC
+// Evita viés de timezone: qualquer que seja o fuso do navegador, a data calendário é preservada
 export const toISOStringBR = (date) => {
   if (!date) return '';
-  // Cria uma data a partir do input, que deve estar no formato YYYY-MM-DD
   const [year, month, day] = date.split('-').map(Number);
-  // Cria uma nova data usando o fuso horário local
-  const d = new Date(year, month - 1, day, 12, 0, 0);
+  const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   return d.toISOString();
 };
 

@@ -5,6 +5,7 @@ import { FaPlus, FaSpinner, FaChevronLeft, FaChevronRight, FaTrash } from 'react
 import importacaoService from '../../services/importacaoService';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './GerenciamentoImportacoesPage.css';
+import { formatDateBR } from '../../utils/dateUtils';
 
 const GerenciamentoImportacoesPage = () => {
   const navigate = useNavigate();
@@ -94,13 +95,7 @@ const GerenciamentoImportacoesPage = () => {
   };
 
   const formatarData = (data) => {
-    return new Date(data).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateBR(data);
   };
 
   const getStatusBadgeClass = (status) => {

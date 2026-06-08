@@ -4,6 +4,7 @@ import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaVenusMars,
          FaInfoCircle, FaBriefcase, FaBuilding, FaLinkedin, FaTwitter, 
          FaInstagram, FaClock, FaCheckCircle, FaBan, FaDollarSign, 
          FaMoon, FaSun, FaBell, FaUserShield, FaExclamationTriangle } from 'react-icons/fa';
+import { formatDateBR } from '../../utils/dateUtils';
 
 function UserDetailsModal({ usuario, onClose }) {
   if (!usuario) return null;
@@ -68,7 +69,7 @@ function UserDetailsModal({ usuario, onClose }) {
           </div>
           <div className="detail-item">
             <span className="detail-label"><FaCalendar /> Data de Nascimento:</span>
-            <span className="detail-value">{usuario.dataNascimento ? new Date(usuario.dataNascimento).toLocaleDateString('pt-BR') : 'N/A'}</span>
+            <span className="detail-value">{usuario.dataNascimento ? formatDateBR(usuario.dataNascimento) : 'N/A'}</span>
           </div>
           <div className="detail-item">
             <span className="detail-label"><FaVenusMars /> Gênero:</span>
