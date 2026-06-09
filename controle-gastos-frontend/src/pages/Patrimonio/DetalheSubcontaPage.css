@@ -17,6 +17,27 @@
   margin: 0.5rem 0 0 0;
 }
 
+.detalhe-mes-filtro {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+  margin-bottom: 0.5rem;
+}
+
+.detalhe-mes-filtro label {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave, #555);
+  white-space: nowrap;
+}
+
+.detalhe-mes-filtro select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--cor-borda, #ddd);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
 .detalhe-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -206,4 +227,19 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.ledger-filtro-periodo {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ledger-filtro-periodo .period-quick-filter {
+  flex: 1;
+}
+
+.ledger-filtro-periodo .period-quick-filter__buttons {
+  flex-wrap: wrap;
 }

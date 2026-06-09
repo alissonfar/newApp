@@ -26,6 +26,7 @@ const SubcontaForm = ({ subconta, instituicoes, instituicaoPadrao, onSalvar, onF
   const [percentualCDI, setPercentualCDI] = useState('');
   const [saldoAtual, setSaldoAtual] = useState('');
   const [meta, setMeta] = useState('');
+  const [fechamentoFatura, setFechamentoFatura] = useState('');
   const [erro, setErro] = useState('');
 
   useEffect(() => {
@@ -38,6 +39,7 @@ const SubcontaForm = ({ subconta, instituicoes, instituicaoPadrao, onSalvar, onF
       setPercentualCDI(subconta.percentualCDI != null ? String(subconta.percentualCDI) : '');
       setSaldoAtual(subconta.saldoAtual != null ? String(subconta.saldoAtual) : '');
       setMeta(subconta.meta != null ? String(subconta.meta) : '');
+      setFechamentoFatura(subconta.fechamentoFatura != null ? String(subconta.fechamentoFatura) : '');
     } else {
       setInstituicao(instId || (instituicoes?.[0]?._id) || '');
       setNome('');
@@ -46,6 +48,7 @@ const SubcontaForm = ({ subconta, instituicoes, instituicaoPadrao, onSalvar, onF
       setPercentualCDI('');
       setSaldoAtual('');
       setMeta('');
+      setFechamentoFatura('');
     }
   }, [subconta, instituicoes, instituicaoPadrao]);
 
@@ -67,7 +70,8 @@ const SubcontaForm = ({ subconta, instituicoes, instituicaoPadrao, onSalvar, onF
       proposito,
       percentualCDI: percentualCDI ? parseFloat(percentualCDI) : null,
       saldoAtual: saldoAtual ? parseFloat(saldoAtual) : 0,
-      meta: meta ? parseFloat(meta) : null
+      meta: meta ? parseFloat(meta) : null,
+      fechamentoFatura: fechamentoFatura !== '' ? parseInt(fechamentoFatura, 10) : null
     };
     try {
       await onSalvar(dados);
@@ -152,6 +156,18 @@ const SubcontaForm = ({ subconta, instituicoes, instituicaoPadrao, onSalvar, onF
               placeholder="0,00"
             />
           </div>
+          {tipo === 'cartao_credito' && (
+            <div className="form-group">
+              <label>Fechamento da fatura</label>
+              <select value={fechamentoFatura} onChange={(e) => setFechamentoFatura(e.target.value)}>
+                <option value="">N\u00e3o configurado</option>
+                <option value="0">\u00daltimo dia do m\u00eas</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => (
+                  <option key={dia} value={String(dia)}>Dia {dia}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {erro && <p className="form-erro">{erro}</p>}
           <div className="form-actions">
             <Button type="button" variant="ghost" onClick={onFechar}>Cancelar</Button>

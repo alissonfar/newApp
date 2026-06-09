@@ -4,7 +4,6 @@
   border-radius: 12px;
   box-shadow: var(--sombra-card, 0 2px 8px rgba(0, 0, 0, 0.08));
   margin-bottom: 1rem;
-  overflow: hidden;
   border-left: 4px solid var(--cor-primaria);
   transition: box-shadow 0.2s ease;
 }

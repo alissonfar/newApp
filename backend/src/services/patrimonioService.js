@@ -12,11 +12,15 @@ const DIAS_ALERTA_DESATUALIZADO = 7;
  * @returns {Promise<{totalGeral: number, porInstituicao: Array, porProposito: Array, rendimentoEstimadoConsolidado: number, subcontasDesatualizadas: Array}>}
  */
 async function obterResumo(usuarioId) {
-  const subcontas = (await Subconta.find({ usuario: usuarioId, ativo: true })
+  const todasSubcontas = await Subconta.find({ usuario: usuarioId, ativo: true })
     .populate('instituicao')
-    .lean()).filter(s => s.tipo !== 'cartao_credito');
+    .lean();
+
+  const subcontas = todasSubcontas.filter(s => s.tipo !== 'cartao_credito');
+  const cartoesCredito = todasSubcontas.filter(s => s.tipo === 'cartao_credito');
 
   const totalGeral = subcontas.reduce((acc, s) => acc + (s.saldoAtual || 0), 0);
+  const totalCartaoCredito = cartoesCredito.reduce((acc, s) => acc + (s.saldoAtual || 0), 0);
 
   const porInstituicaoMap = new Map();
   for (const sc of subcontas) {
@@ -81,6 +85,7 @@ async function obterResumo(usuarioId) {
 
   return {
     totalGeral,
+    totalCartaoCredito,
     porInstituicao,
     porProposito,
     rendimentoEstimadoConsolidado,

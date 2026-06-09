@@ -38,8 +38,8 @@ const pluggyApi = {
     const response = await api.post('/pluggy/sync', opcoes);
     return response.data;
   },
-  listarImportacoes: async () => {
-    const response = await api.get('/pluggy/importacoes');
+  listarImportacoes: async (page = 1, limit = 20) => {
+    const response = await api.get(`/pluggy/importacoes?page=${page}&limit=${limit}`);
     return response.data;
   },
   obterDetalhesImportacao: async (id) => {
@@ -53,6 +53,22 @@ const pluggyApi = {
   },
   obterAccountsDoItem: async (itemId) => {
     const response = await api.post('/pluggy/items/accounts', { itemId });
+    return response.data;
+  },
+  adicionarItemsBatch: async (dados) => {
+    const response = await api.post('/pluggy/items/batch', dados);
+    return response.data;
+  },
+  salvarConexao: async (itemId, connectorName, connectorId) => {
+    const response = await api.post('/pluggy/conexoes', { itemId, connectorName, connectorId });
+    return response.data;
+  },
+  listarConexoes: async () => {
+    const response = await api.get('/pluggy/conexoes');
+    return response.data;
+  },
+  removerConexao: async (itemId) => {
+    const response = await api.delete('/pluggy/conexoes/' + itemId);
     return response.data;
   },
   obterStatusSync: async () => {

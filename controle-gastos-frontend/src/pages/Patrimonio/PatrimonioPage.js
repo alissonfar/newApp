@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPiggyBank, FaBuilding, FaChartPie, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
+import { FaPiggyBank, FaBuilding, FaChartPie, FaExclamationTriangle, FaSpinner, FaCreditCard } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
 import PatrimonioAlerta from '../../components/Patrimonio/PatrimonioAlerta';
@@ -77,6 +77,15 @@ const PatrimonioPage = () => {
           icon="chartline"
           badge={{ label: 'Estimativa', variant: 'neutral' }}
         />
+        {resumo?.totalCartaoCredito > 0 && (
+          <PatrimonioStatCard
+            label="Cartões de Crédito"
+            valor={formatarMoeda(resumo.totalCartaoCredito)}
+            icon="creditcard"
+            corBorda="#f44336"
+            badge={{ label: 'Saldo devedor total', variant: 'warning' }}
+          />
+        )}
       </div>
 
       {resumo?.subcontasDesatualizadas?.length > 0 && (
@@ -135,6 +144,11 @@ const PatrimonioPage = () => {
         <Button variant="primary" onClick={() => navigate('/pluggy')}>
           Open Finance (Pluggy)
         </Button>
+        {resumo?.totalCartaoCredito > 0 && (
+          <Button variant="primary" onClick={() => navigate('/patrimonio/faturas')}>
+            Ver Faturas
+          </Button>
+        )}
         <Button variant="primary" onClick={() => navigate('/patrimonio/transferencias')}>
           Transferências
         </Button>

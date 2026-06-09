@@ -50,6 +50,12 @@ const PluggyConfigSchema = new mongoose.Schema({
   },
   ativo: { type: Boolean, default: true },
   items: { type: [ItemMappingSchema], default: [] },
+  conexoes: [{
+    itemId: { type: String, required: true },
+    connectorId: { type: Number, default: null },
+    connectorName: { type: String, default: '' },
+    connectedAt: { type: Date, default: Date.now }
+  }],
   ultimoTesteConexao: {
     data: { type: Date, default: null },
     sucesso: { type: Boolean, default: null },

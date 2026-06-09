@@ -51,11 +51,12 @@ const patrimonioApi = {
     const response = await api.get(`/subcontas/${id}/historico${params}`);
     return response.data;
   },
-  obterEventosLedger: async (subcontaId, { tipoEvento, dataInicio, dataFim, limit } = {}) => {
+  obterEventosLedger: async (subcontaId, { tipoEvento, dataInicio, dataFim, page, limit } = {}) => {
     const params = new URLSearchParams();
     if (tipoEvento) params.append('tipoEvento', tipoEvento);
     if (dataInicio) params.append('dataInicio', dataInicio);
     if (dataFim) params.append('dataFim', dataFim);
+    if (page) params.append('page', page);
     if (limit) params.append('limit', limit);
     const q = params.toString() ? `?${params.toString()}` : '';
     const response = await api.get(`/subcontas/${subcontaId}/eventos-ledger${q}`);
@@ -168,6 +169,11 @@ const patrimonioApi = {
   },
   confirmarTransferencia: async (id) => {
     const response = await api.post(`/patrimonio/transferencias/${id}/confirmar`);
+    return response.data;
+  },
+  obterFaturas: async (anoMes) => {
+    const params = anoMes ? `?anoMes=${anoMes}` : '';
+    const response = await api.get(`/patrimonio/faturas${params}`);
     return response.data;
   }
 };

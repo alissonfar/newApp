@@ -1,0 +1,143 @@
+.faturas-page {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.faturas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.faturas-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.faturas-mes-select {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.faturas-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.faturas-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.faturas-loading,
+.faturas-erro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: #666;
+}
+
+.faturas-lista {
+  margin-top: 8px;
+}
+
+.faturas-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.fatura-card {
+  padding: 20px;
+}
+
+.fatura-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.fatura-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.fatura-card__info h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.fatura-card__nome {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.fatura-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.fatura-card__stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fatura-card__label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.fatura-card__valor {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.fatura-card__valor--positivo {
+  color: #4caf50;
+}
+
+.fatura-card__valor--negativo {
+  color: #f44336;
+}
+
+.fatura-card__detalhes {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.fatura-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.fatura-card__data {
+  font-size: 0.8rem;
+  color: #999;
+}

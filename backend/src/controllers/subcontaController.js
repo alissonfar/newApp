@@ -255,7 +255,10 @@ exports.obterEventosLedger = async (req, res) => {
   try {
     const subconta = await Subconta.findOne({ _id: req.params.id, usuario: req.userId });
     if (!subconta) return res.status(404).json({ erro: 'Subconta não encontrada.' });
-    const { tipoEvento, dataInicio, dataFim, limit } = req.query;
+    const { tipoEvento, dataInicio, dataFim, page: pageStr, limit: limitStr } = req.query;
+    const page = Math.max(1, parseInt(pageStr, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(limitStr, 10) || 50));
+    const skip = (page - 1) * limit;
     const match = { subconta: req.params.id, usuario: req.userId };
     if (tipoEvento) match.tipoEvento = tipoEvento;
     if (dataInicio || dataFim) {
@@ -263,12 +266,15 @@ exports.obterEventosLedger = async (req, res) => {
       if (dataInicio) match.dataEvento.$gte = new Date(dataInicio);
       if (dataFim) match.dataEvento.$lte = new Date(dataFim);
     }
-    const limite = limit ? Math.min(parseInt(limit, 10) || 100, 500) : 100;
-    const eventos = await LedgerPatrimonial.find(match)
-      .sort({ dataEvento: -1, createdAt: -1 })
-      .limit(limite)
-      .lean();
-    res.json(eventos);
+    const [eventos, total] = await Promise.all([
+      LedgerPatrimonial.find(match)
+        .sort({ dataEvento: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      LedgerPatrimonial.countDocuments(match)
+    ]);
+    res.json({ data: eventos, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     console.error('Erro ao obter eventos do ledger:', error);
     res.status(500).json({ erro: 'Erro ao obter eventos do ledger.' });

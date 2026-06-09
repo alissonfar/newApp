@@ -46,9 +46,25 @@
 }
 
 .config-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  align-items: center;
+}
+
+.config-info .status-badge {
+  grid-column: 1 / -1;
+}
+
+.config-info .info-label {
+  color: var(--cor-texto-secundario, #666);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.config-info .info-value {
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .status-badge {
@@ -72,8 +88,10 @@
 
 .config-form {
   margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--cor-borda, #e0e0e0);
+  padding: 1.25rem;
+  background: var(--cor-superficie, #f8f9fa);
+  border: 1px solid var(--cor-borda, #e0e0e0);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -120,10 +138,59 @@
   align-items: center;
 }
 
-.add-item-inline {
+.etapas-guia {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.etapa-passo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--cor-texto-secundario, #666);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #f5f5f5;
+  white-space: nowrap;
+}
+
+.etapa-passo.ativa {
+  background: #e3f2fd;
+  color: #1565c0;
+  font-weight: 600;
+}
+
+.etapa-passo.concluida {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.etapa-seta {
+  color: var(--cor-texto-secundario, #666);
+  font-size: 0.7rem;
+}
+
+.details-manual {
+  margin-top: 0.5rem;
+}
+
+.details-manual summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--cor-texto-secundario, #666);
+  padding: 0.2rem 0;
+}
+
+.details-manual .add-item-inline {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .item-id-input {
@@ -140,6 +207,57 @@
   border-radius: 4px;
   font-size: 0.85rem;
   width: 120px;
+}
+
+.lista-conexoes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.conexao-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda, #e0e0e0);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+}
+
+.conexao-item.has-mapping {
+  border-left: 3px solid #4caf50;
+}
+
+.conexao-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.conexao-connector {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.conexao-itemid {
+  font-size: 0.78rem;
+  color: var(--cor-texto-secundario, #666);
+  font-family: monospace;
+}
+
+.conexao-data {
+  font-size: 0.78rem;
+  color: var(--cor-texto-secundario, #666);
+}
+
+.conexao-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .lista-mapeamentos {
@@ -307,22 +425,84 @@
 
 .account-item {
   padding: 0.75rem;
-  border: 2px solid var(--cor-borda, #e0e0e0);
+  border: 1px solid var(--cor-borda, #e0e0e0);
   border-radius: 4px;
-  cursor: pointer;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
   transition: border-color 0.2s;
+  background: #fff;
 }
 
 .account-item:hover {
   border-color: var(--cor-primaria, #1976d2);
 }
 
-.account-item.selected {
-  border-color: var(--cor-primaria, #1976d2);
-  background: #e3f2fd;
+.account-item.already-mapped {
+  opacity: 0.55;
+  background: #f5f5f5;
+  cursor: default;
+}
+
+.account-item.already-mapped:hover {
+  border-color: var(--cor-borda, #e0e0e0);
+}
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.already-mapped-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #2e7d32;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #e8f5e9;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.account-map-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.account-map-row label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--cor-texto-secundario, #666);
+  white-space: nowrap;
+}
+
+.account-map-row select {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--cor-borda, #e0e0e0);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.account-map-row select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account-map-count {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--cor-texto-secundario, #666);
+  margin-top: 0.25rem;
+  padding: 0 0.5rem;
 }
 
 .account-info {
@@ -455,6 +635,40 @@
   white-space: nowrap;
 }
 
+.inline-subconta-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px dashed var(--cor-borda, #ccc);
+  width: 100%;
+}
+
+.inline-subconta-form input,
+.inline-subconta-form select {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--cor-borda, #e0e0e0);
+  border-radius: 4px;
+}
+
+.inline-subconta-form .form-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.inline-subconta-form .form-actions button {
+  flex: 0;
+}
+
 .modal-actions {
   display: flex;
   gap: 0.5rem;
@@ -554,4 +768,196 @@
   font-size: 0.8rem;
   color: var(--cor-texto-secundario, #666);
   font-style: italic;
+}
+
+/* ── Sync history expansion ── */
+
+.sync-item {
+  cursor: pointer;
+  flex-direction: column !important;
+  padding: 0 !important;
+  transition: box-shadow 0.15s;
+}
+
+.sync-item:hover {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.sync-item--expanded {
+  border-color: var(--cor-primaria, #1976d2) !important;
+}
+
+.sync-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  gap: 1rem;
+  width: 100%;
+}
+
+.sync-item__detail {
+  border-top: 1px solid var(--cor-borda, #e0e0e0);
+  padding: 0.75rem;
+  width: 100%;
+  background: #fafafa;
+  border-radius: 0 0 4px 4px;
+  overflow-x: auto;
+}
+
+.sync-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--cor-texto-secundario, #555);
+}
+
+.sync-pending-badge {
+  display: inline-block;
+  background: #fff3e0;
+  color: #e65100;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.sync-duplicate-badge {
+  display: inline-block;
+  background: #e8eaf6;
+  color: #3949ab;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.sync-accounts-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.sync-acct-tag {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  font-weight: 500;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.sync-acct-tag--credit {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.sync-acct-tag--bank {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.sync-periodo {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave, #888);
+  margin-top: 0.15rem;
+}
+
+.sync-moedas-line {
+  display: block;
+  font-size: 0.8rem;
+  color: #7b1fa2;
+  margin-top: 0.15rem;
+}
+
+/* ── Sync detail table ── */
+
+.sync-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  min-width: 700px;
+}
+
+.sync-detail-table th {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave, #666);
+  border-bottom: 2px solid var(--cor-borda, #e0e0e0);
+  white-space: nowrap;
+}
+
+.sync-detail-table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--cor-borda, #eee);
+  white-space: nowrap;
+}
+
+.sync-detail-table tbody tr:hover {
+  background: rgba(0,0,0,0.02);
+}
+
+.sync-acct-name {
+  display: block;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.sync-connector-name {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--cor-texto-suave, #999);
+}
+
+.sync-type-badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sync-type-badge--credit {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.sync-type-badge--bank {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.valor-credito {
+  color: var(--cor-sucesso, #2e7d32);
+  font-weight: 500;
+}
+
+.valor-debito {
+  color: var(--cor-erro, #c62828);
+  font-weight: 500;
+}
+
+.valor-saldo {
+  font-weight: 500;
+}
+
+.sync-erro-label {
+  color: #c62828;
+  font-weight: 600;
+  cursor: help;
+  border-bottom: 1px dashed #c62828;
+}
+
+.sync-erro-geral {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #ffebee;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #c62828;
 }

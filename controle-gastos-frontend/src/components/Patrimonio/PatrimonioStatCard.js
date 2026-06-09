@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPiggyBank, FaChartLine, FaBuilding, FaChartPie } from 'react-icons/fa';
+import { FaPiggyBank, FaChartLine, FaBuilding, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import Card from '../shared/Card';
 import Badge from '../shared/Badge';
 import './PatrimonioStatCard.css';
@@ -9,6 +9,7 @@ const ICONE_MAP = {
   chartline: FaChartLine,
   building: FaBuilding,
   chartpie: FaChartPie,
+  creditcard: FaCreditCard,
 };
 
 const PatrimonioStatCard = ({

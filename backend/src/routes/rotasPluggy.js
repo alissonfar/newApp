@@ -21,7 +21,11 @@ router.get('/importacoes', pluggyController.listarImportacoes);
 router.get('/importacoes/:id', pluggyController.obterDetalhes);
 
 router.post('/connect-token', pluggyController.criarConnectToken);
+router.post('/items/batch', pluggyController.adicionarItemsBatch);
 router.post('/items/accounts', pluggyController.obterAccountsDoItem);
+router.post('/conexoes', pluggyController.salvarConexao);
+router.get('/conexoes', pluggyController.listarConexoes);
+router.delete('/conexoes/:itemId', pluggyController.removerConexao);
 router.get('/sync-status', pluggyController.obterStatusSync);
 
 module.exports = router;

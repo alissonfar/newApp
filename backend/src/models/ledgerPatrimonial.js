@@ -12,7 +12,9 @@ const TIPOS_EVENTO = [
   'importacao_csv',
   'ajuste_manual',
   'snapshot_inicial',
-  'correcao'
+  'correcao',
+  'compra_credito',
+  'pagamento_fatura'
 ];
 
 const ORIGENS_SISTEMA = [

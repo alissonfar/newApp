@@ -32,6 +32,7 @@ import ImportacaoOFXDetalhePage from './pages/Patrimonio/ImportacaoOFXDetalhePag
 import TransferenciasPage from './pages/Patrimonio/TransferenciasPage';
 import SimuladorRendimentosPage from './pages/Patrimonio/SimuladorRendimentosPage';
 import PatrimonioHistoricoPage from './pages/Patrimonio/PatrimonioHistoricoPage';
+import FaturasPage from './pages/Patrimonio/FaturasPage';
 import ConjuntoPage from './pages/Conjunto/ConjuntoPage';
 import DetalheVinculoPage from './pages/Conjunto/DetalheVinculoPage';
 import PessoasPage from './pages/Pessoas/PessoasPage';
@@ -224,6 +225,16 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <TransferenciasPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/patrimonio/faturas"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <FaturasPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

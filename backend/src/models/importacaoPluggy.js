@@ -11,12 +11,15 @@ const ItemSincronizadoSchema = new mongoose.Schema({
   connectorName: { type: String, default: '' },
   subconta: { type: mongoose.Schema.Types.ObjectId, ref: 'Subconta', required: true },
   saldoPluggy: { type: Number, default: null },
+  saldoPluggyInicial: { type: Number, default: null },
   dataSaldoPluggy: { type: Date, default: null },
   totalTransacoes: { type: Number, default: 0 },
   totalCreditos: { type: Number, default: 0 },
   totalDebitos: { type: Number, default: 0 },
   totalIgnoradas: { type: Number, default: 0 },
   totalJaImportadas: { type: Number, default: 0 },
+  totalPendentes: { type: Number, default: 0 },
+  moedas: { type: Map, of: Number, default: {} },
   erro: { type: String, default: null }
 }, { _id: false });
 

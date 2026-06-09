@@ -224,6 +224,52 @@ exports.removerItem = async (req, res) => {
   }
 };
 
+exports.adicionarItemsBatch = async (req, res) => {
+  try {
+    const { itemId, connectorName, mapeamentos } = req.body || {};
+
+    if (!itemId || !mapeamentos || !Array.isArray(mapeamentos) || mapeamentos.length === 0) {
+      return res.status(400).json({ erro: 'itemId e mapeamentos (array) sao obrigatorios.' });
+    }
+
+    const config = await PluggyConfig.findOne({ usuario: req.userId });
+    if (!config) {
+      return res.status(400).json({ erro: 'Pluggy nao configurado. Salve as credenciais primeiro.' });
+    }
+
+    // Remove only mappings for accounts in this batch, preserve existing ones not in the batch
+    const outros = config.items.filter(i =>
+      String(i.itemId) !== String(itemId) ||
+      !mapeamentos.some(m => String(m.accountId) === String(i.accountId))
+    );
+
+    const novos = mapeamentos.map(m => ({
+      itemId: String(itemId),
+      accountId: String(m.accountId),
+      accountType: m.accountType === 'CREDIT' ? 'CREDIT' : 'BANK',
+      accountSubtype: m.accountSubtype || null,
+      accountName: m.accountName || '',
+      accountNumber: m.accountNumber || '',
+      connectorId: m.connectorId || null,
+      connectorName: connectorName || '',
+      subconta: m.subcontaId,
+      status: 'DESCONHECIDO',
+      ativo: true
+    }));
+
+    config.items = [...outros, ...novos];
+    await config.save();
+
+    return res.status(201).json({
+      mensagem: novos.length + ' mapeamento(s) salvo(s) com sucesso.',
+      items: novos
+    });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao adicionar items batch:', err);
+    return res.status(500).json({ erro: 'Erro ao salvar mapeamentos em lote.' });
+  }
+};
+
 exports.atualizarStatusItem = async (req, res) => {
   try {
     const resultado = await pluggyService.atualizarStatusItem(req.userId, req.params.itemId);
@@ -254,7 +300,9 @@ exports.iniciarSync = async (req, res) => {
 
 exports.listarImportacoes = async (req, res) => {
   try {
-    const importacoes = await pluggySyncService.listarImportacoes(req.userId);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const importacoes = await pluggySyncService.listarImportacoes(req.userId, page, limit);
     return res.json(importacoes);
   } catch (err) {
     console.error('[Pluggy] Erro ao listar importacoes:', err);
@@ -340,5 +388,68 @@ exports.obterStatusSync = async (req, res) => {
   } catch (err) {
     console.error('[Pluggy] Erro ao obter status sync:', err);
     return res.status(500).json({ erro: 'Erro ao obter status de sincronizacao.' });
+  }
+};
+
+exports.salvarConexao = async (req, res) => {
+  try {
+    const { itemId, connectorId, connectorName } = req.body || {};
+    if (!itemId) {
+      return res.status(400).json({ erro: 'itemId e obrigatorio.' });
+    }
+
+    const config = await PluggyConfig.findOne({ usuario: req.userId });
+    if (!config) {
+      return res.status(400).json({ erro: 'Pluggy nao configurado.' });
+    }
+
+    const jaExiste = config.conexoes && config.conexoes.some(c => String(c.itemId) === String(itemId));
+    if (!jaExiste) {
+      config.conexoes.push({
+        itemId: String(itemId),
+        connectorId: connectorId || null,
+        connectorName: connectorName || '',
+        connectedAt: new Date()
+      });
+      await config.save();
+    }
+
+    return res.json({ mensagem: 'Conexao salva com sucesso.' });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao salvar conexao:', err);
+    return res.status(500).json({ erro: 'Erro ao salvar conexao.' });
+  }
+};
+
+exports.listarConexoes = async (req, res) => {
+  try {
+    const config = await PluggyConfig.findOne({ usuario: req.userId });
+    if (!config) {
+      return res.json({ conexoes: [] });
+    }
+    return res.json({ conexoes: config.conexoes || [] });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao listar conexoes:', err);
+    return res.status(500).json({ erro: 'Erro ao listar conexoes.' });
+  }
+};
+
+exports.removerConexao = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const config = await PluggyConfig.findOne({ usuario: req.userId });
+    if (!config) {
+      return res.status(404).json({ erro: 'Configuracao Pluggy nao encontrada.' });
+    }
+    const antes = config.conexoes ? config.conexoes.length : 0;
+    config.conexoes = (config.conexoes || []).filter(c => String(c.itemId) !== String(itemId));
+    if (config.conexoes.length === antes) {
+      return res.status(404).json({ erro: 'Conexao nao encontrada.' });
+    }
+    await config.save();
+    return res.json({ mensagem: 'Conexao removida com sucesso.' });
+  } catch (err) {
+    console.error('[Pluggy] Erro ao remover conexao:', err);
+    return res.status(500).json({ erro: 'Erro ao remover conexao.' });
   }
 };

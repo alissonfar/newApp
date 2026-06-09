@@ -24,7 +24,8 @@ const SubcontaSchema = new mongoose.Schema({
   saldoAtual: { type: Number, default: 0 },
   dataUltimaConfirmacao: { type: Date, default: null },
   meta: { type: Number, default: null },
-  ativo: { type: Boolean, default: true }
+  ativo: { type: Boolean, default: true },
+  fechamentoFatura: { type: Number, default: null, min: 0, max: 31 }
 }, {
   timestamps: true
 });

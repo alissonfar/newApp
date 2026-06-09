@@ -11,7 +11,9 @@ const LABEL_POR_TIPO_EVENTO = {
   importacao_ofx: 'Importação OFX',
   importacao_csv: 'Importação CSV',
   ajuste_manual: 'Ajuste manual',
-  correcao: 'Correção'
+  correcao: 'Correção',
+  compra_credito: 'Compra crédito',
+  pagamento_fatura: 'Pagamento fatura'
 };
 
 const EventosLedgerTable = ({ eventos, formatarMoeda, formatarData }) => {
