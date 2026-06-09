@@ -48,7 +48,7 @@ const PluggyPage = () => {
   const [subcriando, setSubcriando] = useState(false);
 
   const [novoItemId, setNovoItemId] = useState('');
-  const [carregandoItemAccounts, setCarregandoItemAccounts] = useState(false);
+  const carregandoItemAccounts = false;
 
   const [showWidget, setShowWidget] = useState(false);
   const [connectToken, setConnectToken] = useState(null);

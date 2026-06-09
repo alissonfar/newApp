@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { FaArrowLeft, FaCheck, FaSpinner, FaCreditCard } from 'react-icons/fa';
+import { FaArrowLeft, FaCheck, FaSpinner } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import { calcularPeriodoFatura } from '../../utils/faturaUtils';
 import { formatDateBR, PERIODOS_RAPIDOS } from '../../utils/dateUtils';

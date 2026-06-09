@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPiggyBank, FaBuilding, FaChartPie, FaExclamationTriangle, FaSpinner, FaCreditCard } from 'react-icons/fa';
+import { FaPiggyBank, FaBuilding, FaChartPie, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
 import PatrimonioAlerta from '../../components/Patrimonio/PatrimonioAlerta';
