@@ -8,8 +8,6 @@ const TransacaoPluggy = require('../models/transacaoPluggy');
 const Subconta = require('../models/subconta');
 const LedgerPatrimonial = require('../models/ledgerPatrimonial');
 const ledgerService = require('./ledgerService');
-const { startTransactionSession } = require('../utils/transactionHelper');
-
 /**
  * Gera chave de deduplicação para Pluggy: SHA256(usuarioId|subcontaId|pluggyTransactionId)
  */
@@ -27,6 +25,26 @@ function gerarDeduplicationKeyPluggy(usuarioId, subcontaId, pluggyTransactionId)
  * @returns {Object} ImportacaoPluggy criada
  */
 async function iniciarSincronizacao(usuarioId, opcoes = {}) {
+  // ─── Lock de concorrência: impede syncs simultâneos para o mesmo usuário ───
+  const importPendente = await ImportacaoPluggy.findOne({
+    usuario: usuarioId,
+    status: { $in: ['processando', 'revisao'] }
+  });
+  if (importPendente) {
+    const idadeMin = (Date.now() - new Date(importPendente.createdAt).getTime()) / 60000;
+    if (idadeMin < 15) {
+      throw new Error(
+        'Já existe uma sincronização em andamento para este usuário. ' +
+        'Aguarde a conclusão ou tente novamente em alguns minutos.'
+      );
+    }
+    // Importação órfã (> 15min) — limpa e começa do zero
+    await TransacaoPluggy.deleteMany({ importacaoPluggy: importPendente._id }).catch(() => {});
+    await ImportacaoPluggy.deleteOne({ _id: importPendente._id }).catch(() => {});
+    console.log('[PluggySync] Importação órfã ' + importPendente._id +
+      ' (status: ' + importPendente.status + ', ' + idadeMin.toFixed(0) + 'min) limpa.');
+  }
+
   const config = await PluggyConfig.findOne({ usuario: usuarioId, ativo: true });
   if (!config) {
     throw new Error('Pluggy não configurado. Salve clientId e clientSecret primeiro.');
@@ -160,11 +178,13 @@ async function iniciarSincronizacao(usuarioId, opcoes = {}) {
             deduplicationKey: dedupKey
           }).lean();
 
-          const status = jaExiste ? 'ja_importada' : 'aprovada';
           if (jaExiste) {
             totalJaImportadas++;
             totalIgnoradas++;
+            continue;
           }
+
+          const status = 'aprovada';
 
           const transacaoPluggy = new TransacaoPluggy({
             importacaoPluggy: importacao._id,
@@ -277,152 +297,126 @@ async function finalizarSincronizacao(importacaoId, usuarioId) {
     status: 'aprovada'
   }).sort({ data: 1 }).lean();
 
-  let session;
-  try {
-    session = await startTransactionSession();
-  } catch (txErr) {
-    session = null;
+  // Check which subcontas already have ledger events from a previous sync
+  const subcontasUnicas = {};
+  for (const tp of transacoesPluggy) {
+    subcontasUnicas[tp.subconta.toString()] = true;
+  }
+  const subcontasComLedger = {};
+  for (const subId of Object.keys(subcontasUnicas)) {
+    const existe = await LedgerPatrimonial.findOne({
+      subconta: subId,
+      usuario: usuarioId,
+      origemSistema: 'importacao_pluggy'
+    }).lean();
+    subcontasComLedger[subId] = !!existe;
   }
 
-  const opts = session ? { session } : {};
+  // Build accountType lookup from importacao.itens
+  const accountTypeMap = {};
+  for (const it of importacao.itens) {
+    const key = it.itemId + '|' + it.accountId;
+    accountTypeMap[key] = it.accountType;
+  }
 
-  try {
-    // Check which subcontas already have ledger events from a previous sync
-    const subcontasUnicas = {};
-    for (const tp of transacoesPluggy) {
-      subcontasUnicas[tp.subconta.toString()] = true;
-    }
-    const subcontasComLedger = {};
-    for (const subId of Object.keys(subcontasUnicas)) {
-      const existe = await LedgerPatrimonial.findOne({
-        subconta: subId,
-        usuario: usuarioId,
-        origemSistema: 'importacao_pluggy'
-      }).session(session || null).lean();
-      subcontasComLedger[subId] = !!existe;
-    }
+  const saldosPorSubconta = {};
 
-    // Build accountType lookup from importacao.itens
-    const accountTypeMap = {};
-    for (const it of importacao.itens) {
-      const key = it.itemId + '|' + it.accountId;
-      accountTypeMap[key] = it.accountType;
+  for (const tp of transacoesPluggy) {
+    const valorDelta = tp.tipo === 'credito' ? tp.valor : -tp.valor;
+    const subcontaStr = tp.subconta.toString();
+
+    // Determine tipoEvento based on account type
+    const tpKey = tp.itemId + '|' + tp.accountId;
+    const accountType = accountTypeMap[tpKey] || 'BANK';
+    let tipoEvento;
+    if (accountType === 'CREDIT') {
+      tipoEvento = tp.tipo === 'credito' ? 'pagamento_fatura' : 'compra_credito';
+    } else {
+      tipoEvento = tp.tipo === 'credito' ? 'deposito' : 'saque';
     }
 
-    const saldosPorSubconta = {};
+    // Register individual event for every transaction (ledgerService has dedup)
+    await ledgerService.registrarEvento({
+      usuarioId,
+      subcontaId: tp.subconta,
+      valor: valorDelta,
+      tipoEvento: tipoEvento,
+      origemSistema: 'importacao_pluggy',
+      referenciaTipo: 'transacao_pluggy',
+      referenciaId: tp._id,
+      descricao: tp.descricao || 'Pluggy ' + (tp.tipo === 'credito' ? 'credito' : 'debito') + ' - ' + tp.pluggyTransactionId,
+      dataEvento: tp.data
+    });
 
-    for (const tp of transacoesPluggy) {
-      const valorDelta = tp.tipo === 'credito' ? tp.valor : -tp.valor;
-      const subcontaStr = tp.subconta.toString();
-
-      // Determine tipoEvento based on account type
-      const tpKey = tp.itemId + '|' + tp.accountId;
-      const accountType = accountTypeMap[tpKey] || 'BANK';
-      let tipoEvento;
-      if (accountType === 'CREDIT') {
-        tipoEvento = tp.tipo === 'credito' ? 'pagamento_fatura' : 'compra_credito';
-      } else {
-        tipoEvento = tp.tipo === 'credito' ? 'deposito' : 'saque';
-      }
-
-      // Always register individual event for every transaction
-      await ledgerService.registrarEvento({
-        usuarioId,
-        subcontaId: tp.subconta,
-        valor: valorDelta,
-        tipoEvento: tipoEvento,
-        origemSistema: 'importacao_pluggy',
-        referenciaTipo: 'transacao_pluggy',
-        referenciaId: tp._id,
-        descricao: tp.descricao || 'Pluggy ' + (tp.tipo === 'credito' ? 'credito' : 'debito') + ' - ' + tp.pluggyTransactionId,
-        dataEvento: tp.data
-      }, session);
-
-      if (!saldosPorSubconta[subcontaStr]) {
-        saldosPorSubconta[subcontaStr] = 0;
-      }
-      saldosPorSubconta[subcontaStr] += valorDelta;
-
-      await TransacaoPluggy.updateOne(
-        { _id: tp._id },
-        { $set: { status: 'aprovada' } },
-        opts
-      );
+    if (!saldosPorSubconta[subcontaStr]) {
+      saldosPorSubconta[subcontaStr] = 0;
     }
+    saldosPorSubconta[subcontaStr] += valorDelta;
 
-    for (const [subcontaId, delta] of Object.entries(saldosPorSubconta)) {
-      const subconta = await Subconta.findById(subcontaId);
-      if (!subconta) continue;
-
-      if (!subcontasComLedger[subcontaId]) {
-        // ─── Primeira sync para esta subconta ───
-        // Snapshot: saldo inicial calculado (saldoBanco - sumDeltas)
-        // + eventos individuais para cada transacao
-        const item = importacao.itens.find(function(i) {
-          return i.subconta && i.subconta.toString() === subcontaId;
-        });
-        if (item && item.saldoPluggyInicial != null) {
-          // Data = 1ms antes da primeira transacao desta subconta
-          const txsDaSub = transacoesPluggy.filter(function(t) {
-            return t.subconta.toString() === subcontaId;
-          });
-          const primeiraData = txsDaSub.length > 0 && txsDaSub[0].data
-            ? new Date(txsDaSub[0].data.getTime() - 1)
-            : new Date();
-          await ledgerService.registrarEvento({
-            usuarioId,
-            subcontaId: subcontaId,
-            valor: item.saldoPluggyInicial,
-            tipoEvento: 'snapshot_inicial',
-            origemSistema: 'importacao_pluggy',
-            descricao: 'Saldo inicial calculado (saldo banco - transacoes)',
-            dataEvento: primeiraData
-          }, session);
-        }
-        subconta.saldoAtual = item && item.saldoPluggy != null
-          ? item.saldoPluggy
-          : (subconta.saldoAtual || 0) + delta;
-      } else {
-        // ─── Syncs subsequentes ───
-        subconta.saldoAtual = (subconta.saldoAtual || 0) + delta;
-      }
-
-      subconta.dataUltimaConfirmacao = new Date();
-      await subconta.save(opts);
-    }
-
-    importacao.status = 'finalizada';
-    importacao.finalizedAt = new Date();
-    await importacao.save(opts);
-
-    await PluggyConfig.findOneAndUpdate(
-      { usuario: usuarioId },
-      {
-        $set: {
-          ultimaSync: {
-            data: new Date(),
-            totalImportacoes: 1,
-            totalTransacoes: transacoesPluggy.length
-          }
-        }
-      },
-      opts
+    await TransacaoPluggy.updateOne(
+      { _id: tp._id },
+      { $set: { status: 'aprovada' } }
     );
-
-    if (session) {
-      await session.commitTransaction();
-    }
-
-    return importacao;
-
-  } catch (err) {
-    if (session) {
-      await session.abortTransaction().catch(() => {});
-    }
-    throw err;
-  } finally {
-    if (session) session.endSession();
   }
+
+  // Update subcontas first, then mark import as finalized.
+  // Ledger dedup protects against duplicate events on retry.
+  for (const [subcontaId, delta] of Object.entries(saldosPorSubconta)) {
+    const subconta = await Subconta.findById(subcontaId);
+    if (!subconta) continue;
+
+    if (!subcontasComLedger[subcontaId]) {
+      // ─── Primeira sync para esta subconta ───
+      const item = importacao.itens.find(function(i) {
+        return i.subconta && i.subconta.toString() === subcontaId;
+      });
+      if (item && item.saldoPluggyInicial != null) {
+        const txsDaSub = transacoesPluggy.filter(function(t) {
+          return t.subconta.toString() === subcontaId;
+        });
+        const primeiraData = txsDaSub.length > 0 && txsDaSub[0].data
+          ? new Date(txsDaSub[0].data.getTime() - 1)
+          : new Date();
+        await ledgerService.registrarEvento({
+          usuarioId,
+          subcontaId: subcontaId,
+          valor: item.saldoPluggyInicial,
+          tipoEvento: 'snapshot_inicial',
+          origemSistema: 'importacao_pluggy',
+          descricao: 'Saldo inicial calculado (saldo banco - transacoes)',
+          dataEvento: primeiraData
+        });
+      }
+      subconta.saldoAtual = item && item.saldoPluggy != null
+        ? item.saldoPluggy
+        : (subconta.saldoAtual || 0) + delta;
+    } else {
+      // ─── Syncs subsequentes ───
+      subconta.saldoAtual = (subconta.saldoAtual || 0) + delta;
+    }
+
+    subconta.dataUltimaConfirmacao = new Date();
+    await subconta.save();
+  }
+
+  importacao.status = 'finalizada';
+  importacao.finalizedAt = new Date();
+  await importacao.save();
+
+  await PluggyConfig.findOneAndUpdate(
+    { usuario: usuarioId },
+    {
+      $set: {
+        ultimaSync: {
+          data: new Date(),
+          totalImportacoes: 1,
+          totalTransacoes: transacoesPluggy.length
+        }
+      }
+    }
+  );
+
+  return importacao;
 }
 
 /**

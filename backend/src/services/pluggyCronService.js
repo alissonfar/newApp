@@ -42,7 +42,15 @@ async function executarSyncAutomatico() {
       console.log('[PluggyCron] Processando usuario ' + usuarioId + ' com ' + itemsAtivos.length + ' item(s).');
 
       try {
-        const importacao = await pluggySyncService.iniciarSincronizacao(usuarioId.toString(), {});
+        // Sync incremental: busca apenas transações após o último sync
+        const ultimosSyncs = itemsAtivos
+          .map(i => i.lastSyncAt)
+          .filter(d => d != null)
+          .map(d => new Date(d).getTime());
+        const dateFrom = ultimosSyncs.length > 0
+          ? new Date(Math.min(...ultimosSyncs)).toISOString()
+          : undefined;
+        const importacao = await pluggySyncService.iniciarSincronizacao(usuarioId.toString(), { dateFrom });
 
         // Finalizar apenas se houver transacoes aprovadas
         const TransacaoPluggy = require('../models/transacaoPluggy');

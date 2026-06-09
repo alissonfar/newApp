@@ -106,21 +106,25 @@ async function run() {
     // Verifica se as colecoes existem
     const temLedger = nomesColecoes.includes('ledgerpatrimonials');
     const temTransacaoPluggy = nomesColecoes.includes('transacaopluggies');
+    const temImportacaoPluggy = nomesColecoes.includes('importacaopluggies');
     const temSubconta = nomesColecoes.includes('subcontas');
+    const temPluggyConfig = nomesColecoes.includes('pluggyconfigs');
 
-    if (!temLedger && !temTransacaoPluggy) {
-      console.log('Colecoes ledgerpatrimonials e transacaopluggies nao existem.');
+    if (!temLedger && !temTransacaoPluggy && !temImportacaoPluggy) {
+      console.log('Colecoes ledgerpatrimonials, transacaopluggies e importacaopluggies nao existem.');
       console.log('Nada a limpar. Migracao concluida sem alteracoes.');
       await mongoose.disconnect();
       process.exit(0);
     }
 
-    // 1. Contar documentos a serem deletados
+    // 1. Contar documentos a serem deletados / resetados
     const colecaoLedger = db.collection('ledgerpatrimonials');
     const colecaoTransacao = temTransacaoPluggy ? db.collection('transacaopluggies') : null;
+    const colecaoImportacao = temImportacaoPluggy ? db.collection('importacaopluggies') : null;
 
     let totalLedger = 0;
     let totalTransacoes = 0;
+    let totalImportacoes = 0;
     let subcontasAfetadasLedger = [];
     let subcontasAfetadasTx = [];
 
@@ -136,13 +140,17 @@ async function run() {
       subcontasAfetadasTx = await colecaoTransacao.distinct('subconta', {});
     }
 
+    if (temImportacaoPluggy) {
+      totalImportacoes = await colecaoImportacao.countDocuments({});
+    }
+
     // Union das subcontas afetadas (de ledger OU transacoes)
     const subcontasAfetadasSet = new Set();
     subcontasAfetadasLedger.forEach(function(id) { subcontasAfetadasSet.add(id.toString()); });
     subcontasAfetadasTx.forEach(function(id) { subcontasAfetadasSet.add(id.toString()); });
     const subcontasAfetadas = Array.from(subcontasAfetadasSet);
 
-    if (totalLedger === 0 && totalTransacoes === 0) {
+    if (totalLedger === 0 && totalTransacoes === 0 && totalImportacoes === 0) {
       console.log('Nenhum dado Pluggy encontrado para limpar. Migracao concluida.');
       await mongoose.disconnect();
       process.exit(0);
@@ -167,10 +175,12 @@ async function run() {
     console.log('========================================');
     console.log('  LedgerPatrimonial (importacao_pluggy):', totalLedger);
     console.log('  TransacaoPluggy:', totalTransacoes);
+    console.log('  ImportacaoPluggy (historico de syncs):', totalImportacoes);
     console.log('  Subcontas afetadas:', subcontasAfetadas.length);
     dadosSubcontas.forEach(function(s) {
       console.log('    -', s.nome || s._id, '| tipo:', s.tipo, '| saldoAtual:', s.saldoAtual);
     });
+    console.log('  PluggyConfig.lastSyncAt: limpo (full sync na proxima vez)');
     console.log('========================================');
     console.log('');
 
@@ -216,6 +226,13 @@ async function run() {
       console.log('Nenhum TransacaoPluggy para deletar.');
     }
 
+    if (colecaoImportacao && totalImportacoes > 0) {
+      const resultadoDeleteImp = await colecaoImportacao.deleteMany({});
+      console.log('Deletados:', resultadoDeleteImp.deletedCount, 'documento(s) do ImportacaoPluggy (historico de syncs)');
+    } else {
+      console.log('Nenhum ImportacaoPluggy para deletar.');
+    }
+
     // 4. Resetar saldoAtual das subcontas afetadas
     if (temSubconta && subcontasAfetadas.length > 0) {
       const colecaoSub = db.collection('subcontas');
@@ -230,6 +247,23 @@ async function run() {
       console.log('Subcontas resetadas:', resultadoReset.modifiedCount, '(saldoAtual -> 0)');
     }
 
+    // 5. Resetar lastSyncAt/lastSyncError no PluggyConfig (forca full sync)
+    if (temPluggyConfig) {
+      const colecaoPluggy = db.collection('pluggyconfigs');
+      const resultadoPluggy = await colecaoPluggy.updateMany(
+        {},
+        {
+          $set: {
+            'items.$[].lastSyncAt': null,
+            'items.$[].lastSyncError': null
+          }
+        }
+      );
+      console.log('PluggyConfigs atualizados:', resultadoPluggy.modifiedCount, '(lastSyncAt/lastSyncError resetados)');
+    } else {
+      console.log('Colecao pluggyconfigs nao encontrada. Nada a resetar.');
+    }
+
     console.log('');
     console.log('Migracao 007 concluida com sucesso.');
     console.log('');
@@ -239,6 +273,8 @@ async function run() {
     console.log('  3. Va em Pluggy > Importacoes e finalize a sync pendente');
     console.log('  4. O saldo da subconta sera ajustado para o valor informado pelo banco');
     console.log('     (em vez de somar todas as transacoes historicas)');
+    console.log('  5. O lastSyncAt foi resetado — a proxima sincronizacao sera completa (full sync)');
+    console.log('  6. O historico de importacoes antigas foi apagado — iniciara limpo');
     console.log('');
 
   } catch (err) {
