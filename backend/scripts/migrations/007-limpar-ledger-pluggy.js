@@ -26,27 +26,29 @@ const path = require('path');
 const fs = require('fs');
 
 const forcarProducao = process.argv.includes('--production');
-if (forcarProducao) process.env.NODE_ENV = 'production';
+const isProducao = forcarProducao || process.env.NODE_ENV === 'production';
 
-const envPath = process.env.NODE_ENV === 'production'
-  ? path.resolve(__dirname, '../../.env.production')
-  : path.resolve(__dirname, '../../.env.development');
+const envFileName = isProducao ? '.env.production' : '.env.development';
+const envPath = path.resolve(__dirname, '../../' + envFileName);
 
-let envFile = envPath;
-if (!fs.existsSync(envPath)) {
+let envFile = fs.existsSync(envPath) ? envPath : null;
+if (!envFile) {
   const fallback = path.resolve(__dirname, '../../.env');
   if (fs.existsSync(fallback)) {
     envFile = fallback;
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('Aviso: .env.production nao encontrado, usando .env como fallback.');
-    }
-  } else if (process.env.NODE_ENV === 'production') {
-    console.error('Erro: .env.production nao encontrado em', envPath);
-    console.error('Crie o arquivo com DB_URI apontando para o banco de producao.');
+    console.warn('Aviso: ' + envFileName + ' nao encontrado, usando .env como fallback.');
+  } else if (process.env.DB_URI || process.env.MONGODB_URI) {
+    console.log('Arquivo ' + envFileName + ' nao encontrado — usando DB_URI do ambiente (Railway/Docker).');
+  } else {
+    console.error('Erro: ' + envFileName + ' nao encontrado e DB_URI nao definida no ambiente.');
+    console.error('Esperado: ' + envPath);
     process.exit(1);
   }
 }
-require('dotenv').config({ path: envFile });
+
+if (envFile) {
+  require('dotenv').config({ path: envFile });
+}
 
 const mongoose = require('mongoose');
 
