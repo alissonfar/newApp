@@ -6,6 +6,10 @@ const ModalTransacao = ({ onClose, children }) => {
   const modalRef = useRef(null);
 
   useEffect(() => {
+    // Trava scroll do body enquanto modal estiver aberto
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const handleKeyDown = (e) => {
       // Confina Tab dentro do modal (focus trap)
       if (e.key === 'Tab') {
@@ -33,7 +37,10 @@ const ModalTransacao = ({ onClose, children }) => {
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = prev;
+    };
   }, []);
 
   return (

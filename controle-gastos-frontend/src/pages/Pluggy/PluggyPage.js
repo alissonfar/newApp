@@ -733,7 +733,7 @@ const PluggyPage = () => {
 
       {showMappingModal && (
         <div className="modal-overlay" onClick={() => setShowMappingModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="pluggy-modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Mapear contas - {mappingConnectorName || 'Banco'}</h3>
             {modalAccounts.length === 0 ? (
               <p>Nenhuma account encontrada neste item.</p>

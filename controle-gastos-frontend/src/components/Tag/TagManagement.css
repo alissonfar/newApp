@@ -507,7 +507,7 @@
     grid-template-columns: 1fr;
   }
 
-  .form-section {
+  .tag-form-section {
     padding: 10px;
   }
 
@@ -565,7 +565,7 @@
   flex: 2;
 }
 
-.form-section {
+.tag-form-section {
   margin-top: 20px;
   padding: 15px;
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -574,7 +574,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.form-section h4 {
+.tag-form-section h4 {
   margin-bottom: 15px;
   color: var(--cor-primaria);
 }

@@ -31,34 +31,34 @@
   gap: 16px;
 }
 
-.form-section {
+.edit-item-form-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.form-section label {
+.edit-item-form-section label {
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.form-section label i {
+.edit-item-form-section label i {
   width: 16px;
   text-align: center;
 }
 
-.form-section input,
-.form-section select,
-.form-section textarea {
+.edit-item-form-section input,
+.edit-item-form-section select,
+.edit-item-form-section textarea {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
 }
 
-.form-section textarea {
+.edit-item-form-section textarea {
   resize: vertical;
   min-height: 80px;
 }

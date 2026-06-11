@@ -168,30 +168,30 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
       <form className="nova-transacao-form-container" onSubmit={handleSubmit}>
         <div className="form-grid">
           <div className="left-column">
-            <div className="form-section">
+            <div className="edit-item-form-section">
               <label>Tipo:</label>
               <select value={tipo} onChange={e => setTipo(e.target.value)} required>
                 <option value="gasto">Gasto</option>
                 <option value="recebivel">Recebivel</option>
               </select>
             </div>
-            <div className="form-section">
+            <div className="edit-item-form-section">
               <label>Descricao:</label>
               <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required />
             </div>
             <DateFieldWithShortcuts value={data} onChange={setData} onToday={setHoje} onYesterday={setOntem} />
-            <div className="form-section">
+            <div className="edit-item-form-section">
               <label>Valor Total:</label>
               <input type="number" step="0.01" min="0" value={valorTotal} onChange={handleValorTotalChange} required />
             </div>
-            <div className="form-section">
+            <div className="edit-item-form-section">
               <label>Observacao:</label>
               <textarea value={observacao} onChange={e => setObservacao(e.target.value)} rows={3} />
             </div>
           </div>
 
           <div className="right-column">
-            <div className="form-section payment-section">
+            <div className="edit-item-form-section payment-section">
               <h3>Pagamentos</h3>
               {pagamentos.map((pag, idx) => (
                 <div key={idx} className="payment-item">
@@ -202,11 +202,11 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
                     )}
                   </div>
                   <div className="payment-fields">
-                    <div className="form-section">
+                    <div className="edit-item-form-section">
                       <label>Pessoa:</label>
                       <input type="text" value={pag.pessoa} onChange={e => handlePagamentoChange(idx, 'pessoa', e.target.value)} required />
                     </div>
-                    <div className="form-section">
+                    <div className="edit-item-form-section">
                       <label>Valor:</label>
                       <input type="number" step="0.01" min="0" value={pag.valor} onChange={e => handlePagamentoChange(idx, 'valor', e.target.value)} required />
                     </div>

@@ -1,6 +1,5 @@
 /* src/components/Emprestimos/EmprestimoSecao.css */
 .emprestimo-secao {
-  border-top: 1px solid #e5e7eb;
   padding-top: 14px;
   margin-top: 14px;
 }
@@ -14,9 +13,9 @@
 }
 
 .emp-secao-hint {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e40af;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-primaria);
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 13px;
@@ -26,7 +25,32 @@
 .emp-secao-campos {
   margin-top: 12px;
   padding-left: 24px;
-  border-left: 2px solid #e5e7eb;
+  border-left: 2px solid var(--cor-borda);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emp-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emp-campo label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  font-family: var(--fonte-titulos);
+  color: var(--cor-texto);
+  margin-bottom: 0;
+}
+
+.emp-campo small {
+  display: block;
+  color: var(--cor-texto);
+  opacity: 0.65;
+  font-size: 0.75rem;
+  margin-top: 2px;
 }
 
 .emp-pessoa-row {
@@ -42,22 +66,33 @@
 .emp-btn-mini {
   padding: 6px 10px;
   font-size: 12px;
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-fundo-card);
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.emp-btn-mini:hover { background: #f9fafb; }
+.emp-btn-mini:hover { background: var(--cor-fundo); }
 
 .emp-btn-confirmar {
-  background: #2563eb;
-  color: white;
-  border-color: #2563eb;
+  background: var(--cor-primaria);
+  color: var(--cor-branca);
+  border-color: var(--cor-primaria);
 }
 
-.emp-btn-confirmar:hover { background: #1d4ed8; }
+.emp-btn-confirmar:hover { background: var(--cor-primaria-escura); }
+
+.emp-aviso-soft {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
 
 .emp-nova-pessoa {
   display: grid;
@@ -65,20 +100,20 @@
   gap: 6px;
   margin-top: 6px;
   padding: 8px;
-  background: #f9fafb;
+  background: var(--cor-fundo);
   border-radius: 4px;
 }
 
 .emp-nova-pessoa input {
   padding: 6px 8px;
   font-size: 13px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--cor-borda);
   border-radius: 4px;
 }
 
 .emp-campos-novo {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
   border-radius: 6px;
   padding: 10px 12px;
   margin-top: 8px;
@@ -86,7 +121,8 @@
 
 .emp-campos-novo small {
   display: block;
-  color: #6b7280;
+  color: var(--cor-texto);
+  opacity: 0.65;
   font-size: 11px;
   margin-top: 4px;
 }
@@ -94,9 +130,9 @@
 .emp-secao-loading,
 .emp-secao-vazio {
   font-size: 13px;
-  color: #6b7280;
+  opacity: 0.65;
   font-style: italic;
   margin: 4px 0;
 }
 
-.emp-secao-vazio { color: #b45309; }
+.emp-secao-vazio { color: var(--cor-aviso-escura, #b45309); }

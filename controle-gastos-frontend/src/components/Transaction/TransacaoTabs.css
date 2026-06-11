@@ -74,10 +74,7 @@
   padding: 10px 0 0;
   border-top: 1px solid rgba(44, 62, 80, 0.1);
   margin-top: 10px;
-  position: sticky;
-  bottom: 0;
-  background: var(--cor-fundo-card);
-  z-index: 10;
+  flex-shrink: 0;
 }
 
 .transacao-tabs-footer .submit-btn {

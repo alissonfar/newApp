@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 export default function usePagamentos({ transacao, proprietarioPadrao, valorTotal, isContaConjunta, pagoPor, parteUsuario, parcelamentos }) {
   const [pagamentos, setPagamentos] = useState(() => {
@@ -8,13 +8,12 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
         paymentTags: p.tags || {},
         parcelamento: p.parcelamento || null,
         installmentNumber: p.installmentNumber || null,
-        installmentTotal: p.installmentTotal || null
+        installmentTotal: p.installmentTotal || null,
+        fixed: false
       }));
     }
-    return [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null }];
+    return [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, fixed: false }];
   });
-
-  const [showValidationWarning, setShowValidationWarning] = useState(false);
 
   const valorEsperadoParaSoma = (isContaConjunta && pagoPor === 'outro')
     ? parseFloat(parteUsuario || 0)
@@ -29,11 +28,12 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
           paymentTags: p.tags || {},
           parcelamento: p.parcelamento || null,
           installmentNumber: p.installmentNumber || null,
-          installmentTotal: p.installmentTotal || null
+          installmentTotal: p.installmentTotal || null,
+          fixed: false
         }))
       );
     } else if (!transacao) {
-      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null }]);
+      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, fixed: false }]);
     }
   }, [transacao, proprietarioPadrao]);
 
@@ -42,18 +42,18 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     return !!(conf?.ativo) || !!(pagamentos[index]?.parcelamento?.ativo);
   }, [parcelamentos, pagamentos]);
 
-  useEffect(() => {
-    if (pagamentos.length === 0) {
-      setShowValidationWarning(false);
-      return;
-    }
-    const soma = pagamentos.reduce((acc, pag) => {
+  const soma = useMemo(() => {
+    return pagamentos.reduce((acc, pag) => {
       const v = parseFloat(pag.valor || 0);
       return acc + (isNaN(v) ? 0 : v);
     }, 0);
-    const diferenca = Math.abs(valorEsperadoParaSoma - soma);
-    setShowValidationWarning(diferenca > 0.01);
-  }, [pagamentos, valorEsperadoParaSoma]);
+  }, [pagamentos]);
+
+  const saldoRestante = useMemo(() => {
+    return Math.max(0, valorEsperadoParaSoma - soma);
+  }, [valorEsperadoParaSoma, soma]);
+
+  const showValidationWarning = valorEsperadoParaSoma > 0 && Math.abs(valorEsperadoParaSoma - soma) > 0.01;
 
   const handlePagamentoChange = useCallback((index, field, value) => {
     setPagamentos(prev => {
@@ -64,7 +64,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
   }, []);
 
   const addPagamento = useCallback(() => {
-    setPagamentos(prev => [...prev, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null }]);
+    setPagamentos(prev => [...prev, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, fixed: false }]);
   }, [proprietarioPadrao]);
 
   const removePagamento = useCallback((index = null) => {
@@ -106,7 +106,8 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
           pessoa,
           valor: String(i === n - 1 ? remainder : share),
           paymentTags: i === 0 ? { ...tags } : {},
-          parcelamento: null
+          parcelamento: null,
+          fixed: false
         });
       }
       return newPayments;
@@ -126,12 +127,56 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     setPagamentos(prev => {
       const source = prev[index];
       if (!source) return prev;
-      const copy = { ...source, paymentTags: { ...(source.paymentTags || {}) }, parcelamento: null };
+      const copy = { ...source, paymentTags: { ...(source.paymentTags || {}) }, parcelamento: null, fixed: false };
       const novos = [...prev];
       novos.splice(index + 1, 0, copy);
       return novos;
     });
   }, []);
+
+  const toggleFixed = useCallback((index) => {
+    setPagamentos(prev => {
+      if (!prev[index]) return prev;
+      const novos = [...prev];
+      novos[index] = { ...novos[index], fixed: !novos[index].fixed };
+      return novos;
+    });
+  }, []);
+
+  const fillRemaining = useCallback((index) => {
+    setPagamentos(prev => {
+      if (!prev[index]) return prev;
+      const sum = prev.reduce((acc, pag) => {
+        const v = parseFloat(pag.valor || 0);
+        return acc + (isNaN(v) ? 0 : v);
+      }, 0);
+      const restante = valorEsperadoParaSoma - sum + (parseFloat(prev[index].valor || 0) || 0);
+      const rounded = Math.max(0, Math.round(restante * 100) / 100);
+      const novos = [...prev];
+      novos[index] = { ...novos[index], valor: String(rounded) };
+      return novos;
+    });
+  }, [valorEsperadoParaSoma]);
+
+  const distributeRemaining = useCallback(() => {
+    setPagamentos(prev => {
+      const fixedSum = prev.reduce((acc, p) => {
+        return p.fixed ? acc + (parseFloat(p.valor || 0) || 0) : acc;
+      }, 0);
+      const remaining = Math.max(0, valorEsperadoParaSoma - fixedSum);
+      const nonFixed = prev.filter(p => !p.fixed);
+      if (nonFixed.length === 0) return prev;
+      const share = Math.floor((remaining / nonFixed.length) * 100) / 100;
+      const remainder = Math.round((remaining - share * (nonFixed.length - 1)) * 100) / 100;
+      let nfIdx = 0;
+      return prev.map(p => {
+        if (p.fixed) return p;
+        const isLast = nfIdx === nonFixed.length - 1;
+        nfIdx++;
+        return { ...p, valor: String(isLast ? remainder : share) };
+      });
+    });
+  }, [valorEsperadoParaSoma]);
 
   const isValid = useCallback(() => {
     const soma = pagamentos.reduce((acc, pag) => {
@@ -173,10 +218,15 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     splitInto,
     clearPaymentTags,
     duplicatePagamento,
+    toggleFixed,
+    fillRemaining,
+    distributeRemaining,
     isValid,
     showValidationWarning,
     valorEsperadoParaSoma,
     buildPagamentosPayload,
-    isPagamentoParcelado
+    isPagamentoParcelado,
+    soma,
+    saldoRestante
   };
 }

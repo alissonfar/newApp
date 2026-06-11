@@ -58,25 +58,12 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
           </p>
 
           {avisoEmprestimoSemDesembolso && (
-            <div
-              className="emp-aviso-soft"
-              role="alert"
-              style={{
-                background: '#fef3c7',
-                border: '1px solid #fde68a',
-                color: '#92400e',
-                borderRadius: 6,
-                padding: '8px 12px',
-                marginBottom: 12,
-                fontSize: 12,
-                lineHeight: 1.45
-              }}
-            >
+            <div className="emp-aviso-soft" role="alert">
               ⚠️ {avisoEmprestimoSemDesembolso}
             </div>
           )}
 
-          <div className="form-section">
+          <div className="emp-campo">
             <label>Pessoa:</label>
             <div className="emp-pessoa-row">
               <select
@@ -132,7 +119,7 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
 
           {state.pessoaId && (
             <>
-              <div className="form-section">
+              <div className="emp-campo">
                 <label>Como deseja prosseguir?</label>
                 <div className="radio-group">
                   <label>
@@ -161,7 +148,7 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
               </div>
 
               {state.modo === 'vincular' ? (
-                <div className="form-section">
+                <div className="emp-campo">
                   <label>Empréstimo:</label>
                   {state.loadingEmprestimos ? (
                     <p className="emp-secao-loading">Carregando empréstimos...</p>
@@ -186,7 +173,7 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
                 </div>
               ) : (
                 <div className="emp-campos-novo">
-                  <div className="form-section">
+                  <div className="emp-campo">
                     <label>Valor esperado de retorno:</label>
                     <input
                       type="number"
@@ -201,7 +188,7 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
                       Sugestão: mesmo valor desta transação ({formatarMoedaBRL(valorTotal || 0)}). Você pode ajustar.
                     </small>
                   </div>
-                  <div className="form-section">
+                  <div className="emp-campo">
                     <label>Tipo de retorno:</label>
                     <select
                       value={state.novoTipoRetorno}
@@ -213,7 +200,7 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
                     </select>
                     <small>Para empréstimos com juros, crie o empréstimo primeiro na tela de Empréstimos.</small>
                   </div>
-                  <div className="form-section">
+                  <div className="emp-campo">
                     <label>Prazo final:</label>
                     <input
                       type="date"

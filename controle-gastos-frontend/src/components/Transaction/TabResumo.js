@@ -24,21 +24,21 @@ const TabResumo = ({ formState, pagamentos, parcelamento, contaConjunta, allTags
   const pessoas = pagamentos.pagamentos.map(p => p.pessoa.trim()).filter(Boolean);
   const hasDuplicatePeople = new Set(pessoas).size !== pessoas.length;
 
-  const allAppliedTags = [];
-  pagamentos.pagamentos.forEach((p, pi) => {
+  const getPaymentTags = (p) => {
+    const result = [];
     if (p.paymentTags) {
       Object.entries(p.paymentTags).forEach(([catId, tagIds]) => {
         if (!Array.isArray(tagIds) || tagIds.length === 0) return;
         const cat = categorias.find(c => c._id === catId);
         tagIds.forEach(tid => {
           const tag = allTags.find(t => t._id === tid);
-          if (tag) allAppliedTags.push({ catNome: cat?.nome || catId, tagNome: tag.nome, catCor: cat?.cor, tagCor: tag.cor });
+          if (tag) result.push({ catNome: cat?.nome || catId, tagNome: tag.nome, catCor: cat?.cor, tagCor: tag.cor });
         });
       });
     }
-  });
+    return result;
+  };
 
-  const hasAnyTag = allAppliedTags.length > 0;
   const anyTagMissing = pagamentos.pagamentos.length > 0 && pagamentos.pagamentos.every(p => !p.paymentTags || Object.keys(p.paymentTags).every(k => !(p.paymentTags[k] || []).length));
 
   const issues = [];
@@ -105,32 +105,29 @@ const TabResumo = ({ formState, pagamentos, parcelamento, contaConjunta, allTags
         <div className="resumo-block">
           <h4 className="resumo-block-title">Pagamentos</h4>
           {pagamentos.pagamentos.map((p, i) => {
-            const tagCount = p.paymentTags ? Object.values(p.paymentTags).reduce((sum, ids) => sum + (Array.isArray(ids) ? ids.length : 0), 0) : 0;
+            const paymentTags = getPaymentTags(p);
             return (
               <div key={i} className="resumo-pagamento-row">
-                <span className="resumo-pag-pessoa">{p.pessoa || '(vazio)'}</span>
-                <span className="resumo-pag-valor">R$ {parseFloat(p.valor || 0).toFixed(2).replace('.', ',')}</span>
-                <span className="resumo-pag-tags" style={{ opacity: tagCount > 0 ? 1 : 0.4 }}>{tagCount} tag{tagCount !== 1 ? 's' : ''}</span>
-                {!p.pessoa.trim() && <Badge error label="Sem pessoa" />}
-                {parseFloat(p.valor || 0) === 0 && <Badge error label="R$ 0" />}
+                <div className="resumo-pag-header">
+                  <span className="resumo-pag-pessoa">{p.pessoa || '(vazio)'}</span>
+                  <span className="resumo-pag-valor">R$ {parseFloat(p.valor || 0).toFixed(2).replace('.', ',')}</span>
+                  {!p.pessoa.trim() && <Badge error label="Sem pessoa" />}
+                  {parseFloat(p.valor || 0) === 0 && <Badge error label="R$ 0" />}
+                </div>
+                {paymentTags.length > 0 && (
+                  <div className="resumo-pag-tags-list">
+                    {paymentTags.map((t, ti) => (
+                      <span key={ti} className="resumo-tag-chip" style={{ backgroundColor: (t.tagCor || '#666') + '18', color: t.tagCor || '#666', borderColor: (t.tagCor || '#666') + '30' }}>
+                        {t.catNome}: {t.tagNome}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
           {hasDuplicatePeople && <div className="resumo-row"><Badge warn label="Pessoas duplicadas" /></div>}
         </div>
-
-        {hasAnyTag && (
-          <div className="resumo-block">
-            <h4 className="resumo-block-title">Tags</h4>
-            <div className="resumo-tags-list">
-              {allAppliedTags.map((t, i) => (
-                <span key={i} className="resumo-tag-chip" style={{ backgroundColor: (t.tagCor || '#666') + '18', color: t.tagCor || '#666', borderColor: (t.tagCor || '#666') + '30' }}>
-                  {t.catNome}: {t.tagNome}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="resumo-block">
           <h4 className="resumo-block-title">Consistencia</h4>

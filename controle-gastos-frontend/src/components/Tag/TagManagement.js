@@ -389,7 +389,7 @@ const TagManagement = () => {
             <p>Nenhuma categoria encontrada.</p>
           )}
           
-          <div className="form-section">
+          <div className="tag-form-section">
             <h4>Adicionar Nova Categoria</h4>
             <div className="form-row">
               <div className="form-group">
@@ -436,7 +436,7 @@ const TagManagement = () => {
           </div>
           
           {editCatCodigo && (
-            <div className="form-section">
+            <div className="tag-form-section">
               <h4>Editar Categoria</h4>
               <div className="form-row">
                 <div className="form-group">
@@ -501,7 +501,7 @@ const TagManagement = () => {
                   {filteredTags.map(tag => (
                     <li key={tag.codigo}>
                       {editTagCodigo === tag.codigo ? (
-                        <div className="form-section">
+                        <div className="tag-form-section">
                           <div className="form-row">
                             <div className="form-group">
                               <label>Nome</label>
@@ -587,7 +587,7 @@ const TagManagement = () => {
               ) : (
                 <p>Nenhuma tag cadastrada nesta categoria.</p>
               )}
-              <div className="form-section">
+              <div className="tag-form-section">
                 <h4>Adicionar Nova Tag</h4>
                 <div className="form-row">
                   <div className="form-group">

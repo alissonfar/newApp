@@ -51,6 +51,9 @@ const TabPagamentos = ({
   splitEqually,
   splitInto,
   duplicatePagamento,
+  toggleFixed,
+  fillRemaining,
+  distributeRemaining,
   parcelamentos,
   previews,
   toggleParcelamento,
@@ -58,14 +61,24 @@ const TabPagamentos = ({
   categorias,
   allTags,
   proprietarioPadrao,
-  showInForm
+  showInForm,
+  valorTotal,
+  showValidationWarning,
+  soma,
+  saldoRestante
 }) => {
+
+  const totalFormatado = parseFloat(valorTotal || 0).toFixed(2).replace('.', ',');
+  const somaFormatada = soma.toFixed(2).replace('.', ',');
+  const saldoFormatado = saldoRestante.toFixed(2).replace('.', ',');
+  const isOk = !showValidationWarning;
+  const saldoExato = saldoRestante <= 0.01;
 
   return (
     <div data-tab="pagamentos" className="tab-panel tab-pagamentos">
       <div className="form-section pagamentos-section">
         <div className="pagamentos-header">
-          <h3>Pagamentos</h3>
+          <h3>Pagamentos <span className="pagamentos-valor-total">Total: R$ {totalFormatado}</span></h3>
           <div className="pagamentos-actions">
             {pagamentos.length > 1 && (
               <button type="button" className="btn-rateio" onClick={splitEqually}>
@@ -97,14 +110,18 @@ const TabPagamentos = ({
           </div>
         </div>
 
-        <div className="pagamentos-resumo">
-          {pagamentos.map((p, i) => (
-            <span key={i}>
-              {p.pessoa || `Pag. ${i + 1}`}: R$ {parseFloat(p.valor || 0).toFixed(2).replace('.', ',')}
-              {parcelamentos && parcelamentos[i]?.ativo && ` (${parcelamentos[i].quantidade}x)`}
-              {i < pagamentos.length - 1 && ' | '}
-            </span>
-          ))}
+        <div className={`pagamentos-resumo ${isOk ? 'resumo-ok' : 'resumo-diff'}`}>
+          <span className="resumo-total-label">Valor total: R$ {totalFormatado}</span>
+          <span className="resumo-separador">|</span>
+          <span className={`resumo-soma ${isOk ? 'resumo-ok' : 'resumo-diff'}`}>
+            Soma: R$ {somaFormatada}
+          </span>
+          {!saldoExato && (
+            <>
+              <span className="resumo-separador">|</span>
+              <span className="resumo-saldo-label">Faltam R$ {saldoFormatado}</span>
+            </>
+          )}
         </div>
 
         {pagamentos.map((pag, index) => {
@@ -116,6 +133,14 @@ const TabPagamentos = ({
               <div className="pagamento-item-header">
                 <span className="pagamento-numero">Pagamento {index + 1}</span>
                 <div className="pagamento-item-actions">
+                  <button
+                    type="button"
+                    onClick={() => toggleFixed(index)}
+                    title={pag.fixed ? 'Valor fixado' : 'Fixar valor'}
+                    className={`btn-fixed ${pag.fixed ? 'btn-fixed-ativo' : ''}`}
+                  >
+                    {pag.fixed ? 'Fixado' : 'Fixar'}
+                  </button>
                   <button type="button" onClick={() => duplicatePagamento(index)} title="Duplicar">
                     Duplicar
                   </button>
@@ -138,7 +163,7 @@ const TabPagamentos = ({
                     tabIndex={5 + (index * 10)}
                   />
                 </div>
-                <div className="pagamento-field-valor form-section">
+                <div className={`pagamento-field-valor form-section ${showValidationWarning && pag.valor && parseFloat(pag.valor || 0) > saldoRestante + soma - (parseFloat(pag.valor || 0) || 0) ? 'valor-warning' : ''}`}>
                   <label>Valor</label>
                   <input
                     type="number"
@@ -209,6 +234,21 @@ const TabPagamentos = ({
             </div>
           );
         })}
+
+        {!saldoExato && pagamentos.some(p => !p.fixed) && (
+          <div className="saldo-restante-bar">
+            <span className="saldo-restante-texto">
+              Saldo restante: <strong>R$ {saldoFormatado}</strong>
+            </span>
+            <div className="saldo-restante-actions">
+              {pagamentos.some(p => !parseFloat(p.valor || 0) && !p.fixed) && (
+                <button type="button" className="btn-preencher-restante" onClick={distributeRemaining}>
+                  Distribuir restante igualmente
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <Tooltip title="Alt + P">
           <button type="button" onClick={addPagamento} className="btn-adicionar-pagamento">

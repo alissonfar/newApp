@@ -43,7 +43,7 @@ const TabAvancado = ({
         </label>
         {cState.isContaConjunta && (
           <div className="conta-conjunta-campos">
-            <div className="form-section">
+            <div className="conjunta-campo">
               <label>Vinculo:</label>
               <select
                 value={cState.vinculoId}
@@ -59,7 +59,7 @@ const TabAvancado = ({
                 ))}
               </select>
             </div>
-            <div className="form-section">
+            <div className="conjunta-campo">
               <label>Quem pagou:</label>
               <div className="radio-group">
                 <label>
@@ -88,7 +88,7 @@ const TabAvancado = ({
             </div>
             {cState.pagoPor === 'outro' && (
               <>
-                <div className="form-section">
+                <div className="conjunta-campo">
                   <label>Valor total da compra:</label>
                   <input
                     type="number"
@@ -98,7 +98,7 @@ const TabAvancado = ({
                     tabIndex={96}
                   />
                 </div>
-                <div className="form-section">
+                <div className="conjunta-campo">
                   <label>Minha parte:</label>
                   <input
                     type="number"
@@ -116,7 +116,7 @@ const TabAvancado = ({
               </>
             )}
             {cState.pagoPor === 'usuario' && (
-              <div className="form-section">
+              <div className="conjunta-campo">
                 <label>Minha parte (do valor total):</label>
                 <input
                   type="number"

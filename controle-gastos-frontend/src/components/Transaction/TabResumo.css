@@ -87,15 +87,21 @@
 
 .resumo-pagamento-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 3px 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 0;
   font-size: 0.78rem;
   border-bottom: 1px solid rgba(44, 62, 80, 0.04);
 }
 
 .resumo-pagamento-row:last-child {
   border-bottom: none;
+}
+
+.resumo-pag-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .resumo-pag-pessoa {
@@ -109,10 +115,11 @@
   font-size: 0.8rem;
 }
 
-.resumo-pag-tags {
-  font-size: 0.7rem;
-  opacity: 0.7;
-  min-width: 45px;
+.resumo-pag-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding-left: 4px;
 }
 
 .resumo-tags-list {

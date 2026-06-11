@@ -106,7 +106,7 @@ const TransferenciasPage = () => {
         Se seu banco não exporta extrato, confirme manualmente quando a transferência for realizada.
       </p>
 
-      <section className="form-section">
+      <section className="transferencia-form-section">
         <h2>Nova transferência</h2>
         <form onSubmit={handleSubmit} className="transferencia-form">
           <div className="form-row">

@@ -1287,7 +1287,7 @@ const DetalhesImportacaoPage = () => {
 
             {modalAtualizarSaldo && (
                 <div className="modal" onClick={() => setModalAtualizarSaldo(false)}>
-                    <div className="modal-content modal-atualizar-saldo" onClick={e => e.stopPropagation()}>
+                    <div className="importacao-modal-content modal-atualizar-saldo" onClick={e => e.stopPropagation()}>
                         <h3>Atualizar saldo de subconta</h3>
                         <p>Deseja atualizar o saldo de alguma subconta com base nesta importação?</p>
                         <div className="form-group">

@@ -190,7 +190,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       } else {
         await onSuccess(response);
         form.resetForm(true);
-        pagamentos.setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {} }]);
+        pagamentos.setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, fixed: false }]);
         contaConjunta.reset();
         parcelamento.reset();
         emprestimoForm.reset();
@@ -295,6 +295,9 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           splitEqually={pagamentos.splitEqually}
           splitInto={pagamentos.splitInto}
           duplicatePagamento={pagamentos.duplicatePagamento}
+          toggleFixed={pagamentos.toggleFixed}
+          fillRemaining={pagamentos.fillRemaining}
+          distributeRemaining={pagamentos.distributeRemaining}
           parcelamentos={parcelamento.state.parcelamentos}
           previews={parcelamento.state.previews}
           toggleParcelamento={parcelamento.toggleParcelamento}
@@ -303,6 +306,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           allTags={allTags}
           proprietarioPadrao={proprietarioPadrao}
           showInForm={parcelamento.state.showInForm}
+          valorTotal={formState.valorTotal}
+          showValidationWarning={pagamentos.showValidationWarning}
+          soma={pagamentos.soma}
+          saldoRestante={pagamentos.saldoRestante}
         />
         <TabAvancado
           data-tab="avancado"

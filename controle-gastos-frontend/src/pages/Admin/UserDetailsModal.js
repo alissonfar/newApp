@@ -32,7 +32,7 @@ function UserDetailsModal({ usuario, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}> {/* Fecha ao clicar fora */}
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}> {/* Impede fechar ao clicar dentro */}
+      <div className="user-details-modal-content" onClick={(e) => e.stopPropagation()}> {/* Impede fechar ao clicar dentro */}
         <button className="modal-close-button" onClick={onClose}>
           <FaTimes />
         </button>
