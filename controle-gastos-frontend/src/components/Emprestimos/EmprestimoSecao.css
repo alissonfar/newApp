@@ -1,15 +1,22 @@
 /* src/components/Emprestimos/EmprestimoSecao.css */
 .emprestimo-secao {
-  padding-top: 14px;
-  margin-top: 14px;
+  /* spacing handled by .tab-avancado gap */
 }
 
-.emp-secao-toggle {
-  font-weight: 500;
+.emprestimo-secao .emp-secao-toggle {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
+}
+
+.emprestimo-secao input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .emp-secao-hint {

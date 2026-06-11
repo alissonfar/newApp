@@ -163,8 +163,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         observacao: formState.observacao,
         pagamentos: pagamentosComParcelamento
       };
-      if (formState.subconta) transacaoData.subconta = formState.subconta;
-      else transacaoData.subconta = null;
       if (contaConjuntaPayload) transacaoData.contaConjunta = contaConjuntaPayload;
       if (emprestimoIdParaTransacao) transacaoData.emprestimoId = emprestimoIdParaTransacao;
       else transacaoData.emprestimoId = null;
@@ -315,9 +313,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           data-tab="avancado"
           parcelamento={parcelamento}
           contaConjunta={contaConjunta}
-          subcontas={formState.subcontas}
-          subconta={formState.subconta}
-          setSubconta={fsSetters.setSubconta}
           valorTotal={formState.valorTotal}
           parteUsuario={contaConjunta.state.parteUsuario}
           setParteUsuario={onParteUsuarioChange}

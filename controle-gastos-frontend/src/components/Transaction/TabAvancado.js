@@ -1,5 +1,4 @@
 import React from 'react';
-import SubcontaSelect from '../shared/SubcontaSelect';
 import EmprestimoSecao from '../Emprestimos/EmprestimoSecao';
 
 export const TAB_AVANCADO = 'avancado';
@@ -7,9 +6,6 @@ export const TAB_AVANCADO = 'avancado';
 const TabAvancado = ({
   parcelamento,
   contaConjunta,
-  subcontas,
-  subconta,
-  setSubconta,
   valorTotal,
   parteUsuario,
   setParteUsuario,
@@ -136,21 +132,6 @@ const TabAvancado = ({
           </div>
         )}
       </div>
-
-      {subcontas.length > 0 && (
-        <div className="form-section">
-          <label>Subconta (opcional):</label>
-          <SubcontaSelect
-            subcontas={subcontas}
-            value={subconta}
-            onChange={setSubconta}
-            placeholder="Nenhuma"
-            allowEmpty
-            className="subconta-select-nova-transacao"
-            tabIndex={91}
-          />
-        </div>
-      )}
 
       {emprestimoForm && <EmprestimoSecao form={emprestimoForm} valorTotal={valorTotal} />}
     </div>

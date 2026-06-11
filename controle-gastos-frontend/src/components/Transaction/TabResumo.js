@@ -95,11 +95,6 @@ const TabResumo = ({ formState, pagamentos, parcelamento, contaConjunta, allTags
               </span>
             </div>
           )}
-          {formState.subconta && (
-            <div className="resumo-row">
-              <Badge label="Vinculado a subconta" />
-            </div>
-          )}
         </div>
 
         <div className="resumo-block">

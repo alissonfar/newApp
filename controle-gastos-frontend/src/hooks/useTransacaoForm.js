@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getTodayBR, toISOStringBR } from '../utils/dateUtils';
-import patrimonioApi from '../services/patrimonioApi';
 
 export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
   const [_id, set_Id] = useState(transacao?._id);
@@ -17,8 +16,6 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
   const [observacao, setObservacao] = useState(transacao ? transacao.observacao : '');
   const [isImportada, setIsImportada] = useState(!!transacao?.importacao);
   const [importacaoId, setImportacaoId] = useState(transacao?.importacao || null);
-  const [subcontas, setSubcontas] = useState([]);
-  const [subconta, setSubconta] = useState('');
   const [emprestimoId, setEmprestimoId] = useState('');
 
   const tipoRef = useRef(null);
@@ -29,15 +26,6 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
     if (!transacao) {
       setData(getTodayBR());
     }
-  }, [transacao]);
-
-  useEffect(() => {
-    patrimonioApi.listarSubcontas().then(setSubcontas).catch(() => setSubcontas([]));
-  }, []);
-
-  useEffect(() => {
-    const scId = transacao?.subconta?._id || transacao?.subconta || '';
-    setSubconta(scId);
   }, [transacao]);
 
   useEffect(() => {
@@ -75,7 +63,6 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
     setData(getTodayBR());
     setValorTotal('');
     setObservacao('');
-    setSubconta('');
     setEmprestimoId('');
     setIsImportada(false);
     setImportacaoId(null);
@@ -91,12 +78,10 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
       observacao,
       ...overrides
     };
-    if (subconta) payload.subconta = subconta;
-    else payload.subconta = null;
     if (emprestimoId) payload.emprestimoId = emprestimoId;
     else payload.emprestimoId = null;
     return payload;
-  }, [_id, tipo, descricao, data, valorTotal, observacao, subconta, emprestimoId]);
+  }, [_id, tipo, descricao, data, valorTotal, observacao, emprestimoId]);
 
   const setHoje = useCallback(() => setData(getTodayBR()), []);
   const setOntem = useCallback(() => {
@@ -118,8 +103,8 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
   }, [transacao]);
 
   return {
-    formState: { _id, tipo, descricao, data, valorTotal, observacao, subconta, subcontas, isImportada, importacaoId, emprestimoId },
-    setters: { setTipo, setDescricao, setData, setValorTotal, setObservacao, setSubconta, setId: set_Id, setIsImportada, setImportacaoId, setEmprestimoId },
+    formState: { _id, tipo, descricao, data, valorTotal, observacao, isImportada, importacaoId, emprestimoId },
+    setters: { setTipo, setDescricao, setData, setValorTotal, setObservacao, setId: set_Id, setIsImportada, setImportacaoId, setEmprestimoId },
     handleValorTotalChange,
     resetForm,
     buildPayload,
