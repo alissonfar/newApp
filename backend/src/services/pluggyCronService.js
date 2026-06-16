@@ -52,23 +52,11 @@ async function executarSyncAutomatico() {
           : undefined;
         const importacao = await pluggySyncService.iniciarSincronizacao(usuarioId.toString(), { dateFrom });
 
-        // Finalizar apenas se houver transacoes aprovadas
-        const TransacaoPluggy = require('../models/transacaoPluggy');
-        const transacoesAprovadas = await TransacaoPluggy.countDocuments({
-          importacaoPluggy: importacao._id,
-          status: 'aprovada'
-        });
-
-        if (transacoesAprovadas > 0) {
-          await pluggySyncService.finalizarSincronizacao(importacao._id, usuarioId.toString());
-          console.log('[PluggyCron] Usuario ' + usuarioId + ': ' + transacoesAprovadas + ' transacoes processadas.');
-        } else {
-          // Nenhuma transacao nova, marca como finalizada sem processar
-          importacao.status = 'finalizada';
-          importacao.finalizedAt = new Date();
-          await importacao.save();
-          console.log('[PluggyCron] Usuario ' + usuarioId + ': nenhuma transacao nova.');
-        }
+        // Sempre finalizar para permitir reconciliação (captura rendimento CDI
+        // e outras mudanças não-transacionais). finalizarSincronizacao decide
+        // internamente o que fazer com base no que foi inserido.
+        await pluggySyncService.finalizarSincronizacao(importacao._id, usuarioId.toString());
+        console.log('[PluggyCron] Usuario ' + usuarioId + ': sync finalizado (com ou sem transacoes novas).');
       } catch (err) {
         console.error('[PluggyCron] Erro ao processar usuario ' + usuarioId + ':', err.message);
       }

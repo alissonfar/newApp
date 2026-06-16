@@ -399,6 +399,62 @@ async function finalizarSincronizacao(importacaoId, usuarioId) {
     await subconta.save();
   }
 
+  // FASE DE RECONCILIAÇÃO: alinhar saldoAtual ao account.balance da Pluggy
+  // Captura rendimento CDI, juros, tarifas e qualquer mudança não-transacional.
+  // Roda mesmo sem transações novas para manter saldoAtual próximo do saldo real.
+  for (const item of importacao.itens) {
+    if (!item.saldoPluggy || !item.subconta) continue;
+
+    const jaTemSnapshot = await LedgerPatrimonial.findOne({
+      subconta: item.subconta,
+      usuario: usuarioId,
+      origemSistema: 'importacao_pluggy',
+      tipoEvento: 'snapshot_inicial',
+      referenciaTipo: { $ne: 'reconciliacao_pluggy' }
+    });
+    if (jaTemSnapshot) {
+      const sub = await Subconta.findById(item.subconta);
+      if (sub) {
+        sub.dataUltimaConfirmacao = new Date();
+        await sub.save();
+      }
+      continue;
+    }
+
+    const subconta = await Subconta.findById(item.subconta);
+    if (!subconta) continue;
+
+    const diff = Number((Number(item.saldoPluggy) - Number(subconta.saldoAtual || 0)).toFixed(2));
+    if (Math.abs(diff) < 0.01) {
+      subconta.dataUltimaConfirmacao = new Date();
+      await subconta.save();
+      continue;
+    }
+
+    await ledgerService.registrarEvento({
+      usuarioId,
+      subcontaId: item.subconta,
+      valor: diff,
+      tipoEvento: 'correcao',
+      origemSistema: 'importacao_pluggy',
+      referenciaTipo: 'reconciliacao_pluggy',
+      referenciaId: importacao._id,
+      descricao: 'Reconciliação Pluggy: diff=R$ ' + diff.toFixed(2),
+      dataEvento: new Date(),
+      metadata: {
+        origem: 'reconciliacao_pluggy',
+        saldoAnterior: subconta.saldoAtual,
+        saldoPluggy: item.saldoPluggy,
+        diferenca: diff
+      }
+    });
+
+    subconta.saldoAtual = item.saldoPluggy;
+    subconta.dataUltimaConfirmacao = new Date();
+    await subconta.save();
+    console.log('[PluggySync] Reconciliacao: subconta=' + item.subconta + ' diff=R$ ' + diff.toFixed(2));
+  }
+
   importacao.status = 'finalizada';
   importacao.finalizedAt = new Date();
   await importacao.save();
