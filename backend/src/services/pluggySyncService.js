@@ -405,22 +405,6 @@ async function finalizarSincronizacao(importacaoId, usuarioId) {
   for (const item of importacao.itens) {
     if (!item.saldoPluggy || !item.subconta) continue;
 
-    const jaTemSnapshot = await LedgerPatrimonial.findOne({
-      subconta: item.subconta,
-      usuario: usuarioId,
-      origemSistema: 'importacao_pluggy',
-      tipoEvento: 'snapshot_inicial',
-      referenciaTipo: { $ne: 'reconciliacao_pluggy' }
-    });
-    if (jaTemSnapshot) {
-      const sub = await Subconta.findById(item.subconta);
-      if (sub) {
-        sub.dataUltimaConfirmacao = new Date();
-        await sub.save();
-      }
-      continue;
-    }
-
     const subconta = await Subconta.findById(item.subconta);
     if (!subconta) continue;
 
@@ -428,6 +412,7 @@ async function finalizarSincronizacao(importacaoId, usuarioId) {
     if (Math.abs(diff) < 0.01) {
       subconta.dataUltimaConfirmacao = new Date();
       await subconta.save();
+      console.log('[PluggySync] Reconciliacao: subconta=' + item.subconta + ' sem divergencia (saldo=R$ ' + Number(item.saldoPluggy).toFixed(2) + ')');
       continue;
     }
 
@@ -452,7 +437,7 @@ async function finalizarSincronizacao(importacaoId, usuarioId) {
     subconta.saldoAtual = item.saldoPluggy;
     subconta.dataUltimaConfirmacao = new Date();
     await subconta.save();
-    console.log('[PluggySync] Reconciliacao: subconta=' + item.subconta + ' diff=R$ ' + diff.toFixed(2));
+    console.log('[PluggySync] Reconciliacao aplicada: subconta=' + item.subconta + ' diff=R$ ' + diff.toFixed(2));
   }
 
   importacao.status = 'finalizada';
