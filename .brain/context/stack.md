@@ -168,18 +168,26 @@ Lista das features que **NÃO podem ser quebradas**:
 
 ## Agentes configurados
 
-- **`newapp-planner`** (primary) — planejamento, escreve no vault `.brain/`
-- **`newapp-executor`** (subagent) — execução, edita código do projeto
-- **`newapp-committer`** (subagent) — commits estruturados
+- **`newapp-planner`** (primary, via Tab) — planejamento, escreve no vault `.brain/`
+- **`newapp-executor`** (subagent, via `@`) — execução, edita código do projeto
+- **`newapp-committer`** (subagent, via `@`) — commits estruturados em Conventional Commits (PT-BR)
 
-## Skills instaladas (em `.opencode/skills/`)
+Sintaxe de permissões documentada em [ADR-002](../decisions/2026-06-21-sintaxe-permissoes-agentes-opencode.md). Como criar novos agentes: [playbook](../playbooks/criar-novo-agente.md).
 
+## Skills instaladas
+
+### Em `.agents/skills/` (instaladas via npx)
+- `brainstorming` — planejamento estruturado (carregada pelo planner no modo completo)
+
+### Em `.opencode/skills/` (pré-existentes)
 - `browser-use` — automação de browser
 - `frontend-design` — guia de design visual
 - `pluggy-doctor` — code review de integração Pluggy
 - `pluggy-integration` — padrões de integração Pluggy
 - `pluggy-open-finance` — boas práticas Open Finance
 - `pluggy-payments` — pagamentos via Pluggy (PIX, Boleto, Smart Transfers)
+
+> **NÃO instaladas:** as 2 skills do Supabase (`supabase`, `supabase-postgres-best-practices`) — projeto usa MongoDB, não Supabase.
 
 ## Comandos principais
 
