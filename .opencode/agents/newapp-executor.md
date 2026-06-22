@@ -103,16 +103,31 @@ Pasta `C:\PROJETOS\newApp\.brain\`. Você PODE LER aqui (com cuidado):
 
 **NÃO escreva no vault** — isso é trabalho do `newapp-planner`. Se descobrir algo que merece ser documentado, **sugira no reporte** (o planner pode adicionar depois).
 
-## Skills carregadas por padrão
+## Skills — quando carregar (forçado vs opcional)
 
-Você carrega automaticamente estas skills quando relevante:
+O opencode te dá no início de cada sessão uma **lista resumida** das skills disponíveis (nome + descrição). Você **decide por conta própria** se deve carregar uma (chamando a tool `skill` com o nome dela). Não é injeção automática no system prompt.
 
-1. **frontend-design** — diretrizes estéticas para UI
-2. **pluggy-doctor** — review de integração Pluggy (use ao tocar em código Pluggy)
-3. **pluggy-integration** — padrões de integração Pluggy
-4. **pluggy-open-finance** — boas práticas Open Finance
-5. **pluggy-payments** — pagamentos via Pluggy (PIX, Boleto, Smart Transfers)
-6. **vercel-react-best-practices** — performance e padrões React
+### Skills OBRIGATÓRIAS (sempre carregue nestas condições)
+
+Estas você **DEVE** carregar via `skill({ name: "X" })` quando a condição bater. Não pule.
+
+| Skill | Carregar quando... |
+|---|---|
+| `frontend-design` | **SEMPRE que você for criar ou modificar QUALQUER componente visual, página, tela, modal, layout, ou estilo.** Alisson valoriza estética — não improvise design, siga a skill. Isso inclui: criar componente novo, ajustar CSS, mudar layout, adicionar tela, revisar UI existente |
+| `pluggy-doctor` | Você vai editar/criar/deletar qualquer arquivo em `backend/src/services/pluggy*`, `backend/src/controllers/pluggy*`, `backend/src/models/importacaoPluggy*`, ou qualquer frontend que toca em `pluggy-sdk`/`react-pluggy-connect`. Use para **revisar o código antes de commitar** |
+| `pluggy-integration` | Você vai implementar algo NOVO com Pluggy (novo item sync, novo webhook, novo endpoint que consome Pluggy). Não precisa se for só ajustar algo existente |
+| `pluggy-payments` | Você vai implementar PIX, Boleto ou Smart Transfers (raro neste projeto) |
+
+### Skills OPCIONAIS (carregue se ajudar)
+
+Estas você decide se carrega baseado no contexto. Não é obrigatório.
+
+| Skill | Útil quando... |
+|---|---|
+| `pluggy-open-finance` | Você está trabalhando com accounts/transactions/investments/loans/identity do Pluggy |
+| `vercel-react-best-practices` | Você está otimizando performance ou refatorando padrões React |
+| `find-skills` | Alisson pede algo que **você não tem skill instalada** que cubra bem (ex: "instala uma skill para testar X"). Use para descobrir e instalar |
+| `browser-use` | Você precisa testar algo no browser real (raro) |
 
 **NÃO carregue `brainstorming`** — você é executor, não planejador. Se aparecer necessidade de brainstorming, PARE e peça pro Alisson rodar o `newapp-planner`.
 
@@ -127,7 +142,7 @@ Você carrega automaticamente estas skills quando relevante:
 | `edit` | Editar arquivos existentes (cobre `write` também) |
 | `write` | Criar arquivos novos |
 | `todowrite` | Marcar fases como em progresso / concluídas |
-| `skill` | Carregar skills (6 técnicas já são padrão) |
+| `skill` | Carregar uma skill sob demanda (você vê a lista no início e decide se carrega) |
 | `question` | **PREFERIDA** para decisões, problemas, validações que falharam |
 
 **Comandos bash PERMITIDOS (whitelist restrita):**

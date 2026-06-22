@@ -177,17 +177,20 @@ Sintaxe de permissões documentada em [ADR-002](../decisions/2026-06-21-sintaxe-
 ## Skills instaladas
 
 ### Em `.agents/skills/` (instaladas via npx)
-- `brainstorming` — planejamento estruturado (carregada pelo planner no modo completo)
+- `brainstorming` — planejamento estruturado (planner carrega no modo completo)
+- `find-skills` — meta-skill para descobrir e instalar outras skills (ambos os agentes podem usar)
 
 ### Em `.opencode/skills/` (pré-existentes)
 - `browser-use` — automação de browser
-- `frontend-design` — guia de design visual
-- `pluggy-doctor` — code review de integração Pluggy
-- `pluggy-integration` — padrões de integração Pluggy
+- `frontend-design` — **forçada** no executor ao criar/modificar UI
+- `pluggy-doctor` — **forçada** no executor ao tocar em código Pluggy
+- `pluggy-integration` — **forçada** no executor ao implementar algo novo com Pluggy
 - `pluggy-open-finance` — boas práticas Open Finance
 - `pluggy-payments` — pagamentos via Pluggy (PIX, Boleto, Smart Transfers)
 
 > **NÃO instaladas:** as 2 skills do Supabase (`supabase`, `supabase-postgres-best-practices`) — projeto usa MongoDB, não Supabase.
+>
+> **Estratégia de skills:** ver [ADR-005](../decisions/2026-06-21-estrategia-skills-forcar-vs-opcional.md).
 
 ## Comandos principais
 
