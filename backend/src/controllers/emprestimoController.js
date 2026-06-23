@@ -106,11 +106,8 @@ exports.criar = async (req, res) => {
       pessoaId: pessoa._id,
       pessoaNomeSnapshot: pessoa.nome,
       pessoaContatoSnapshot: pessoa.contato || null,
-      direcao: req.body.direcao || 'concedido',
       valorEsperadoRetorno: req.body.valorEsperadoRetorno,
-      tipoRetorno: req.body.tipoRetorno || 'sem_juros',
-      taxaJurosPercentual: req.body.taxaJurosPercentual ?? null,
-      valorJurosFixo: req.body.valorJurosFixo ?? null,
+      tipoRetorno: req.body.tipoRetorno || 'valor_fixo',
       prazoFinal: req.body.prazoFinal,
       observacao: req.body.observacao || null,
       status: 'ativo'
@@ -145,11 +142,6 @@ exports.atualizar = async (req, res) => {
         erro: 'Não é possível alterar a pessoa de um empréstimo com transações vinculadas.'
       });
     }
-    if (req.body.direcao !== undefined && transacoesVinculadas > 0) {
-      return res.status(400).json({
-        erro: 'Não é possível alterar a direção de um empréstimo com transações vinculadas.'
-      });
-    }
 
     if (req.body.pessoaId !== undefined) {
       const pessoaOid = toObjectId(req.body.pessoaId);
@@ -159,9 +151,6 @@ exports.atualizar = async (req, res) => {
       emprestimo.pessoaId = pessoa._id;
       emprestimo.pessoaNomeSnapshot = pessoa.nome;
       emprestimo.pessoaContatoSnapshot = pessoa.contato || null;
-    }
-    if (req.body.direcao !== undefined) {
-      emprestimo.direcao = req.body.direcao;
     }
     if (req.body.valorEsperadoRetorno !== undefined) {
       if (req.body.valorEsperadoRetorno < 0) {
@@ -175,12 +164,6 @@ exports.atualizar = async (req, res) => {
       }
       emprestimo.tipoRetorno = req.body.tipoRetorno;
     }
-    if (req.body.taxaJurosPercentual !== undefined) {
-      emprestimo.taxaJurosPercentual = req.body.taxaJurosPercentual;
-    }
-    if (req.body.valorJurosFixo !== undefined) {
-      emprestimo.valorJurosFixo = req.body.valorJurosFixo;
-    }
     if (req.body.prazoFinal !== undefined) {
       emprestimo.prazoFinal = req.body.prazoFinal;
     }
@@ -192,20 +175,9 @@ exports.atualizar = async (req, res) => {
       pessoaId: emprestimo.pessoaId,
       valorEsperadoRetorno: emprestimo.valorEsperadoRetorno,
       tipoRetorno: emprestimo.tipoRetorno,
-      taxaJurosPercentual: emprestimo.taxaJurosPercentual,
-      valorJurosFixo: emprestimo.valorJurosFixo,
-      prazoFinal: emprestimo.prazoFinal,
-      direcao: emprestimo.direcao
+      prazoFinal: emprestimo.prazoFinal
     }, { parcial: false });
     if (erros.length) return res.status(400).json({ erro: erros.join(' ') });
-
-    if (emprestimo.status === 'quitado' && req.body.valorEsperadoRetorno !== undefined) {
-      const totais = await service.calcularTotais(emprestimo._id, emprestimo.usuario);
-      if (totais.totalReceived < emprestimo.valorEsperadoRetorno) {
-        emprestimo.status = 'ativo';
-        emprestimo.dataQuitacao = null;
-      }
-    }
 
     await emprestimo.save();
     await service.recalcularStatus(emprestimo._id, req.userId);
@@ -250,33 +222,15 @@ exports.listarTransacoes = async (req, res) => {
       .sort({ data: 1, createdAt: 1 })
       .lean();
 
-    const saldosPorEmprestimo = new Map();
-    saldosPorEmprestimo.set(String(emprestimo._id), { disbursed: 0, received: 0 });
-    const valorEsperado = emprestimo.valorEsperadoRetorno || 0;
-
-    const detalhado = transacoes.map((t) => {
-      const s = saldosPorEmprestimo.get(String(emprestimo._id));
-      let principalDeste = 0;
-      let jurosDeste = 0;
-      if (t.tipo === 'gasto') {
-        s.disbursed += t.valor;
-      } else if (t.tipo === 'recebivel') {
-        const principalRestante = Math.max(0, s.disbursed - s.received);
-        principalDeste = Math.min(t.valor, principalRestante);
-        jurosDeste = t.valor - principalDeste;
-        s.received += principalDeste;
-      }
-      return {
-        id: t._id,
-        data: t.data,
-        tipo: t.tipo,
-        descricao: t.descricao,
-        valor: t.valor,
-        status: t.status,
-        principal: principalDeste,
-        juros: jurosDeste
-      };
-    });
+    const detalhado = transacoes.map((t) => ({
+      id: t._id,
+      data: t.data,
+      tipo: t.tipo,
+      descricao: t.descricao,
+      valor: t.valor,
+      status: t.status,
+      emprestimoEhJurosAuto: !!t.emprestimoEhJurosAuto
+    }));
 
     res.json({
       emprestimo: await service.obterEmprestimoComTotais(emprestimo),
@@ -285,40 +239,5 @@ exports.listarTransacoes = async (req, res) => {
   } catch (error) {
     console.error('Erro ao listar transações do empréstimo:', error);
     res.status(500).json({ erro: 'Erro ao listar transações.' });
-  }
-};
-
-exports.listarPorPessoa = async (req, res) => {
-  try {
-    const oid = toObjectId(req.params.id);
-    if (!oid) return res.status(400).json({ erro: 'id inválido.' });
-    const pessoa = await Pessoa.findOne({ _id: oid, usuario: req.userId });
-    if (!pessoa) return res.status(404).json({ erro: 'Pessoa não encontrada.' });
-
-    const emprestimos = await Emprestimo.find({
-      pessoaId: oid,
-      usuario: req.userId
-    })
-      .sort({ status: 1, prazoFinal: 1 })
-      .lean();
-
-    const resultado = await Promise.all(
-      emprestimos.map(async (e) => {
-        const totais = await service.calcularTotais(e._id, e.usuario);
-        return {
-          ...e,
-          totalDisbursed: totais.totalDisbursed,
-          totalReceived: totais.totalReceived,
-          saldoAReceber: Math.max(0, (e.valorEsperadoRetorno || 0) - totais.totalReceived),
-          lucro: totais.totalReceived - totais.totalDisbursed,
-          isQuitadoCalculado: totais.totalReceived >= (e.valorEsperadoRetorno || 0) && (e.valorEsperadoRetorno || 0) > 0
-        };
-      })
-    );
-
-    res.json(resultado);
-  } catch (error) {
-    console.error('Erro ao listar empréstimos por pessoa:', error);
-    res.status(500).json({ erro: 'Erro ao listar empréstimos.' });
   }
 };

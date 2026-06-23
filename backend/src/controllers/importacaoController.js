@@ -33,11 +33,8 @@ function chaveAgrupamentoEmprestimo(cfg) {
     : (cfg.prazoFinal ? new Date(cfg.prazoFinal).getTime() : 0);
   return [
     pessoa,
-    cfg.direcao || 'concedido',
     cfg.tipoRetorno || 'valor_fixo',
     cfg.valorEsperadoRetorno != null ? Number(cfg.valorEsperadoRetorno) : 0,
-    cfg.taxaJurosPercentual != null ? Number(cfg.taxaJurosPercentual) : '',
-    cfg.valorJurosFixo != null ? Number(cfg.valorJurosFixo) : '',
     prazo
   ].join('|');
 }
@@ -81,11 +78,8 @@ async function criarEmprestimosParaImportacao(transacoesImportadas, usuarioId) {
       pessoaId: pessoa._id,
       pessoaNomeSnapshot: pessoa.nome,
       pessoaContatoSnapshot: pessoa.contato || null,
-      direcao: cfg.direcao || 'concedido',
       valorEsperadoRetorno: cfg.valorEsperadoRetorno != null ? Number(cfg.valorEsperadoRetorno) : 0,
       tipoRetorno: cfg.tipoRetorno || 'valor_fixo',
-      taxaJurosPercentual: cfg.taxaJurosPercentual != null ? Number(cfg.taxaJurosPercentual) : null,
-      valorJurosFixo: cfg.valorJurosFixo != null ? Number(cfg.valorJurosFixo) : null,
       prazoFinal: cfg.prazoFinal || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       observacao: cfg.observacao || `Criado a partir de importação em ${new Date().toISOString().split('T')[0]}`,
       status: 'ativo'

@@ -107,6 +107,10 @@ exports.obterTodasTransacoes = async (req, res) => {
       }
       addContabilizavelCondition(filtros);
       const transacoes = await Transacao.find(filtros);
+      // Marca transações de Empréstimo (gasto + recebível não-juros-auto) com
+      // `_emprestimoEsconderNaLista` e zera valor/pagamentos. O frontend usa o
+      // flag para escondê-las; a compensação de summary não é necessária aqui
+      // pois este endpoint não retorna summary.
       const { ajustarRecebiveisDeEmprestimo } = require('../utils/emprestimoAjuste');
       await ajustarRecebiveisDeEmprestimo(transacoes, req.userId);
       return res.json({ transacoes });
@@ -200,6 +204,18 @@ exports.obterTodasTransacoes = async (req, res) => {
 
     const dataPage = result[0].data;
 
+    // ====================================================================
+    // Compensação do summary para Empréstimos (FASE 4 — modelo simplificado)
+    // --------------------------------------------------------------------
+    // Sem o FIFO, o `ajustarRecebiveisDeEmprestimo` apenas marca
+    // `_emprestimoEsconderNaLista: true` e zera valor/pagamentos de TXs de
+    // Empréstimo. Mas essas TXs JÁ foram somadas no aggregate do summary.
+    // Para evitar dupla contagem, calculamos aqui quanto subtrair.
+    //
+    // - TXs de gasto de Empréstimo: subtrair de `totalGastos`
+    // - TXs de recebível de Empréstimo (NÃO juros auto): subtrair de `totalRecebiveis`
+    // - TX de juros auto: permanece (entra como receita normal)
+    // ====================================================================
     const emprestimoIds = [];
     for (const t of dataPage) {
       if (t && t.emprestimoId) {
@@ -209,50 +225,39 @@ exports.obterTodasTransacoes = async (req, res) => {
     }
 
     if (emprestimoIds.length > 0) {
-      const { ajustarRecebiveisDeEmprestimo, calcularAjusteResumoPorEmprestimo } = require('../utils/emprestimoAjuste');
-      const matchAdicionalResumo = { ...matchStage };
-      delete matchAdicionalResumo.status;
-      delete matchAdicionalResumo.usuario;
-      matchAdicionalResumo.status = 'ativo';
-      matchAdicionalResumo.usuario = new mongoose.Types.ObjectId(req.userId);
+      const { ajustarRecebiveisDeEmprestimo } = require('../utils/emprestimoAjuste');
 
+      // Carrega TODAS as TXs vinculadas a esses Empréstimos (não só a página
+      // atual) porque o summary é calculado sobre o universo completo de TXs
+      // que batem com o match, e a compensação precisa ser sobre o mesmo
+      // universo. A página é só a janela visível.
       const todasTransacoesEmprestimo = await Transacao.find({
         emprestimoId: { $in: emprestimoIds.map(id => new mongoose.Types.ObjectId(id)) },
         usuario: req.userId,
-        status: 'ativo'
+        status: 'ativo',
+        emprestimoEhJurosAuto: { $ne: true }
       }).lean();
 
-      const emprestimosParaAjuste = await Emprestimo.find({
-        _id: { $in: emprestimoIds.map(id => new mongoose.Types.ObjectId(id)) },
-        usuario: req.userId,
-        direcao: 'concedido'
-      }).lean();
-      const empPermitidos = new Set(emprestimosParaAjuste.map(e => String(e._id)));
-
-      const todasFiltradas = todasTransacoesEmprestimo.filter(t => empPermitidos.has(String(t.emprestimoId)));
-      await ajustarRecebiveisDeEmprestimo(todasFiltradas, req.userId);
-
-      const ajuste = await calcularAjusteResumoPorEmprestimo(
-        [...empPermitidos],
-        req.userId,
-        matchAdicionalResumo
-      );
-
-      const transacaoOriginalValor = new Map();
+      // Calcula totais por tipo para compensar o summary
+      let totalGastosSubtrair = 0;
+      let totalRecebiveisSubtrair = 0;
       for (const t of todasTransacoesEmprestimo) {
-        transacaoOriginalValor.set(String(t._id), t.valor);
-      }
-      for (const t of dataPage) {
-        if (t && t.emprestimoId && empPermitidos.has(String(t.emprestimoId))) {
-          const id = String(t._id);
-          t.valor = todasFiltradas.find(ft => String(ft._id) === id)?.valor ?? 0;
+        const valor = t.valor || 0;
+        if (t.tipo === 'gasto') {
+          totalGastosSubtrair += valor;
+        } else if (t.tipo === 'recebivel') {
+          totalRecebiveisSubtrair += valor;
         }
       }
 
+      // Aplica também o ajuste de lista (zera valor na página visível)
+      const dataPageFiltrada = dataPage.filter(t => emprestimoIds.includes(String(t.emprestimoId)));
+      await ajustarRecebiveisDeEmprestimo(dataPageFiltrada, req.userId);
+
       const summaryDocRaw = result[0].summary[0];
       if (summaryDocRaw) {
-        summaryDocRaw.totalGastos = (summaryDocRaw.totalGastos || 0) - ajuste.totalGastosSubtraido;
-        summaryDocRaw.totalRecebiveis = (summaryDocRaw.totalRecebiveis || 0) - ajuste.totalRecebiveisSubtraido;
+        summaryDocRaw.totalGastos = (summaryDocRaw.totalGastos || 0) - totalGastosSubtrair;
+        summaryDocRaw.totalRecebiveis = (summaryDocRaw.totalRecebiveis || 0) - totalRecebiveisSubtrair;
         summaryDocRaw.netValue = (summaryDocRaw.totalRecebiveis || 0) - (summaryDocRaw.totalGastos || 0);
         summaryDocRaw.totalValue = (summaryDocRaw.totalGastos || 0) + (summaryDocRaw.totalRecebiveis || 0);
       }
@@ -340,6 +345,9 @@ exports.obterTransacoesExport = async (req, res) => {
     exportPipeline.push({ $sort: sortStage }, { $limit: MAX_EXPORT });
 
     const transacoes = await Transacao.aggregate(exportPipeline);
+    // Marca TXs de Empréstimo (gasto + recebível não-juros-auto) com
+    // `_emprestimoEsconderNaLista` e zera valor/pagamentos. O frontend usa o
+    // flag para escondê-las.
     const { ajustarRecebiveisDeEmprestimo } = require('../utils/emprestimoAjuste');
     await ajustarRecebiveisDeEmprestimo(transacoes, req.userId);
     res.json({ transacoes });
