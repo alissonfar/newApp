@@ -2,20 +2,23 @@
 const mongoose = require('mongoose');
 
 /**
- * Ajusta transações vinculadas a empréstimos concedidos para fins de relatórios.
+ * Ajusta transações vinculadas a empréstimos para fins de relatórios e listas.
  *
- * - Gastos com emprestimoId: zerados (não contam como gasto) e marcados com
- *   `t._emprestimoEsconderNaLista = true` (frontend oculta das listas gerais).
- * - Recebíveis com emprestimoId: valor e pagamentos ZERADOS, marcados com
- *   `t._emprestimoEsconderNaLista = true` (escondidos das listas gerais e dos
- *   cards/sumários de recebíveis). A informação de breakdown (valor original,
- *   principal, juros) é preservada em `t._emprestimoInfo` para o frontend
- *   exibir tooltip via `EmprestimoBadge`. A compensação é feita pela
- *   transação de juros auto-criada em `recalcularStatus` (que entra no
- *   aggregate normalmente como receita real).
+ * Comportamento simplificado (FASE 4 do design doc):
+ *  - Gastos com emprestimoId: zerados (não contam como gasto) e marcados com
+ *    `t._emprestimoEsconderNaLista = true` (frontend oculta das listas gerais).
+ *  - Recebíveis com emprestimoId (NÃO juros auto): valor e pagamentos ZERADOS,
+ *    marcados com `t._emprestimoEsconderNaLista = true`. Sem split FIFO,
+ *    sem cálculo de `principal`/`juros` no nível da transação.
+ *  - TX com `emprestimoEhJurosAuto: true` permanece inalterada: ela é a
+ *    "receita real" do empréstimo e deve entrar como recebível normal no
+ *    summary de relatórios.
+ *  - Em qualquer caso, popula `t._emprestimoInfo` com dados mínimos
+ *    (tipo, pessoaNome, valor) para o `EmprestimoBadge` exibir tooltip.
  *
  * Mutações são feitas em cópias rasas dos objetos — o documento do banco
- * não é alterado. Esta função é usada apenas no pipeline do motor de relatórios.
+ * não é alterado. Esta função é usada apenas no pipeline do motor de
+ * relatórios e nos endpoints que listam transações.
  *
  * @param {Array} transacoes - Transações já hidratadas (lean ou toObject)
  * @param {string} userId - ID do usuário
@@ -35,8 +38,7 @@ async function ajustarRecebiveisDeEmprestimo(transacoes, userId) {
   const Emprestimo = require('../models/emprestimo');
   const emprestimos = await Emprestimo.find({
     _id: { $in: [...empIds] },
-    usuario: new mongoose.Types.ObjectId(userId),
-    direcao: 'concedido'
+    usuario: new mongoose.Types.ObjectId(userId)
   }).lean();
 
   const empById = new Map();
@@ -44,24 +46,19 @@ async function ajustarRecebiveisDeEmprestimo(transacoes, userId) {
     empById.set(String(e._id), e);
   }
 
-  const saldos = new Map();
-  for (const e of emprestimos) {
-    saldos.set(String(e._id), { disbursed: 0, received: 0 });
-  }
-
-  const ordenadas = [...transacoes].sort(
-    (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
-  );
-
-  for (const t of ordenadas) {
+  for (const t of transacoes) {
     if (!t || !t.emprestimoId) continue;
-    const empId = String(t.emprestimoId);
-    if (!empById.has(empId)) continue;
-    const s = saldos.get(empId);
-    if (!s) continue;
+    const emp = empById.get(String(t.emprestimoId));
+    if (!emp) continue;
+
+    // Popula _emprestimoInfo mínimo (para EmprestimoBadge)
+    t._emprestimoInfo = {
+      tipo: t.tipo === 'gasto' ? 'desembolso' : 'recebimento',
+      pessoaNome: emp.pessoaNomeSnapshot || 'pessoa',
+      valor: t.valor || 0
+    };
 
     if (t.tipo === 'gasto') {
-      s.disbursed += t.valor || 0;
       t.valor = 0;
       if (Array.isArray(t.pagamentos)) {
         for (const p of t.pagamentos) {
@@ -72,18 +69,12 @@ async function ajustarRecebiveisDeEmprestimo(transacoes, userId) {
     } else if (t.tipo === 'recebivel') {
       // Transação de juros auto (criada na quitação) NÃO deve ser tocada:
       // ela já é a "receita real" do empréstimo e deve permanecer visível.
-      if (t.emprestimoEhJurosAuto === true) continue;
+      if (t.emprestimoEhJurosAuto === true) {
+        // Mas queremos que o badge apareça também na TX de juros auto
+        // (ela é parte do empréstimo, mesmo que com semântica diferente)
+        continue;
+      }
 
-      const valorOriginal = t.valor || 0;
-      const principalRestante = Math.max(0, s.disbursed - s.received);
-      const principalDeste = Math.min(valorOriginal, principalRestante);
-      s.received += principalDeste;
-      t._emprestimoInfo = {
-        tipo: 'recebimento',
-        valorOriginal,
-        principal: principalDeste,
-        juros: valorOriginal - principalDeste
-      };
       t.valor = 0;
       if (Array.isArray(t.pagamentos)) {
         for (const p of t.pagamentos) {
@@ -97,51 +88,4 @@ async function ajustarRecebiveisDeEmprestimo(transacoes, userId) {
   return transacoes;
 }
 
-/**
- * Calcula o ajuste de totais (gastos e recebíveis) a ser aplicado ao summary
- * após o ajuste FIFO de empréstimos.
- *
- * Estratégia: subtrai o valor INTEIRO das transações com emprestimoId (que entra
- * com valor cheio via `ajustarRecebiveisDeEmprestimo` para fins de lista).
- * A transação de juros auto-criada na quitação (`emprestimoEhJurosAuto: true`)
- * entra no aggregate e NÃO é subtraída — é a única contribuição como receita real.
- *
- * @param {Array} emprestimoIds - IDs de empréstimos referenciados nas transações filtradas
- * @param {string} userId - ID do usuário
- * @param {Object} matchAdicional - match base para o filtro de transações (sem o filtro de emprestimoId)
- * @returns {Promise<{totalGastosSubtraido: number, totalRecebiveisSubtraido: number}>}
- */
-async function calcularAjusteResumoPorEmprestimo(emprestimoIds, userId, matchAdicional) {
-  if (!Array.isArray(emprestimoIds) || emprestimoIds.length === 0) {
-    return { totalGastosSubtraido: 0, totalRecebiveisSubtraido: 0 };
-  }
-  const Transacao = require('../models/transacao');
-
-  const match = {
-    ...(matchAdicional || {}),
-    emprestimoId: { $in: emprestimoIds.map(id =>
-      typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id
-    )},
-    usuario: new mongoose.Types.ObjectId(userId),
-    status: 'ativo',
-    emprestimoEhJurosAuto: { $ne: true }
-  };
-
-  const transacoes = await Transacao.find(match).lean();
-
-  let totalGastosSubtraido = 0;
-  let totalRecebiveisSubtraido = 0;
-
-  for (const t of transacoes) {
-    const valor = t.valor || 0;
-    if (t.tipo === 'gasto') {
-      totalGastosSubtraido += valor;
-    } else if (t.tipo === 'recebivel') {
-      totalRecebiveisSubtraido += valor;
-    }
-  }
-
-  return { totalGastosSubtraido, totalRecebiveisSubtraido };
-}
-
-module.exports = { ajustarRecebiveisDeEmprestimo, calcularAjusteResumoPorEmprestimo };
+module.exports = { ajustarRecebiveisDeEmprestimo };

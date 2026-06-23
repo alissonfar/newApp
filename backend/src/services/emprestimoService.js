@@ -1,17 +1,7 @@
 // src/services/emprestimoService.js
 const mongoose = require('mongoose');
 const Transacao = require('../models/transacao');
-const { ajustarRecebiveisDeEmprestimo } = require('../utils/emprestimoAjuste');
-const { TIPOS_RETORNO, STATUS_EMPRESTIMO, DIRECOES } = require('../models/emprestimo');
-
-const CAMPOS_EDITAVEIS = [
-  'valorEsperadoRetorno',
-  'tipoRetorno',
-  'taxaJurosPercentual',
-  'valorJurosFixo',
-  'prazoFinal',
-  'observacao'
-];
+const { TIPOS_RETORNO, STATUS_EMPRESTIMO } = require('../models/emprestimo');
 
 function validarDadosEmprestimo(dados, { parcial = false } = {}) {
   const erros = [];
@@ -30,21 +20,8 @@ function validarDadosEmprestimo(dados, { parcial = false } = {}) {
       erros.push(`tipoRetorno inválido. Valores: ${TIPOS_RETORNO.join(', ')}`);
     }
   }
-  if (dados.taxaJurosPercentual !== undefined && dados.taxaJurosPercentual !== null) {
-    if (dados.taxaJurosPercentual < 0 || dados.taxaJurosPercentual > 1000) {
-      erros.push('taxaJurosPercentual fora do intervalo (0-1000).');
-    }
-  }
-  if (dados.valorJurosFixo !== undefined && dados.valorJurosFixo !== null) {
-    if (dados.valorJurosFixo < 0) {
-      erros.push('valorJurosFixo não pode ser negativo.');
-    }
-  }
   if (!parcial || dados.prazoFinal !== undefined) {
     if (!dados.prazoFinal) erros.push('prazoFinal é obrigatório.');
-  }
-  if (dados.direcao !== undefined && !DIRECOES.includes(dados.direcao)) {
-    erros.push(`direcao inválida. Valores: ${DIRECOES.join(', ')}`);
   }
   return erros;
 }
@@ -103,64 +80,58 @@ async function obterEmprestimoComTotais(emprestimo) {
 }
 
 /**
- * Calcula o total de juros de um empréstimo aplicando FIFO nas transações
- * vinculadas (gastos como desembolso, recebíveis como recebimento).
- * Reutiliza a lógica de `ajustarRecebiveisDeEmprestimo` e soma os juros resultantes.
+ * Calcula o lucro realizado de um empréstimo:
+ *   lucro = soma_recebíveis - soma_gastos
+ * (sem FIFO, sem split por transação).
+ *
+ * @param {string|ObjectId} emprestimoId
+ * @param {string|ObjectId} usuarioId
+ * @returns {Promise<number>}
  */
-async function calcularTotalJuros(emprestimoId, usuarioId) {
+async function calcularLucro(emprestimoId, usuarioId) {
   const objectId = typeof emprestimoId === 'string'
     ? new mongoose.Types.ObjectId(emprestimoId)
     : emprestimoId;
 
-  const transacoes = await Transacao.find({
-    emprestimoId: objectId,
-    usuario: new mongoose.Types.ObjectId(usuarioId),
-    status: 'ativo',
-    emprestimoEhJurosAuto: { $ne: true }
-  }).lean();
-
-  if (transacoes.length === 0) return 0;
-
-  const copia = transacoes.map((t) => ({ ...t, pagamentos: t.pagamentos ? t.pagamentos.map((p) => ({ ...p })) : [] }));
-  await ajustarRecebiveisDeEmprestimo(copia, usuarioId);
-
-  let totalJuros = 0;
-  for (const t of copia) {
-    if (t.tipo === 'recebivel' && t._emprestimoInfo) {
-      totalJuros += t._emprestimoInfo.juros || 0;
+  const resultado = await Transacao.aggregate([
+    {
+      $match: {
+        emprestimoId: objectId,
+        usuario: new mongoose.Types.ObjectId(usuarioId),
+        status: 'ativo',
+        emprestimoEhJurosAuto: { $ne: true }
+      }
+    },
+    {
+      $group: {
+        _id: '$tipo',
+        total: { $sum: '$valor' }
+      }
     }
-  }
-  return totalJuros;
-}
+  ]);
 
-/**
- * Cria a transação de juros auto-criada ao quitar um empréstimo.
- * Mantida como wrapper de compatibilidade — delega a recalcularJurosAuto,
- * que agora também é capaz de ATUALIZAR a transação existente se o cálculo
- * mudar (não apenas criar uma nova).
- *
- * @deprecated Use utils/emprestimoQuitacao.recalcularJurosAuto diretamente.
- */
-async function criarTransacaoJurosAuto(emprestimo, totalJuros) {
-  const { recalcularJurosAuto } = require('../utils/emprestimoQuitacao');
-  const resultado = await recalcularJurosAuto(emprestimo, totalJuros);
-  if (resultado.acao === 'criada' || resultado.acao === 'atualizada' || resultado.acao === 'mantida') {
-    return resultado.transacao;
+  let totalDisbursed = 0;
+  let totalReceived = 0;
+  for (const r of resultado) {
+    if (r._id === 'gasto') totalDisbursed = r.total;
+    else if (r._id === 'recebivel') totalReceived = r.total;
   }
-  return null;
+
+  return totalReceived - totalDisbursed;
 }
 
 /**
  * Recalcula o status do empréstimo aplicando regras de transição:
  *  - Se totalReceived >= valorEsperadoRetorno e status === 'ativo':
  *      Transiciona para 'quitado' atomicamente (findOneAndUpdate com condição status='ativo'),
- *      cria/atualiza a transação de juros auto.
- *  - Se status === 'quitado' e totalReceived < valorEsperadoRetorno (ex: usuário
- *      aumentou valorEsperado ou estornou recebimento): reverte para 'ativo',
- *      deleta a transação de juros auto.
- *  - Se status === 'quitado' e cálculo mudou (ex: vinculou desembolso tardio):
- *      Atualiza a transação de juros auto com o novo valor.
+ *      gera/atualiza a transação de juros auto com o lucro realizado.
+ *  - Se status === 'quitado' (independentemente do cálculo):
+ *      Garante que a transação de juros auto reflete o lucro atual
+ *      (deleta se lucro <= 0, atualiza se mudou, mantém se igual).
  *  - Se status === 'cancelado': no-op.
+ *
+ * IMPORTANTE: a partir da FASE 4 do design doc, NÃO há mais auto-reversão
+ * `quitado → ativo`. O usuário gerencia o status manualmente.
  *
  * Esta função é idempotente e segura para ser chamada múltiplas vezes.
  */
@@ -187,34 +158,21 @@ async function recalcularStatus(emprestimoId, usuarioId) {
   }
 
   if (atingiuQuitado && emprestimo.status === 'ativo') {
-    const totalJuros = await calcularTotalJuros(emprestimoId, usuarioId);
+    const lucro = await calcularLucro(emprestimoId, usuarioId);
     const transicao = await Emprestimo.findOneAndUpdate(
       { _id: emprestimoId, usuario: usuarioId, status: 'ativo' },
       { $set: { status: 'quitado', dataQuitacao: new Date() } },
       { new: true }
     );
     if (transicao) {
-      await recalcularJurosAuto(transicao, totalJuros);
-    }
-    return transicao || emprestimo;
-  }
-
-  if (!atingiuQuitado && emprestimo.status === 'quitado') {
-    const totalJuros = await calcularTotalJuros(emprestimoId, usuarioId);
-    const transicao = await Emprestimo.findOneAndUpdate(
-      { _id: emprestimoId, usuario: usuarioId, status: 'quitado' },
-      { $set: { status: 'ativo', dataQuitacao: null } },
-      { new: true }
-    );
-    if (transicao) {
-      await recalcularJurosAuto(transicao, totalJuros);
+      await recalcularJurosAuto(transicao, lucro);
     }
     return transicao || emprestimo;
   }
 
   if (atingiuQuitado && emprestimo.status === 'quitado') {
-    const totalJuros = await calcularTotalJuros(emprestimoId, usuarioId);
-    await recalcularJurosAuto(emprestimo, totalJuros);
+    const lucro = await calcularLucro(emprestimoId, usuarioId);
+    await recalcularJurosAuto(emprestimo, lucro);
     return emprestimo;
   }
 
@@ -244,14 +202,11 @@ async function validarEmprestimoParaTransacao(emprestimoId, usuarioId) {
 
 module.exports = {
   validarDadosEmprestimo,
-  CAMPOS_EDITAVEIS,
   STATUS_EMPRESTIMO,
   TIPOS_RETORNO,
-  DIRECOES,
   calcularTotais,
   obterEmprestimoComTotais,
-  calcularTotalJuros,
-  criarTransacaoJurosAuto,
+  calcularLucro,
   recalcularStatus,
   validarEmprestimoParaTransacao
 };

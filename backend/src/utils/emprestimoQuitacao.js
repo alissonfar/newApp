@@ -3,13 +3,14 @@
  *
  * Lógica de cálculo e manutenção da transação de juros auto-criada na quitação
  * de um empréstimo. Extraída de services/emprestimoService.js para permitir
- * atualização (não apenas criação) quando o cálculo de juros muda após
+ * atualização (não apenas criação) quando o cálculo de lucro muda após
  * edições/estornos.
  *
- * Comportamento:
- *  - Se totalJuros <= 0 e já existe tx de juros auto → DELETAR (reverter quitação)
- *  - Se totalJuros > 0 e já existe tx de juros auto → ATUALIZAR valor + observação
- *  - Se totalJuros > 0 e não existe → CRIAR nova tx
+ * Comportamento (FASE 4 — modelo simplificado):
+ *  - `lucro` é o segundo argumento de `recalcularJurosAuto` (não mais `totalJuros`).
+ *  - Se lucro <= 0 e já existe tx de juros auto → DELETAR (reverter quitação)
+ *  - Se lucro > 0 e já existe tx de juros auto → ATUALIZAR valor + observação
+ *  - Se lucro > 0 e não existe → CRIAR nova tx
  *  - Sem mudança de valor E observação → no-op
  */
 const mongoose = require('mongoose');
@@ -23,14 +24,12 @@ function arredondarCentavos(valor) {
   return Math.round((Number(valor) || 0) * 100) / 100;
 }
 
-function montarObservacao({ pessoaNome, desembolso, totalReceb, totalJuros }) {
-  const principalDevolvido = Math.max(0, totalReceb - totalJuros);
+function montarObservacao({ pessoaNome, desembolso, totalReceb, lucro }) {
   return (
-    `Juros do empréstimo para ${pessoaNome}. ` +
+    `Lucro realizado do empréstimo para ${pessoaNome}. ` +
     `Desembolsos: R$ ${formatarMoeda(desembolso)}, ` +
     `Recebimentos: R$ ${formatarMoeda(totalReceb)}, ` +
-    `Principal devolvido: R$ ${formatarMoeda(principalDevolvido)}, ` +
-    `Juros: R$ ${formatarMoeda(totalJuros)}.`
+    `Lucro: R$ ${formatarMoeda(lucro)}.`
   );
 }
 
@@ -80,16 +79,16 @@ function observacaoIguais(a, b) {
 }
 
 /**
- * Mantém a transação de juros auto-criada em sincronia com o totalJuros
+ * Mantém a transação de juros auto-criada em sincronia com o lucro
  * calculado para o empréstimo.
  *
- * @param {Object} emprestimo - Documento Emprestimo (precisa ter _id, usuario, pessoaNomeSnapshot, direcao)
- * @param {number} totalJuros - Total de juros calculado pelo FIFO
+ * @param {Object} emprestimo - Documento Emprestimo (precisa ter _id, usuario, pessoaNomeSnapshot)
+ * @param {number} lucro - Lucro realizado (= soma_recebíveis - soma_gastos)
  * @param {Object} [opcoes]
  * @param {string} [opcoes.session] - Sessão MongoDB para atomicidade
  * @returns {Promise<{acao: 'criada'|'atualizada'|'deletada'|'mantida'|'nenhuma', transacao: Object|null}>}
  */
-async function recalcularJurosAuto(emprestimo, totalJuros, opcoes = {}) {
+async function recalcularJurosAuto(emprestimo, lucro, opcoes = {}) {
   if (!emprestimo || !emprestimo._id) {
     throw new Error('recalcularJurosAuto: emprestimo inválido');
   }
@@ -100,9 +99,9 @@ async function recalcularJurosAuto(emprestimo, totalJuros, opcoes = {}) {
     emprestimoEhJurosAuto: true
   }).session(opcoes.session || null);
 
-  const totalJurosArred = arredondarCentavos(totalJuros);
+  const lucroArred = arredondarCentavos(lucro);
 
-  if (!txExistente && (!totalJurosArred || totalJurosArred <= 0)) {
+  if (!txExistente && (!lucroArred || lucroArred <= 0)) {
     return { acao: 'nenhuma', transacao: null };
   }
 
@@ -117,13 +116,13 @@ async function recalcularJurosAuto(emprestimo, totalJuros, opcoes = {}) {
       _id: new mongoose.Types.ObjectId(),
       usuario: emprestimo.usuario,
       tipo: 'recebivel',
-      descricao: `Juros - ${pessoaNome}`,
-      valor: totalJurosArred,
+      descricao: `Lucro - ${pessoaNome}`,
+      valor: lucroArred,
       data: ultima.data || new Date(),
-      observacao: montarObservacao({ pessoaNome, desembolso, totalReceb: recebimento, totalJuros: totalJurosArred }),
+      observacao: montarObservacao({ pessoaNome, desembolso, totalReceb: recebimento, lucro: lucroArred }),
       emprestimoId,
       emprestimoEhJurosAuto: true,
-      pagamentos: [{ pessoa: ultima.pagamentos?.[0]?.pessoa || '', valor: totalJurosArred, tags: ultima.pagamentos?.[0]?.tags || {} }],
+      pagamentos: [{ pessoa: ultima.pagamentos?.[0]?.pessoa || '', valor: lucroArred, tags: ultima.pagamentos?.[0]?.tags || {} }],
       categoria: ultima.categoria || null,
       categoriaNome: ultima.categoriaNome || null,
       status: 'ativo'
@@ -136,7 +135,7 @@ async function recalcularJurosAuto(emprestimo, totalJuros, opcoes = {}) {
     return { acao: 'criada', transacao: nova };
   }
 
-  if (!totalJurosArred || totalJurosArred <= 0) {
+  if (!lucroArred || lucroArred <= 0) {
     if (opcoes.session) {
       await Transacao.deleteOne({ _id: txExistente._id }).session(opcoes.session);
     } else {
@@ -147,20 +146,20 @@ async function recalcularJurosAuto(emprestimo, totalJuros, opcoes = {}) {
 
   const { desembolso, recebimento } = await calcularTotaisRecebEDisbursed(emprestimoId);
   const pessoaNome = emprestimo.pessoaNomeSnapshot || 'empréstimo';
-  const observacao = montarObservacao({ pessoaNome, desembolso, totalReceb: recebimento, totalJuros: totalJurosArred });
-  const valorMudou = !saoIguais(txExistente.valor, totalJurosArred);
+  const observacao = montarObservacao({ pessoaNome, desembolso, totalReceb: recebimento, lucro: lucroArred });
+  const valorMudou = !saoIguais(txExistente.valor, lucroArred);
   const obsMudou = !observacaoIguais(txExistente.observacao, observacao);
 
   if (!valorMudou && !obsMudou) {
     return { acao: 'mantida', transacao: txExistente };
   }
 
-  txExistente.valor = totalJurosArred;
+  txExistente.valor = lucroArred;
   txExistente.observacao = observacao;
   if (Array.isArray(txExistente.pagamentos) && txExistente.pagamentos.length > 0) {
-    txExistente.pagamentos[0].valor = totalJurosArred;
+    txExistente.pagamentos[0].valor = lucroArred;
   } else {
-    txExistente.pagamentos = [{ pessoa: '', valor: totalJurosArred, tags: {} }];
+    txExistente.pagamentos = [{ pessoa: '', valor: lucroArred, tags: {} }];
   }
   if (opcoes.session) {
     await txExistente.save({ session: opcoes.session });
