@@ -1,37 +1,52 @@
+// src/components/shared/Button.js
 import React from 'react';
 import './Button.css';
 
 /**
  * Button - Componente reutilizável com variantes
- * @param {string} variant - primary | secondary | danger | success | warning | ghost
- * @param {string} size - sm | md | lg
+ * Variants: primary | secondary | glass | danger | success | ghost | warning (alias de ghost)
+ * Sizes: sm | md | lg
+ *
+ * Mantém compatibilidade: aceita `icon` (alias de startIcon), `type`, `disabled` como antes.
+ * Adiciona: `loading` (com spinner), `startIcon`, `endIcon`.
  */
 const Button = ({
   children,
   variant = 'primary',
   size = 'md',
+  loading = false,
+  disabled = false,
+  startIcon,
+  endIcon,
+  icon,        // alias legado de startIcon (preserva API anterior)
   className = '',
-  icon,
   type = 'button',
-  disabled,
-  ...props
+  ...rest
 }) => {
-  const classNames = [
-    'ds-button',
-    `ds-button--${variant}`,
-    `ds-button--${size}`,
-    className
+  // Mapear variant legado 'warning' -> 'ghost' (mesmo visual, sem quebrar quem usa)
+  const resolvedVariant = variant === 'warning' ? 'ghost' : variant;
+
+  const classes = [
+    'cg-button',
+    `cg-button--${resolvedVariant}`,
+    `cg-button--${size}`,
+    loading ? 'cg-button--loading' : '',
+    className,
   ].filter(Boolean).join(' ');
+
+  const renderStartIcon = !loading && (startIcon || icon);
 
   return (
     <button
       type={type}
-      className={classNames}
-      disabled={disabled}
-      {...props}
+      className={classes}
+      disabled={disabled || loading}
+      {...rest}
     >
-      {icon && <span className="ds-button__icon">{icon}</span>}
-      {children}
+      {loading && <span className="cg-button__spinner" aria-hidden="true" />}
+      {renderStartIcon && <span className="cg-button__icon">{startIcon || icon}</span>}
+      <span className="cg-button__label">{children}</span>
+      {!loading && endIcon && <span className="cg-button__icon">{endIcon}</span>}
     </button>
   );
 };
