@@ -27,12 +27,13 @@ Documentar a conclusão da modernização visual do Controle de Gastos. **21 com
 | **Telas migradas** | Home, NovaTransacaoForm, Relatorio. CSS reduzido em ~48% (Home: 1011→530 linhas, Relatorio: 546→281). |
 | **App.css migrado** | 532 → 166 linhas (-69%). Dark mode agora consistente em **todas as rotas** (mesmo as não refatoradas). 9 classes mortas removidas. |
 | **index.css body** | Simplificado — background removido (deixa GlobalStyles mandar no gradiente). |
+| **Bug do gradiente no body (Fase 7.5)** | Após Fase 7, ainda existia "fundo branco" no header. Causa raiz: bug Emotion+stylis que dropa valores com vírgulas em parênteses. Fix via split entre `GlobalStyles.js` (objeto JS) e `muiTheme.js` (string template em `MuiCssBaseline.styleOverrides`). Documentado em [ADR-011](../decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md). |
 
 ### Estatísticas
 
-- **24 commits** na branch `refatoracaoVisual` (Fases 1-6 + Fase 7 + commit docs)
+- **24 commits** na branch `refatoracaoVisual` (Fases 1-6 + Fase 7 + commit docs) + 1 commit pendente do fix do gradiente (Fase 7.5)
 - **~860 linhas líquidas a menos** de CSS (refatoração eliminou duplicação)
-- **5 ADRs criados** (006-010)
+- **6 ADRs criados** (006-011)
 - **0 regressões** em features críticas (Pluggy, multi-tenant, decimal.js, contas conjuntas, importação CSV/OFX, geração de PDF)
 
 ### ADRs
@@ -42,6 +43,7 @@ Documentar a conclusão da modernização visual do Controle de Gastos. **21 com
 - **ADR-008** — Glassmorphism em `MainLayout` exige gradiente vibrante visível atrás
 - **ADR-009** — Tailwind `important: false` + tokens como fonte única
 - **ADR-010** — Migração do `App.css` global para tokens do design system
+- **ADR-011** — **Gradiente do `<body>` precisa de split entre GlobalStyles e MuiCssBaseline (bug Emotion+stylis)** ⚠️ **LEIA ANTES DE MEXER NO TEMA**
 
 ## Decisões durante a execução
 
@@ -68,6 +70,49 @@ Documentar a conclusão da modernização visual do Controle de Gastos. **21 com
 2. **Dark mode mostrou cards ainda brancos (Fase 3)**: esperado — cards da Home usavam CSS legado com `background: white` hardcoded. Resolvido na Fase 6 (refatoração de Home para usar `StatCard` e `Card` glass).
 3. **Dropdown do perfil empurrou o toggle para área errada (Fase 3)**: visualmente aceitável, sem impacto funcional.
 
+### Saga do "fundo branco" no body (Fase 7.5)
+
+**Sintoma persistente:** Mesmo após Fases 1-7, a Home em dark mode tinha "fundo branco" no header "Dashboard - Alisson" e nos botões de período (Semana/Mês/Mês Passado/Ano), tornando o texto claro invisível.
+
+**Tentativas falhadas (cada uma parecia lógica mas não resolveu):**
+
+1. **Hipótese A:** `App.css` tinha `h1, h2` globais com cores fixas. → Migrado para tokens (Fase 7). ❌ Não resolveu.
+2. **Hipótese B:** `.main-content` tinha background sólido. → Tornou-se transparent. ❌ Não resolveu.
+3. **Hipótese C:** `body` em `App.css` tem `background: var(--cor-fundo)`. → Aliases apontariam para tokens. ❌ Não resolveu.
+4. **Hipótese D:** O `GlobalStyles.js` deveria aplicar `background: tokens.gradient[mode]` no body. → Nenhuma evidência de erro no console. ❌ Não resolveu.
+
+**Método que funcionou — eliminação visual com vermelho:**
+
+Subagent executor (via skill `browser-use`) aplicou `background: red !important` em elementos candidatos, um por vez:
+
+| Elemento | Hipótese | Resultado |
+|---|---|---|
+| `<body>` | "A mancha branca é o body" | **VERMELHO no lugar da mancha branca** → culpado confirmado ✅ |
+| `<html>` | "É o html que está sem cor" | (não testado, body já confirmado) |
+| `.main-content` | "É o container de conteúdo" | (não testado) |
+| `.cg-home` | "É a Home" | (não testado) |
+| `.cg-home__header` | "É o container do header" | (não testado) |
+| `.dashboard-section` | "É a section dos StatCards" | (não testado) |
+
+**Causa raiz descoberta:** o `<body>` estava com `background: transparent` em runtime. O `GlobalStyles.js` **deveria** aplicar `background: tokens.gradient[mode]` mas não estava.
+
+**Bug encontrado:** O pré-processador CSS do Emotion (stylis) **dropa valores de `background` ou `backgroundImage` que contenham vírgulas dentro de parênteses** — como `linear-gradient(135deg, #color1, #color2 60%, #color3)`. A vírgula dentro dos parênteses confunde o parser.
+
+**Fix definitiva (split em 2 arquivos):**
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/theme/GlobalStyles.js` | `'html, body'` recebe `fontFamily`, `backgroundAttachment`, `backgroundSize`, `minHeight`, `margin` (objeto JS funciona aqui) |
+| `src/theme/muiTheme.js` | `MuiCssBaseline.styleOverrides` recebe string template (CSS cru) com `background-image: linear-gradient(...)` em `html, body` (bypassa o bug do Emotion) |
+
+**Validação:**
+- `getComputedStyle(body).backgroundImage` em dark: `linear-gradient(135deg, rgb(10, 14, 39) 0%, rgb(30, 27, 75) 60%, rgb(49, 46, 129) 100%)` ✅
+- `getComputedStyle(html).backgroundImage` em dark: mesmo gradiente ✅
+- Validado em 5 rotas (Home, Patrimonio, Relatorio, Tags, Pessoas) em dark e light
+- Documentado em [ADR-011](../decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md)
+
+**Lição:** Quando o Alisson pediu "método drástico com vermelho" foi o que destravou. Teoria após teoria sem validação visual não levou a lugar nenhum. **Verificar com print sempre.**
+
 ## O que ficou para o futuro (NÃO está no escopo)
 
 - **Refatorar mais páginas** além das 3 telas-chave (Patrimônio, Pessoas, Tags, Relatórios Secundários, Admin) — todas continuam com CSS legacy + aliases. Cada refatoração é uma fase independente.
@@ -84,6 +129,8 @@ Documentar a conclusão da modernização visual do Controle de Gastos. **21 com
 - **Executor de código não tem browser**: limita validação visual. Smoke test visual do Alisson é **crítico** em cada fase.
 - **Glassmorphism é mais impactante em dark mode**: o efeito de blur sobre cores vibrantes é muito mais visível do que sobre cinza claro.
 - **Refatorar CSS de uma página inteira para usar shared components** pode reduzir 48% das linhas — vale o investimento.
+- **Método de eliminação visual com cor primária (vermelho):** quando teoria após teoria não leva a lugar nenhum, **aplique `background: red !important` em cada candidato** e veja qual fica vermelho. É mais rápido e elimina suposição. Foi o que destravou a saga do "fundo branco".
+- **Emotion+stylis dropa gradientes com vírgulas em parênteses**: se você precisa de `linear-gradient(...)`, `radial-gradient(...)`, `transform: rotate3d(...)`, `filter: blur(...)` etc no `GlobalStyles` (objeto JS), use **string template** no `MuiCssBaseline.styleOverrides` (CSS cru). Ver [ADR-011](../decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md).
 
 ## Validação de critérios de aceite (Fase 6 — entrega final)
 

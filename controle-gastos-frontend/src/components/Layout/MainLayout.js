@@ -329,33 +329,34 @@ const MainLayout = ({ children }) => {
                 <span className="user-name">
                   {usuario ? usuario.nome : 'Usuário'}
                 </span>
-                {/* Seta só no desktop não colapsado */}
+                 {/* Seta só no desktop não colapsado */}
                  {!isMenuCollapsed && !isMobile && <FaChevronDown className={`profile-arrow ${profileOpen ? 'open' : ''}`} />}
-                 <div className="menu-footer-actions">
-                   <ThemeToggle />
-                 </div>
-              </>
-            )}
-          </div>
+               </>
+             )}
+           </div>
 
-          {/* Dropdown de perfil - mostra se profileOpen E (não colapsado desktop OU mobile) */}
-          {profileOpen && (!isMenuCollapsed || isMobile) && (
-            <div className="profile-dropdown">
-              {/* ... links do dropdown com handleMenuLinkClick ... */}
-              <Link to="/profile" className="profile-link" onClick={handleMenuLinkClick}>
-                <FaUser />
-                Meu Perfil
-              </Link>
-              <Link to="/como-utilizar" className="profile-link" onClick={handleMenuLinkClick}>
-                <FaQuestionCircle />
-                Como Utilizar
-              </Link>
-              <button onClick={handleLogout} className="profile-link logout-btn">
-                <FaSignOutAlt />
-                Sair
-              </button>
-            </div>
-          )}
+           {/* Dropdown de perfil - mostra se profileOpen E (não colapsado desktop OU mobile) */}
+           {profileOpen && (!isMenuCollapsed || isMobile) && (
+             <div className="profile-dropdown">
+               {/* ... links do dropdown com handleMenuLinkClick ... */}
+               <Link to="/profile" className="profile-link" onClick={handleMenuLinkClick}>
+                 <FaUser />
+                 Meu Perfil
+               </Link>
+               <Link to="/como-utilizar" className="profile-link" onClick={handleMenuLinkClick}>
+                 <FaQuestionCircle />
+                 Como Utilizar
+               </Link>
+                <div className="profile-dropdown-toggle-wrapper">
+                  <ThemeToggle />
+                </div>
+                <hr className="profile-dropdown-divider" />
+               <button onClick={handleLogout} className="profile-link logout-btn">
+                 <FaSignOutAlt />
+                 Sair
+               </button>
+             </div>
+           )}
         </div>
       </aside>
 

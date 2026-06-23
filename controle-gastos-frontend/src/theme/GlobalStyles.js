@@ -6,10 +6,10 @@ const GlobalStyles = (mode) => (
   <MuiGlobalStyles
     styles={{
       '*': { boxSizing: 'border-box' },
-      body: {
+      'html, body': {
         fontFamily: tokens.font.family,
-        background: tokens.gradient[mode],
         backgroundAttachment: 'fixed',
+        backgroundSize: 'cover',
         minHeight: '100vh',
         margin: 0,
       },

@@ -47,15 +47,30 @@ const buildTheme = (mode) => {
     },
     components: {
       MuiCssBaseline: {
-        styleOverrides: {
-          body: {
-            // MuiCssBaseline deixa o body transparente para não sobrescrever
-            // o gradiente aplicado pelo GlobalStyles (que é a fonte de verdade do background visual).
-            backgroundColor: 'transparent',
-            color: color.textPrimary,
-            fontFamily: tokens.font.family,
-          },
-        },
+        // MuiCssBaseline é usado como string template (CSS cru) para aplicar o
+        // background-image (gradiente) em <html> e <body>. O gradiente contém
+        // vírgulas dentro de parênteses (ex: `linear-gradient(135deg, ...)`)
+        // que o Emotion+stylis dropa quando passado como objeto JS. String
+        // template bypassa o bug.
+        //
+        // IMPORTANTE: usamos var(--cg-gradient-body) (CSS variable) em vez de
+        // ${tokens.gradient[mode]} (interpolado em build time). Por quê?
+        // A var() é resolvida em runtime pelo browser, então quando o
+        // [data-theme] muda, o background-image reage automaticamente,
+        // SEM precisar de F5/reload. O token é definido em tokens.css
+        // tanto no :root (light) quanto no [data-theme="dark"].
+        styleOverrides: `
+          html, body {
+            background-image: var(--cg-gradient-body);
+            background-attachment: fixed;
+            background-size: cover;
+          }
+          body {
+            background-color: transparent;
+            color: ${color.textPrimary};
+            font-family: ${tokens.font.family};
+          }
+        `,
       },
       MuiButton: {
         defaultProps: { disableElevation: true, disableRipple: false },

@@ -475,6 +475,23 @@ button.menu-item.with-submenu {
   color: var(--cor-primaria);
 }
 
+/* Divisor entre seções do dropdown de perfil */
+.profile-dropdown-divider {
+  border: none;
+  height: 1px;
+  background-color: #eee;
+  margin: 4px 0;
+  padding: 0;
+}
+
+/* Wrapper do ThemeToggle dentro do dropdown de perfil */
+.profile-dropdown-toggle-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+/* ThemeToggle renderizado como item de menu dentro do dropdown */
+
 /* Botão de logout */
 .profile-dropdown .logout-btn {
   width: 100%;
