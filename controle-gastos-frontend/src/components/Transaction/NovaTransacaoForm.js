@@ -125,7 +125,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           const valorEsperado = parseFloat(emprestimoForm.state.novoValorEsperado) || 0;
           const novoEmp = await criarEmprestimo({
             pessoaId: emprestimoForm.state.pessoaId,
-            direcao: emprestimoForm.state.direcao,
             valorEsperadoRetorno: valorEsperado,
             tipoRetorno: emprestimoForm.state.novoTipoRetorno,
             prazoFinal: emprestimoForm.state.novoPrazoFinal
@@ -318,6 +317,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           setParteUsuario={onParteUsuarioChange}
           transacao={transacao}
           emprestimoForm={emprestimoForm}
+          tipoTransacao={formState.tipo}
         />
         <TabResumo
           data-tab="resumo"

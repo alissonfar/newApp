@@ -6,7 +6,7 @@ import { formatarMoedaBRL, labelTipoRetorno } from '../../utils/emprestimoFormat
 import './EmprestimoSecao.css';
 import { formatDateBR } from '../../utils/dateUtils';
 
-const EmprestimoSecao = ({ form, valorTotal }) => {
+const EmprestimoSecao = ({ form, valorTotal, tipoTransacao }) => {
   const { state, setters, adicionarPessoa, avisoEmprestimoSemDesembolso } = form;
   const [showNovaPessoa, setShowNovaPessoa] = useState(false);
   const [novaPessoaNome, setNovaPessoaNome] = useState('');
@@ -52,9 +52,9 @@ const EmprestimoSecao = ({ form, valorTotal }) => {
       {state.ativo && (
         <div className="emp-secao-campos">
           <p className="emp-secao-hint">
-            {state.direcao === 'concedido'
+            {tipoTransacao === 'gasto'
               ? 'Você está emprestando — este gasto não conta como despesa real nos relatórios.'
-              : 'Você está recebendo — o valor será dividido entre principal (abatimento) e juros (receita).'}
+              : 'Você está recebendo — o valor recebido entra como receita do empréstimo (juros auto).'}
           </p>
 
           {avisoEmprestimoSemDesembolso && (

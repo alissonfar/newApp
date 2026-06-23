@@ -95,13 +95,10 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
         criarEmprestimo: true,
         pessoaId: st.pessoaId || null,
         pessoaNomeSnapshot: st.pessoas?.find((p) => p._id === st.pessoaId)?.nome || null,
-        direcao: st.direcao,
         valorEsperadoRetorno: st.novoValorEsperado !== '' && st.novoValorEsperado != null
           ? Number(st.novoValorEsperado)
           : null,
         tipoRetorno: st.novoTipoRetorno,
-        taxaJurosPercentual: null,
-        valorJurosFixo: null,
         prazoFinal: st.novoPrazoFinal || null,
         observacao: null,
         empEmprestimoIdExistente: null

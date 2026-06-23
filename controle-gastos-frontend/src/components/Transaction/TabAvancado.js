@@ -10,7 +10,8 @@ const TabAvancado = ({
   parteUsuario,
   setParteUsuario,
   transacao,
-  emprestimoForm
+  emprestimoForm,
+  tipoTransacao
 }) => {
   const { state: cState, setters: cSetters, toggle: ccToggle, parteOutro } = contaConjunta;
 
@@ -133,7 +134,7 @@ const TabAvancado = ({
         )}
       </div>
 
-      {emprestimoForm && <EmprestimoSecao form={emprestimoForm} valorTotal={valorTotal} />}
+      {emprestimoForm && <EmprestimoSecao form={emprestimoForm} valorTotal={valorTotal} tipoTransacao={tipoTransacao} />}
     </div>
   );
 };

@@ -25,8 +25,6 @@ export function calcularDiasAtraso(prazoFinal) {
 export function labelTipoRetorno(tipo) {
   const map = {
     valor_fixo: 'Valor fixo',
-    juros_percentual: 'Juros percentual',
-    juros_fixo: 'Juros fixo',
     sem_juros: 'Sem juros'
   };
   return map[tipo] || tipo;

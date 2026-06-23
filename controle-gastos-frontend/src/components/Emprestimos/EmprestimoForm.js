@@ -6,9 +6,7 @@ import { listarPessoas } from '../../api';
 const ESTADO_INICIAL = {
   pessoaId: '',
   valorEsperadoRetorno: '',
-  tipoRetorno: 'sem_juros',
-  taxaJurosPercentual: '',
-  valorJurosFixo: '',
+  tipoRetorno: 'valor_fixo',
   prazoFinal: '',
   observacao: ''
 };
@@ -20,7 +18,7 @@ const EmprestimoForm = ({ inicial, onSubmit, onCancel, somenteEdicaoParcial = fa
 
   useEffect(() => {
     let cancelado = false;
-    listarPessoas()
+    listarPessoas(true)
       .then((data) => { if (!cancelado) setPessoas(Array.isArray(data) ? data : []); })
       .catch(() => toast.error('Erro ao carregar pessoas.'));
     return () => { cancelado = true; };
@@ -39,20 +37,12 @@ const EmprestimoForm = ({ inicial, onSubmit, onCancel, somenteEdicaoParcial = fa
       return;
     }
     const valor = parseFloat(form.valorEsperadoRetorno);
-    if (!valor || valor <= 0) {
-      toast.error('Informe o valor esperado de retorno.');
+    if (valor == null || isNaN(valor) || valor < 0) {
+      toast.error('Informe o valor esperado de retorno (>= 0).');
       return;
     }
     if (!form.prazoFinal) {
       toast.error('Informe o prazo final.');
-      return;
-    }
-    if (form.tipoRetorno === 'juros_percentual' && !form.taxaJurosPercentual) {
-      toast.error('Informe o percentual de juros.');
-      return;
-    }
-    if (form.tipoRetorno === 'juros_fixo' && !form.valorJurosFixo) {
-      toast.error('Informe o valor de juros fixo.');
       return;
     }
 
@@ -62,8 +52,6 @@ const EmprestimoForm = ({ inicial, onSubmit, onCancel, somenteEdicaoParcial = fa
         pessoaId: form.pessoaId,
         valorEsperadoRetorno: valor,
         tipoRetorno: form.tipoRetorno,
-        taxaJurosPercentual: form.tipoRetorno === 'juros_percentual' ? parseFloat(form.taxaJurosPercentual) : null,
-        valorJurosFixo: form.tipoRetorno === 'juros_fixo' ? parseFloat(form.valorJurosFixo) : null,
         prazoFinal: form.prazoFinal,
         observacao: form.observacao || null
       };
@@ -122,40 +110,10 @@ const EmprestimoForm = ({ inicial, onSubmit, onCancel, somenteEdicaoParcial = fa
           value={form.tipoRetorno}
           onChange={(e) => handleChange('tipoRetorno', e.target.value)}
         >
-          <option value="sem_juros">Sem juros</option>
           <option value="valor_fixo">Valor fixo (juros embutidos no esperado)</option>
-          <option value="juros_percentual">Juros percentual</option>
-          <option value="juros_fixo">Juros fixo (R$)</option>
+          <option value="sem_juros">Sem juros</option>
         </select>
       </div>
-
-      {form.tipoRetorno === 'juros_percentual' && (
-        <div className="emp-form-group">
-          <label>Percentual de juros (%)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.taxaJurosPercentual}
-            onChange={(e) => handleChange('taxaJurosPercentual', e.target.value)}
-            placeholder="Ex: 10"
-          />
-        </div>
-      )}
-
-      {form.tipoRetorno === 'juros_fixo' && (
-        <div className="emp-form-group">
-          <label>Valor de juros fixo (R$)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.valorJurosFixo}
-            onChange={(e) => handleChange('valorJurosFixo', e.target.value)}
-            placeholder="Ex: 50.00"
-          />
-        </div>
-      )}
 
       <div className="emp-form-group">
         <label>Observação</label>

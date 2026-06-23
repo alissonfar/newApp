@@ -2,15 +2,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { listarEmprestimos, criarEmprestimo } from '../../api';
+import { listarEmprestimos } from '../../api';
 import { formatarMoedaBRL, formatarDataBR, labelTipoRetorno, labelStatus } from '../../utils/emprestimoFormat';
-import EmprestimoForm from '../../components/Emprestimos/EmprestimoForm';
 import './EmprestimosPage.css';
 
 const EmprestimosPage = () => {
   const [emprestimos, setEmprestimos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('ativo');
 
   useEffect(() => { load(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [filtroStatus]);
@@ -26,14 +24,6 @@ const EmprestimosPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCriar = async (dados) => {
-    const novo = await criarEmprestimo(dados);
-    toast.success('Empréstimo criado.');
-    setModalOpen(false);
-    load();
-    return novo;
   };
 
   const totais = useMemo(() => {
@@ -58,7 +48,11 @@ const EmprestimosPage = () => {
           não contam como gasto nos relatórios — o que volta é devolução de principal,
           juros são income real.
         </p>
-        <button className="emp-btn-novo" onClick={() => setModalOpen(true)}>+ Novo Empréstimo</button>
+        <p className="emprestimos-hint">
+          <strong>Como criar um novo empréstimo:</strong> abra o formulário de uma nova transação
+          (Home, Transações, etc.) e marque a opção "Esta transação faz parte de um empréstimo"
+          na aba Avançado.
+        </p>
       </div>
 
       <div className="emp-filtros">
@@ -106,7 +100,7 @@ const EmprestimosPage = () => {
       ) : emprestimos.length === 0 ? (
         <div className="emprestimos-empty">
           <p>Nenhum empréstimo {filtroStatus && filtroStatus !== '' ? `${filtroStatus} ` : ''}encontrado.</p>
-          <p>Clique em "+ Novo Empréstimo" para começar.</p>
+          <p>Crie um empréstimo a partir do formulário de nova transação.</p>
         </div>
       ) : (
         <div className="emprestimos-lista">
@@ -155,18 +149,6 @@ const EmprestimosPage = () => {
               </Link>
             );
           })}
-        </div>
-      )}
-
-      {modalOpen && (
-        <div className="emprestimo-modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="emprestimo-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Novo Empréstimo</h3>
-            <EmprestimoForm
-              onSubmit={handleCriar}
-              onCancel={() => setModalOpen(false)}
-            />
-          </div>
         </div>
       )}
     </div>

@@ -16,6 +16,7 @@ import {
   labelStatus,
   calcularDiasAtraso
 } from '../../utils/emprestimoFormat';
+import { useBreadcrumbOverride } from '../../context/BreadcrumbContext';
 import EmprestimoForm from '../../components/Emprestimos/EmprestimoForm';
 import './EmprestimoDetalhePage.css';
 
@@ -25,6 +26,8 @@ const EmprestimoDetalhePage = () => {
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+
+  useBreadcrumbOverride(emprestimo?.pessoaNomeSnapshot || null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -143,12 +146,6 @@ const EmprestimoDetalhePage = () => {
           <span className="emp-detalhe-label">Tipo de retorno</span>
           <span className="emp-detalhe-valor">{labelTipoRetorno(emprestimo.tipoRetorno)}</span>
         </div>
-        {emprestimo.taxaJurosPercentual && (
-          <div className="emp-detalhe-info">
-            <span className="emp-detalhe-label">Taxa de juros</span>
-            <span className="emp-detalhe-valor">{emprestimo.taxaJurosPercentual}%</span>
-          </div>
-        )}
         {emprestimo.dataQuitacao && (
           <div className="emp-detalhe-info">
             <span className="emp-detalhe-label">Quitado em</span>
@@ -187,9 +184,7 @@ const EmprestimoDetalhePage = () => {
                 <th>Data</th>
                 <th>Tipo</th>
                 <th>Descrição</th>
-                <th className="emp-th-valor">Valor bruto</th>
-                <th className="emp-th-valor">Principal</th>
-                <th className="emp-th-valor">Juros</th>
+                <th className="emp-th-valor">Valor</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -204,12 +199,6 @@ const EmprestimoDetalhePage = () => {
                   </td>
                   <td>{m.descricao || '—'}</td>
                   <td className="emp-td-valor">{formatarMoedaBRL(m.valor)}</td>
-                  <td className="emp-td-valor emp-td-principal">
-                    {m.tipo === 'recebivel' ? formatarMoedaBRL(m.principal || 0) : '—'}
-                  </td>
-                  <td className="emp-td-valor emp-td-juros">
-                    {m.tipo === 'recebivel' ? formatarMoedaBRL(m.juros || 0) : '—'}
-                  </td>
                   <td>
                     {m.status === 'estornado' ? (
                       <span className="emp-status-estornado">Estornada</span>
@@ -228,16 +217,6 @@ const EmprestimoDetalhePage = () => {
                     movimentacoes.reduce((acc, m) => acc + (m.valor || 0), 0)
                   )}</strong>
                 </td>
-                <td className="emp-td-valor">
-                  <strong>{formatarMoedaBRL(
-                    movimentacoes.reduce((acc, m) => acc + (m.principal || 0), 0)
-                  )}</strong>
-                </td>
-                <td className="emp-td-valor">
-                  <strong>{formatarMoedaBRL(
-                    movimentacoes.reduce((acc, m) => acc + (m.juros || 0), 0)
-                  )}</strong>
-                </td>
                 <td></td>
               </tr>
             </tfoot>
@@ -249,8 +228,7 @@ const EmprestimoDetalhePage = () => {
         <h4>Como o relatório entende este empréstimo</h4>
         <ul>
           <li>Desembolsos (gastos) com este empréstimo <strong>não contam</strong> como gasto nos relatórios — o dinheiro ainda é seu.</li>
-          <li>Recebimentos são divididos automaticamente: primeiro abate o principal que você emprestou, o que sobra conta como receita real (juros).</li>
-          <li>Quando o total recebido atinge o valor esperado, o empréstimo é marcado como <strong>quitado</strong> automaticamente.</li>
+          <li>Quando o total recebido atinge o valor esperado, o empréstimo é marcado como <strong>quitado</strong> automaticamente e uma transação de receita (juros) é criada com o valor igual a <code>recebimentos − desembolsos</code>.</li>
         </ul>
       </div>
     </div>

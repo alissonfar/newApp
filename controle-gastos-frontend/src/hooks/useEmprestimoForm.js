@@ -64,17 +64,6 @@ export default function useEmprestimoForm({ transacao, tipoTransacao, valorTotal
     }
   }, [modo, ativo]);
 
-  useEffect(() => {
-    if (
-      novoTipoRetorno === 'valor_fixo' &&
-      valorTotal &&
-      !isNaN(parseFloat(valorTotal)) &&
-      !novoValorEsperado
-    ) {
-      setNovoValorEsperado(String(parseFloat(valorTotal)));
-    }
-  }, [novoTipoRetorno, valorTotal, novoValorEsperado]);
-
   const reset = useCallback(() => {
     setAtivo(false);
     setModo('vincular');
@@ -131,8 +120,7 @@ export default function useEmprestimoForm({ transacao, tipoTransacao, valorTotal
       pessoas,
       emprestimosPessoa,
       loadingPessoas,
-      loadingEmprestimos,
-      direcao: tipoTransacao === 'recebivel' ? 'recebido' : 'concedido'
+      loadingEmprestimos
     },
     setters: {
       setAtivo,
