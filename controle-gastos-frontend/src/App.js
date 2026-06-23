@@ -3,6 +3,9 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { lightTheme } from './theme/muiTheme.js';
+import GlobalStyles from './theme/GlobalStyles.js';
 
 import Home from './pages/Home/Home';
 import Relatorio from './pages/Relatorio/Relatorio';
@@ -53,12 +56,15 @@ import './App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <Router>
-          <BreadcrumbProvider>
-            <ImportacaoProvider>
-              <Routes>
+    <ThemeProvider theme={lightTheme}>
+      <CssBaseline />
+      <GlobalStyles mode="light" />
+      <AuthProvider>
+        <DataProvider>
+          <Router>
+            <BreadcrumbProvider>
+              <ImportacaoProvider>
+                <Routes>
               {/* Rotas Públicas (sem MainLayout) */}
               <Route path="/login" element={<Login />} />
               <Route path="/registro" element={<Registro />} />
@@ -384,6 +390,7 @@ function App() {
         </Router>
       </DataProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 
