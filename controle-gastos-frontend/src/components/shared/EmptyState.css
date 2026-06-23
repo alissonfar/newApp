@@ -1,4 +1,35 @@
-/* Design System - EmptyState */
+/* src/components/shared/EmptyState.css */
+.cg-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cg-spacing-2xl) var(--cg-spacing-base);
+  text-align: center;
+  gap: var(--cg-spacing-sm);
+}
+.cg-empty-state__icon {
+  font-size: 48px;
+  color: var(--cg-color-text-muted);
+  opacity: 0.5;
+  margin-bottom: var(--cg-spacing-sm);
+}
+.cg-empty-state__icon svg { width: 64px; height: 64px; }
+.cg-empty-state__title {
+  font-size: var(--cg-font-size-lg);
+  font-weight: var(--cg-font-weight-semibold);
+  color: var(--cg-color-text-primary);
+  margin: 0;
+}
+.cg-empty-state__description {
+  font-size: var(--cg-font-size-sm);
+  color: var(--cg-color-text-muted);
+  max-width: 400px;
+  margin: 0;
+}
+.cg-empty-state__action { margin-top: var(--cg-spacing-md); }
+
+/* === ALIASES LEGADOS (compatibilidade com CSS existente) === */
 .ds-empty-state {
   display: flex;
   flex-direction: column;
@@ -7,12 +38,10 @@
   padding: 2rem;
   text-align: center;
 }
-
 .ds-empty-state__icon {
   color: var(--cor-texto-suave, #999);
   margin-bottom: 1rem;
 }
-
 .ds-empty-state__message {
   font-family: var(--fonte-corpo);
   font-size: 0.95rem;
@@ -20,7 +49,6 @@
   font-style: italic;
   margin: 0 0 1rem 0;
 }
-
 .ds-empty-state__actions {
   margin-top: 0.5rem;
 }

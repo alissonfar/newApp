@@ -1,4 +1,40 @@
-/* Design System - Badge */
+/* src/components/shared/Badge.css */
+.cg-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--cg-radius-full);
+  font-weight: var(--cg-font-weight-medium);
+  line-height: 1;
+}
+.cg-badge--sm { padding: 3px 8px; font-size: var(--cg-font-size-xs); }
+.cg-badge--md { padding: 5px 10px; font-size: var(--cg-font-size-sm); }
+
+.cg-badge--default { background-color: var(--cg-color-border); color: var(--cg-color-text-secondary); }
+.cg-badge--success { background-color: rgba(16, 185, 129, 0.15); color: var(--cg-color-success); }
+.cg-badge--error   { background-color: rgba(239, 68, 68, 0.15); color: var(--cg-color-error); }
+.cg-badge--warning { background-color: rgba(245, 158, 11, 0.15); color: var(--cg-color-warning); }
+.cg-badge--info    { background-color: rgba(59, 130, 246, 0.15); color: var(--cg-color-info); }
+.cg-badge--glass {
+  background-color: var(--cg-color-surface);
+  backdrop-filter: blur(var(--cg-glass-blur));
+  -webkit-backdrop-filter: blur(var(--cg-glass-blur));
+  border: var(--cg-glass-border);
+  color: var(--cg-color-text-primary);
+}
+
+.cg-badge-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.cg-badge-dot--default { background-color: var(--cg-color-text-muted); }
+.cg-badge-dot--success { background-color: var(--cg-color-success); }
+.cg-badge-dot--error   { background-color: var(--cg-color-error); }
+.cg-badge-dot--warning { background-color: var(--cg-color-warning); }
+.cg-badge-dot--info    { background-color: var(--cg-color-info); }
+
+/* === ALIASES LEGADOS (compatibilidade com CSS existente) === */
 .ds-badge {
   font-size: 0.7rem;
   padding: 2px 8px;
@@ -6,28 +42,25 @@
   font-weight: 500;
   flex-shrink: 0;
   font-family: var(--fonte-titulos);
+  display: inline-flex;
+  align-items: center;
 }
-
 .ds-badge--success {
   background-color: rgba(76, 175, 80, 0.2);
   color: var(--cor-sucesso);
 }
-
 .ds-badge--warning {
   background-color: rgba(255, 193, 7, 0.2);
   color: var(--cor-alerta);
 }
-
 .ds-badge--error {
   background-color: rgba(244, 67, 54, 0.15);
   color: var(--cor-erro);
 }
-
 .ds-badge--info {
   background-color: rgba(33, 150, 243, 0.15);
   color: var(--cor-primaria);
 }
-
 .ds-badge--neutral {
   background-color: rgba(158, 158, 158, 0.25);
   color: var(--cor-texto-suave, #757575);
