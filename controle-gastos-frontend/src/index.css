@@ -45,9 +45,9 @@
 
   body {
     margin: 0;
-    font-family: var(--fonte-principal);
-    background-color: var(--cor-fundo);
-    color: var(--cor-texto);
+    font-family: var(--cg-font-family);
+    color: var(--cg-color-text-primary);
+    /* background: deixado para o GlobalStyles pintar o gradiente */
   }
 }
 
