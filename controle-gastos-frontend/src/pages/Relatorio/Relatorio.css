@@ -1,78 +1,80 @@
 /* Container principal do relatório */
-.relatorio-container {
-  padding: 20px 30px; /* Aumenta padding lateral */
-  max-width: none; /* Remove a largura máxima fixa */
+.cg-relatorio {
+  padding: var(--cg-spacing-lg) var(--cg-spacing-xl);
+  max-width: 1400px;
   margin: 0 auto;
-  width: 100%; /* Garante que o container tente ocupar 100% */
-  box-sizing: border-box; /* Inclui padding na largura total */
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
-/* Título principal */
-.relatorio-title {
-  font-family: var(--fonte-titulos);
-  font-size: 2.2rem; /* Um pouco maior */
-  color: var(--cor-primaria-mais-escura, #0a369d); /* Azul bem escuro */
-  text-align: center;
-  margin-bottom: 25px; /* Mais espaço */
-  font-weight: 700; /* Mais negrito */
-  letter-spacing: -0.03em;
+.cg-relatorio__header {
+  margin-bottom: var(--cg-spacing-base);
+}
+
+/* Grid de StatCards no resumo (3 colunas em desktop, 1 em mobile) */
+.cg-relatorio__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--cg-spacing-base);
+  margin-bottom: var(--cg-spacing-lg);
+}
+@media (max-width: 1024px) {
+  .cg-relatorio__stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .cg-relatorio__stat-grid { grid-template-columns: 1fr; }
 }
 
 /* Seção superior dividida em duas colunas (Painel de Filtros e Resumo) */
 .top-section {
   display: flex;
-  gap: 25px; /* Mais espaço */
+  gap: 25px;
   align-items: flex-start;
-  margin-bottom: 30px; /* Mais espaço */
+  margin-bottom: 30px;
 }
 
 /* Painel de Filtros */
 .filter-panel {
   flex: 2;
   display: grid;
-  grid-template-columns: 1fr; 
-  gap: 25px; /* Mais espaço */
-  /* Fundo gradiente mais escuro */
-  background: linear-gradient(135deg, var(--cor-fundo-pagina-escura, #e4e9f0) 0%, var(--cor-primaria-muito-leve-escura, #d0e0f0) 100%); 
-  padding: 30px; /* Mais padding */
-  border-radius: var(--borda-radius-grande, 12px); 
-  border: 1px solid var(--cor-primaria-borda-forte, #8ab4f8); /* Borda azul mais forte */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Sombra mais forte */
+  grid-template-columns: 1fr;
+  gap: 25px;
+  background: linear-gradient(135deg, var(--cor-fundo-pagina-escura, #e4e9f0) 0%, var(--cor-primaria-muito-leve-escura, #d0e0f0) 100%);
+  padding: 30px;
+  border-radius: var(--borda-radius-grande, 12px);
+  border: 1px solid var(--cor-primaria-borda-forte, #8ab4f8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Cada seção de filtro como card */
 .filter-section {
   background-color: var(--cor-fundo-card, #ffffff);
-  border-radius: 8px; 
-  padding: 25px 30px; /* Mais padding */
-  border: 1px solid var(--cor-borda-card-media, #c0c8d4); /* Borda cinza-azulada mais forte */
-  box-shadow: 0 3px 7px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.1); /* Sombra mais definida */
+  border-radius: 8px;
+  padding: 25px 30px;
+  border: 1px solid var(--cor-borda-card-media, #c0c8d4);
+  box-shadow: 0 3px 7px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.1);
   transition: box-shadow 0.3s ease;
 }
 
 .filter-section:hover {
-    box-shadow: 0 6px 12px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.18); /* Sombra hover mais forte */
+  box-shadow: 0 6px 12px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.18);
 }
 
 /* Título de cada seção */
 .filter-section h4 {
   font-family: var(--fonte-titulos);
   margin-top: 0;
-  margin-bottom: 25px; /* Mais espaço */
-  font-size: 1.15rem; /* Maior */
-  color: var(--cor-primaria-mais-escura, #104a8e); /* Azul bem escuro */
-  font-weight: 700; /* Mais negrito */
+  margin-bottom: 25px;
+  font-size: 1.15rem;
+  color: var(--cor-primaria-mais-escura, #104a8e);
+  font-weight: 700;
   letter-spacing: -0.01em;
-  border-bottom: 2px solid var(--cor-primaria-leve-forte, #a0c4f8); /* Linha azul mais forte */
-  padding-bottom: 12px; 
-  display: flex; 
+  border-bottom: 2px solid var(--cor-primaria-leve-forte, #a0c4f8);
+  padding-bottom: 12px;
+  display: flex;
   align-items: center;
-  gap: 8px; 
+  gap: 8px;
 }
-
-/* Adicionar ícones aos títulos (EXEMPLO - requer IconRenderer ou similar no JS) */
-/* .filter-section:nth-child(1) h4::before { content: '\f073'; font-family: 'Font Awesome 5 Free'; font-weight: 900; color: var(--cor-primaria); } */
-/* ... etc para outras seções ... */
 
 /* Linha interna para organizar grupos de filtros lado a lado */
 .filter-row {
@@ -86,7 +88,6 @@
 .filter-group {
   display: flex;
   flex-direction: column;
-  /* Aumentamos o min-width para que o texto não seja cortado tão cedo */
   min-width: 220px;
   flex: 1;
 }
@@ -104,25 +105,25 @@
   font-family: var(--fonte-corpo);
   padding: 8px;
   font-size: 0.95rem;
-  border: 1px solid var(--cor-borda-input-forte, #9aa0a6); /* Borda bem definida */
+  border: 1px solid var(--cor-borda-input-forte, #9aa0a6);
   border-radius: var(--borda-radius);
   background-color: var(--cor-fundo-input, #fff);
   color: var(--cor-texto);
   width: 100%;
   transition: var(--transicao-padrao);
-  min-height: 38px; /* Garante altura mínima consistente */
-  box-sizing: border-box; /* Inclui padding/border na altura */
+  min-height: 38px;
+  box-sizing: border-box;
 }
 
 .filter-group .mySelect__control {
-  padding: 0; /* Remove padding extra do react-select */
+  padding: 0;
 }
 
 .filter-group input:focus,
 .filter-group select:focus,
 .filter-group .mySelect__control--is-focused {
-  border-color: var(--cor-primaria-escura, #1565c0); /* Foco com azul mais escuro */
-  box-shadow: 0 0 0 3px rgba(var(--cor-primaria-rgb), 0.25); /* Sombra foco mais visível */
+  border-color: var(--cor-primaria-escura, #1565c0);
+  box-shadow: 0 0 0 3px rgba(var(--cor-primaria-rgb), 0.25);
   outline: none;
 }
 
@@ -130,108 +131,47 @@
 .filter-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end; /* Alinha botões à direita */
-  gap: 15px; /* Espaço entre botões */
-  margin-top: 10px; /* Espaço acima dos botões */
-  padding-top: 15px; /* Espaço acima */
-  border-top: 1px dashed var(--cor-borda-leve, #e0e7ff); /* Linha tracejada separadora */
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--cor-borda-leve, #e0e7ff);
 }
 
-.filter-actions button {
-  font-family: var(--fonte-titulos);
-  padding: 10px 20px; /* Mais padding horizontal */
-  border: none;
-  border-radius: var(--borda-radius);
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 600; /* Mais forte */
-  letter-spacing: 0.03em;
-  transition: all 0.2s ease-in-out;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Botão Principal (Filtrar) */
-.filter-actions button:first-of-type { 
+/* Botão de Exportar mantém identidade visual (gradiente azul) */
+.filter-actions .export-group .export-button.cg-button--primary {
   background: var(--gradiente-primario, linear-gradient(45deg, #2196F3 30%, #21CBF3 90%));
-  color: var(--cor-branca, white);
-  box-shadow: 0 2px 5px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.3);
+  box-shadow: 0 3px 5px 2px rgba(33, 203, 243, .3);
 }
-
-.filter-actions button:first-of-type:hover {
+.filter-actions .export-group .export-button.cg-button--primary:hover:not(:disabled) {
+  background: var(--gradiente-primario, linear-gradient(45deg, #2196F3 30%, #21CBF3 90%));
+  box-shadow: 0 5px 10px rgba(33, 203, 243, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(var(--cor-primaria-rgb, 33, 150, 243), 0.4);
-}
-
-/* Botão Secundário (Limpar) */
-.filter-actions button:nth-of-type(2) {
-  background-color: var(--cor-fundo-botao-secundario, #f1f3f5); 
-  color: var(--cor-texto-botao-secundario, #555);
-  border: 1px solid var(--cor-borda-input, #ced4da);
-}
-
-.filter-actions button:nth-of-type(2):hover {
-  background-color: var(--cor-fundo-botao-secundario-hover, #e9ecef);
-  border-color: #adb5bd;
-  color: #333;
-}
-
-/* Botão Exportar (já está estilizado com o gradiente no JS/MUI, mas podemos garantir hover) */
-.export-group .export-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(33, 203, 243, 0.4) !important;
 }
 
 /* Painel de Resumo */
 .summary-panel {
-  flex: 1; 
-  /* Gradiente mais contrastante */
-  background: linear-gradient(135deg, #ffffff 0%, var(--cor-primaria-muito-leve-escura, #dde8f5) 100%); 
-  padding: 30px;
-  border-radius: var(--borda-radius-grande, 12px);
-  border: 1px solid var(--cor-primaria-borda-forte, #8ab4f8);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.summary-panel h3 {
-  font-family: var(--fonte-titulos);
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.5rem;
-  color: var(--cor-primaria-mais-escura, #104a8e);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  text-align: center; /* Centraliza título */
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--cor-primaria-leve-forte, #a0c4f8);
-}
-
-.summary-panel p {
-  margin: 5px 0;
-}
-
-/* Layout dos "cards" dentro do sumário */
-.summary-sections {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-
+/* Bloco de informações gerais dentro do resumo */
 .summary-section {
-  background-color: rgba(255, 255, 255, 0.7); /* Fundo branco mais opaco */
+  background-color: rgba(255, 255, 255, 0.7);
   border-radius: 6px;
   padding: 15px;
-  border: 1px solid var(--cor-borda-leve-forte, #c0d3eb); /* Borda mais visível */
-  margin-top: 15px; /* Espaço entre seções internas */
+  border: 1px solid var(--cor-borda-leve-forte, #c0d3eb);
+  margin-top: 8px;
 }
 
 .summary-section h4 {
   font-family: var(--fonte-titulos);
-  margin: 0 0 10px; /* Aumenta margem inferior */
+  margin: 0 0 10px;
   font-size: 1rem;
-  color: var(--cor-primaria-escura, #1565c0); /* Azul mais escuro */
+  color: var(--cor-primaria-escura, #1565c0);
   font-weight: 700;
   letter-spacing: -0.01em;
   padding-bottom: 5px;
@@ -251,16 +191,16 @@
 }
 
 .summary-item strong {
-  font-weight: 600; /* Garante negrito */
+  font-weight: 600;
 }
 
-/* Cores para valores positivos/negativos */
+/* Cores para valores positivos/negativos (mantido para casos pontuais) */
 .summary-item .valor-positivo {
-  color: var(--cor-sucesso-forte, #1e8e3e); /* Verde mais escuro */
+  color: var(--cor-sucesso-forte, #1e8e3e);
 }
 
 .summary-item .valor-negativo {
-  color: var(--cor-erro-forte, #d93025); /* Vermelho mais escuro */
+  color: var(--cor-erro-forte, #d93025);
 }
 
 /* Seção de resultados (tabela) */
@@ -268,279 +208,116 @@
   margin-top: 20px;
 }
 
-.relatorio-results h3 {
-  font-size: 1.4rem;
-  color: var(--cor-texto-forte, #202124); /* Texto mais escuro */
-  margin-bottom: 15px;
+.relatorio-results .cg-section-header {
+  margin-bottom: var(--cg-spacing-md);
 }
 
-.relatorio-table {
-  width: 100%;
-  border-collapse: separate; /* Mudar para separate para usar border-spacing */
-  border-spacing: 0 5px; /* Adiciona espaçamento vertical entre linhas */
-  margin-top: 25px; /* Aumenta margem superior */
+/* Cores para tipo gasto/recebível dentro do DataTable */
+.tipo-gasto {
+  color: var(--cg-color-error);
+  font-weight: var(--cg-font-weight-medium);
 }
 
-.relatorio-table th,
-.relatorio-table td {
-  padding: 15px 18px; /* Aumenta o padding interno */
-  text-align: left;
-  vertical-align: middle; 
-  background-color: var(--cor-fundo-card, #ffffff); /* Fundo branco padrão para células */
+.tipo-recebivel {
+  color: var(--cg-color-success);
+  font-weight: var(--cg-font-weight-medium);
 }
 
-/* Estilo do Cabeçalho */
-.relatorio-table th {
-  /* Gradiente mais escuro */
-  background: var(--gradiente-primario-mais-escuro, linear-gradient(45deg, #1976d2 30%, #0d47a1 90%)); 
-  color: var(--cor-branca, #ffffff);
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-transform: uppercase; 
-  letter-spacing: 0.05em; 
-  border-bottom: none; /* Remover borda inferior, o fundo já separa */
-  position: sticky; /* Fixa o cabeçalho no topo ao rolar */
-  top: 0; /* Necessário para sticky */
-  z-index: 10; /* Garante que fique sobre o conteúdo */
-}
-.relatorio-table th:first-child {
-  border-top-left-radius: 8px;
-}
-.relatorio-table th:last-child {
-  border-top-right-radius: 8px;
-}
-
-/* Estilo das Linhas do Corpo */
-.relatorio-table tbody tr {
-   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07); /* Sombra suave em cada linha */
-   border-radius: 8px; /* Bordas arredondadas em cada linha */
-   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Efeito suave no hover */
-}
-
-/* Arredonda as células das pontas em cada linha */
-.relatorio-table td:first-child {
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
-}
-.relatorio-table td:last-child {
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-
-/* Zebra striping (Aplicado aos TDs dentro de TRs pares) */
-.relatorio-table tbody tr:nth-child(even) td {
-  background-color: var(--cor-fundo-linha-par-escura, #f1f5f9); /* Fundo cinza-azulado para par */
-}
-
-/* Garante que o fundo padrão das células ímpares seja branco */
-.relatorio-table tbody tr:nth-child(odd) td {
-    background-color: var(--cor-fundo-card, #ffffff);
-}
-
-/* Hover na linha (agora aplica a tds para sobrescrever zebra) */
-.relatorio-table tbody tr:hover td {
-  background-color: var(--cor-fundo-linha-hover-escura, #e3eefc); /* Fundo azul bem claro no hover */
-}
-
-/* Destaque para coluna de Data */
-.relatorio-table td:nth-child(2) { /* Coluna Data */
-  font-weight: 500;
-  color: var(--cor-texto-secundario, #555);
-  font-size: 0.9rem;
-}
-
-/* Alinha coluna de Valor à direita e dá destaque */
-.relatorio-table td:nth-child(4), 
-.relatorio-table th:nth-child(4) {
-  text-align: right;
-  font-weight: 600; /* Mais negrito para valor */
-}
-
-/* Adiciona cor para tipo gasto/recebível */
-.relatorio-table td.tipo-gasto {
-  color: var(--cor-erro, #dc3545); /* Usa variável CSS ou fallback vermelho */
-  font-weight: 500; 
-}
-
-.relatorio-table td.tipo-recebivel {
-  color: var(--cor-sucesso, #28a745); /* Usa variável CSS ou fallback verde */
-  font-weight: 500;
-}
-
-/* Ajustes específicos para a coluna de tags */
-.relatorio-table td:last-child {
+/* Células de tags no DataTable (wrap dos chips) */
+.relatorio-tags-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
   max-width: 300px;
-  white-space: normal;
-  line-height: 1.8;
 }
 
-/* Estilo dos Chips de Tag na Tabela */
+/* Célula de ações no DataTable (botões Editar/Excluir lado a lado) */
+.relatorio-acoes-cell {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Estilo dos Chips de Tag (mantido — cor vem do inline style) */
 .tag-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px; 
-  padding: 4px 10px; 
-  border-radius: 14px; 
-  font-size: 0.88rem; 
-  font-weight: 500; 
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
   margin: 3px;
   white-space: nowrap;
-  border: 1px solid; /* Apenas define que haverá borda, cor vem do style inline */
-  /* As cores de fundo e texto são definidas inline via style no JS */
-  /* Remover !important para permitir que o inline style funcione */
-  /* background-color: var(--tag-bg-color, transparent) !important; */ 
-  /* color: var(--tag-color, inherit) !important; */
-  /* border-color: var(--tag-color, #ccc) !important; */
+  border: 1px solid;
 }
 
-.tag-chip > svg, .tag-chip > i { 
-    font-size: 14px; 
-}
-
-/* Chips de tags */
-.relatorio-tag-chip {
-  display: inline-block;
-  padding: 4px 8px;
-  margin: 2px;
-  border-radius: 16px;
-  background-color: #e0f7fa;
-  color: #00838f;
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-.pag-tag-chip {
-  background-color: #28a745; /* Ex: verde */
+.tag-chip > svg, .tag-chip > i {
+  font-size: 14px;
 }
 
 /* Responsividade para telas menores */
-@media (max-width: 1024px) { /* Ajustes para tablets e telas menores */
+@media (max-width: 1024px) {
   .top-section {
-    flex-direction: column; /* Filtros acima do resumo */
-    gap: 30px; /* Aumenta o espaço vertical */
+    flex-direction: column;
+    gap: 30px;
   }
 
   .filter-panel,
   .summary-panel {
-    flex: none; /* Remove a proporção flex */
-    width: 100%; /* Ocupa toda a largura */
+    flex: none;
+    width: 100%;
   }
 
   .filter-row {
-    gap: 15px; /* Reduz o gap entre filtros */
+    gap: 15px;
   }
 
   .filter-group {
-    min-width: calc(50% - 8px); /* Tenta colocar 2 filtros por linha */
+    min-width: calc(50% - 8px);
   }
 }
 
-@media (max-width: 768px) { /* Ajustes para celulares */
-  .relatorio-container {
-    padding: 15px 20px; /* Reduz padding geral */
-  }
-
-  .relatorio-title {
-    font-size: 1.8rem; /* Reduz título */
-    margin-bottom: 20px;
+@media (max-width: 768px) {
+  .cg-relatorio {
+    padding: var(--cg-spacing-md) var(--cg-spacing-base);
   }
 
   .filter-panel,
   .summary-panel {
-    padding: 20px; /* Reduz padding interno */
+    padding: 20px;
   }
 
   .filter-section {
-    padding: 20px 25px; /* Reduz padding interno */
+    padding: 20px 25px;
   }
 
   .filter-group {
-    min-width: 100%; /* Um filtro por linha */
+    min-width: 100%;
   }
 
   .filter-actions {
-    flex-direction: column; /* Botões um abaixo do outro */
-    align-items: stretch; /* Estica botões */
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .filter-actions button {
-    width: 100%; /* Botões ocupam largura total */
+  .filter-actions .cg-button {
+    width: 100%;
     justify-content: center;
   }
-
-  /* Ajuste da tabela para rolagem - Envolver <table> em <div class="table-container"> no JSX */
-  .table-container { /* Adicionar esta classe ao div pai da tabela no JSX */
-      overflow-x: auto; /* Permite rolagem horizontal no container */
-      width: 100%;
-      margin-top: 15px;
-  }
-
-  .relatorio-table {
-    /* display: block;  Removido - block quebra sticky header */
-    /* overflow-x: auto; Movido para .table-container */
-    min-width: 600px; /* Garante uma largura mínima para a tabela, forçando a rolagem se necessário */
-    width: 100%; /* Tenta ocupar o espaço do container */
-    border-spacing: 0 8px; /* Mantém espaçamento */
-  }
-
-  .relatorio-table th {
-    /* position: sticky; Mantém o sticky */
-    /* top: 0; Mantém o top */
-    /* z-index: 10; Mantém o z-index */
-     padding: 12px 15px; /* Reduz padding do cabeçalho */
-  }
-
-  .relatorio-table td {
-     padding: 12px 15px; /* Reduz padding das células */
-  }
-
-  .relatorio-table td:last-child {
-    min-width: 200px; /* Mantém min-width para coluna de tags */
-    white-space: normal; /* Permite quebra de linha nas tags */
-  }
-
-   /* Esconde sombra das linhas no modo mobile se ficar estranho com a rolagem */
-  .relatorio-table tbody tr {
-    box-shadow: none;
-  }
-
-  /* Garante borda apenas nas pontas no modo mobile, mesmo com rolagem */
-   .relatorio-table th:first-child,
-   .relatorio-table td:first-child {
-     border-top-left-radius: 8px;
-     border-bottom-left-radius: 8px;
-     border-top-right-radius: 0;
-     border-bottom-right-radius: 0;
-   }
-   .relatorio-table th:last-child,
-   .relatorio-table td:last-child {
-     border-top-right-radius: 8px;
-     border-bottom-right-radius: 8px;
-     border-top-left-radius: 0;
-     border-bottom-left-radius: 0;
-   }
 }
 
-@media (max-width: 480px) { /* Ajustes finos para celulares menores */
-   .relatorio-container {
-    padding: 10px 15px;
-   }
+@media (max-width: 480px) {
+  .cg-relatorio {
+    padding: var(--cg-spacing-sm) var(--cg-spacing-md);
+  }
 
-   .filter-panel,
-   .summary-panel {
-     padding: 15px;
-   }
+  .filter-panel,
+  .summary-panel {
+    padding: 15px;
+  }
 
-   .filter-section {
-     padding: 15px 20px;
-   }
-
-   .relatorio-table {
-     min-width: 450px; /* Reduz min-width da tabela */
-   }
-
-   .relatorio-table th,
-   .relatorio-table td {
-      padding: 10px 12px;
-   }
+  .filter-section {
+    padding: 15px 20px;
+  }
 }

@@ -18,12 +18,24 @@ import {
   MenuItem,
   Divider
 } from '@mui/material';
+import {
+  FaArrowDown,
+  FaArrowUp,
+  FaPiggyBank
+} from 'react-icons/fa';
 import { 
   PictureAsPdf as PdfIcon,
   TableChart as CsvIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
 import { formatDateBR, getDateRangeForPeriod } from '../../utils/dateUtils';
+import { formatarMoeda } from '../../utils/format';
+import SectionHeader from '../../components/shared/SectionHeader';
+import Button from '../../components/shared/Button';
+import Card, { CardHeader, CardContent } from '../../components/shared/Card';
+import StatCard from '../../components/shared/StatCard';
+import DataTable from '../../components/shared/DataTable';
+import EmptyState from '../../components/shared/EmptyState';
 
 const PAGE_SIZE = 50;
 
@@ -581,8 +593,12 @@ const Relatorio = () => {
   }
 
   return (
-    <div className="relatorio-container">
-      <h2 className="relatorio-title">Relatórios</h2>
+    <div className="cg-relatorio">
+      <SectionHeader
+        title="Relatórios"
+        subtitle="Filtre, visualize e exporte suas transações"
+        className="cg-relatorio__header"
+      />
 
       <div className="top-section">
         {/* Painel de Filtros (organizado em seções) */}
@@ -828,37 +844,25 @@ const Relatorio = () => {
 
           {/* Seção 6: Botões (Filtrar, Limpar, Nova Transação e Exportar) */}
           <div className="filter-section filter-actions">
-            <button onClick={applyFilters}>Filtrar/Buscar/Ordenar</button>
-            <button onClick={handleClearFilters} style={{ marginLeft: '10px' }}>
+            <Button variant="primary" onClick={applyFilters}>
+              Filtrar/Buscar/Ordenar
+            </Button>
+            <Button variant="ghost" onClick={handleClearFilters}>
               Limpar Filtros
-            </button>
-            <button onClick={handleCreate} style={{ marginLeft: '10px', background: '#4caf50', color: 'white' }}>
-              + Nova Transação
-            </button>
+            </Button>
+            <Button variant="success" onClick={handleCreate} startIcon={<span>+</span>}>
+              Nova Transação
+            </Button>
 
             <div className="export-group">
-              <button 
-                className="export-button"
+              <Button
+                variant="primary"
                 onClick={handleExportClick}
-                style={{
-                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '8px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
-                  fontWeight: 'bold'
-                }}
+                startIcon={<DownloadIcon />}
+                className="export-button"
               >
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <DownloadIcon style={{ marginRight: '8px' }} />
-                  Exportar Relatório
-                </span>
-              </button>
+                Exportar Relatório
+              </Button>
               <Menu
                 anchorEl={exportAnchorEl}
                 open={Boolean(exportAnchorEl)}
@@ -904,153 +908,198 @@ const Relatorio = () => {
 
         {/* Painel de Resumo */}
         <div className="summary-panel">
-          <h3>Resumo dos Resultados</h3>
-          <div className="summary-sections">
-            {/* Bloco 1: informações gerais */}
-            <div className="summary-section">
-              <h4>Informações Gerais</h4>
-              <div className="summary-item">
-                <span>Total de "Transações" (Pagamentos):</span>
-                <span><strong>{summaryInfo.totalTransactions}</strong></span>
+          <Card variant="glass" padding="md">
+            <CardHeader>
+              <SectionHeader
+                title="Resumo dos Resultados"
+                subtitle="Visão geral do período filtrado"
+              />
+            </CardHeader>
+            <CardContent>
+              {/* 3 StatCards no topo (Recebíveis / Gastos / Saldo) */}
+              <div className="cg-relatorio__stat-grid">
+                <StatCard
+                  label="Recebíveis"
+                  value={formatarMoeda(summaryInfo.totalRecebiveis)}
+                  icon={<FaArrowUp />}
+                  accentColor="var(--cg-color-success)"
+                />
+                <StatCard
+                  label="Gastos"
+                  value={formatarMoeda(summaryInfo.totalGastos)}
+                  icon={<FaArrowDown />}
+                  accentColor="var(--cg-color-error)"
+                />
+                <StatCard
+                  label="Saldo"
+                  value={formatarMoeda(summaryInfo.netValue)}
+                  icon={<FaPiggyBank />}
+                  accentColor={summaryInfo.netValue >= 0 ? 'var(--cg-color-info)' : 'var(--cg-color-error)'}
+                />
               </div>
-              <div className="summary-item">
-                <span>Total em Valor:</span>
-                <span><strong>R${summaryInfo.totalValue}</strong></span>
-              </div>
-              <div className="summary-item">
-                <span>Número de Pessoas:</span>
-                <span><strong>{summaryInfo.totalPeople}</strong></span>
-              </div>
-              <div className="summary-item">
-                <span>Média por Pessoa:</span>
-                <span><strong>R${summaryInfo.averagePerPerson}</strong></span>
-              </div>
-            </div>
 
-            {/* Bloco 2: detalhes financeiros */}
-            <div className="summary-section">
-              <h4>Detalhes Financeiros</h4>
-              <div className="summary-item">
-                <span>Total de Gastos:</span>
-                <strong className="valor-negativo">R${summaryInfo.totalGastos}</strong>
+              {/* Bloco 1: informações gerais (mantido como lista compacta) */}
+              <div className="summary-section">
+                <h4>Informações Gerais</h4>
+                <div className="summary-item">
+                  <span>Total de "Transações" (Pagamentos):</span>
+                  <span><strong>{summaryInfo.totalTransactions}</strong></span>
+                </div>
+                <div className="summary-item">
+                  <span>Total em Valor:</span>
+                  <span><strong>{formatarMoeda(summaryInfo.totalValue)}</strong></span>
+                </div>
+                <div className="summary-item">
+                  <span>Número de Pessoas:</span>
+                  <span><strong>{summaryInfo.totalPeople}</strong></span>
+                </div>
+                <div className="summary-item">
+                  <span>Média por Pessoa:</span>
+                  <span><strong>{formatarMoeda(summaryInfo.averagePerPerson)}</strong></span>
+                </div>
               </div>
-              <div className="summary-item">
-                <span>Total de Recebíveis:</span>
-                <strong className="valor-positivo">R${summaryInfo.totalRecebiveis}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Saldo (Recebíveis - Gastos):</span>
-                <strong className={summaryInfo.netValue >= 0 ? 'valor-positivo' : 'valor-negativo'}>
-                  R${summaryInfo.netValue}
-                </strong>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div> {/* fim da top-section */}
 
       <div className="relatorio-results">
-        <h3>Resultados ({filteredRows.length} desta página, {total} no total)</h3>
+        <SectionHeader
+          title={`Resultados (${filteredRows.length} desta página, ${total} no total)`}
+        />
         {filteredRows.length > 0 ? (
-          <div className="table-container">
-            <table className="relatorio-table">
-              <thead>
-                <tr>
-                  <th>Descrição</th>
-                  <th>Data</th>
-                  <th>Pessoa (Pagamento)</th>
-                  <th>Valor (Pagamento)</th>
-                  <th>Tipo</th>
-                  <th>Tags (Pagamento)</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((row, idx) => {
-                  const displayDate = formatDateBR(row.data);
-
+          <DataTable
+            variant="glass"
+            columns={[
+              { key: 'descricao', label: 'Descrição' },
+              { key: 'data', label: 'Data', width: '110px' },
+              { key: 'pessoa', label: 'Pessoa (Pagamento)', width: '150px' },
+              { key: 'valor', label: 'Valor (Pagamento)', align: 'right', width: '140px' },
+              { key: 'tipo', label: 'Tipo', width: '120px' },
+              { key: 'tags', label: 'Tags (Pagamento)' },
+              { key: 'acoes', label: 'Ações', width: '180px' },
+            ]}
+            rows={filteredRows}
+            renderCell={(row, col) => {
+              switch (col.key) {
+                case 'descricao':
                   return (
-                    <tr key={idx}>
-                      <td>
-                        {row.descricao}
-                        {row.emprestimoInfo && <EmprestimoBadge emprestimoInfo={row.emprestimoInfo} variant="chip" />}
-                      </td>
-                      <td>{displayDate}</td>
-                      <td>{row.pessoa || '—'}</td>
-                      <td>R${parseFloat(row.valorPagamento || 0).toFixed(2)}</td>
-                      <td className={row.tipo?.toLowerCase() === 'gasto' ? 'tipo-gasto' : row.tipo?.toLowerCase() === 'recebivel' ? 'tipo-recebivel' : ''}>
-                        {row.tipo}
-                      </td>
-                      <td>
-                        {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
-                          const categoria = categorias.find(c => 
-                            c._id === catId || c.nome === catId
-                          );
-                          if (!categoria) return null;
-
-                          return tagIds.map((tagId, j) => {
-                            // Encontra a tag pelo ID ou nome
-                            const tag = tags.find(t => 
-                              t._id === tagId || t.nome === tagId
-                            );
-                            
-                            if (!tag) return null;
-
-                            return (
-                              <span 
-                                key={`${row.id}-${i}-${j}`} 
-                                className="tag-chip"
-                                style={{
-                                  backgroundColor: `${tag.cor}20`,
-                                  color: tag.cor,
-                                  border: `1px solid ${tag.cor}`,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  padding: '2px 8px',
-                                  borderRadius: '12px',
-                                  fontSize: '0.85rem',
-                                  margin: '2px',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                <IconRenderer nome={tag.icone || 'tag'} size={14} cor={tag.cor} />
-                                {`${categoria.nome}: ${tag.nome}`}
-                              </span>
-                            );
-                          });
-                        })}
-                      </td>
-                      <td>
-                        <button onClick={() => handleEdit(row)} title="Editar" style={{ marginRight: '8px', padding: '4px 8px', cursor: 'pointer' }}>✏️ Editar</button>
-                        <button onClick={() => handleDelete(row)} title="Excluir" style={{ padding: '4px 8px', cursor: 'pointer', color: '#d33' }}>🗑️ Excluir</button>
-                      </td>
-                    </tr>
+                    <>
+                      {row.descricao}
+                      {row.emprestimoInfo && <EmprestimoBadge emprestimoInfo={row.emprestimoInfo} variant="chip" />}
+                    </>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
+                case 'data':
+                  return formatDateBR(row.data);
+                case 'pessoa':
+                  return row.pessoa || '—';
+                case 'valor':
+                  return formatarMoeda(row.valorPagamento || 0);
+                case 'tipo':
+                  return (
+                    <span className={row.tipo?.toLowerCase() === 'gasto' ? 'tipo-gasto' : row.tipo?.toLowerCase() === 'recebivel' ? 'tipo-recebivel' : ''}>
+                      {row.tipo}
+                    </span>
+                  );
+                case 'tags':
+                  return (
+                    <div className="relatorio-tags-cell">
+                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
+                        const categoria = categorias.find(c =>
+                          c._id === catId || c.nome === catId
+                        );
+                        if (!categoria) return null;
+
+                        return tagIds.map((tagId, j) => {
+                          const tag = tags.find(t =>
+                            t._id === tagId || t.nome === tagId
+                          );
+                          if (!tag) return null;
+
+                          return (
+                            <span
+                              key={`${row.id}-${i}-${j}`}
+                              className="tag-chip"
+                              style={{
+                                backgroundColor: `${tag.cor}20`,
+                                color: tag.cor,
+                                border: `1px solid ${tag.cor}`,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '0.85rem',
+                                margin: '2px',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              <IconRenderer nome={tag.icone || 'tag'} size={14} cor={tag.cor} />
+                              {`${categoria.nome}: ${tag.nome}`}
+                            </span>
+                          );
+                        });
+                      })}
+                    </div>
+                  );
+                case 'acoes':
+                  return (
+                    <div className="relatorio-acoes-cell">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(row)}
+                        title="Editar"
+                        aria-label="Editar transação"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(row)}
+                        title="Excluir"
+                        aria-label="Excluir transação"
+                      >
+                        Excluir
+                      </Button>
+                    </div>
+                  );
+                default:
+                  return row[col.key];
+              }
+            }}
+          />
         ) : appliedFilters === null ? (
-          <p>Utilize os filtros e clique em Filtrar para buscar transações.</p>
+          <EmptyState
+            title="Pronto para começar?"
+            description="Utilize os filtros acima e clique em Filtrar para buscar transações."
+          />
         ) : (
-          <p>Nenhum registro encontrado.</p>
+          <EmptyState
+            title="Nenhum registro encontrado"
+            description="Tente ajustar os filtros ou expandir o período de busca."
+          />
         )}
         {totalPages > 1 && (
           <div className="relatorio-pagination" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               disabled={page <= 1}
               onClick={() => { setPage(p => p - 1); fetchData(page - 1, appliedFilters ?? draftFilters); }}
             >
               Anterior
-            </button>
+            </Button>
             <span>Página {page} de {totalPages}</span>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               disabled={page >= totalPages}
               onClick={() => { setPage(p => p + 1); fetchData(page + 1, appliedFilters ?? draftFilters); }}
             >
               Próxima
-            </button>
+            </Button>
           </div>
         )}
       </div>
