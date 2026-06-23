@@ -1,28 +1,40 @@
+// src/components/shared/Card.js
 import React from 'react';
 import './Card.css';
 
-const Card = ({ children, className = '', variant = 'default', ...props }) => {
-  const classNames = [
-    'ds-card',
-    variant !== 'default' ? `ds-card--${variant}` : '',
-    className
+const Card = React.forwardRef(({
+  children,
+  variant = 'default',
+  elevation = 'md',
+  padding = 'md',
+  className = '',
+  ...rest
+}, ref) => {
+  const classes = [
+    'cg-card',
+    `cg-card--${variant}`,
+    `cg-card--elev-${elevation}`,
+    `cg-card--pad-${padding}`,
+    className,
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={classNames} {...props}>
+    <div ref={ref} className={classes} {...rest}>
       {children}
     </div>
   );
-};
+});
 
-export const CardHeader = ({ children, className = '', ...props }) => (
-  <div className={`ds-card__header ${className}`.trim()} {...props}>
+Card.displayName = 'Card';
+
+export const CardHeader = ({ children, className = '', ...rest }) => (
+  <div className={`cg-card__header ${className}`.trim()} {...rest}>
     {children}
   </div>
 );
 
-export const CardContent = ({ children, className = '', ...props }) => (
-  <div className={`ds-card__content ${className}`.trim()} {...props}>
+export const CardContent = ({ children, className = '', ...rest }) => (
+  <div className={`cg-card__content ${className}`.trim()} {...rest}>
     {children}
   </div>
 );

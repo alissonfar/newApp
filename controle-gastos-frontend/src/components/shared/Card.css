@@ -1,22 +1,79 @@
-/* Design System - Card */
-.ds-card {
+/* src/components/shared/Card.css */
+.cg-card {
+  border-radius: var(--cg-radius-md);
+  transition: all var(--cg-motion-base) var(--cg-motion-easing);
+  overflow: hidden;
+}
+
+.cg-card--default {
+  background-color: var(--cg-color-surface-elevated);
+  border: 1px solid var(--cg-color-border);
+}
+
+.cg-card--glass {
+  background-color: var(--cg-color-surface);
+  backdrop-filter: blur(var(--cg-glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--cg-glass-blur)) saturate(180%);
+  border: var(--cg-glass-border);
+  box-shadow: var(--cg-shadow-md);
+}
+
+.cg-card--elevated {
+  background-color: var(--cg-color-surface-elevated);
+  box-shadow: var(--cg-shadow-lg);
+}
+
+.cg-card--outlined {
+  background-color: transparent;
+  border: 1px solid var(--cg-color-border-strong);
+}
+
+/* Elevations (sobrepoem o default do variant) */
+.cg-card--elev-sm { box-shadow: var(--cg-shadow-sm); }
+.cg-card--elev-md { box-shadow: var(--cg-shadow-md); }
+.cg-card--elev-lg { box-shadow: var(--cg-shadow-lg); }
+
+/* Padding */
+.cg-card--pad-none { padding: 0; }
+.cg-card--pad-sm { padding: var(--cg-spacing-md); }
+.cg-card--pad-md { padding: var(--cg-spacing-base); }
+.cg-card--pad-lg { padding: var(--cg-spacing-lg); }
+
+.cg-card:hover.cg-card--glass,
+.cg-card:hover.cg-card--elevated {
+  box-shadow: var(--cg-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.cg-card__header {
+  padding: var(--cg-spacing-md) var(--cg-spacing-lg);
+  border-bottom: 1px solid var(--cg-color-border);
+}
+
+.cg-card__content {
+  padding: var(--cg-spacing-lg);
+}
+
+/* === ALIASES LEGADOS (compatibilidade com CSS existente) === */
+.ds-card,
+.ds-card--default,
+.ds-card--glass,
+.ds-card--elevated,
+.ds-card--outlined {
   background: var(--cor-fundo-card);
   border-radius: 12px;
   box-shadow: var(--sombra-card, 0 2px 8px rgba(0, 0, 0, 0.08));
   transition: var(--transicao-padrao, all 0.2s ease);
   overflow: hidden;
 }
-
 .ds-card:hover {
   box-shadow: var(--sombra-hover, 0 4px 12px rgba(0, 0, 0, 0.1));
 }
-
 .ds-card__header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   background: var(--cor-fundo, #f8f9fa);
 }
-
 .ds-card__content {
   padding: 1.25rem;
 }
