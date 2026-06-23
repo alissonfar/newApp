@@ -1,532 +1,166 @@
 /* src/App.css */
+/* Reset mínimo + regras globais migradas para tokens do design system */
+/* Ver: .brain/decisions/2026-06-23-tokens-estrutura-theme-pasta.md */
 
-/* Importação das fontes */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap');
 
-/* Variáveis de cores e configurações globais */
 :root {
-  /* Cores principais */
-  --cor-primaria: #2196F3; /* Azul Material */
-  --cor-secundaria: #1976D2; /* Azul Escuro */
-  --cor-terciaria: #64B5F6; /* Azul Claro */
-  --cor-destaque: #42A5F5; /* Azul Médio */
-  
-  /* Cores de fundo */
-  --cor-fundo: #F5F7FA; /* Cinza Azulado Claro */
-  --cor-fundo-card: #FFFFFF; /* Branco */
-  --cor-fundo-hover: #E3F2FD; /* Azul Muito Claro */
-  
-  /* Cores de texto */
-  --cor-texto: #2C3E50; /* Azul Escuro Acinzentado */
-  --cor-texto-suave: #607D8B; /* Azul Acinzentado */
-  --cor-texto-destaque: #1976D2; /* Azul Escuro */
-  
-  /* Cores de status */
-  --cor-sucesso: #4CAF50; /* Verde */
-  --cor-erro: #F44336; /* Vermelho */
-  --cor-alerta: #FFC107; /* Amarelo */
-  --cor-primaria-clara: #E3F2FD; /* Azul muito claro */
+  /* Aliases legados (compat) */
+  --cor-primaria: var(--cg-color-primary);
+  --cor-secundaria: #1976D2;
+  --cor-fundo: var(--cg-color-background);
+  --cor-fundo-card: var(--cg-color-surface-elevated);
+  --cor-fundo-hover: rgba(37, 99, 235, 0.08);
+  --cor-texto: var(--cg-color-text-primary);
+  --cor-texto-suave: var(--cg-color-text-muted);
+  --cor-texto-destaque: var(--cg-color-primary);
+  --cor-sucesso: var(--cg-color-success);
+  --cor-erro: var(--cg-color-error);
+  --cor-alerta: var(--cg-color-warning);
   --cor-branca: #ffffff;
-  
-  /* Efeitos */
-  --sombra-card: 0 2px 4px rgba(0, 0, 0, 0.1),
-                 0 4px 8px rgba(0, 0, 0, 0.05);
-  --sombra-hover: 0 4px 8px rgba(33, 150, 243, 0.15),
-                  0 8px 16px rgba(33, 150, 243, 0.1);
-  --transicao-padrao: all 0.3s ease;
-  
-  /* Bordas e espaçamentos */
-  --borda-radius: 8px;
-  --espacamento-padrao: 20px;
-  
-  /* Gradientes */
-  --gradiente-primario: linear-gradient(135deg, #2196F3, #1976D2);
-  --gradiente-secundario: linear-gradient(135deg, #42A5F5, #2196F3);
-  --gradiente-destaque: linear-gradient(45deg, 
-    #2196F3 0%,
-    #42A5F5 50%,
-    #2196F3 100%
-  );
 
-  /* Fontes */
-  --fonte-titulos: 'Poppins', sans-serif;
-  --fonte-corpo: 'DM Sans', sans-serif;
+  /* Fontes (mantidas por enquanto) */
+  --fonte-titulos: 'Poppins', var(--cg-font-family);
+  --fonte-corpo: 'DM Sans', var(--cg-font-family);
+
+  /* Sombras (mantidas por compat com páginas não refatoradas) */
+  --sombra-card: var(--cg-shadow-sm);
+  --sombra-hover: var(--cg-shadow-md);
+  --transicao-padrao: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --borda-radius: var(--cg-radius-md);
+
+  /* Gradientes (apenas para utilitários remanescentes) */
+  --gradiente-primario: linear-gradient(135deg, #2563EB, #1d4ed8);
+  --gradiente-secundario: linear-gradient(135deg, #60a5fa, #2563EB);
+  --gradiente-destaque: linear-gradient(45deg, #2563EB 0%, #60a5fa 50%, #2563EB 100%);
 }
 
-/* Estilos de título globais */
+/* Títulos globais — migrado para tokens */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--fonte-titulos);
-  color: var(--cor-texto);
+  color: var(--cg-color-text-primary);
   margin-bottom: 1rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
+/* h1, h2: cor primária para destaque (sem ::after gradiente, sem position: relative) */
 h1, h2 {
-  color: var(--cor-texto-destaque);
+  color: var(--cg-color-text-primary);
   font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.03em;
-  position: relative;
   margin-bottom: 1.5rem;
 }
 
-h1::after, h2::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  width: 60px;
-  height: 3px;
-  background: var(--gradiente-primario);
-  border-radius: 3px;
-}
-
-/* Estilos globais */
+/* Body — migrado para tokens */
 body {
   margin: 0;
-  font-family: var(--fonte-corpo);
-  background: var(--cor-fundo);
-  color: var(--cor-texto);
+  font-family: var(--cg-font-family);
+  color: var(--cg-color-text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Estilização de inputs globais */
+/* Inputs e selects — migrado para tokens */
 input, select, textarea {
-  font-family: var(--fonte-corpo);
+  font-family: var(--cg-font-family);
   font-size: 0.95rem;
   padding: 10px 12px;
-  border: 1px solid #E0E7FF;
-  border-radius: var(--borda-radius);
-  color: var(--cor-texto);
-  background-color: #FFFFFF;
+  border: 1px solid var(--cg-color-border);
+  border-radius: var(--cg-radius-md);
+  color: var(--cg-color-text-primary);
+  background-color: var(--cg-color-surface-elevated);
   transition: var(--transicao-padrao);
 }
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  border-color: var(--cg-color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* Estilização de botões globais - **Regra global comentada para permitir Tailwind** */
-/* 
-button {
-  font-family: var(--fonte-titulos);
-  font-size: 0.95rem;
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--borda-radius);
-  background: var(--gradiente-primario);
-  color: white;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: var(--transicao-padrao);
-}
-
-button:hover {
-  background: var(--gradiente-secundario);
-  transform: translateY(-1px);
-  box-shadow: var(--sombra-hover);
-}
-
-button:active {
-  transform: translateY(0);
-}
-*/
-
-/* Nova classe base para botões que dependiam do estilo global */
-.app-button-base {
-  font-family: var(--fonte-titulos);
-  font-size: 0.95rem;
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--borda-radius);
-  background: var(--gradiente-primario);
-  color: white;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: var(--transicao-padrao);
-}
-
-.app-button-base:hover {
-  background: var(--gradiente-secundario);
-  transform: translateY(-1px);
-  box-shadow: var(--sombra-hover);
-}
-
-.app-button-base:active {
-  transform: translateY(0);
-}
-
-/* Cards e containers */
+/* .card — migrado para tokens */
 .card {
-  background: var(--cor-fundo-card);
-  border-radius: var(--borda-radius);
+  background: var(--cg-color-surface-elevated);
+  border-radius: var(--cg-radius-md);
   padding: 20px;
-  box-shadow: var(--sombra-card);
+  box-shadow: var(--cg-shadow-sm);
   transition: var(--transicao-padrao);
 }
 
 .card:hover {
-  box-shadow: var(--sombra-hover);
+  box-shadow: var(--cg-shadow-md);
 }
 
-/* Classes de utilidade */
-.text-primary {
-  color: var(--cor-primaria);
-}
+/* Utilitários de cor */
+.text-primary { color: var(--cg-color-primary); }
+.bg-primary { background-color: var(--cg-color-primary); color: white; }
+.border-primary { border: 1px solid var(--cg-color-primary); }
 
-.bg-primary {
-  background-color: var(--cor-primaria);
-  color: white;
-}
-
-.border-primary {
-  border: 1px solid var(--cor-primaria);
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  :root {
-    --espacamento-padrao: 16px;
-  }
-  
-  button {
-    padding: 8px 16px;
-  }
-}
-
-/* Customização do scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--cor-fundo);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--cor-primaria);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--cor-secundaria);
-}
-
-/* Barra Superior */
-.app-header {
-  background-color: var(--cor-primaria);
-  color: white;
-  padding: 15px 30px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: var(--sombra-card);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-.header-left .logo {
-  height: 40px;
-  margin-right: 10px;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-family: var(--fonte-titulos);
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
-/* Botão Gerenciar Tags */
-.btn-gerenciar-tags {
-  font-family: var(--fonte-titulos);
-  background-color: var(--cor-secundaria);
-  border: none;
-  padding: 10px 15px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-radius: var(--borda-radius);
-  color: white;
-  cursor: pointer;
-  transition: var(--transicao-padrao);
-  letter-spacing: 0.02em;
-}
-
-.btn-gerenciar-tags:hover {
-  background-color: var(--cor-primaria);
-  transform: translateY(-1px);
-  box-shadow: var(--sombra-hover);
-}
-
-/* Links de navegação */
-.nav-link {
-  font-family: var(--fonte-titulos);
-  margin-right: 15px;
-  text-decoration: none;
-  color: white;
-  font-weight: 500;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
-  transition: var(--transicao-padrao);
-}
-
-.nav-link:hover {
-  color: var(--cor-fundo-hover);
-}
-
-/* CustomSelect.css */
-.custom-select {
-  font-family: var(--fonte-corpo);
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-color: #fff;
-  border: 1px solid #E0E7FF;
-  border-radius: var(--borda-radius);
-  padding: 10px 12px;
-  font-size: 0.95rem;
-  color: var(--cor-texto);
-  width: 100%;
-  outline: none;
-  cursor: pointer;
-  transition: var(--transicao-padrao);
-}
-
-.custom-select:hover {
-  border-color: var(--cor-primaria);
-}
-
-.custom-select:focus {
-  border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-}
-
-/* Global custom styles for React-Select */
+/* mySelect (react-select) — preservado, migrado para tokens */
 .mySelect__control {
-  font-family: var(--fonte-corpo) !important;
-  background-color: #fff !important;
-  border: 1px solid #E0E7FF !important;
-  border-radius: var(--borda-radius) !important;
+  font-family: var(--cg-font-family) !important;
+  background-color: var(--cg-color-surface-elevated) !important;
+  border: 1px solid var(--cg-color-border) !important;
+  border-radius: var(--cg-radius-md) !important;
   min-height: 42px !important;
   box-shadow: none !important;
   transition: var(--transicao-padrao) !important;
 }
-
-.mySelect__control:hover {
-  border-color: var(--cor-primaria) !important;
-}
-
+.mySelect__control:hover { border-color: var(--cg-color-primary) !important; }
 .mySelect__control--is-focused {
-  border-color: var(--cor-primaria) !important;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1) !important;
+  border-color: var(--cg-color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
 }
-
 .mySelect__menu {
-  font-family: var(--fonte-corpo) !important;
-  border-radius: var(--borda-radius) !important;
-  border: 1px solid #E0E7FF !important;
-  box-shadow: var(--sombra-card) !important;
+  font-family: var(--cg-font-family) !important;
+  border-radius: var(--cg-radius-md) !important;
+  border: 1px solid var(--cg-color-border) !important;
+  box-shadow: var(--cg-shadow-md) !important;
   z-index: 9999;
 }
-
 .mySelect__option {
   font-size: 0.95rem !important;
-  color: var(--cor-texto) !important;
+  color: var(--cg-color-text-primary) !important;
   cursor: pointer;
   transition: var(--transicao-padrao) !important;
 }
-
 .mySelect__option--is-focused {
-  background-color: var(--cor-fundo-hover) !important;
-  color: var(--cor-primaria) !important;
+  background-color: var(--cg-color-primary-muted) !important;
+  color: var(--cg-color-primary) !important;
 }
-
 .mySelect__option--is-selected {
-  background-color: var(--cor-primaria) !important;
+  background-color: var(--cg-color-primary) !important;
   color: white !important;
   font-weight: 500 !important;
 }
-
 .mySelect__multi-value {
-  background-color: var(--cor-fundo-hover) !important;
-  border-radius: var(--borda-radius) !important;
+  background-color: var(--cg-color-primary-muted) !important;
+  border-radius: var(--cg-radius-md) !important;
   margin: 2px;
 }
-
 .mySelect__multi-value__label {
-  font-family: var(--fonte-corpo) !important;
-  color: var(--cor-texto-destaque) !important;
+  font-family: var(--cg-font-family) !important;
+  color: var(--cg-color-primary) !important;
   font-size: 0.9rem !important;
   font-weight: 500 !important;
 }
-
 .mySelect__multi-value__remove {
-  color: var(--cor-texto-destaque) !important;
+  color: var(--cg-color-primary) !important;
   cursor: pointer;
   transition: var(--transicao-padrao) !important;
 }
-
 .mySelect__multi-value__remove:hover {
-  background-color: var(--cor-primaria) !important;
+  background-color: var(--cg-color-primary) !important;
   color: white !important;
 }
-
 .mySelect__placeholder {
-  color: var(--cor-texto-suave) !important;
+  color: var(--cg-color-text-muted) !important;
   font-size: 0.95rem !important;
 }
-
 .mySelect__input {
-  font-family: var(--fonte-corpo) !important;
-  color: var(--cor-texto) !important;
+  font-family: var(--cg-font-family) !important;
+  color: var(--cg-color-text-primary) !important;
 }
-
-/* Menu lateral */
-.side-menu {
-  font-family: var(--fonte-titulos);
-}
-
-.side-menu .menu-item {
-  font-size: 0.95rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.side-menu .menu-header {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-/* Tabelas */
-table {
-  font-family: var(--fonte-corpo);
-}
-
-th {
-  font-family: var(--fonte-titulos);
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
-}
-
-td {
-  font-size: 0.95rem;
-}
-
-/* Modais e Diálogos */
-.modal-title {
-  font-family: var(--fonte-titulos);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.modal-content {
-  font-family: var(--fonte-corpo);
-}
-
-/* Mensagens e Alertas */
-.alert, .toast {
-  font-family: var(--fonte-corpo);
-  font-size: 0.95rem;
-}
-
-.alert-heading {
-  font-family: var(--fonte-titulos);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-/* Breadcrumbs */
-.breadcrumb {
-  font-family: var(--fonte-corpo);
-  font-size: 0.9rem;
-}
-
-.breadcrumb-item.active {
-  font-weight: 500;
-}
-
-/* Badges e Tags */
-.badge, .tag {
-  font-family: var(--fonte-titulos);
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-/* Tooltips */
-.tooltip {
-  font-family: var(--fonte-corpo);
-  font-size: 0.9rem;
-}
-
-/* Paginação */
-.pagination {
-  font-family: var(--fonte-corpo);
-}
-
-.page-link {
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-/* Cards e Containers */
-.card-title {
-  font-family: var(--fonte-titulos);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.card-text {
-  font-family: var(--fonte-corpo);
-  font-size: 0.95rem;
-}
-
-/* Formulários adicionais */
-legend {
-  font-family: var(--fonte-titulos);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.form-text {
-  font-family: var(--fonte-corpo);
-  font-size: 0.85rem;
-}
-
-/* Dropdown menus */
-.dropdown-menu {
-  font-family: var(--fonte-corpo);
-}
-
-.dropdown-item {
-  font-size: 0.95rem;
-}
-
-.dropdown-header {
-  font-family: var(--fonte-titulos);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-/* Utilitários */
-.text-gradient {
-  background: var(--gradiente-primario);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
