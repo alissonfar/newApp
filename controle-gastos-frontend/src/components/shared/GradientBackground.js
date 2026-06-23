@@ -1,14 +1,13 @@
 // src/components/shared/GradientBackground.js
-// Componente de fundo com gradiente vibrante + orbs de profundidade.
-// Renderiza-se atrás de todo o conteúdo (z-index: -1, position: fixed).
-// Necessário para o efeito glassmorphism funcionar: o menu lateral
-// translúcido precisa de cor vibrante por trás para o blur fazer sentido.
+// Componente de fundo com orbs de profundidade para glassmorphism.
+// Renderiza-se atrás do conteúdo mas com z-index 0 (não negativo) para
+// que o backdrop-filter do menu lateral (z-index 1000) consiga enxergar
+// os orbs como conteúdo por trás — efeito glass completo.
+// O gradiente base do body vem do GlobalStyles (Fase 1).
 
 import React from 'react';
-import tokens from '../../theme/tokens.js';
 
 const GradientBackground = ({ mode = 'light' }) => {
-  const gradient = tokens.gradient[mode];
   const accentColor = mode === 'light' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.25)';
 
   return (
@@ -17,9 +16,9 @@ const GradientBackground = ({ mode = 'light' }) => {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: -1,
-        background: gradient,
+        zIndex: 0,
         pointerEvents: 'none',
+        overflow: 'hidden',
       }}
     >
       {/* Orb superior esquerdo - dá profundidade ao canto */}

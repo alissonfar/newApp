@@ -5,6 +5,7 @@ import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLe
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import BreadcrumbsNav from '../navigation/BreadcrumbsNav';
+import GradientBackground from '../shared/GradientBackground';
 import './MainLayout.css';
 
 // Hook para detectar o tamanho da tela
@@ -207,6 +208,9 @@ const MainLayout = ({ children }) => {
   // Se o usuário estiver autenticado, exibe o layout completo
   return (
     <div className="main-layout">
+      {/* Orbs de profundidade para glassmorphism (rotas autenticadas) */}
+      <GradientBackground mode="light" />
+
       {/* Backdrop para fechar menu mobile */}
       {isMobile && isMobileMenuOpen && (
         <div className="mobile-menu-backdrop" onClick={closeMobileMenu}></div>

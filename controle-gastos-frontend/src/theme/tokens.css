@@ -26,6 +26,15 @@
   --cg-glass-border: 1px solid rgba(255, 255, 255, 0.2);
   --cg-glass-border-dark: 1px solid rgba(255, 255, 255, 0.08);
 
+  /* Menu (Fase 2 — modernização visual glassmorphism) */
+  --cg-menu-bg: rgba(15, 23, 42, 0.72);
+  --cg-menu-border: rgba(255, 255, 255, 0.1);
+  --cg-menu-text: #ffffff;
+  --cg-menu-text-secondary: rgba(255, 255, 255, 0.72);
+  --cg-menu-hover: rgba(255, 255, 255, 0.08);
+  --cg-menu-active-bg: rgba(255, 255, 255, 0.12);
+  --cg-menu-active-text: #ffffff;
+
   /* Gradient (light) */
   --cg-gradient-background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 45%, #fce7f3 100%);
 
@@ -95,14 +104,14 @@
   --cor-fundo-card: var(--cg-color-surface-elevated);
   --cor-branca: #ffffff;
   --cor-fundo-hover: #f5f5f5;
-  --cor-fundo-menu: #2c5282;
-  --cor-texto-menu: #ffffff;
-  --cor-texto-menu-secundario: #a0aec0;
-  --cor-hover-menu: rgba(255, 255, 255, 0.08);
-  --cor-ativo-menu-fundo: rgba(255, 255, 255, 0.12);
-  --cor-ativo-menu-texto: #ffffff;
-  --cor-borda-menu: rgba(255, 255, 255, 0.1);
-  --cor-borda-ativa-menu: #ffffff;
+  --cor-fundo-menu: var(--cg-menu-bg);
+  --cor-texto-menu: var(--cg-menu-text);
+  --cor-texto-menu-secundario: var(--cg-menu-text-secondary);
+  --cor-hover-menu: var(--cg-menu-hover);
+  --cor-ativo-menu-fundo: var(--cg-menu-active-bg);
+  --cor-ativo-menu-texto: var(--cg-menu-active-text);
+  --cor-borda-menu: var(--cg-menu-border);
+  --cor-borda-ativa-menu: var(--cor-texto-menu);
   --cor-fundo-menu-mobile: #3b6aa0;
   --cor-alerta: var(--cg-color-warning);
   --cor-primaria-rgb: 37, 99, 235;

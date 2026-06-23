@@ -49,7 +49,9 @@ const buildTheme = (mode) => {
       MuiCssBaseline: {
         styleOverrides: {
           body: {
-            backgroundColor: color.background,
+            // MuiCssBaseline deixa o body transparente para não sobrescrever
+            // o gradiente aplicado pelo GlobalStyles (que é a fonte de verdade do background visual).
+            backgroundColor: 'transparent',
             color: color.textPrimary,
             fontFamily: tokens.font.family,
           },

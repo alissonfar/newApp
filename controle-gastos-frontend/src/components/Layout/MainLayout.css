@@ -1,21 +1,8 @@
 /* src/components/Layout/MainLayout.css */
 
-/* Definição de cores refinadas para o tema azul */
-:root {
-  /* --cor-fundo-menu: #1E90FF; */ /* Dodger Blue antigo */
-  --cor-fundo-menu: #2c5282; /* Azul mais escuro/dessaturado */
-  --cor-texto-menu: #FFFFFF; /* Branco */
-  /* --cor-texto-menu-secundario: #D1E9FF; */
-  --cor-texto-menu-secundario: #a0aec0; /* Cinza azulado claro (melhor contraste com novo fundo) */
-  /* --cor-hover-menu: rgba(255, 255, 255, 0.1); */
-  --cor-hover-menu: rgba(255, 255, 255, 0.08); /* Overlay branco sutil (ajustado para novo fundo) */
-  /* --cor-ativo-menu-fundo: rgba(255, 255, 255, 0.2); */
-  --cor-ativo-menu-fundo: rgba(255, 255, 255, 0.12); /* Overlay branco mais visível */
-  --cor-ativo-menu-texto: #FFFFFF; /* Branco */
-  /* --cor-borda-menu: rgba(255, 255, 255, 0.2); */
-  --cor-borda-menu: rgba(255, 255, 255, 0.1); /* Borda branca sutil */
-  --cor-borda-ativa-menu: var(--cor-texto-menu); /* Branco para borda ativa */
-}
+/* As variáveis de cor do menu (--cg-menu-* e --cor-*-menu) são definidas
+   em src/theme/tokens.css (single source of truth) e importadas via
+   index.js. Este CSS apenas consome essas variáveis. */
 
 /* Layout principal: side-menu + main-content */
 .main-layout {
@@ -32,11 +19,13 @@
   /* min-width: 260px; */
   width: 280px;
   min-width: 280px;
-  background-color: var(--cor-fundo-menu);
+  background-color: var(--cg-menu-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   display: flex;
   flex-direction: column;
   padding: 1.25rem 1rem;
-  border-right: 1px solid var(--cor-borda-menu);
+  border-right: 1px solid var(--cg-menu-border);
   transition: width 0.3s ease, transform 0.3s ease;
   position: fixed;
   left: 0;
@@ -91,7 +80,7 @@
   /* font-size: 1.125rem; */
   font-size: 1.2rem; /* Leve ajuste */
   font-weight: 600; /* Reduzido de 700 para algo menos forte */
-  color: var(--cor-texto-menu);
+  color: var(--cg-menu-text);
   white-space: nowrap;
   letter-spacing: 0.3px; /* Reduzido */
 }
@@ -128,7 +117,7 @@
   gap: 0.875rem;
   /* padding: 0.625rem 0.875rem; */
   padding: 0.75rem 1rem; /* Aumentando padding interno */
-  color: var(--cor-texto-menu-secundario);
+  color: var(--cg-menu-text-secondary);
   text-decoration: none;
   transition: all 0.2s ease;
   border-radius: 6px;
@@ -140,17 +129,17 @@
 }
 
 .menu-item:hover {
-  color: var(--cor-texto-menu);
-  background-color: var(--cor-hover-menu);
+  color: var(--cg-menu-text);
+  background-color: var(--cg-menu-hover);
 }
 
 .menu-items li.active > .menu-item,
 .menu-items .submenu li.active > .menu-item
 {
-  color: var(--cor-ativo-menu-texto);
-  background-color: var(--cor-ativo-menu-fundo);
+  color: var(--cg-menu-active-text);
+  background-color: var(--cg-menu-active-bg);
   font-weight: 600;
-  border-left: 3px solid var(--cor-borda-ativa-menu); /* Borda esquerda ativa */
+  border-left: 3px solid var(--cg-menu-text); /* Borda esquerda ativa */
 }
 
 .menu-icon {
@@ -199,7 +188,7 @@
     top: -0.5rem;
     bottom: 0.5rem;
     width: 1px;
-    background-color: var(--cor-borda-menu);
+    background-color: var(--cg-menu-border);
   } */
 }
 
@@ -207,12 +196,12 @@
   /* padding: 0.5rem 0.875rem; */
   padding: 0.625rem 1rem; /* Ajustando padding */
   font-size: 0.875rem;
-  color: var(--cor-texto-menu-secundario);
+  color: var(--cg-menu-text-secondary);
   border-left-color: transparent; /* Subitem normal não tem borda esquerda */
 }
 
 .menu-items .submenu li.active > .menu-item.sub-item {
-  border-left-color: var(--cor-borda-ativa-menu); /* Subitem ativo tem borda */
+  border-left-color: var(--cg-menu-text); /* Subitem ativo tem borda */
   /* Outros estilos ativos já herdados/aplicados pela regra geral */
 }
 
@@ -234,14 +223,14 @@ button.menu-item.with-submenu {
 .submenu-arrow {
   font-size: 0.75rem;
   transition: transform 0.2s ease;
-  color: var(--cor-texto-menu-secundario);
+  color: var(--cg-menu-text-secondary);
   margin-left: auto;
   padding-left: 0.5rem;
 }
 
 /* Cor da seta no item pai ativo */
 .has-submenu.active > .menu-item.with-submenu .submenu-arrow {
-  color: var(--cor-ativo-menu-texto); /* Branco */
+  color: var(--cg-menu-active-text); /* Branco */
 }
 
 /* Botão de toggle do menu */
@@ -257,7 +246,7 @@ button.menu-item.with-submenu {
   cursor: pointer;
   z-index: 100;
   transition: all 0.3s ease;
-  /* background-color: var(--cor-texto-menu); */
+  /* background-color: var(--cg-menu-text); */
   background-color: rgba(255, 255, 255, 0.1); /* Fundo integrado ao tema */
   border: none;
   border-radius: 50%;
@@ -280,8 +269,8 @@ button.menu-item.with-submenu {
 .menu-toggle svg {
   width: 16px;
   height: 16px;
-  /* color: var(--cor-fundo-menu); */
-  color: var(--cor-texto-menu); /* Ícone branco */
+  /* color: var(--cg-menu-bg); */
+  color: var(--cg-menu-text); /* Ícone branco */
   transition: all 0.3s ease;
 }
 
@@ -300,7 +289,7 @@ button.menu-item.with-submenu {
   /* width: calc(100% - 260px); */
   width: calc(100% - 280px); /* Ajustando largura */
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: transparent; /* Deixa o gradiente do body aparecer atrás do conteúdo (glassmorphism) */
 }
 
 .main-content.expanded {
@@ -336,10 +325,24 @@ button.menu-item.with-submenu {
   }
 }
 
+/* Mobile: desabilitar backdrop-filter no menu (performance) */
+@media (max-width: 768px) {
+  .side-menu {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: rgba(15, 23, 42, 0.96);
+  }
+
+  /* Botão hamburger mobile também fica opaco (combina com o menu opaco) */
+  .main-menu-toggle.mobile {
+    background-color: rgba(15, 23, 42, 0.96);
+  }
+}
+
 /* Rodapé do menu (usuário e links) */
 .menu-footer {
   flex-shrink: 0;
-  border-top: 1px solid var(--cor-borda-menu);
+  border-top: 1px solid var(--cg-menu-border);
   padding-top: 1rem; /* Ajuste padding */
   margin-top: 1rem; /* Ajuste margem */
   position: relative;
@@ -357,7 +360,7 @@ button.menu-item.with-submenu {
   transition: all 0.3s ease;
   position: relative;
   z-index: 1001;
-  background-color: var(--cor-hover-menu); /* Mesmo fundo do hover dos itens */
+  background-color: var(--cg-menu-hover); /* Mesmo fundo do hover dos itens */
 }
 
 .user-info:hover {
@@ -370,7 +373,7 @@ button.menu-item.with-submenu {
   border-radius: 50%;
   min-width: 40px;
   object-fit: cover;
-  border: 2px solid var(--cor-ativo-menu-texto);
+  border: 2px solid var(--cg-menu-active-text);
   transition: transform 0.3s ease;
 }
 
@@ -380,7 +383,7 @@ button.menu-item.with-submenu {
 
 .user-name {
   font-size: 0.95rem;
-  color: var(--cor-texto-menu);
+  color: var(--cg-menu-text);
   white-space: nowrap;
   font-weight: 500;
   flex: 1;
@@ -388,7 +391,7 @@ button.menu-item.with-submenu {
 
 .profile-arrow {
   font-size: 0.8rem;
-  color: var(--cor-texto-menu-secundario);
+  color: var(--cg-menu-text-secondary);
   transition: transform 0.3s ease;
 }
 
@@ -542,8 +545,8 @@ button.menu-item.with-submenu {
     z-index: 1200; /* Acima de tudo */
     width: 40px; /* Restaurado tamanho original */
     height: 40px;
-    background-color: var(--cor-fundo-menu);
-    color: var(--cor-texto-menu);
+    background-color: var(--cg-menu-bg);
+    color: var(--cg-menu-text);
     border: none;
     border-radius: 50%;
     align-items: center;
@@ -676,7 +679,7 @@ button.menu-item.with-submenu {
 .main-menu-toggle.desktop svg {
   width: 16px;
   height: 16px;
-  color: var(--cor-texto-menu); 
+  color: var(--cg-menu-text); 
   transition: transform 0.3s ease;
 }
 
@@ -746,8 +749,8 @@ button.menu-item.with-submenu {
   justify-content: center;
   cursor: pointer;
   border: none;
-  background-color: var(--cor-fundo-menu); /* Fundo azul padrão */
-  color: var(--cor-texto-menu); /* Ícone branco padrão */
+  background-color: var(--cg-menu-bg); /* Fundo azul padrão */
+  color: var(--cg-menu-text); /* Ícone branco padrão */
   border-radius: 50%;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   transition: background-color 0.2s ease, transform 0.3s ease;
@@ -790,7 +793,7 @@ button.menu-item.with-submenu {
 .desktop-toggle svg {
   width: 16px;
   height: 16px;
-  color: var(--cor-texto-menu);
+  color: var(--cg-menu-text);
   transition: transform 0.3s ease;
 }
 
