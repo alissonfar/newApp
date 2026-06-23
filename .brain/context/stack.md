@@ -83,8 +83,12 @@ Em prod: `$env:NODE_ENV="production"; node scripts/migrations/NNN.js`
 
 - **Framework:** React 19.0 (não é Next.js — é SPA puro)
 - **Build tool:** CRACO 7.1 (override do CRA webpack pra integrar Tailwind 4)
-- **CSS:** Tailwind CSS 4.1 com `important: true` (sobrescreve MUI)
+- **CSS:** Tailwind CSS 4.1 com `important: false` (alinhado com tokens — ver ADR-009)
 - **UI:** MUI 6.4 (`@mui/material`, `@mui/icons-material`) + Emotion
+- **Design system:** `src/theme/` com `tokens.js` + `tokens.css` + `muiTheme.js` (light + dark) + `GlobalStyles.js`. Glassmorphism em `MainLayout` com gradiente vibrante. Veja [ADR-006](../decisions/2026-06-23-tokens-estrutura-theme-pasta.md) a [ADR-009](../decisions/2026-06-23-tailwind-important-false-tokens-unica.md).
+- **Tema ativo:** Light é default. Dark mode disponível via `ThemeToggle` (botão sol/lua no menu lateral), persistido em `localStorage` (`cg:theme`), respeita `prefers-color-scheme` no primeiro acesso.
+- **Componentes shared refatorados (Fase 4):** `Card`, `Button`, `Badge`, `SectionHeader`, `EmptyState` + novos `StatCard`, `TransactionRow`, `DataTable`, `GradientBackground`, `ThemeToggle`. Prefixo CSS `cg-` (legado `ds-` virou alias).
+- **Telas migradas (Fase 6):** Home, NovaTransacaoForm, Relatorio.
 - **Roteamento:** react-router-dom 7.2
 - **HTTP:** axios 1.8 (com interceptors) + `fetch` nativo (api.js)
 - **Datas:** date-fns 4.1
