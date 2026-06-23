@@ -10,11 +10,8 @@ const EmprestimoConfigSchema = new mongoose.Schema({
   criarEmprestimo: { type: Boolean, default: false },
   pessoaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pessoa', default: null },
   pessoaNomeSnapshot: { type: String, default: null },
-  direcao: { type: String, enum: ['concedido', 'recebido'], default: 'concedido' },
   valorEsperadoRetorno: { type: Number, default: null, min: 0 },
-  tipoRetorno: { type: String, enum: ['valor_fixo', 'juros_percentual', 'juros_fixo', 'sem_juros'], default: 'valor_fixo' },
-  taxaJurosPercentual: { type: Number, default: null, min: 0, max: 1000 },
-  valorJurosFixo: { type: Number, default: null, min: 0 },
+  tipoRetorno: { type: String, enum: ['valor_fixo', 'sem_juros'], default: 'valor_fixo' },
   prazoFinal: { type: Date, default: null },
   observacao: { type: String, default: null },
   empEmprestimoIdExistente: { type: mongoose.Schema.Types.ObjectId, ref: 'Emprestimo', default: null }

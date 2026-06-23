@@ -1,9 +1,8 @@
 // src/models/emprestimo.js
 const mongoose = require('mongoose');
 
-const TIPOS_RETORNO = ['valor_fixo', 'juros_percentual', 'juros_fixo', 'sem_juros'];
+const TIPOS_RETORNO = ['valor_fixo', 'sem_juros'];
 const STATUS_EMPRESTIMO = ['ativo', 'quitado', 'cancelado'];
-const DIRECOES = ['concedido', 'recebido'];
 
 const EmprestimoSchema = new mongoose.Schema({
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
@@ -12,12 +11,8 @@ const EmprestimoSchema = new mongoose.Schema({
   pessoaNomeSnapshot: { type: String, required: true, trim: true },
   pessoaContatoSnapshot: { type: String, default: null },
 
-  direcao: { type: String, enum: DIRECOES, required: true, default: 'concedido' },
-
   valorEsperadoRetorno: { type: Number, required: true, min: 0 },
-  tipoRetorno: { type: String, enum: TIPOS_RETORNO, required: true, default: 'sem_juros' },
-  taxaJurosPercentual: { type: Number, default: null, min: 0, max: 1000 },
-  valorJurosFixo: { type: Number, default: null, min: 0 },
+  tipoRetorno: { type: String, enum: TIPOS_RETORNO, required: true, default: 'valor_fixo' },
 
   prazoFinal: { type: Date, required: true },
   observacao: { type: String, default: null },
@@ -40,4 +35,3 @@ EmprestimoSchema.virtual('isQuitado').get(function () {
 module.exports = mongoose.model('Emprestimo', EmprestimoSchema);
 module.exports.TIPOS_RETORNO = TIPOS_RETORNO;
 module.exports.STATUS_EMPRESTIMO = STATUS_EMPRESTIMO;
-module.exports.DIRECOES = DIRECOES;
