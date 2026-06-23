@@ -6,6 +6,7 @@ import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import BreadcrumbsNav from '../navigation/BreadcrumbsNav';
 import GradientBackground from '../shared/GradientBackground';
+import ThemeToggle from '../shared/ThemeToggle';
 import './MainLayout.css';
 
 // Hook para detectar o tamanho da tela
@@ -330,6 +331,9 @@ const MainLayout = ({ children }) => {
                 </span>
                 {/* Seta só no desktop não colapsado */}
                  {!isMenuCollapsed && !isMobile && <FaChevronDown className={`profile-arrow ${profileOpen ? 'open' : ''}`} />}
+                 <div className="menu-footer-actions">
+                   <ThemeToggle />
+                 </div>
               </>
             )}
           </div>

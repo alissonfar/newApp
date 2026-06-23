@@ -348,6 +348,14 @@ button.menu-item.with-submenu {
   position: relative;
 }
 
+/* Ações do rodapé do menu (ex: ThemeToggle) */
+.menu-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 /* Informações do usuário (avatar + nome) */
 .user-info {
   display: flex;

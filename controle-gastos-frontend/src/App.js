@@ -4,7 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { lightTheme } from './theme/muiTheme.js';
+import { lightTheme, darkTheme } from './theme/muiTheme.js';
+import { useThemeMode } from './hooks/useThemeMode.js';
 import GlobalStyles from './theme/GlobalStyles.js';
 
 import Home from './pages/Home/Home';
@@ -55,10 +56,13 @@ import { DataProvider } from './context/DataContext';
 import './App.css';
 
 function App() {
+  const { mode } = useThemeMode();
+  const theme = mode === 'dark' ? darkTheme : lightTheme;
+
   return (
-    <ThemeProvider theme={lightTheme}>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
-      <GlobalStyles mode="light" />
+      <GlobalStyles mode={mode} />
       <AuthProvider>
         <DataProvider>
           <Router>
