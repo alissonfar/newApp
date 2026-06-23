@@ -4,15 +4,26 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: 6px 0;
   font-family: var(--fonte-corpo);
+  position: relative;
 }
 
-.nova-transacao-form-container h2 {
+/* Sobrescreve overflow:hidden do Card shared — o form tem scroll interno (.transacao-tab-content)
+   e precisa que o border-radius não corte tooltips/popovers do MUI. */
+.nova-transacao-form-container.cg-card {
+  overflow: visible;
+}
+
+/* Desativa o lift do Card no hover — o form é grande e o "pulo" fica estranho. */
+.nova-transacao-form-container.cg-card:hover {
+  transform: none;
+}
+
+.nova-transacao-form-title {
   font-family: var(--fonte-titulos);
   text-align: center;
-  margin-bottom: 12px;
-  color: var(--cor-primaria);
+  margin: 0 0 12px 0;
+  color: var(--cg-color-primary, var(--cor-primaria));
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -779,16 +790,6 @@
   margin-top: 12px;
 }
 
-.submit-btn {
-  flex: 1;
-  padding: 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
-}
-
 /* Pagamentos header */
 .pagamentos-header {
   display: flex;
@@ -939,10 +940,6 @@
 
   .form-buttons {
     flex-direction: column;
-  }
-
-  .submit-btn {
-    width: 100%;
   }
 
   .pagamento-campos-principais {

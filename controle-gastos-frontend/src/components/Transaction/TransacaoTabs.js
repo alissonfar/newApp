@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Tooltip } from '@mui/material';
+import Button from '../shared/Button.js';
 
 const TABS = [
   { id: 'principal', label: 'Principal' },
@@ -68,26 +69,28 @@ const TransacaoTabs = ({
 
       <div className="transacao-tabs-footer">
         <Tooltip title="Ctrl + Enter">
-          <button
-            type="button"
-            className="submit-btn"
-            onClick={onSubmitSaveClose}
-            disabled={isSaving}
-            tabIndex={91}
-          >
-            {isSaving ? 'Salvando...' : isEditing ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
-          </button>
+          <span>
+            <Button
+              variant="primary"
+              onClick={onSubmitSaveClose}
+              disabled={isSaving}
+              tabIndex={91}
+            >
+              {isSaving ? 'Salvando...' : isEditing ? 'Atualizar e Fechar' : 'Salvar e Fechar'}
+            </Button>
+          </span>
         </Tooltip>
         <Tooltip title="Ctrl + Space">
-          <button
-            type="button"
-            className="submit-btn"
-            onClick={onSubmitSaveContinue}
-            disabled={isSaving}
-            tabIndex={92}
-          >
-            {isSaving ? 'Salvando...' : isEditing ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
-          </button>
+          <span>
+            <Button
+              variant="success"
+              onClick={onSubmitSaveContinue}
+              disabled={isSaving}
+              tabIndex={92}
+            >
+              {isSaving ? 'Salvando...' : isEditing ? 'Atualizar e Continuar' : 'Salvar e Continuar'}
+            </Button>
+          </span>
         </Tooltip>
       </div>
     </div>

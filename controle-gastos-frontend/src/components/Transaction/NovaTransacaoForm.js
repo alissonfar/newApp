@@ -11,6 +11,7 @@ import useParcelamento from '../../hooks/useParcelamento';
 import useDuplicateCheck from '../../hooks/useDuplicateCheck';
 import useEmprestimoForm from '../../hooks/useEmprestimoForm';
 import { criarEmprestimo } from '../../api';
+import Card from '../shared/Card.js';
 import TransacaoTabs from './TransacaoTabs';
 import TabPrincipal from './TabPrincipal';
 import TabPagamentos from './TabPagamentos';
@@ -247,8 +248,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   }
 
   return (
-    <div className="nova-transacao-form-container" ref={containerRef}>
-      <h2>{transacao ? 'Editar Transacao' : 'Nova Transacao'}</h2>
+    <Card
+      variant="glass"
+      padding="md"
+      className="nova-transacao-form-container"
+      ref={containerRef}
+    >
+      <h2 className="nova-transacao-form-title">{transacao ? 'Editar Transacao' : 'Nova Transacao'}</h2>
 
       <IconButton className="help-icon" onClick={() => setShowShortcuts(true)} color="primary">
         <Tooltip title="Ver atalhos de teclado">
@@ -330,7 +336,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           duplicate={duplicate}
         />
       </TransacaoTabs>
-    </div>
+    </Card>
   );
 };
 

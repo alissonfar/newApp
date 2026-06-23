@@ -7,7 +7,7 @@
 
 .transacao-tabs-bar {
   display: flex;
-  border-bottom: 2px solid rgba(44, 62, 80, 0.12);
+  border-bottom: 2px solid var(--cg-color-border, rgba(44, 62, 80, 0.12));
   margin-bottom: 10px;
   gap: 2px;
 }
@@ -17,7 +17,7 @@
   padding: 8px 16px;
   border: none;
   background: transparent;
-  color: var(--cor-texto);
+  color: var(--cg-color-text-primary, var(--cor-texto));
   cursor: pointer;
   font-family: var(--fonte-titulos);
   font-weight: 500;
@@ -30,17 +30,17 @@
 
 .transacao-tab:hover {
   opacity: 1;
-  background: rgba(44, 62, 80, 0.04);
+  background: var(--cg-color-surface, rgba(44, 62, 80, 0.04));
 }
 
 .transacao-tab.active {
   opacity: 1;
-  color: var(--cor-primaria);
-  border-bottom-color: var(--cor-primaria);
+  color: var(--cg-color-primary, var(--cor-primaria));
+  border-bottom-color: var(--cg-color-primary, var(--cor-primaria));
 }
 
 .transacao-tab.has-error {
-  color: #d32f2f;
+  color: var(--cg-color-error, #d32f2f);
 }
 
 .tab-error-dot {
@@ -72,49 +72,13 @@
   display: flex;
   gap: 8px;
   padding: 10px 0 0;
-  border-top: 1px solid rgba(44, 62, 80, 0.1);
+  border-top: 1px solid var(--cg-color-border, rgba(44, 62, 80, 0.1));
   margin-top: 10px;
   flex-shrink: 0;
 }
 
-.transacao-tabs-footer .submit-btn {
+.transacao-tabs-footer .cg-button {
   flex: 1;
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--borda-radius);
-  cursor: pointer;
-  font-weight: 600;
-  font-family: var(--fonte-titulos);
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
-  background: var(--cor-primaria);
-  color: var(--cor-branca);
-}
-
-.transacao-tabs-footer .submit-btn:hover {
-  background: var(--cor-primaria-hover, #1a5276);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.transacao-tabs-footer .submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.transacao-tabs-footer .submit-btn:disabled:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-.transacao-tabs-footer .submit-btn:last-child {
-  background: var(--cor-secundaria, #2ecc71);
-}
-
-.transacao-tabs-footer .submit-btn:last-child:hover {
-  background: #27ae60;
 }
 
 @media (max-width: 600px) {
