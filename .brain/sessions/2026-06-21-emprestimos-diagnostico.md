@@ -1,11 +1,14 @@
 ---
 type: session
-status: active
+status: superseded
 created: 2026-06-21
+superseded: 2026-06-21
 tags: [emprestimos, diagnostico, modulo, regra]
 ---
 
 # Sessão: Diagnóstico do Módulo de Empréstimos
+
+> **STATUS (2026-06-21):** Esta sessão foi **superseded** por `2026-06-21-emprestimos-design.md` (design doc consolidado que serviu de brief para o `newapp-executor`). A implementação foi concluída em 2026-06-21. O conteúdo aqui permanece como referência histórica do processo de elicitação.
 
 ## Objetivo
 

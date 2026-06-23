@@ -1,8 +1,8 @@
 ---
 type: session
-status: active
+status: superseded
 created: 2026-06-21
-updated: 2026-06-21
+superseded: 2026-06-21
 tags: [emprestimos, fase-3, impactos, dependencias, migracao, decisoes-finalizadas]
 ---
 
@@ -10,7 +10,7 @@ tags: [emprestimos, fase-3, impactos, dependencias, migracao, decisoes-finalizad
 
 > Documento de impactos da refatoração. **Atualiza** o diagnóstico (`2026-06-21-emprestimos-diagnostico.md`) com achados de dependências. **Não contém código** — só mapeamento.
 >
-> **STATUS (2026-06-21):** FASE 3 completa. Todas as 10 pendências resolvidas. Pronto para FASE 4.
+> **STATUS (2026-06-21):** Esta sessão foi **superseded** por `2026-06-21-emprestimos-design.md` (design doc consolidado). A implementação foi concluída em 2026-06-21. O conteúdo aqui permanece como referência histórica do mapeamento de dependências e decisões estruturais.
 
 ## Escopo da investigação
 
