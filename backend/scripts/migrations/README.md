@@ -7,6 +7,11 @@
 | 001-add-default-user-role.js | Adiciona role padrão em usuários |
 | 002-historico-saldo-tipo.js | Adiciona tipo="ajuste" em HistoricoSaldo |
 | 003-ledger-snapshot-inicial.js | Cria eventos snapshot_inicial no LedgerPatrimonial para subcontas existentes (implementação do Ledger Patrimonial) |
+| 004-categoria-tag-indices-multi-tenant.js | Cria índices multi-tenant em Categoria e Tag |
+| 005-parcelamento-por-pagamento.js | Adiciona campos de parcelamento no nível do pagamento |
+| 006-emprestimo-transacao-importada.js | Adiciona `emprestimoId` em TransacaoImportada + sub-schema `emprestimoConfig` + índices sparse |
+| 007-limpar-ledger-pluggy.js | Limpa LedgerPatrimonial corrompido por sync Pluggy + reseta saldoAtual das subcontas afetadas |
+| 008-emprestimo-simplificacao.js | Normaliza Empréstimos e TIs: `tipoRetorno: juros_*` → `valor_fixo`, `direcao: recebido` → `concedido`, remove `taxaJurosPercentual`/`valorJurosFixo`. Idempotente. |
 
 ---
 
