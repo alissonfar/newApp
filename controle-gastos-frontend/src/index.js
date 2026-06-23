@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import 'react-calendar/dist/Calendar.css';
 import App from './App';
 // Importação CSS do projeto colocada por último para ter prioridade
+import './theme/tokens.css';
 import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
