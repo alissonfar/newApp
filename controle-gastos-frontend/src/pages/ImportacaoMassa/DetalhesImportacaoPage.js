@@ -1109,46 +1109,44 @@ const DetalhesImportacaoPage = () => {
                                         </span>
                                     </td>
                                     <td className="acoes-cell" onClick={(e) => e.stopPropagation()}>
-                                        {podeEditar(importacao) && (
+                                        {abaAtiva !== 'ignoradas' ? (
                                             <>
-                                                {abaAtiva !== 'ignoradas' ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleEditarTransacao(transacao)}
-                                                            className="btn-acao btn-editar"
-                                                            title="Ao editar, a transação voltará para o status 'Revisada'"
-                                                        >
-                                                            Editar
-                                                        </button>
-                                                        {transacao.status !== 'validada' && (
-                                                            <button
-                                                                onClick={() => handleValidarTransacao(transacao.id)}
-                                                                className="btn-acao btn-validar"
-                                                                title={transacao.status === 'ja_importada' ? 'Validar para forçar duplicação' : 'Validar'}
-                                                            >
-                                                                {transacao.status === 'ja_importada' ? 'Validar (duplicar)' : 'Validar'}
-                                                            </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => handleExcluirTransacao(transacao.id)}
-                                                            className="btn-acao btn-excluir"
-                                                            title="Ignorar - não reaparecerá em importações futuras"
-                                                        >
-                                                            <FaTrash />
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    ['ignorada', 'ja_importada'].includes(transacao.status) && (
-                                                        <button
-                                                            onClick={() => handleRestaurarTransacao(transacao.id)}
-                                                            className="btn-acao btn-restaurar"
-                                                            title="Restaurar - volta para análise como Pendente"
-                                                        >
-                                                            Restaurar
-                                                        </button>
-                                                    )
+                                                <button
+                                                    onClick={() => handleEditarTransacao(transacao)}
+                                                    className="btn-acao btn-editar"
+                                                    disabled={!podeEditar(importacao)}
+                                                    title={podeEditar(importacao) ? "Ao editar, a transação voltará para o status 'Revisada'" : 'Importação finalizada — edição bloqueada'}
+                                                >
+                                                    Editar
+                                                </button>
+                                                {transacao.status !== 'validada' && (
+                                                    <button
+                                                        onClick={() => handleValidarTransacao(transacao.id)}
+                                                        className="btn-acao btn-validar"
+                                                        disabled={!podeEditar(importacao)}
+                                                        title={podeEditar(importacao) ? (transacao.status === 'ja_importada' ? 'Validar para forçar duplicação' : 'Validar') : 'Importação finalizada — validação bloqueada'}
+                                                    >
+                                                        {transacao.status === 'ja_importada' ? 'Validar (duplicar)' : 'Validar'}
+                                                    </button>
                                                 )}
+                                                <button
+                                                    onClick={() => handleExcluirTransacao(transacao.id)}
+                                                    className="btn-acao btn-excluir"
+                                                    disabled={!podeEditar(importacao)}
+                                                    title={podeEditar(importacao) ? 'Ignorar - não reaparecerá em importações futuras' : 'Importação finalizada — ação bloqueada'}
+                                                >
+                                                    <FaTrash />
+                                                </button>
                                             </>
+                                        ) : (
+                                            ['ignorada', 'ja_importada'].includes(transacao.status) && (
+                                                <button
+                                                    onClick={() => handleRestaurarTransacao(transacao.id)}
+                                                    className="btn-acao btn-restaurar"
+                                                >
+                                                    Restaurar
+                                                </button>
+                                            )
                                         )}
                                     </td>
                                 </tr>

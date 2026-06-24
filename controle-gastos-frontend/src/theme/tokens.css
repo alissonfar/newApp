@@ -145,6 +145,7 @@
   --cg-color-info: #60a5fa;
   --cg-gradient-background: linear-gradient(135deg, #0a0e27 0%, #1e1b4b 60%, #312e81 100%);
   --cg-gradient-body: linear-gradient(135deg, #0a0e27 0%, #1e1b4b 60%, #312e81 100%);
+  --cor-fundo-hover: rgba(15, 23, 42, 0.75);
 }
 
 /* Mobile: desabilitar backdrop-filter (performance) */

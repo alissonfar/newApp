@@ -164,3 +164,211 @@ input:focus, select:focus, textarea:focus {
   font-family: var(--cg-font-family) !important;
   color: var(--cg-color-text-primary) !important;
 }
+
+/* === CORREÇÕES DE CORES EM DARK MODE (legado vs design system) === */
+/* Estas regras sobrescrevem CSS hardcoded de arquivos legados (Relatorio.css, etc) */
+/* que ainda usam cores fixas (#1976D2, #fff) e não foram migrados para tokens. */
+/* A longo prazo, refatorar arquivo por arquivo para usar --cg-* tokens diretamente. */
+
+[data-theme="dark"] {
+  /* Títulos de seção em cards (h2, h3 dentro de cards de seção) */
+  .filtro-section h2,
+  .relatorio-section h2,
+  .relatorio-section h3,
+  .card-section h2,
+  .card-section h3,
+  .section-header h2,
+  .section-header h3,
+  .summary-section h2,
+  h2.filtro-titulo,
+  h2.relatorio-titulo,
+  h2.section-title {
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  /* Títulos h4 em .filter-section (Relatorio.css .filter-section h4) */
+  .filter-section h4,
+  .summary-section h4 {
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  /* Sub-títulos / descrições de seção (texto secundário mais claro) */
+  .filtro-section .subtitulo,
+  .relatorio-section .subtitulo,
+  .summary-desc,
+  .section-desc,
+  .info-subtitulo,
+  p.subtitulo,
+  .filtro-descricao,
+  .summary-subtitulo {
+    color: var(--cg-color-text-muted) !important;
+  }
+
+  /* Labels de input (form labels) */
+  label,
+  .form-label,
+  .form-group label,
+  .input-group label,
+  .field-label,
+  .filtro-grupo label,
+  .filtro-label,
+  .relatorio-form label,
+  .form-section label {
+    color: var(--cg-color-text-secondary) !important;
+  }
+
+  /* Inputs e selects — fundo dark translúcido */
+  input[type="text"],
+  input[type="date"],
+  input[type="number"],
+  input[type="email"],
+  input[type="search"],
+  .MuiOutlinedInput-root,
+  .MuiInputBase-root,
+  input.MuiInputBase-input,
+  textarea.MuiInputBase-input {
+    background-color: var(--cg-color-surface-elevated) !important;
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  /* Checkbox custom em /importacao/nova (NovaImportacaoForm.css) */
+  /* Sem override, o <input type="checkbox"> fica com fundo claro herdado,
+     contrastando com o label cinza-claro = ilegível. Forçar fundo dark + borda. */
+  .checkbox-label input[type="checkbox"] {
+    background-color: var(--cg-color-surface-elevated) !important;
+    border: 1px solid var(--cg-color-border) !important;
+  }
+
+  /* Placeholder de input */
+  input::placeholder,
+  textarea::placeholder,
+  .MuiInputBase-input::placeholder,
+  .MuiOutlinedInput-input::placeholder {
+    color: var(--cg-color-text-muted) !important;
+    opacity: 1 !important;
+  }
+
+  /* Borda de input */
+  .MuiOutlinedInput-notchedOutline,
+  input.MuiOutlinedInput-input {
+    border-color: var(--cg-color-border) !important;
+  }
+
+  /* MUI Select (quando fechado) — texto do valor selecionado e placeholder */
+  .MuiSelect-select,
+  .MuiSelect-select.MuiSelect-outlined,
+  .MuiSelect-select em,
+  .MuiSelect-select .MuiTypography-root {
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  /* MUI Select placeholder */
+  .MuiSelect-select .MuiTypography-body2,
+  .MuiSelect-select .placeholder,
+  .MuiSelect-select[aria-expanded="false"] .MuiTypography-body2 {
+    color: var(--cg-color-text-muted) !important;
+  }
+
+  /* MUI Menu/Popover (dropdown aberto) — fundo e texto */
+  .MuiPaper-root.MuiMenu-paper,
+  .MuiPaper-root.MuiPopover-paper,
+  .MuiMenu-paper,
+  [role="listbox"] {
+    background-color: rgba(15, 23, 42, 0.98) !important;
+    color: var(--cg-color-text-primary) !important;
+    border: 1px solid var(--cg-color-border) !important;
+  }
+
+  /* Opções dentro do dropdown */
+  .MuiMenuItem-root,
+  [role="option"] {
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  .MuiMenuItem-root:hover,
+  .MuiMenuItem-root.Mui-focused,
+  [role="option"]:hover,
+  [role="option"][aria-selected="true"] {
+    background-color: var(--cg-color-primary-muted) !important;
+    color: var(--cg-color-primary) !important;
+  }
+
+  /* Card "Informações Gerais" e similares com fundo branco hardcoded */
+  .informacoes-gerais-card,
+  .info-card,
+  .summary-info-card,
+  .summary-card-informacoes,
+  .resumo-info {
+    background-color: var(--cg-color-surface-elevated) !important;
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  /* Cor da seta (chevron) do MUI Select em dark mode */
+  .MuiSelect-icon,
+  .MuiAutocomplete-popupIndicator,
+  .MuiAutocomplete-clearIndicator {
+    color: var(--cg-color-text-secondary) !important;
+  }
+
+  /* Card "Informações Gerais" — fundo do .summary-section */
+  .summary-section {
+    background-color: var(--cg-color-surface-elevated) !important;
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  /* Selects nativos (5 no Relatorio) — .filter-group select */
+  .filter-group select {
+    background-color: var(--cg-color-surface-elevated) !important;
+    color: var(--cg-color-text-primary) !important;
+    border-color: var(--cg-color-border) !important;
+  }
+
+  /* Option dentro de select nativo */
+  .filter-group select option {
+    background-color: var(--cg-color-surface-elevated) !important;
+    color: var(--cg-color-text-primary) !important;
+  }
+
+  /* Container externo dos filtros — MAIS ESCURO que os cards internos */
+  .filter-panel {
+    background: var(--cg-color-surface) !important;  /* mudou: surface em vez de surface-elevated */
+    border-color: var(--cg-color-border) !important;
+  }
+
+  /* Cards internos (.filter-section) — MAIS CLAROS que o container */
+  .filter-section {
+    background: var(--cg-color-surface-elevated) !important;  /* novo: fundo dark mais opaco */
+    border-color: var(--cg-color-border) !important;
+  }
+
+  /* === POLISH DARK MODE /relatorio (round 2) === */
+  /* Sobrescreve bordas claras hardcoded em Relatorio.css (vars legadas sem fallback dark) */
+
+  /* .summary-section border (Relatorio.css:166 — #c0d3eb) */
+  .summary-section {
+    border-color: var(--cg-color-border) !important;
+  }
+
+  /* h4 border-bottom em .filter-section e .summary-section (Relatorio.css:72, :178 — #a0c4f8) */
+  .filter-section h4,
+  .summary-section h4 {
+    border-bottom-color: var(--cg-color-border) !important;
+  }
+
+  /* input border em .filter-group (Relatorio.css:108 — #9aa0a6) */
+  .filter-group input,
+  .filter-group select {
+    border-color: var(--cg-color-border) !important;
+  }
+
+  /* .filter-actions border-top dashed (Relatorio.css:139 — #e0e7ff, defesa) */
+  .filter-actions {
+    border-top-color: var(--cg-color-border) !important;
+  }
+
+  /* Status badge 'Já Importada' (DetalhesImportacaoPage.css linha 496-499) */
+  .status-badge.ja_importada {
+    background-color: var(--cg-color-surface-elevated) !important;
+    color: var(--cg-color-text-muted) !important;
+  }
+}

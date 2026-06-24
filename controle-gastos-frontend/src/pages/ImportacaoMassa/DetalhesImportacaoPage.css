@@ -133,7 +133,7 @@
 }
 
 .status-card {
-  background: white;
+  background: var(--cg-color-surface-elevated);
   padding: 1rem;
   border-radius: 8px;
   text-align: center;
@@ -551,11 +551,6 @@
     background-color: rgba(23, 162, 184, 0.05);
 }
 
-/* Hover mais suave mantendo a cor de fundo */
-.transacoes-table tr:hover {
-    filter: brightness(0.98);
-}
-
 /* Ajuste do status validada para azul */
 .status-badge.validada {
     background-color: var(--cor-info);
@@ -678,9 +673,9 @@
 }
 
 .aba-btn.ativa {
-    background: var(--cor-secundaria);
-    color: white;
-    border-color: var(--cor-secundaria);
+  background: var(--cg-color-primary);
+  color: white;
+  border-color: var(--cg-color-primary);
 }
 
 .barra-acoes-massa {
@@ -772,7 +767,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background-color: var(--cor-secundaria);
+    background-color: var(--cg-color-primary);
     color: white;
     border: none;
     border-radius: 6px;
