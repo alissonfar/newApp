@@ -239,7 +239,7 @@ const RevisaoMetadadosImportacao = (props) => {
           </summary>
           <div style={{ marginTop: 8, border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead style={{ background: '#f1f5f9' }}>
+              <thead style={{ background: 'var(--cg-color-thead-bg)' }}>
                 <tr>
                   <th style={{ padding: 8, textAlign: 'left' }}>Data</th>
                   <th style={{ padding: 8, textAlign: 'left' }}>Descrição</th>

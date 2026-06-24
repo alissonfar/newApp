@@ -254,6 +254,17 @@ input:focus, select:focus, textarea:focus {
     border-color: var(--cg-color-border) !important;
   }
 
+  /* Cabeçalho de tabela — cor do texto reage ao tema */
+  /* O <thead> já tem var(--cg-color-thead-bg) aplicado via style inline, mas o
+     color/-webkit-text-fill-color dos <th> vinha preso em rgb(248,250,252) por
+     algum wrapper acima (provavelmente Typography/global). Forçar token reativo. */
+  thead th,
+  th,
+  td {
+    color: var(--cg-color-text-primary) !important;
+    -webkit-text-fill-color: var(--cg-color-text-primary) !important;
+  }
+
   /* MUI Select (quando fechado) — texto do valor selecionado e placeholder */
   .MuiSelect-select,
   .MuiSelect-select.MuiSelect-outlined,

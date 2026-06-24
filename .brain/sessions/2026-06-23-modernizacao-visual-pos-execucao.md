@@ -27,13 +27,14 @@ Documentar a conclusão da modernização visual do Controle de Gastos. **21 com
 | **Telas migradas** | Home, NovaTransacaoForm, Relatorio. CSS reduzido em ~48% (Home: 1011→530 linhas, Relatorio: 546→281). |
 | **App.css migrado** | 532 → 166 linhas (-69%). Dark mode agora consistente em **todas as rotas** (mesmo as não refatoradas). 9 classes mortas removidas. |
 | **index.css body** | Simplificado — background removido (deixa GlobalStyles mandar no gradiente). |
-| **Bug do gradiente no body (Fase 7.5)** | Após Fase 7, ainda existia "fundo branco" no header. Causa raiz: bug Emotion+stylis que dropa valores com vírgulas em parênteses. Fix via split entre `GlobalStyles.js` (objeto JS) e `muiTheme.js` (string template em `MuiCssBaseline.styleOverrides`). Documentado em [ADR-011](../decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md). |
+| **Bug do gradiente no body (Fase 7.5)** | Após Fase 7, ainda existia "fundo branco" no header. Causa raiz: bug Emotion+stylis que dropa valores com vírgulas em parênteses. Fix via split entre `GlobalStyles.js` (objeto JS) e `muiTheme.js` (string template em `MuiCssBaseline`). Documentado em [ADR-011](../decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md). |
+| **Polish dark mode (várias páginas)** | Após Fase 7.5, varreram-se páginas com cores hardcoded legadas (`/relatorio`, `/importacao`, etc). Bugs corrigidos: h4 títulos azuis, cards de status brancos, hover de tabela claro, badge "Já Importada" esmaecido, coluna Ações vazia (bug antigo), checkbox label invisível, cabeçalho `<thead>` claro. Documentado em [ADR-012](../decisions/2026-06-23-css-variable-para-cores-presas-em-dark-mode.md). |
 
 ### Estatísticas
 
 - **24 commits** na branch `refatoracaoVisual` (Fases 1-6 + Fase 7 + commit docs) + 1 commit pendente do fix do gradiente (Fase 7.5)
 - **~860 linhas líquidas a menos** de CSS (refatoração eliminou duplicação)
-- **6 ADRs criados** (006-011)
+- **7 ADRs criados** (006-012)
 - **0 regressões** em features críticas (Pluggy, multi-tenant, decimal.js, contas conjuntas, importação CSV/OFX, geração de PDF)
 
 ### ADRs
@@ -44,6 +45,7 @@ Documentar a conclusão da modernização visual do Controle de Gastos. **21 com
 - **ADR-009** — Tailwind `important: false` + tokens como fonte única
 - **ADR-010** — Migração do `App.css` global para tokens do design system
 - **ADR-011** — **Gradiente do `<body>` precisa de split entre GlobalStyles e MuiCssBaseline (bug Emotion+stylis)** ⚠️ **LEIA ANTES DE MEXER NO TEMA**
+- **ADR-012** — ⚠️ **Elementos com cor presa de wrappers globais (th, td, checkbox, etc) — CSS variable + `!important` em `App.css [data-theme="dark"]`**
 
 ## Decisões durante a execução
 
@@ -112,6 +114,52 @@ Subagent executor (via skill `browser-use`) aplicou `background: red !important`
 - Documentado em [ADR-011](../decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md)
 
 **Lição:** Quando o Alisson pediu "método drástico com vermelho" foi o que destravou. Teoria após teoria sem validação visual não levou a lugar nenhum. **Verificar com print sempre.**
+
+### Saga do "thead" e "td" sem cor reativa (pós-validacao)
+
+**Sintoma:** Na página `/importacao/nova`, o cabeçalho da tabela de Amostra (Data, Descrição, Valor, Tipo) e as linhas de dados estavam com cor presa: em **light mode** o texto aparecia **off-white/transparente** (ilegível), e em **dark mode** aparecia **claro demais** ou **escuro demais**. Sem F5 a cor não atualizava ao trocar o tema.
+
+**Investigação:**
+
+1. **Background do `<thead>`:** o JSX `RevisaoMetadadosImportacao.js` tinha `<thead style={{ background: '#f1f5f9' }}>` (hardcoded). Substituído por `var(--cg-color-thead-bg)`, com o token em `tokens.css` apontando para `#f1f5f9` em light e `rgba(15, 23, 42, 0.75)` em `[data-theme="dark"]`. ✅ Background reativo.
+
+2. **Cor do texto do `<th>` (cabeçalho):** mesmo após o background reagir, o texto do cabeçalho continuava preso. Inspeção no DevTools mostrou:
+   - `color: rgb(248, 250, 252)` (off-white) em AMBOS os temas
+   - `-webkit-text-fill-color: rgb(248, 250, 252)` em AMBOS os temas
+   - `getMatchedStylesForNode` retornava **0 regras CSS** para esse elemento
+
+   **Diagnóstico:** algum wrapper de tipografia (MUI Typography, Tailwind text-fill-*, ou similar) estava setando `color` e `-webkit-text-fill-color` em um nível acima do escopo do cascade de `App.css`. **Não vinha do nosso código.** Tentar mudar o wrapper quebraria outros lugares; o fix certo era sobrescrever com `!important` no `App.css`.
+
+3. **Fix do cabeçalho:** adicionada regra em `App.css` dentro de `[data-theme="dark"]`:
+   ```css
+   thead th,
+   th {
+     color: var(--cg-color-text-primary) !important;
+     -webkit-text-fill-color: var(--cg-color-text-primary) !important;
+   }
+   ```
+   ✅ O cabeçalho passou a reagir ao tema.
+
+4. **Cor do `<td>` (linhas de dados):** mesmo problema do `<th>`, mesma origem. Alisson pediu "é só reproduzir para a parte de baixo" — adicionado `td` à lista de seletores:
+   ```css
+   thead th,
+   th,
+   td {
+     color: var(--cg-color-text-primary) !important;
+     -webkit-text-fill-color: var(--cg-color-text-primary) !important;
+   }
+   ```
+   ✅ Corpo da tabela também passou a reagir.
+
+**Lição:** quando o elemento tem cor presa de wrapper acima (MUI/Tailwind), **NÃO** tente mudar o wrapper. Adicione a regra com `!important` e CSS variable reativa em `App.css [data-theme="dark"]`. Documentado em [ADR-012](../decisions/2026-06-23-css-variable-para-cores-presas-em-dark-mode.md).
+
+**Checklist de diagnóstico rápido para o próximo agente:**
+
+1. O sintoma é "cor presa mesmo após toggle de tema sem reload"? → provável bug do tipo ADR-012
+2. No DevTools, `color` e/ou `-webkit-text-fill-color` estão setados sem combinar com nenhuma regra do `App.css`? → confirmado
+3. Aplique a regra com `!important` em `App.css [data-theme="dark"]` usando `var(--cg-color-*)`
+4. Valide SEM RELOAD: `getComputedStyle().color` muda ao trocar o tema
+5. Se ainda preso, escopo do seletor pode estar errado (mais específico acima) — ajustar seletor
 
 ## O que ficou para o futuro (NÃO está no escopo)
 

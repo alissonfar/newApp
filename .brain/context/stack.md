@@ -169,6 +169,52 @@ Lista das features que **NÃO podem ser quebradas**:
 - **Conventional Commits em português** (padrão dos commits do projeto, validado pelo newapp-committer)
 - **Frontend = React puro (não Next.js)**, com CRACO + Tailwind `important: true` + MUI
 - **CORS liberado** (`origin: '*'`) — política atual do backend
+- **CSS variable + `!important` em `App.css [data-theme="dark"]`** para corrigir cores presas em wrappers globais (MUI/Tailwind tipografia) — ver ADR-012
+
+## Armadilhas conhecidas de tema/cores (LEIA antes de mexer em UI)
+
+O projeto tem um histórico de bugs sutis em dark mode. Os ADRs abaixo documentam as armadilhas e a solução. **LEIA-OS ANTES** de mexer em qualquer coisa relacionada a cores, tema, glassmorphism ou dark mode.
+
+- **ADR-006** — Estrutura de tokens (`src/theme/`) — base de tudo
+- **ADR-007** — Tema MUI como fonte de verdade
+- **ADR-008** — Glassmorphism exige gradiente vibrante atrás
+- **ADR-009** — Tailwind `important: false`
+- **ADR-010** — Migração do `App.css` para tokens
+- **ADR-011** — Gradiente do body: split `GlobalStyles` + `MuiCssBaseline` (bug Emotion+stylis dropa `linear-gradient(...)` em objeto JS)
+- **ADR-012** — ⚠️ **CRÍTICO: Elementos com `color`/`-webkit-text-fill-color` preso de wrappers globais** (th, td, checkbox, etc) — `var(--cg-color-*)` + `!important` em `App.css [data-theme="dark"]`
+
+**Regra de ouro para qualquer mudança de cor em dark mode:**
+1. Use CSS variable reativa (`var(--cg-color-XXX)`) que muda automaticamente em `[data-theme="dark"]`
+2. **NUNCA** use inline style hardcoded (`style={{ background: '#XXX' }}`)
+3. **NUNCA** mexa em state React, useEffect, ou hacks para forçar re-render
+4. Se o elemento tem cor "presa" (não reage ao toggle sem reload), provavelmente é wrapper global de tipografia — use `!important` em `App.css` para sobrescrever
+5. SEMPRE valide via browser-use ou DevTools que `getComputedStyle().color` muda SEM reload
+
+**Anti-padrões comuns (NÃO FAÇA):**
+
+```jsx
+// ❌ Inline style hardcoded - fica preso no tema
+<thead style={{ background: '#f1f5f9' }}>
+
+// ❌ Gambiarra com useEffect - não funciona
+const [_, force] = useState(0);
+useEffect(() => { const t = setInterval(() => force(n => n + 1), 100); return () => clearInterval(t); }, []);
+```
+
+**Certo:**
+
+```jsx
+// ✅ CSS variable reativa
+<thead style={{ background: 'var(--cg-color-thead-bg)' }}>
+
+/* E para elementos com cor presa, em App.css [data-theme="dark"]: */
+thead th, th, td {
+  color: var(--cg-color-text-primary) !important;
+  -webkit-text-fill-color: var(--cg-color-text-primary) !important;
+}
+```
+
+**Saga completa da modernização visual:** `C:\PROJETOS\newApp\.brain\sessions\2026-06-23-modernizacao-visual-pos-execucao.md`
 
 ## Agentes configurados
 
@@ -213,3 +259,4 @@ Sintaxe de permissões documentada em [ADR-002](../decisions/2026-06-21-sintaxe-
 ## Histórico de mudanças desta nota
 
 - **2026-06-21:** criação inicial durante setup do vault.
+- **2026-06-23:** adicionada seção "Armadilhas conhecidas de tema/cores" com referência aos ADRs 006-012 (saga do body gradient + saga do thead/td com cor presa).

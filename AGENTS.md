@@ -1,5 +1,26 @@
 # AGENTS.md — Controle de Gastos
 
+## ⚠️ Antes de mexer em cores/tema/dark mode, LEIA ISTO
+
+**Os seguintes ADRs explicam armadilhas conhecidas e como resolvê-las:**
+
+- **ADR-006** — Estrutura de tokens (`src/theme/`)
+- **ADR-007** — Tema MUI como fonte de verdade
+- **ADR-008** — Glassmorphism exige gradiente vibrante atrás
+- **ADR-009** — Tailwind `important: false`
+- **ADR-010** — Migração do `App.css` para tokens
+- **ADR-011** — Gradiente do body: split `GlobalStyles` + `MuiCssBaseline` (bug Emotion+stylis)
+- **ADR-012** — ⚠️ **CRÍTICO: Elementos com cor presa de wrappers globais** (th, td, checkbox, etc) — `!important` + CSS variable em `App.css [data-theme="dark"]`
+
+**Regra de ouro para qualquer mudança de cor em dark mode:**
+1. Use CSS variable reativa (`var(--cg-color-XXX)`) que muda automaticamente em `[data-theme="dark"]`
+2. **NUNCA** use inline style hardcoded (`style={{ background: '#XXX' }}`)
+3. **NUNCA** mexa em state React, useEffect, ou hacks para forçar re-render
+4. Se o elemento tem cor "presa" (não reage ao toggle sem reload), provavelmente é wrapper global de tipografia — use `!important` em `App.css` para sobrescrever
+5. SEMPRE valide via browser-use ou DevTools que `getComputedStyle().color` muda SEM reload
+
+**Para entender a saga completa:** `C:\PROJETOS\newApp\.brain\sessions\2026-06-23-modernizacao-visual-pos-execucao.md`
+
 ## Project layout
 
 ```
