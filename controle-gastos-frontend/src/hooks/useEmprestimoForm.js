@@ -90,13 +90,18 @@ export default function useEmprestimoForm({ transacao, tipoTransacao, valorTotal
       if (!emprestimoId) return 'Selecione um empréstimo para vincular.';
     } else {
       if (!novoPrazoFinal) return 'Informe o prazo final do novo empréstimo.';
+    }
+    // Valor esperado é obrigatório APENAS para gastos (em recebimentos
+    // não faz sentido). Aplica-se a ambos os modos a partir do design
+    // 2026-06-24, quando o campo migrou para a Transação.
+    if (tipoTransacao === 'gasto') {
       const v = parseFloat(novoValorEsperado);
       if (!novoValorEsperado || isNaN(v) || v < 0) {
         return 'Informe o valor esperado de retorno (≥ 0).';
       }
     }
     return null;
-  }, [ativo, pessoaId, modo, emprestimoId, novoPrazoFinal, novoValorEsperado]);
+  }, [ativo, pessoaId, modo, emprestimoId, novoPrazoFinal, novoValorEsperado, tipoTransacao]);
 
   const avisoEmprestimoSemDesembolso = useMemo(() => {
     if (!ativo || modo !== 'vincular' || !emprestimoId) return null;
