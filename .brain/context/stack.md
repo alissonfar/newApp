@@ -156,8 +156,9 @@ Lista das features que **NÃO podem ser quebradas**:
 2. **Importação em massa CSV/OFX** — fluxo de upload → parse → classificar → revisar → finalizar
 3. **Multi-tenant + JWT + verificação de email** — isolamento de dados por usuário
 4. **Contas conjuntas e acertos** — compartilhamento de gastos com outras pessoas
-5. **Cálculos financeiros com decimal.js** — ledger patrimonial, faturas, patrimônio líquido (NUNCA usar float nativo pra dinheiro)
+5. **Cálculos financeiros com decimal.js** — ledger patrimonial, faturas, patrimônio líquido (NUNCA usar float nativo pra dinheiro — **exceção consciente: módulo de Empréstimos usa `Number` puro, ver ADR-013**)
 6. **Sistema de relatórios e insights** — templates customizáveis, exportação PDF
+7. **Módulo de Empréstimos** — gestão de empréstimos pessoais (EU emprestando para outra pessoa). Suporta 2 caminhos: TX-level (legado, 1 pagamento) e pagamento-level (novo, 2+ pagamentos). Ver [ADR-015](../decisions/2026-06-25-emprestimo-dois-caminhos.md) e [glossário](glossary-emprestimos.md).
 
 > **Nota:** Esta lista é provisória. Alisson marcou "tem outras que faltam" na sessão de setup inicial. Voltar aqui quando identificar features adicionais.
 
@@ -165,7 +166,7 @@ Lista das features que **NÃO podem ser quebradas**:
 
 - **JWT + emailVerificado:** toda rota nova deve exigir ambos (a menos que justificado)
 - **Multi-tenant:** toda query a categoria/tag deve filtrar por usuário
-- **decimal.js:** NUNCA usar float nativo para valores monetários (sempre `new Decimal(...)`)
+- **decimal.js:** NUNCA usar float nativo para valores monetários (sempre `new Decimal(...)`) — **exceção consciente:** módulo de Empréstimos usa `Number` puro (decisão ADR-013, aceitando risco de 1 centavo em arredondamento)
 - **Conventional Commits em português** (padrão dos commits do projeto, validado pelo newapp-committer)
 - **Frontend = React puro (não Next.js)**, com CRACO + Tailwind `important: true` + MUI
 - **CORS liberado** (`origin: '*'`) — política atual do backend

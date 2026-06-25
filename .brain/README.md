@@ -47,10 +47,59 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
 .brain/
 ├── README.md              # este arquivo
 ├── decisions/             # ADRs — Architecture Decision Records
-├── context/               # informação estável: stack, personas, regras
+├── context/               # informação estável: stack, personas, regras, glossário
 ├── sessions/              # logs de cada conversa de planejamento
 └── playbooks/             # procedimentos recorrentes
 ```
+
+## Índice por módulo
+
+### Módulo de Empréstimos
+- **Design docs:**
+  - [`2026-06-21-emprestimos-design.md`](sessions/2026-06-21-emprestimos-design.md) — design da refatoração 1 (sem FIFO, sem juros_percentual/fixo)
+  - [`2026-06-24-emprestimos-valor-esperado-por-tx-design.md`](sessions/2026-06-24-emprestimos-valor-esperado-por-tx-design.md) — design da refatoração 2 (valor esperado por TX)
+  - [`2026-06-24-emprestimos-pagamento-level-design.md`](sessions/2026-06-24-emprestimos-pagamento-level-design.md) — design da refatoração 3 (empréstimo no nível do pagamento)
+- **ADRs (decisões arquiteturais):**
+  - [ADR-013](decisions/2026-06-21-emprestimo-sem-fifo.md) — Empréstimo sem FIFO (superseded, integrada em refatoração maior)
+  - [ADR-014](decisions/2026-06-24-valor-esperado-por-transacao.md) — `valorEsperadoRetorno` mora na Transação
+  - [ADR-015](decisions/2026-06-25-emprestimo-dois-caminhos.md) — 2 caminhos (TX-level legado + pagamento-level novo)
+- **Sessões:**
+  - [`2026-06-21-emprestimos-diagnostico.md`](sessions/2026-06-21-emprestimos-diagnostico.md) — diagnóstico inicial (superseded)
+  - [`2026-06-21-emprestimos-fase-3-impactos.md`](sessions/2026-06-21-emprestimos-fase-3-impactos.md) — mapeamento de impactos (superseded)
+  - [`2026-06-21-emprestimos-pos-execucao.md`](sessions/2026-06-21-emprestimos-pos-execucao.md) — pós-execução da refatoração 1
+  - [`2026-06-25-emprestimos-pos-execucao-consolidada.md`](sessions/2026-06-25-emprestimos-pos-execucao-consolidada.md) — pós-execução consolidada (refatorações 2+3 + features + bug fix)
+- **Glossário:**
+  - [`context/glossary-emprestimos.md`](context/glossary-emprestimos.md) — termos e conceitos do módulo
+- **Playbooks relacionados:**
+  - [`playbooks/debug-campos-descartados-mongoose-strict.md`](playbooks/debug-campos-descartados-mongoose-strict.md) — como debugar campos descartados pelo Mongoose strict (lição aprendida na sessão de 2026-06-25)
+
+### Módulo de Design System / Tema
+- **ADRs:**
+  - [ADR-006](decisions/2026-06-23-tokens-estrutura-theme-pasta.md) — Estrutura de tokens (`src/theme/`)
+  - [ADR-007](decisions/2026-06-23-mui-fonte-verdade-componentes.md) — Tema MUI como fonte de verdade
+  - [ADR-008](decisions/2026-06-23-glassmorphism-exige-gradiente-vibrante.md) — Glassmorphism exige gradiente vibrante
+  - [ADR-009](decisions/2026-06-23-tailwind-important-false-tokens-unica.md) — Tailwind `important: false`
+  - [ADR-010](decisions/2026-06-23-migracao-app-css-tokens.md) — Migração do App.css para tokens
+  - [ADR-011](decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md) — Gradiente do body: split `GlobalStyles` + `MuiCssBaseline`
+  - [ADR-012](decisions/2026-06-23-css-variable-para-cores-presas-em-dark-mode.md) — Elementos com cor presa de wrappers globais
+- **Sessões:**
+  - [`2026-06-23-modernizacao-visual-design.md`](sessions/2026-06-23-modernizacao-visual-design.md) — design da modernização visual
+  - [`2026-06-23-modernizacao-visual-plano.md`](sessions/2026-06-23-modernizacao-visual-plano.md) — plano de execução
+  - [`2026-06-23-modernizacao-visual-pos-execucao.md`](sessions/2026-06-23-modernizacao-visual-pos-execucao.md) — pós-execução
+  - [`2026-06-23-migracao-app-css-plano.md`](sessions/2026-06-23-migracao-app-css-plano.md) — plano da migração App.css → tokens
+- **Playbook:**
+  - [`playbooks/debug-cores-presas-dark-mode.md`](playbooks/debug-cores-presas-dark-mode.md) — como debugar cores presas em dark mode
+
+### Setup inicial e configurações
+- [`2026-06-21-setup-inicial.md`](sessions/2026-06-21-setup-inicial.md) — setup inicial do vault e dos agentes
+- [`2026-06-21-consolidacao-permissoes.md`](sessions/2026-06-21-consolidacao-permissoes.md) — permissões dos agentes
+- [`2026-06-21-teste-permissao.md`](sessions/2026-06-21-teste-permissao.md) — teste de permissões
+- [`2026-06-21-incidente-loop-login.md`](sessions/2026-06-21-incidente-loop-login.md) — incidente de loop no login
+- [`2026-06-21-commits-sem-corpo-powershell.md`](decisions/2026-06-21-commits-sem-corpo-powershell.md) — ADR sobre commits sem corpo
+- [`2026-06-21-sintaxe-permissoes-agentes-opencode.md`](decisions/2026-06-21-sintaxe-permissoes-agentes-opencode.md) — ADR sobre sintaxe de permissões
+- [`2026-06-21-estrategia-skills-forcar-vs-opcional.md`](decisions/2026-06-21-estrategia-skills-forcar-vs-opcional.md) — ADR sobre estratégia de skills
+- [`2026-06-21-skills-carregadas-sob-demanda.md`](decisions/2026-06-21-skills-carregadas-sob-demanda.md) — ADR sobre carregamento de skills
+- [`2026-06-21-usar-vault-como-memoria.md`](decisions/2026-06-21-usar-vault-como-memoria.md) — ADR sobre usar o vault como memória
 
 ### `decisions/` — ADRs (Architecture Decision Records)
 
@@ -229,5 +278,5 @@ A estrutura atual (4 pastas) é um **começo**, não uma camisa-de-força. Se vo
 ## Status
 
 - **Criado em:** 2026-06-21
-- **Última atualização:** 2026-06-21
+- **Última atualização:** 2026-06-25 (índice por módulo + ADRs de Empréstimos)
 - **Mantido por:** Alisson + newapp-planner
