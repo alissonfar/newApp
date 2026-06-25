@@ -11,7 +11,6 @@ const EmprestimoSchema = new mongoose.Schema({
   pessoaNomeSnapshot: { type: String, required: true, trim: true },
   pessoaContatoSnapshot: { type: String, default: null },
 
-  valorEsperadoRetorno: { type: Number, required: true, min: 0 },
   tipoRetorno: { type: String, enum: TIPOS_RETORNO, required: true, default: 'valor_fixo' },
 
   prazoFinal: { type: Date, required: true },

@@ -3,17 +3,17 @@ const mongoose = require('mongoose');
 const Transacao = require('../models/transacao');
 const { TIPOS_RETORNO, STATUS_EMPRESTIMO } = require('../models/emprestimo');
 
+/**
+ * Valida os dados de criação/edição de um Empréstimo.
+ *
+ * A partir do design 2026-06-24, `valorEsperadoRetorno` NÃO é mais campo do
+ * Empréstimo — ele migrou para a Transação. Por isso esta validação não exige
+ * nem valida esse campo aqui.
+ */
 function validarDadosEmprestimo(dados, { parcial = false } = {}) {
   const erros = [];
   if (!parcial || dados.pessoaId !== undefined) {
     if (!dados.pessoaId) erros.push('pessoaId é obrigatório.');
-  }
-  if (!parcial || dados.valorEsperadoRetorno !== undefined) {
-    if (dados.valorEsperadoRetorno === undefined || dados.valorEsperadoRetorno === null) {
-      erros.push('valorEsperadoRetorno é obrigatório.');
-    } else if (Number(dados.valorEsperadoRetorno) < 0) {
-      erros.push('valorEsperadoRetorno não pode ser negativo.');
-    }
   }
   if (!parcial || dados.tipoRetorno !== undefined) {
     if (dados.tipoRetorno !== undefined && !TIPOS_RETORNO.includes(dados.tipoRetorno)) {
@@ -55,26 +55,53 @@ async function calcularTotais(emprestimoId, usuarioId) {
     else if (r._id === 'recebivel') totalReceived = r.total;
   }
 
+  // Soma esperada: apenas TXs de GASTO ativas com valorEsperadoRetorno setado.
+  // Cada TX carrega o seu próprio "quanto espero receber de volta dela".
+  const esperadoAgg = await Transacao.aggregate([
+    {
+      $match: {
+        emprestimoId: objectId,
+        usuario: new mongoose.Types.ObjectId(usuarioId),
+        status: 'ativo',
+        tipo: 'gasto',
+        valorEsperadoRetorno: { $ne: null, $gt: 0 }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: '$valorEsperadoRetorno' }
+      }
+    }
+  ]);
+  const totalEsperado = (esperadoAgg[0] && esperadoAgg[0].total) ? esperadoAgg[0].total : 0;
+
   return {
     totalDisbursed,
     totalReceived,
-    saldoAReceber: 0,
-    lucro: 0
+    totalEsperado,
+    saldoAReceber: 0, // preenchido em quem consome (com `totalEsperado - totalReceived`)
+    lucro: 0          // preenchido em quem consome (com `totalEsperado - totalDisbursed`)
   };
 }
 
 async function obterEmprestimoComTotais(emprestimo) {
   const totais = await calcularTotais(emprestimo._id, emprestimo.usuario);
   const e = emprestimo.toObject ? emprestimo.toObject() : emprestimo;
-  const valorEsperado = e.valorEsperadoRetorno || 0;
-  const isQuitadoCalculado = totais.totalReceived >= valorEsperado && valorEsperado > 0;
+  const totalEsperado = totais.totalEsperado || 0;
+  const isQuitadoCalculado = totalEsperado > 0 && totais.totalReceived >= totalEsperado;
 
   return {
     ...e,
     totalDisbursed: totais.totalDisbursed,
     totalReceived: totais.totalReceived,
-    saldoAReceber: Math.max(0, valorEsperado - totais.totalReceived),
-    lucro: totais.totalReceived - totais.totalDisbursed,
+    totalEsperado,
+    // "Saldo a receber" = quanto ainda falta entrar vinculado a este Empréstimo
+    // (esperado - recebido, mínimo 0).
+    saldoAReceber: Math.max(0, totalEsperado - totais.totalReceived),
+    // "Lucro esperado" = quanto vai lucrar se receber tudo que espera
+    // (esperado - desembolsado). Pode ser negativo em casos degenerados.
+    lucro: totalEsperado - totais.totalDisbursed,
     isQuitadoCalculado
   };
 }
@@ -122,7 +149,7 @@ async function calcularLucro(emprestimoId, usuarioId) {
 
 /**
  * Recalcula o status do empréstimo aplicando regras de transição:
- *  - Se totalReceived >= valorEsperadoRetorno e status === 'ativo':
+ *  - Se totalReceived >= soma(valorEsperadoRetorno das TXs de gasto) e status === 'ativo':
  *      Transiciona para 'quitado' atomicamente (findOneAndUpdate com condição status='ativo'),
  *      gera/atualiza a transação de juros auto com o lucro realizado.
  *  - Se status === 'quitado' (independentemente do cálculo):
@@ -130,8 +157,10 @@ async function calcularLucro(emprestimoId, usuarioId) {
  *      (deleta se lucro <= 0, atualiza se mudou, mantém se igual).
  *  - Se status === 'cancelado': no-op.
  *
- * IMPORTANTE: a partir da FASE 4 do design doc, NÃO há mais auto-reversão
- * `quitado → ativo`. O usuário gerencia o status manualmente.
+ * A partir do design 2026-06-24:
+ *  - `valorEsperadoRetorno` mora nas TXs de gasto (não mais no Empréstimo).
+ *  - A soma esperada é calculada em `calcularTotais` (`totalEsperado`).
+ *  - NÃO há mais auto-reversão `quitado → ativo`.
  *
  * Esta função é idempotente e segura para ser chamada múltiplas vezes.
  */
@@ -144,7 +173,7 @@ async function recalcularStatus(emprestimoId, usuarioId) {
   if (emprestimo.status === 'cancelado') return emprestimo;
 
   const totais = await calcularTotais(emprestimoId, usuarioId);
-  const valorEsperado = emprestimo.valorEsperadoRetorno || 0;
+  const valorEsperado = totais.totalEsperado || 0;
   const atingiuQuitado = valorEsperado > 0 && totais.totalReceived >= valorEsperado;
   const desembolsoZeroEAtingiuQuitado = atingiuQuitado && (totais.totalDisbursed || 0) === 0;
 

@@ -40,13 +40,15 @@ exports.listar = async (req, res) => {
     const resultado = await Promise.all(
       emprestimos.map(async (e) => {
         const totais = await service.calcularTotais(e._id, e.usuario);
+        const totalEsperado = totais.totalEsperado || 0;
         return {
           ...e,
           totalDisbursed: totais.totalDisbursed,
           totalReceived: totais.totalReceived,
-          saldoAReceber: Math.max(0, (e.valorEsperadoRetorno || 0) - totais.totalReceived),
-          lucro: totais.totalReceived - totais.totalDisbursed,
-          isQuitadoCalculado: totais.totalReceived >= (e.valorEsperadoRetorno || 0) && (e.valorEsperadoRetorno || 0) > 0
+          totalEsperado,
+          saldoAReceber: Math.max(0, totalEsperado - totais.totalReceived),
+          lucro: totalEsperado - totais.totalDisbursed,
+          isQuitadoCalculado: totalEsperado > 0 && totais.totalReceived >= totalEsperado
         };
       })
     );
@@ -106,7 +108,8 @@ exports.criar = async (req, res) => {
       pessoaId: pessoa._id,
       pessoaNomeSnapshot: pessoa.nome,
       pessoaContatoSnapshot: pessoa.contato || null,
-      valorEsperadoRetorno: req.body.valorEsperadoRetorno,
+      // valorEsperadoRetorno não é mais campo do Empréstimo — vive na Transação
+      // (cada gasto vinculado carrega o seu próprio valorEsperadoRetorno).
       tipoRetorno: req.body.tipoRetorno || 'valor_fixo',
       prazoFinal: req.body.prazoFinal,
       observacao: req.body.observacao || null,
@@ -152,11 +155,13 @@ exports.atualizar = async (req, res) => {
       emprestimo.pessoaNomeSnapshot = pessoa.nome;
       emprestimo.pessoaContatoSnapshot = pessoa.contato || null;
     }
+    // valorEsperadoRetorno removido do Empréstimo (vive agora na Transação).
+    // Mantemos um guard pra rejeitar explicitamente o campo no payload — evita
+    // que código legado envie e confunda o backend.
     if (req.body.valorEsperadoRetorno !== undefined) {
-      if (req.body.valorEsperadoRetorno < 0) {
-        return res.status(400).json({ erro: 'valorEsperadoRetorno não pode ser negativo.' });
-      }
-      emprestimo.valorEsperadoRetorno = req.body.valorEsperadoRetorno;
+      return res.status(400).json({
+        erro: 'valorEsperadoRetorno não é mais campo do Empréstimo. Use o campo valorEsperadoRetorno da Transação ao criar/vincular uma despesa de Empréstimo.'
+      });
     }
     if (req.body.tipoRetorno !== undefined) {
       if (!service.TIPOS_RETORNO.includes(req.body.tipoRetorno)) {
@@ -173,7 +178,6 @@ exports.atualizar = async (req, res) => {
 
     const erros = service.validarDadosEmprestimo({
       pessoaId: emprestimo.pessoaId,
-      valorEsperadoRetorno: emprestimo.valorEsperadoRetorno,
       tipoRetorno: emprestimo.tipoRetorno,
       prazoFinal: emprestimo.prazoFinal
     }, { parcial: false });
@@ -229,7 +233,10 @@ exports.listarTransacoes = async (req, res) => {
       descricao: t.descricao,
       valor: t.valor,
       status: t.status,
-      emprestimoEhJurosAuto: !!t.emprestimoEhJurosAuto
+      emprestimoEhJurosAuto: !!t.emprestimoEhJurosAuto,
+      // A partir do design 2026-06-24, o esperado de retorno é por TX. Apenas
+      // faz sentido em `tipo: 'gasto'`; em recebimentos vem como null.
+      valorEsperadoRetorno: t.valorEsperadoRetorno != null ? t.valorEsperadoRetorno : null
     }));
 
     res.json({

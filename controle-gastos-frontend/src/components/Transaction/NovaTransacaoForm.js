@@ -119,18 +119,26 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       }
 
       let emprestimoIdParaTransacao = null;
+      let valorEsperadoRetornoParaTransacao = null;
       if (emprestimoForm.state.ativo) {
         if (emprestimoForm.state.modo === 'vincular') {
           emprestimoIdParaTransacao = emprestimoForm.state.emprestimoId;
         } else {
-          const valorEsperado = parseFloat(emprestimoForm.state.novoValorEsperado) || 0;
+          // A partir do design 2026-06-24, `valorEsperadoRetorno` migrou para
+          // a Transação. O Empréstimo agora é criado SEM esse campo, e o
+          // valor esperado desta TX específica vai no payload de criarTransacao.
           const novoEmp = await criarEmprestimo({
             pessoaId: emprestimoForm.state.pessoaId,
-            valorEsperadoRetorno: valorEsperado,
             tipoRetorno: emprestimoForm.state.novoTipoRetorno,
             prazoFinal: emprestimoForm.state.novoPrazoFinal
           });
           emprestimoIdParaTransacao = novoEmp._id || novoEmp.id;
+        }
+        // Captura o valor esperado que o usuário digitou (apenas faz sentido
+        // para gastos, mas o backend aceita e ignora em outros tipos).
+        const valorEsperadoNum = parseFloat(emprestimoForm.state.novoValorEsperado);
+        if (!isNaN(valorEsperadoNum) && valorEsperadoNum >= 0) {
+          valorEsperadoRetornoParaTransacao = valorEsperadoNum;
         }
       }
 
@@ -166,6 +174,10 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       if (contaConjuntaPayload) transacaoData.contaConjunta = contaConjuntaPayload;
       if (emprestimoIdParaTransacao) transacaoData.emprestimoId = emprestimoIdParaTransacao;
       else transacaoData.emprestimoId = null;
+      // valorEsperadoRetorno vai na Transação (não no Empréstimo).
+      if (emprestimoIdParaTransacao && valorEsperadoRetornoParaTransacao != null) {
+        transacaoData.valorEsperadoRetorno = valorEsperadoRetornoParaTransacao;
+      }
 
       let response;
       if (formState.isImportada && formState.importacaoId) {

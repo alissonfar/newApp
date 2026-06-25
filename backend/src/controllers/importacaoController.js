@@ -31,10 +31,14 @@ function chaveAgrupamentoEmprestimo(cfg) {
   const prazo = cfg.prazoFinal instanceof Date
     ? cfg.prazoFinal.getTime()
     : (cfg.prazoFinal ? new Date(cfg.prazoFinal).getTime() : 0);
+  // A partir do design 2026-06-24, `valorEsperadoRetorno` foi MOVIDO da chave
+  // de agrupamento: ele agora mora na Transação (cada gasto tem o seu). Se
+  // incluíssemos aqui, TIs com mesmo pessoa+tipo+prazo mas valores esperados
+  // diferentes virariam Empréstimos separados. Removemos para agrupar apenas
+  // pelo que é estável no Empréstimo (pessoa, tipo de retorno, prazo).
   return [
     pessoa,
     cfg.tipoRetorno || 'valor_fixo',
-    cfg.valorEsperadoRetorno != null ? Number(cfg.valorEsperadoRetorno) : 0,
     prazo
   ].join('|');
 }
@@ -78,7 +82,9 @@ async function criarEmprestimosParaImportacao(transacoesImportadas, usuarioId) {
       pessoaId: pessoa._id,
       pessoaNomeSnapshot: pessoa.nome,
       pessoaContatoSnapshot: pessoa.contato || null,
-      valorEsperadoRetorno: cfg.valorEsperadoRetorno != null ? Number(cfg.valorEsperadoRetorno) : 0,
+      // valorEsperadoRetorno removido do payload do Empréstimo — agora vive
+      // na Transação (cada gasto carrega o seu próprio). É persistido na TX
+      // mais adiante, via `montarTransacao`.
       tipoRetorno: cfg.tipoRetorno || 'valor_fixo',
       prazoFinal: cfg.prazoFinal || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       observacao: cfg.observacao || `Criado a partir de importação em ${new Date().toISOString().split('T')[0]}`,
@@ -620,6 +626,14 @@ class ImportacaoController {
                     usuario: ti.usuario,
                     subconta: ti.subconta || null,
                     emprestimoId: ti.emprestimoId || null,
+                    // valorEsperadoRetorno agora vive na Transação. Lê do
+                    // `emprestimoConfig` da TI (caso o usuário tenha preenchido
+                    // na revisão). Apenas se for gasto com empréstimo vinculado.
+                    valorEsperadoRetorno: (ti.tipo === 'gasto' && ti.emprestimoId
+                      && ti.emprestimoConfig && ti.emprestimoConfig.valorEsperadoRetorno != null
+                      && Number(ti.emprestimoConfig.valorEsperadoRetorno) >= 0)
+                      ? Number(ti.emprestimoConfig.valorEsperadoRetorno)
+                      : null,
                     deduplicationKey: dedupKeyOverride != null ? dedupKeyOverride : (ti.deduplicationKey || null),
                     isInstallment: !!installmentGroupId,
                     installmentGroupId: installmentGroupId || null,

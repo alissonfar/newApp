@@ -146,6 +146,13 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
       dataImportacao: transacao.dataImportacao || new Date().toISOString(),
       usuario: transacao.usuario,
       emprestimoId,
+      // valorEsperadoRetorno na Transação: a partir do design 2026-06-24,
+      // esse campo vai pra TX criada na importação, não pro Empréstimo.
+      // Mantemos o mesmo formato em `emprestimoConfig.valorEsperadoRetorno`
+      // para que `criarEmprestimosParaImportacao` (backend) o envie pra TX.
+      valorEsperadoRetorno: (emprestimoConfig && emprestimoConfig.valorEsperadoRetorno != null
+        ? Number(emprestimoConfig.valorEsperadoRetorno)
+        : null),
       emprestimoConfig
     };
 

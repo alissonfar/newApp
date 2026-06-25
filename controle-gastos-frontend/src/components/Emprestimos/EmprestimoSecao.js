@@ -165,7 +165,9 @@ const EmprestimoSecao = ({ form, valorTotal, tipoTransacao }) => {
                       <option value="">Selecione...</option>
                       {state.emprestimosPessoa.map((emp) => (
                         <option key={emp.id} value={emp.id}>
-                          {formatarMoedaBRL(emp.valorEsperadoRetorno)} — {labelTipoRetorno(emp.tipoRetorno)} (prazo {emp.prazoFinal ? formatDateBR(emp.prazoFinal) : '—'})
+                          {/* Exibe o total esperado agregado do Empréstimo (soma
+                              dos valorEsperadoRetorno das TXs vinculadas). */}
+                          {formatarMoedaBRL(emp.totalEsperado || 0)} — {labelTipoRetorno(emp.tipoRetorno)} (prazo {emp.prazoFinal ? formatDateBR(emp.prazoFinal) : '—'})
                         </option>
                       ))}
                     </select>
@@ -173,21 +175,6 @@ const EmprestimoSecao = ({ form, valorTotal, tipoTransacao }) => {
                 </div>
               ) : (
                 <div className="emp-campos-novo">
-                  <div className="emp-campo">
-                    <label>Valor esperado de retorno:</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={state.novoValorEsperado}
-                      onChange={(e) => setters.setNovoValorEsperado(e.target.value)}
-                      placeholder="0,00"
-                      tabIndex={97}
-                    />
-                    <small>
-                      Sugestão: mesmo valor desta transação ({formatarMoedaBRL(valorTotal || 0)}). Você pode ajustar.
-                    </small>
-                  </div>
                   <div className="emp-campo">
                     <label>Tipo de retorno:</label>
                     <select
@@ -209,6 +196,29 @@ const EmprestimoSecao = ({ form, valorTotal, tipoTransacao }) => {
                       tabIndex={99}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Valor esperado de retorno — a partir do design 2026-06-24,
+                  cada TX de gasto tem seu próprio valorEsperadoRetorno
+                  (saiu do schema Empréstimo). Por isso o campo aparece em
+                  AMBOS os modos (vincular e criar), mas só para gastos
+                  (em recebimentos, valor esperado não faz sentido). */}
+              {tipoTransacao === 'gasto' && (
+                <div className="emp-campo">
+                  <label>Valor esperado de retorno:</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={state.novoValorEsperado}
+                    onChange={(e) => setters.setNovoValorEsperado(e.target.value)}
+                    placeholder="0,00"
+                    tabIndex={state.modo === 'vincular' ? 98 : 97}
+                  />
+                  <small>
+                    Sugestão: mesmo valor desta transação ({formatarMoedaBRL(valorTotal || 0)}). Você pode ajustar.
+                  </small>
                 </div>
               )}
             </>

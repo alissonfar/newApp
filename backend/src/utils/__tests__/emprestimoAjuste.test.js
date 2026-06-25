@@ -29,7 +29,8 @@ function makeEmprestimo(overrides = {}) {
     _id: new mongoose.Types.ObjectId(),
     usuario: new mongoose.Types.ObjectId(USER_ID),
     pessoaNomeSnapshot: 'Guilherme',
-    valorEsperadoRetorno: 850,
+    // valorEsperadoRetorno removido do Empréstimo no design 2026-06-24.
+    // O valor esperado vive agora em Transacao.valorEsperadoRetorno.
     ...overrides
   };
 }

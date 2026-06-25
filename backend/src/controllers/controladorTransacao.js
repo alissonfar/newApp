@@ -508,6 +508,15 @@ exports.criarTransacao = async (req, res) => {
         await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
         novaTransacao.emprestimoId = req.body.emprestimoId;
       }
+      // valorEsperadoRetorno é persistido na Transação (não no Empréstimo).
+      // Apenas faz sentido para gastos com emprestimoId vinculado; o service
+      // de Empréstimos ignora o campo para outros tipos.
+      if (req.body.valorEsperadoRetorno !== undefined && req.body.valorEsperadoRetorno !== null) {
+        const ver = Number(req.body.valorEsperadoRetorno);
+        if (!isNaN(ver) && ver >= 0) {
+          novaTransacao.valorEsperadoRetorno = ver;
+        }
+      }
       await novaTransacao.save();
       if (novaTransacao.emprestimoId) {
         await emprestimoService.recalcularStatus(novaTransacao.emprestimoId, req.userId);
@@ -622,6 +631,16 @@ exports.criarTransacao = async (req, res) => {
         await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
         transacoesParaInserir.forEach((t) => { t.emprestimoId = req.body.emprestimoId; });
       }
+      // valorEsperadoRetorno na Transação: replica em todas as parcelas para
+      // que cada uma carregue sua própria expectativa. (No modelo atual, todas
+      // as parcelas de um mesmo parcelamento normalmente têm o mesmo valor
+      // esperado — manter consistência.)
+      if (req.body.valorEsperadoRetorno !== undefined && req.body.valorEsperadoRetorno !== null) {
+        const ver = Number(req.body.valorEsperadoRetorno);
+        if (!isNaN(ver) && ver >= 0) {
+          transacoesParaInserir.forEach((t) => { t.valorEsperadoRetorno = ver; });
+        }
+      }
 
       const transacoesCriadas = await Transacao.insertMany(transacoesParaInserir, { session });
       await session.commitTransaction();
@@ -695,6 +714,18 @@ exports.atualizarTransacao = async (req, res) => {
         await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
       }
       transacao.emprestimoId = req.body.emprestimoId || null;
+      if (req.body.valorEsperadoRetorno !== undefined) {
+        if (req.body.valorEsperadoRetorno === null) {
+          transacao.valorEsperadoRetorno = null;
+        } else {
+          const ver = Number(req.body.valorEsperadoRetorno);
+          if (!isNaN(ver) && ver >= 0) {
+            transacao.valorEsperadoRetorno = ver;
+          } else if (ver < 0) {
+            return res.status(400).json({ erro: 'valorEsperadoRetorno não pode ser negativo.' });
+          }
+        }
+      }
       await transacao.save();
       const novoId = transacao.emprestimoId ? transacao.emprestimoId.toString() : null;
       if (emprestimoIdAntes && emprestimoIdAntes !== novoId) {
@@ -704,6 +735,18 @@ exports.atualizarTransacao = async (req, res) => {
         await emprestimoService.recalcularStatus(novoId, req.userId);
       }
     } else {
+      if (req.body.valorEsperadoRetorno !== undefined) {
+        if (req.body.valorEsperadoRetorno === null) {
+          transacao.valorEsperadoRetorno = null;
+        } else {
+          const ver = Number(req.body.valorEsperadoRetorno);
+          if (!isNaN(ver) && ver >= 0) {
+            transacao.valorEsperadoRetorno = ver;
+          } else if (ver < 0) {
+            return res.status(400).json({ erro: 'valorEsperadoRetorno não pode ser negativo.' });
+          }
+        }
+      }
       await transacao.save();
       // Se a transação tem emprestimoId e o usuário alterou valor/tipo/data/etc,
       // é necessário recalcular pois isso pode mudar o status do empréstimo.

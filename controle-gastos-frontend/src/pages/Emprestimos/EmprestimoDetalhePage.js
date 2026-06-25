@@ -7,7 +7,8 @@ import {
   obterEmprestimo,
   atualizarEmprestimo,
   cancelarEmprestimo,
-  obterTransacoesEmprestimo
+  obterTransacoesEmprestimo,
+  atualizarTransacao
 } from '../../api';
 import {
   formatarMoedaBRL,
@@ -75,6 +76,30 @@ const EmprestimoDetalhePage = () => {
     }
   };
 
+  const handleDesvincular = async (mov) => {
+    const result = await Swal.fire({
+      title: 'Excluir transação do empréstimo?',
+      html: `A transação <strong>${mov.descricao || '—'}</strong> no valor de <strong>${formatarMoedaBRL(mov.valor)}</strong> será desvinculada deste empréstimo.<br/>A transação permanece ativa normalmente.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, desvincular',
+      cancelButtonText: 'Cancelar'
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await atualizarTransacao(mov.id || mov._id, {
+        emprestimoId: null,
+        valorEsperadoRetorno: null
+      });
+      toast.success('Transação desvinculada do empréstimo.');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Erro ao desvincular.');
+    }
+  };
+
   if (loading) return <div className="emp-detalhe-loading">Carregando...</div>;
   if (!emprestimo) return (
     <div className="emp-detalhe-empty">
@@ -136,7 +161,7 @@ const EmprestimoDetalhePage = () => {
       <div className="emp-detalhe-info-grid">
         <div className="emp-detalhe-info">
           <span className="emp-detalhe-label">Valor esperado</span>
-          <span className="emp-detalhe-valor">{formatarMoedaBRL(emprestimo.valorEsperadoRetorno)}</span>
+          <span className="emp-detalhe-valor">{formatarMoedaBRL(emprestimo.totalEsperado || 0)}</span>
         </div>
         <div className="emp-detalhe-info">
           <span className="emp-detalhe-label">Prazo final</span>
@@ -168,8 +193,8 @@ const EmprestimoDetalhePage = () => {
           <span className="emp-total-valor">{formatarMoedaBRL(emprestimo.saldoAReceber || 0)}</span>
         </div>
         <div className={`emp-total-card ${emprestimo.lucro >= 0 ? 'emp-total-pos' : 'emp-total-neg'}`}>
-          <span className="emp-total-label">{emprestimo.lucro >= 0 ? 'Lucro' : 'Prejuízo'}</span>
-          <span className="emp-total-valor">{formatarMoedaBRL(Math.abs(emprestimo.lucro || 0))}</span>
+          <span className="emp-total-label">Lucro esperado</span>
+          <span className="emp-total-valor">{formatarMoedaBRL(emprestimo.lucro || 0)}</span>
         </div>
       </div>
 
@@ -185,7 +210,9 @@ const EmprestimoDetalhePage = () => {
                 <th>Tipo</th>
                 <th>Descrição</th>
                 <th className="emp-th-valor">Valor</th>
+                <th className="emp-th-valor">Esperado</th>
                 <th>Status</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -199,6 +226,11 @@ const EmprestimoDetalhePage = () => {
                   </td>
                   <td>{m.descricao || '—'}</td>
                   <td className="emp-td-valor">{formatarMoedaBRL(m.valor)}</td>
+                  <td className="emp-td-valor">
+                    {m.tipo === 'gasto' && m.valorEsperadoRetorno != null
+                      ? formatarMoedaBRL(m.valorEsperadoRetorno)
+                      : '—'}
+                  </td>
                   <td>
                     {m.status === 'estornado' ? (
                       <span className="emp-status-estornado">Estornada</span>
@@ -206,15 +238,42 @@ const EmprestimoDetalhePage = () => {
                       <span className="emp-status-ok">Ativa</span>
                     )}
                   </td>
+                  <td className="emp-td-acoes">
+                    {m.emprestimoEhJurosAuto ? (
+                      <span
+                        className="emp-acao-disabled"
+                        title="Transação de juros auto — não pode ser desvinculada manualmente."
+                        aria-label="Transação de juros auto — não pode ser desvinculada manualmente."
+                      >
+                        🔒
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleDesvincular(m)}
+                        className="emp-btn-desvincular"
+                        title="Excluir do empréstimo"
+                      >
+                        🗑️ Excluir do empréstimo
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3}><strong>Totais</strong></td>
+                <td colSpan={6}><strong>Totais</strong></td>
                 <td className="emp-td-valor">
                   <strong>{formatarMoedaBRL(
                     movimentacoes.reduce((acc, m) => acc + (m.valor || 0), 0)
+                  )}</strong>
+                </td>
+                <td className="emp-td-valor">
+                  <strong>{formatarMoedaBRL(
+                    movimentacoes.reduce(
+                      (acc, m) => acc + ((m.tipo === 'gasto' && m.valorEsperadoRetorno) ? m.valorEsperadoRetorno : 0),
+                      0
+                    )
                   )}</strong>
                 </td>
                 <td></td>

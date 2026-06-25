@@ -29,7 +29,9 @@ const EmprestimosPage = () => {
   const totais = useMemo(() => {
     return emprestimos.reduce(
       (acc, e) => {
-        acc.totalEsperado += Number(e.valorEsperadoRetorno || 0);
+        // totalEsperado agora vem do backend (soma dos valorEsperadoRetorno
+        // das TXs de gasto ativas vinculadas ao Empréstimo).
+        acc.totalEsperado += Number(e.totalEsperado || 0);
         acc.totalRecebido += Number(e.totalReceived || 0);
         acc.totalDesembolsado += Number(e.totalDisbursed || 0);
         acc.lucro += Number(e.lucro || 0);
@@ -89,7 +91,7 @@ const EmprestimosPage = () => {
             <span className="emp-resumo-valor">{formatarMoedaBRL(totais.totalRecebido)}</span>
           </div>
           <div className="emp-resumo-card emp-resumo-lucro">
-            <span className="emp-resumo-label">{totais.lucro >= 0 ? 'Lucro' : 'Prejuízo'}</span>
+            <span className="emp-resumo-label">Lucro esperado</span>
             <span className="emp-resumo-valor">{formatarMoedaBRL(totais.lucro)}</span>
           </div>
         </div>
@@ -115,7 +117,7 @@ const EmprestimosPage = () => {
                 <div className="emprestimo-card-info">
                   <div className="emp-info-row">
                     <span>Esperado:</span>
-                    <strong>{formatarMoedaBRL(e.valorEsperadoRetorno)}</strong>
+                    <strong>{formatarMoedaBRL(e.totalEsperado || 0)}</strong>
                   </div>
                   <div className="emp-info-row">
                     <span>Desembolsado:</span>
@@ -137,8 +139,11 @@ const EmprestimosPage = () => {
                 {e.status !== 'cancelado' && (
                   <div className="emprestimo-card-footer">
                     {e.lucro !== 0 && (
-                      <span className={e.lucro >= 0 ? 'emp-lucro-pos' : 'emp-lucro-neg'}>
-                        {e.lucro >= 0 ? '↗' : '↘'} {formatarMoedaBRL(Math.abs(e.lucro))}
+                      <span
+                        className={e.lucro >= 0 ? 'emp-lucro-pos' : 'emp-lucro-neg'}
+                        title="Lucro esperado = soma(valorEsperadoRetorno) - soma(desembolsos)"
+                      >
+                        {e.lucro >= 0 ? '↗' : '↘'} {formatarMoedaBRL(e.lucro)} <small>Lucro esperado</small>
                       </span>
                     )}
                     {e.saldoAReceber > 0 && (

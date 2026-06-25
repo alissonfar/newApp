@@ -12,6 +12,7 @@
 | 006-emprestimo-transacao-importada.js | Adiciona `emprestimoId` em TransacaoImportada + sub-schema `emprestimoConfig` + índices sparse |
 | 007-limpar-ledger-pluggy.js | Limpa LedgerPatrimonial corrompido por sync Pluggy + reseta saldoAtual das subcontas afetadas |
 | 008-emprestimo-simplificacao.js | Normaliza Empréstimos e TIs: `tipoRetorno: juros_*` → `valor_fixo`, `direcao: recebido` → `concedido`, remove `taxaJurosPercentual`/`valorJurosFixo`. Idempotente. |
+| 009-emprestimo-limpeza.js | Limpa Empréstimos (delete) e desvincula TXs (`emprestimoId=null`) e TIs (`emprestimoConfig.ativo=false`). Prepara terreno para mover `valorEsperadoRetorno` do Emprestimo para a Transacao. Idempotente. |
 
 ---
 

@@ -3,9 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { listarPessoas } from '../../api';
 
+// A partir do design 2026-06-24, `valorEsperadoRetorno` migrou para a Transação.
+// Este formulário do Empréstimo agora cuida apenas de: pessoa, tipo de retorno,
+// prazo final e observação. O valor esperado de cada gasto é preenchido na
+// seção de Empréstimo do formulário da Transação (`EmprestimoSecao`).
 const ESTADO_INICIAL = {
   pessoaId: '',
-  valorEsperadoRetorno: '',
   tipoRetorno: 'valor_fixo',
   prazoFinal: '',
   observacao: ''
@@ -36,11 +39,6 @@ const EmprestimoForm = ({ inicial, onSubmit, onCancel, somenteEdicaoParcial = fa
       toast.error('Selecione uma pessoa.');
       return;
     }
-    const valor = parseFloat(form.valorEsperadoRetorno);
-    if (valor == null || isNaN(valor) || valor < 0) {
-      toast.error('Informe o valor esperado de retorno (>= 0).');
-      return;
-    }
     if (!form.prazoFinal) {
       toast.error('Informe o prazo final.');
       return;
@@ -50,10 +48,10 @@ const EmprestimoForm = ({ inicial, onSubmit, onCancel, somenteEdicaoParcial = fa
     try {
       const payload = {
         pessoaId: form.pessoaId,
-        valorEsperadoRetorno: valor,
         tipoRetorno: form.tipoRetorno,
         prazoFinal: form.prazoFinal,
         observacao: form.observacao || null
+        // valorEsperadoRetorno removido — agora é campo da Transação.
       };
       await onSubmit(payload);
     } catch (err) {
@@ -83,17 +81,6 @@ const EmprestimoForm = ({ inicial, onSubmit, onCancel, somenteEdicaoParcial = fa
       </div>
 
       <div className="emp-form-row">
-        <div className="emp-form-group">
-          <label>Valor esperado de retorno *</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.valorEsperadoRetorno}
-            onChange={(e) => handleChange('valorEsperadoRetorno', e.target.value)}
-            placeholder="Ex: 850.00"
-          />
-        </div>
         <div className="emp-form-group">
           <label>Prazo final *</label>
           <input
