@@ -257,3 +257,35 @@
 }
 
 .emp-detalhe-explicacao li { margin-bottom: 4px; }
+
+/* Coluna Ações da tabela de movimentações */
+.emp-td-acoes {
+  white-space: nowrap;
+  text-align: right !important;
+}
+
+.emp-btn-desvincular {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.emp-btn-desvincular:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.emp-acao-disabled {
+  color: #9ca3af;
+  font-size: 14px;
+  cursor: not-allowed;
+  display: inline-block;
+  padding: 4px 8px;
+}
