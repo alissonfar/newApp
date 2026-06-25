@@ -73,8 +73,11 @@ exports.obterPorId = async (req, res) => {
     });
 
     const transacoes = await Transacao.find({
-      emprestimoId: emprestimo._id,
-      usuario: req.userId
+      usuario: req.userId,
+      $or: [
+        { emprestimoId: emprestimo._id },                    // caminho legado (TX-level)
+        { 'pagamentos.emprestimoId': emprestimo._id }        // caminho novo (pagamento-level)
+      ]
     })
       .sort({ data: 1, createdAt: 1 })
       .lean();
@@ -219,29 +222,78 @@ exports.listarTransacoes = async (req, res) => {
     const emprestimo = await Emprestimo.findOne({ _id: oid, usuario: req.userId });
     if (!emprestimo) return res.status(404).json({ erro: 'Empréstimo não encontrado.' });
 
-    const transacoes = await Transacao.find({
+    // CAMINHO A — TX-level legado (t.emprestimoId = X): 1 linha por TX.
+    const txsLegado = await Transacao.find({
       emprestimoId: emprestimo._id,
       usuario: req.userId
     })
       .sort({ data: 1, createdAt: 1 })
       .lean();
 
-    const detalhado = transacoes.map((t) => ({
-      id: t._id,
-      data: t.data,
-      tipo: t.tipo,
-      descricao: t.descricao,
-      valor: t.valor,
-      status: t.status,
-      emprestimoEhJurosAuto: !!t.emprestimoEhJurosAuto,
-      // A partir do design 2026-06-24, o esperado de retorno é por TX. Apenas
-      // faz sentido em `tipo: 'gasto'`; em recebimentos vem como null.
-      valorEsperadoRetorno: t.valorEsperadoRetorno != null ? t.valorEsperadoRetorno : null
-    }));
+    // CAMINHO B — Pagamento-level novo (pagamentos[].emprestimoId = X): 1
+    // linha por PAGAMENTO emprestado. Exclui TXs já contadas no caminho A
+    // (cobre t.emprestimoId = null e t.emprestimoId apontando pra outro
+    // empréstimo) pra não duplicar.
+    const txsPagamento = await Transacao.find({
+      usuario: req.userId,
+      'pagamentos.emprestimoId': emprestimo._id,
+      emprestimoId: { $ne: emprestimo._id }
+    })
+      .sort({ data: 1, createdAt: 1 })
+      .lean();
+
+    const movimentacoes = [];
+
+    // Caminho A: 1 linha por TX (comportamento legado preservado)
+    for (const t of txsLegado) {
+      movimentacoes.push({
+        id: t._id,
+        transacaoId: t._id,
+        pagamentoIndex: null,        // null = caminho legado (TX inteira)
+        pagamentoPessoa: null,
+        data: t.data,
+        tipo: t.tipo,
+        descricao: t.descricao,
+        valor: t.valor,              // valor da TX (não tem "pagamento individual")
+        status: t.status,
+        emprestimoEhJurosAuto: !!t.emprestimoEhJurosAuto,
+        valorEsperadoRetorno: t.valorEsperadoRetorno != null ? t.valorEsperadoRetorno : null
+      });
+    }
+
+    // Caminho B: 1 linha POR PAGAMENTO que tem emprestimoId
+    for (const t of txsPagamento) {
+      if (!Array.isArray(t.pagamentos)) continue;
+      for (let i = 0; i < t.pagamentos.length; i++) {
+        const p = t.pagamentos[i];
+        if (p && p.emprestimoId && String(p.emprestimoId) === String(emprestimo._id)) {
+          movimentacoes.push({
+            id: `${t._id}-${i}`,       // ID composto: TX_id + index do pagamento
+            transacaoId: t._id,
+            pagamentoIndex: i,         // número = caminho novo (pagamento individual)
+            pagamentoPessoa: p.pessoa || null,
+            data: t.data,
+            tipo: t.tipo,
+            descricao: t.descricao,
+            valor: p.valor,            // valor DO PAGAMENTO (não da TX)
+            status: t.status,
+            emprestimoEhJurosAuto: !!t.emprestimoEhJurosAuto,
+            // valorEsperadoRetorno do pagamento (campo novo por-pagamento do
+            // design 2026-06-24). Se o pagamento não tiver, cai pro valor da TX.
+            valorEsperadoRetorno: p.valorEsperadoRetorno != null
+              ? p.valorEsperadoRetorno
+              : (t.valorEsperadoRetorno != null ? t.valorEsperadoRetorno : null)
+          });
+        }
+      }
+    }
+
+    // Ordenar por data crescente (mantém determinismo entre chamadas)
+    movimentacoes.sort((a, b) => new Date(a.data) - new Date(b.data));
 
     res.json({
       emprestimo: await service.obterEmprestimoComTotais(emprestimo),
-      transacoes: detalhado
+      transacoes: movimentacoes
     });
   } catch (error) {
     console.error('Erro ao listar transações do empréstimo:', error);

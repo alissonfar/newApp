@@ -149,7 +149,8 @@ function gerarTransacoesComParcelamento({ pagamentos, startDate, baseTransacao }
           installmentNumber: parcela.installmentNumber,
           installmentTotal: pag.parcelamento.quantidade,
           installmentGroupId: planGroupId,
-          installmentIntervalDays: pag.parcelamento.intervaloDias || 30
+          installmentIntervalDays: pag.parcelamento.intervaloDias || 30,
+          emprestimoId: pag.emprestimoId || null
         });
       }
     } else {
@@ -162,7 +163,8 @@ function gerarTransacoesComParcelamento({ pagamentos, startDate, baseTransacao }
         installmentNumber: null,
         installmentTotal: null,
         installmentGroupId: null,
-        installmentIntervalDays: null
+        installmentIntervalDays: null,
+        emprestimoId: pag.emprestimoId || null
       });
     }
   }
@@ -194,6 +196,10 @@ function gerarTransacoesComParcelamento({ pagamentos, startDate, baseTransacao }
         pag.installmentNumber = e.installmentNumber;
         pag.installmentTotal = e.installmentTotal;
         pag.installmentGroupId = e.installmentGroupId;
+      }
+      // Replica o vínculo pagamento-level de Empréstimo para cada parcela.
+      if (e.emprestimoId) {
+        pag.emprestimoId = e.emprestimoId;
       }
       return pag;
     });

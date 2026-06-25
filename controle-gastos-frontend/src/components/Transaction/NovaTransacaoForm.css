@@ -533,6 +533,34 @@
   margin: 0;
 }
 
+/* Empréstimo inline por pagamento (caminho novo, 2+ pagamentos) */
+.pagamento-emprestimo {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--cor-fundo);
+  border-radius: var(--borda-radius);
+  font-size: 0.82rem;
+  border-left: 2px solid var(--cor-primaria);
+}
+
+.pagamento-emprestimo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.pagamento-emprestimo-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 .parcelamento-campos-inline {
   display: flex;
   gap: 8px;

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Tooltip } from '@mui/material';
 import TagSelector from './TagSelector';
+import EmprestimoFormFields from '../Emprestimos/EmprestimoFormFields';
 import { formatDateBR } from '../../utils/dateUtils';
+import '../Emprestimos/EmprestimoSecao.css';
 
 export const TAB_PAGAMENTOS = 'pagamentos';
 
@@ -17,7 +19,7 @@ const ParcelaPreview = ({ preview, index }) => {
   return (
     <div className="preview-parcelas-mini">
       <div className="preview-parcelas-mini-header">Preview das parcelas</div>
-      <div className="preview-parcelas-table-wrapper">
+      <div className="preview-parcelas-mini-table-wrapper">
         <table className="preview-parcelas-table">
           <thead>
             <tr>
@@ -65,14 +67,46 @@ const TabPagamentos = ({
   valorTotal,
   showValidationWarning,
   soma,
-  saldoRestante
+  saldoRestante,
+  // Empréstimo por pagamento (caminho novo)
+  tipoTransacao,
+  pessoas = [],
+  loadingPessoas = false,
+  adicionarPessoa,
+  loadEmprestimosPessoa,
+  onPagamentoEmprestimoFieldChange,
+  setPagamentoEmprestimosPessoa,
+  setPagamentoEmprestimoLoading
 }) => {
+  // Coluna "Empréstimo" só aparece para 2+ pagamentos (caminho novo).
+  // Com 1 pagamento, o usuário usa a seção legado na aba Avançado.
+  const mostrarColunaEmprestimo = pagamentos.length > 1;
 
   const totalFormatado = parseFloat(valorTotal || 0).toFixed(2).replace('.', ',');
   const somaFormatada = soma.toFixed(2).replace('.', ',');
   const saldoFormatado = saldoRestante.toFixed(2).replace('.', ',');
   const isOk = !showValidationWarning;
   const saldoExato = saldoRestante <= 0.01;
+
+  // Cache local de pessoasId já carregadas, para evitar refetch desnecessário
+  // quando o user abre/fecha a suíte várias vezes.
+  const pessoasCarregadasRef = useRef(new Set());
+
+  // Quando um pagamento seleciona uma pessoa, dispara o carregamento
+  // de empréstimos dessa pessoa. O pai (NovaTransacaoForm) resolve
+  // via `loadEmprestimosPessoa` e devolve a lista.
+  useEffect(() => {
+    pagamentos.forEach((pag, index) => {
+      if (!pag.empAtivo || !pag.empPessoaId) return;
+      if (pessoasCarregadasRef.current.has(`${index}:${pag.empPessoaId}`)) return;
+      if (typeof loadEmprestimosPessoa !== 'function') return;
+      pessoasCarregadasRef.current.add(`${index}:${pag.empPessoaId}`);
+      setPagamentoEmprestimoLoading(index, true);
+      loadEmprestimosPessoa(pag.empPessoaId)
+        .then((lista) => setPagamentoEmprestimosPessoa(index, lista))
+        .catch(() => setPagamentoEmprestimoLoading(index, false));
+    });
+  }, [pagamentos, loadEmprestimosPessoa, setPagamentoEmprestimosPessoa, setPagamentoEmprestimoLoading]);
 
   return (
     <div data-tab="pagamentos" className="tab-panel tab-pagamentos">
@@ -231,6 +265,50 @@ const TabPagamentos = ({
                   tabIndex={50 + (index * 10)}
                 />
               </div>
+
+              {mostrarColunaEmprestimo && (
+                <div className="pagamento-emprestimo">
+                  <label className="pagamento-emprestimo-toggle">
+                    <input
+                      type="checkbox"
+                      checked={!!pag.empAtivo}
+                      onChange={(e) => onPagamentoEmprestimoFieldChange(index, 'ativo', e.target.checked)}
+                      tabIndex={60 + (index * 10)}
+                    />
+                    {' '}Parte de empréstimo
+                  </label>
+
+                  {pag.empAtivo && (
+                    <EmprestimoFormFields
+                      state={{
+                        pessoaId: pag.empPessoaId,
+                        modo: pag.empModo,
+                        emprestimoId: pag.emprestimoId || '',
+                        novoTipoRetorno: pag.empNovoTipoRetorno,
+                        novoPrazoFinal: pag.empNovoPrazoFinal,
+                        novoValorEsperado: pag.empNovoValorEsperado,
+                        pessoas,
+                        emprestimosPessoa: pag.empEmprestimosPessoa || [],
+                        loadingPessoas,
+                        loadingEmprestimos: pag.empLoadingEmprestimos
+                      }}
+                      setters={{
+                        setPessoaId: (v) => onPagamentoEmprestimoFieldChange(index, 'pessoaId', v),
+                        setModo: (v) => onPagamentoEmprestimoFieldChange(index, 'modo', v),
+                        setEmprestimoId: (v) => onPagamentoEmprestimoFieldChange(index, 'emprestimoId', v),
+                        setNovoTipoRetorno: (v) => onPagamentoEmprestimoFieldChange(index, 'novoTipoRetorno', v),
+                        setNovoPrazoFinal: (v) => onPagamentoEmprestimoFieldChange(index, 'novoPrazoFinal', v),
+                        setNovoValorEsperado: (v) => onPagamentoEmprestimoFieldChange(index, 'novoValorEsperado', v)
+                      }}
+                      adicionarPessoa={adicionarPessoa}
+                      valorTotal={parseFloat(pag.valor) || 0}
+                      tipoTransacao={tipoTransacao}
+                      tabIndexBase={61 + (index * 10)}
+                      emprestimoIdName={`empModo-${index}`}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

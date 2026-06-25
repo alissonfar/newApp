@@ -58,6 +58,7 @@ jest.mock('../../utils/emprestimoQuitacao', () => ({
 const {
   validarDadosEmprestimo,
   recalcularStatus,
+  calcularTotais,
   STATUS_EMPRESTIMO,
   TIPOS_RETORNO
 } = require('../emprestimoService');
@@ -66,25 +67,45 @@ const USER_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa';
 const EMP_ID = new mongoose.Types.ObjectId();
 
 /**
- * Empilhamento de retornos de `Transacao.aggregate` no service:
- *  - calcularTotais: 1ª chamada = agregado por tipo (gasto/recebivel),
- *                    2ª chamada = soma de valorEsperadoRetorno das TXs de gasto.
- *  - calcularLucro: 1 chamada = agregado por tipo.
+ * Empilhamento de retornos de `Transacao.aggregate` no service.
  *
- * @param {Array} tipoResult resultado do agregado por tipo
- * @param {Array|number} esperadoResult resultado do agregado esperado
- *        (pode ser array vazio, ou com `[{ _id: null, total: N }]`)
- * @param {Array} lucroResult resultado do agregado para calcularLucro
+ * A partir do design 2026-06-24 (pagamento-level), `calcularTotais` faz
+ * 3 chamadas em ordem: txLevel, pagamentoLevel, esperadoPagamento.
+ * O esperado legado agora vem dentro do `$group` do txLevel (campo
+ * `totalEsperado`), então NÃO há aggregate separado de esperado legado.
+ *
+ * `calcularLucro` faz 1 aggregate. `recalcularJurosAuto` faz +1
+ * (calcularTotaisRecebEDisbursed). Total agregado por cenário de quitação:
+ * 4 chamadas (3 do calcularTotais + 1 do calcularLucro). O aggregate
+ * interno do recalcularJurosAuto é consumido depois.
+ *
+ * Para manter compatibilidade com testes legados que passavam 2 args
+ * (tipo, esperadoNum), o segundo arg pode ser:
+ *  - Array: explícito (ex: `[]` para zerar)
+ *  - Número: atalho — vira `[{ _id: null, total: N }]`. É atribuído ao
+ *    `esperadoPagamento` (3ª chamada do calcularTotais), preservando
+ *    a semântica "esperado total do Empréstimo" do helper antigo.
+ *
+ * @param {Array} txLevelResult resultado do agregado TX-level (1ª chamada)
+ * @param {Array|number} esperadoPagamentoResult 3ª chamada do calcularTotais.
+ *        Compat: se for número, encapsula em `[{ _id: null, total: N }]`.
+ * @param {Array} lucroResult resultado para `calcularLucro` (4ª chamada)
+ * @param {Array} pagamentoLevelResult 2ª chamada do calcularTotais. Default: `[]`
  */
-function mockAggregateSequence(tipoResult, esperadoResult, lucroResult) {
+function mockAggregateSequence(
+  txLevelResult,
+  esperadoPagamentoResult,
+  lucroResult,
+  pagamentoLevelResult = []
+) {
   const calls = [];
-  if (tipoResult !== undefined) calls.push(tipoResult);
-  if (esperadoResult !== undefined) {
-    // Se for número, encapsula
-    if (typeof esperadoResult === 'number') {
-      calls.push(esperadoResult > 0 ? [{ _id: null, total: esperadoResult }] : []);
+  if (txLevelResult !== undefined) calls.push(txLevelResult);
+  if (pagamentoLevelResult !== undefined) calls.push(pagamentoLevelResult);
+  if (esperadoPagamentoResult !== undefined) {
+    if (typeof esperadoPagamentoResult === 'number') {
+      calls.push(esperadoPagamentoResult > 0 ? [{ _id: null, total: esperadoPagamentoResult }] : []);
     } else {
-      calls.push(esperadoResult);
+      calls.push(esperadoPagamentoResult);
     }
   }
   if (lucroResult !== undefined) calls.push(lucroResult);
@@ -400,5 +421,56 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     // A regra é apenas de controller (emprestimoController.atualizar).
     // Aqui validamos indiretamente: o service não tem trava.
     expect(true).toBe(true);
+  });
+});
+
+describe('emprestimoService.calcularTotais - pagamento-level (design 2026-06-24)', () => {
+  beforeEach(() => {
+    mockTransacaoAggregate.mockReset();
+  });
+
+  test('Cenário Estrela: TX com 2 pagamentos (50/50), 1 emprestado → desembolso = só o pagamento emprestado', async () => {
+    // TX 895, pagamentos: Alisson 447,50 (sem empréstimo) + Estrela 447,50 (empréstimo)
+    // Esperado da TX (campo na TX): 500
+    // calcularTotais: 3 chamadas (txLevel vazio, pagamentoLevel com 447.50 gasto, esperadoPagamento 500)
+    mockTransacaoAggregate
+      .mockResolvedValueOnce([])                                        // txLevel (vazio)
+      .mockResolvedValueOnce([{ _id: 'gasto', total: 447.50 }])         // pagamentoLevel
+      .mockResolvedValueOnce([{ _id: null, total: 500 }]);              // esperadoPagamento
+
+    const totais = await calcularTotais(String(EMP_ID), USER_ID);
+
+    expect(totais.totalDisbursed).toBeCloseTo(447.50, 2);
+    expect(totais.totalReceived).toBe(0);
+    expect(totais.totalEsperado).toBe(500);
+  });
+
+  test('Mistura: 1 TX legado + 1 TX pagamento-level no mesmo Empréstimo → soma correta', async () => {
+    // Legado: TX 1000 gasto (caminho A)
+    // Pagamento: TX 800 (pagamento de 400 emprestado) (caminho B)
+    // Esperado legado: 1000, esperado pagamento: 500
+    mockTransacaoAggregate
+      .mockResolvedValueOnce([{ _id: 'gasto', total: 1000, totalEsperado: 1000 }])  // txLevel
+      .mockResolvedValueOnce([{ _id: 'gasto', total: 400 }])                          // pagamentoLevel
+      .mockResolvedValueOnce([{ _id: null, total: 500 }]);                            // esperadoPagamento
+
+    const totais = await calcularTotais(String(EMP_ID), USER_ID);
+
+    expect(totais.totalDisbursed).toBe(1400); // 1000 (legado) + 400 (pagamento)
+    expect(totais.totalEsperado).toBe(1500);  // 1000 (legado) + 500 (pagamento)
+  });
+
+  test('TX com 2 pagamentos, AMBOS com mesmo emprestimoId → soma dos 2 pagamentos', async () => {
+    // Cenário onde 2 pagamentos de uma mesma TX são 100% empréstimo.
+    // Sem tx-level legado, sem outros caminhos.
+    mockTransacaoAggregate
+      .mockResolvedValueOnce([])                       // txLevel vazio
+      .mockResolvedValueOnce([{ _id: 'gasto', total: 900 }])  // pagamentoLevel: 500 + 400
+      .mockResolvedValueOnce([{ _id: null, total: 1000 }]);   // esperadoPagamento: 1x por TX
+
+    const totais = await calcularTotais(String(EMP_ID), USER_ID);
+
+    expect(totais.totalDisbursed).toBe(900);
+    expect(totais.totalEsperado).toBe(1000);
   });
 });

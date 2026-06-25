@@ -14,7 +14,13 @@ const PagamentoSchema = new mongoose.Schema({
   parcelamento: { type: ParcelamentoConfigSchema, default: null },
   installmentNumber: { type: Number, default: null },
   installmentTotal: { type: Number, default: null },
-  installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null }
+  installmentGroupId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  // Quando setado, este pagamento específico é parte de um Empréstimo.
+  // Mutuamente exclusivo com `emprestimoId` da Transação (ver controladorTransacao).
+  emprestimoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Emprestimo', default: null },
+  // Valor esperado de retorno deste pagamento específico (caminho pagamento-level).
+  // Opcional. Apenas faz sentido em gastos vinculados a Empréstimo.
+  valorEsperadoRetorno: { type: Number, min: 0, default: null }
 });
 
 const TransacaoSchema = new mongoose.Schema({
@@ -74,5 +80,6 @@ TransacaoSchema.index({ usuario: 1, 'pagamentos.pessoa': 1 });
 TransacaoSchema.index({ usuario: 1, 'contaConjunta.ativo': 1, 'contaConjunta.vinculoId': 1, 'contaConjunta.acertadoEm': 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, emprestimoId: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, emprestimoId: 1, tipo: 1 }, { sparse: true });
+TransacaoSchema.index({ 'pagamentos.emprestimoId': 1 }, { sparse: true });
 
 module.exports = mongoose.model('Transacao', TransacaoSchema);

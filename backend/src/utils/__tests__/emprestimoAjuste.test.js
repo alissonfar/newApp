@@ -48,6 +48,15 @@ function makeTransacao({ tipo, valor, data, emprestimoId, pagamentos, emprestimo
   };
 }
 
+/**
+ * Cria pagamento com `emprestimoId` opcional (caminho novo).
+ */
+function makePagamento({ pessoa, valor, emprestimoId }) {
+  const pag = { pessoa, valor };
+  if (emprestimoId) pag.emprestimoId = new mongoose.Types.ObjectId(emprestimoId);
+  return pag;
+}
+
 describe('emprestimoAjuste - ajustarRecebiveisDeEmprestimo (modelo simplificado)', () => {
   beforeEach(() => {
     mockEmprestimoFind.mockReset();
@@ -188,5 +197,120 @@ describe('emprestimoAjuste - ajustarRecebiveisDeEmprestimo (modelo simplificado)
     expect(transacoes[0]._emprestimoInfo).not.toHaveProperty('principal');
     expect(transacoes[0]._emprestimoInfo).not.toHaveProperty('juros');
     expect(transacoes[0]._emprestimoInfo).not.toHaveProperty('valorOriginal');
+  });
+
+  // ========================================================================
+  // Caminho B — Pagamento-level (design 2026-06-24)
+  // ========================================================================
+
+  test('Cenário Estrela: TX 895 (Alisson 447,50 + Estrela 447,50, só Estrela emprestado) → TX.valor = 447,50 e TX continua visível', async () => {
+    const emp = makeEmprestimo({ pessoaNomeSnapshot: 'Estrela' });
+    mockEmprestimoFind.mockReturnValue({ lean: () => Promise.resolve([emp]) });
+
+    const tx = makeTransacao({
+      tipo: 'gasto',
+      valor: 895,
+      data: '2026-06-16',
+      emprestimoId: null, // caminho novo: TX-level é null
+      pagamentos: [
+        makePagamento({ pessoa: 'Alisson', valor: 447.50 }),                        // não é empréstimo
+        makePagamento({ pessoa: 'Estrela', valor: 447.50, emprestimoId: emp._id }) // é empréstimo
+      ]
+    });
+
+    await ajustarRecebiveisDeEmprestimo([tx], USER_ID);
+
+    // TX: t.valor desconta apenas o pagamento emprestado
+    expect(tx.valor).toBeCloseTo(447.50, 2);
+    // TX: continua visível (NÃO seta _emprestimoEsconderNaLista)
+    expect(tx._emprestimoEsconderNaLista).toBeUndefined();
+    // TX: marca flag parcial
+    expect(tx._emprestimoParcial).toBe(true);
+    // Pagamento Estrela: zerado e marcado
+    expect(tx.pagamentos[1].valor).toBe(0);
+    expect(tx.pagamentos[1]._emprestimoEsconder).toBe(true);
+    expect(tx.pagamentos[1]._emprestimoInfo).toEqual({
+      tipo: 'desembolso',
+      pessoaNome: 'Estrela',
+      valor: 447.50
+    });
+    // Pagamento Alisson: permanece normal (conta como gasto do usuário)
+    expect(tx.pagamentos[0].valor).toBe(447.50);
+    expect(tx.pagamentos[0]._emprestimoEsconder).toBeUndefined();
+  });
+
+  test('Caminho novo: pagamentos emprestados de 2 empréstimos diferentes na mesma TX', async () => {
+    // Edge case: TX com 3 pagamentos, 2 emprestados (cada um para um Empréstimo diferente).
+    // Verifica que todos os empréstimos são carregados e o valor é descontado corretamente.
+    const emp1 = makeEmprestimo({ pessoaNomeSnapshot: 'Estrela' });
+    const emp2 = makeEmprestimo({ pessoaNomeSnapshot: 'Guilherme' });
+    mockEmprestimoFind.mockReturnValue({ lean: () => Promise.resolve([emp1, emp2]) });
+
+    const tx = makeTransacao({
+      tipo: 'gasto',
+      valor: 900,
+      data: '2026-07-01',
+      pagamentos: [
+        makePagamento({ pessoa: 'Alisson', valor: 300 }),                        // não é
+        makePagamento({ pessoa: 'Estrela', valor: 300, emprestimoId: emp1._id }),  // sim
+        makePagamento({ pessoa: 'Guilherme', valor: 300, emprestimoId: emp2._id }) // sim
+      ]
+    });
+
+    await ajustarRecebiveisDeEmprestimo([tx], USER_ID);
+
+    expect(tx.valor).toBe(300); // 900 - 600 (soma dos emprestados)
+    expect(tx._emprestimoParcial).toBe(true);
+    expect(tx._emprestimoEsconderNaLista).toBeUndefined();
+    expect(tx.pagamentos[0].valor).toBe(300); // Alisson: intacto
+    expect(tx.pagamentos[1].valor).toBe(0);   // Estrela: zerado
+    expect(tx.pagamentos[2].valor).toBe(0);   // Guilherme: zerado
+    expect(tx.pagamentos[1]._emprestimoInfo.pessoaNome).toBe('Estrela');
+    expect(tx.pagamentos[2]._emprestimoInfo.pessoaNome).toBe('Guilherme');
+  });
+
+  test('Caminho novo: recebível parcial (apenas 1 dos 2 pagamentos é empréstimo)', async () => {
+    // Verifica simetria: o mesmo comportamento vale para recebíveis.
+    const emp = makeEmprestimo();
+    mockEmprestimoFind.mockReturnValue({ lean: () => Promise.resolve([emp]) });
+
+    const tx = makeTransacao({
+      tipo: 'recebivel',
+      valor: 600,
+      data: '2026-08-01',
+      pagamentos: [
+        makePagamento({ pessoa: 'A', valor: 300 }), // não é empréstimo (receita do usuário)
+        makePagamento({ pessoa: 'B', valor: 300, emprestimoId: emp._id }) // é
+      ]
+    });
+
+    await ajustarRecebiveisDeEmprestimo([tx], USER_ID);
+
+    expect(tx.valor).toBe(300);
+    expect(tx._emprestimoParcial).toBe(true);
+    expect(tx.pagamentos[0].valor).toBe(300); // A: intacto
+    expect(tx.pagamentos[1].valor).toBe(0);   // B: zerado
+    expect(tx.pagamentos[1]._emprestimoInfo.tipo).toBe('recebimento');
+  });
+
+  test('Caminho novo: NÃO seta _emprestimoEsconderNaLista (TX continua visível na lista)', async () => {
+    const emp = makeEmprestimo();
+    mockEmprestimoFind.mockReturnValue({ lean: () => Promise.resolve([emp]) });
+
+    const tx = makeTransacao({
+      tipo: 'gasto',
+      valor: 500,
+      data: '2026-09-01',
+      pagamentos: [
+        makePagamento({ pessoa: 'A', valor: 250 }),
+        makePagamento({ pessoa: 'B', valor: 250, emprestimoId: emp._id })
+      ]
+    });
+
+    await ajustarRecebiveisDeEmprestimo([tx], USER_ID);
+
+    // Garantia explícita do critério: o flag de "esconder TX inteira" NÃO é setado
+    // no caminho novo (somente no legado).
+    expect(tx._emprestimoEsconderNaLista).toBeUndefined();
   });
 });

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { Tooltip, IconButton } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { criarTransacao, atualizarTransacao } from '../../api';
+import { criarTransacao, atualizarTransacao, listarEmprestimos, listarPessoas } from '../../api';
 import { useData } from '../../context/DataContext';
 import useTransacaoForm from '../../hooks/useTransacaoForm';
 import usePagamentos from '../../hooks/usePagamentos';
@@ -65,6 +65,49 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     valorTotal: form.formState.valorTotal
   });
 
+  // Pessoas e Empréstimos por pessoa para o caminho novo (2+ pagamentos).
+  // O caminho legado (EmprestimoSecao) tem sua própria cópia via useEmprestimoForm;
+  // aqui mantemos uma lista paralela para a suíte por pagamento no TabPagamentos.
+  // Compartilhamos a lista de Pessoas entre as duas suítes para que "+ Nova"
+  // num lugar reflita no outro.
+  const [pessoas, setPessoas] = useState([]);
+  const [loadingPessoas, setLoadingPessoas] = useState(false);
+  const pessoasCarregadasRef = useRef(false);
+
+  useEffect(() => {
+    if (pessoasCarregadasRef.current) return;
+    pessoasCarregadasRef.current = true;
+    setLoadingPessoas(true);
+    listarPessoas(true)
+      .then((lista) => setPessoas(lista || []))
+      .catch(() => setPessoas([]))
+      .finally(() => setLoadingPessoas(false));
+  }, []);
+
+  const adicionarPessoa = useCallback((novaPessoa) => {
+    setPessoas((prev) => {
+      const semDup = prev.filter((p) => p._id !== novaPessoa._id);
+      return [...semDup, novaPessoa];
+    });
+  }, []);
+
+  // Carrega Empréstimos ativos de uma pessoa. Usado pelo TabPagamentos
+  // quando o user seleciona uma pessoa na suíte de um pagamento.
+  const loadEmprestimosPessoa = useCallback(async (pessoaId) => {
+    if (!pessoaId) return [];
+    try {
+      const lista = await listarEmprestimos({ pessoaId, status: 'ativo' });
+      return (lista || []).map((e) => ({
+        ...e,
+        id: e._id || e.id,
+        pessoaId: typeof e.pessoaId === 'object' ? e.pessoaId._id : e.pessoaId
+      }));
+    } catch (err) {
+      console.error('Erro ao listar empréstimos da pessoa:', err);
+      return [];
+    }
+  }, []);
+
   closeRef.current = onClose;
 
   const { formState, setters: fsSetters, refs } = form;
@@ -110,6 +153,13 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       return;
     }
 
+    // Validação do vínculo de Empréstimo por pagamento (caminho novo, 2+ pagamentos).
+    const empPgError = pagamentos.validarEmprestimos(formState.tipo);
+    if (empPgError) {
+      toast.error(empPgError);
+      return;
+    }
+
     setIsSaving(true);
     try {
       let valorFinal = parseFloat(formState.valorTotal);
@@ -143,6 +193,56 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       }
 
       const pagamentosPayload = pagamentos.buildPagamentosPayload();
+
+      // Validação de exclusividade mútua (design 2026-06-24): TX-level e
+      // pagamento-level de Empréstimo não podem coexistir.
+      const pagamentosComEmprestimo = (pagamentosPayload || []).filter(p => p.emprestimoId);
+      if (emprestimoIdParaTransacao && pagamentosComEmprestimo.length > 0) {
+        toast.error('Transação não pode ter empréstimo no nível TX e em pagamentos ao mesmo tempo.');
+        return;
+      }
+
+      // Caminho novo (2+ pagamentos): para cada pagamento com `empAtivo &&
+      // empModo === 'criar' && !emprestimoId`, criar o Empréstimo via API
+      // e injetar o ID no payload. Replica o mesmo padrão do caminho legado.
+      // Também propaga `valorEsperadoRetorno` por pagamento (quando gasto).
+      if (formState.tipo === 'gasto') {
+        for (let i = 0; i < pagamentos.pagamentos.length; i++) {
+          const pag = pagamentos.pagamentos[i];
+          if (!pag.empAtivo) continue;
+          if (pag.empModo === 'criar' && !pagamentosPayload[i]?.emprestimoId) {
+            const novoEmp = await criarEmprestimo({
+              pessoaId: pag.empPessoaId,
+              tipoRetorno: pag.empNovoTipoRetorno,
+              prazoFinal: pag.empNovoPrazoFinal
+            });
+            const novoId = novoEmp._id || novoEmp.id;
+            if (pagamentosPayload[i]) pagamentosPayload[i].emprestimoId = novoId;
+          }
+          // valorEsperadoRetorno por pagamento (apenas para gastos, onde
+          // faz sentido). Cobre tanto modo 'vincular' quanto 'criar'.
+          const v = parseFloat(pag.empNovoValorEsperado);
+          if (!isNaN(v) && v >= 0 && pagamentosPayload[i]) {
+            pagamentosPayload[i].valorEsperadoRetorno = v;
+          }
+        }
+      } else {
+        // tipo !== 'gasto': ainda assim precisa criar Empréstimos em modo 'criar'
+        // (sem valor esperado). Vincular não precisa de side-effect (já tem ID).
+        for (let i = 0; i < pagamentos.pagamentos.length; i++) {
+          const pag = pagamentos.pagamentos[i];
+          if (!pag.empAtivo) continue;
+          if (pag.empModo === 'criar' && !pagamentosPayload[i]?.emprestimoId) {
+            const novoEmp = await criarEmprestimo({
+              pessoaId: pag.empPessoaId,
+              tipoRetorno: pag.empNovoTipoRetorno,
+              prazoFinal: pag.empNovoPrazoFinal
+            });
+            const novoId = novoEmp._id || novoEmp.id;
+            if (pagamentosPayload[i]) pagamentosPayload[i].emprestimoId = novoId;
+          }
+        }
+      }
 
       const pagamentosComParcelamento = pagamentosPayload.map(p => {
         const idx = pagamentos.pagamentos.findIndex(
@@ -200,7 +300,22 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       } else {
         await onSuccess(response);
         form.resetForm(true);
-        pagamentos.setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, fixed: false }]);
+        pagamentos.setPagamentos([{
+          pessoa: proprietarioPadrao || '',
+          valor: '',
+          paymentTags: {},
+          parcelamento: null,
+          emprestimoId: null,
+          empAtivo: false,
+          empPessoaId: '',
+          empModo: 'vincular',
+          empNovoTipoRetorno: 'valor_fixo',
+          empNovoPrazoFinal: '',
+          empNovoValorEsperado: '',
+          empEmprestimosPessoa: [],
+          empLoadingEmprestimos: false,
+          fixed: false
+        }]);
         contaConjunta.reset();
         parcelamento.reset();
         emprestimoForm.reset();
@@ -325,6 +440,15 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           showValidationWarning={pagamentos.showValidationWarning}
           soma={pagamentos.soma}
           saldoRestante={pagamentos.saldoRestante}
+          // Caminho novo (2+ pagamentos): suíte rica de Empréstimo por linha
+          tipoTransacao={formState.tipo}
+          pessoas={pessoas}
+          loadingPessoas={loadingPessoas}
+          adicionarPessoa={adicionarPessoa}
+          loadEmprestimosPessoa={loadEmprestimosPessoa}
+          onPagamentoEmprestimoFieldChange={pagamentos.onPagamentoEmprestimoFieldChange}
+          setPagamentoEmprestimosPessoa={pagamentos.setPagamentoEmprestimosPessoa}
+          setPagamentoEmprestimoLoading={pagamentos.setPagamentoEmprestimoLoading}
         />
         <TabAvancado
           data-tab="avancado"
@@ -336,6 +460,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           transacao={transacao}
           emprestimoForm={emprestimoForm}
           tipoTransacao={formState.tipo}
+          qtdPagamentos={pagamentos.pagamentos.length}
         />
         <TabResumo
           data-tab="resumo"

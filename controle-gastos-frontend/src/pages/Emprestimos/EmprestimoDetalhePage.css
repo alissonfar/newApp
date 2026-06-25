@@ -289,3 +289,19 @@
   display: inline-block;
   padding: 4px 8px;
 }
+
+/* Tag visual ao lado da descrição: identifica qual pessoa do pagamento está
+   vinculada ao empréstimo (caminho novo — pagamento-level). */
+.emp-pagamento-pessoa-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  vertical-align: middle;
+}

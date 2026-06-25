@@ -8,6 +8,43 @@ const { buildPagamentosTagFilterStage } = require('../utils/pagamentosTagFilter'
 const transacaoService = require('../services/transacaoService');
 const emprestimoService = require('../services/emprestimoService');
 
+/**
+ * Valida a regra de exclusividade mútua entre `emprestimoId` no nível da
+ * Transação e `emprestimoId` em `pagamentos[]` (design 2026-06-24).
+ * Retorna a string de erro ou null se OK.
+ */
+function validarExclusividadeEmprestimo(transacao) {
+  const txHasEmprestimo = !!transacao.emprestimoId;
+  const pagamentosComEmprestimo = (transacao.pagamentos || []).filter(p => p.emprestimoId);
+  if (txHasEmprestimo && pagamentosComEmprestimo.length > 0) {
+    return 'Transação não pode ter emprestimoId no nível TX e em pagamentos ao mesmo tempo.';
+  }
+  return null;
+}
+
+/**
+ * Coleta todos os `emprestimoId` distintos envolvidos em uma TX (no nível
+ * TX + nos pagamentos) para posterior recálculo de status.
+ */
+function coletarEmprestimosAfetados(transacao) {
+  const ids = new Set();
+  if (transacao.emprestimoId) ids.add(String(transacao.emprestimoId));
+  for (const p of (transacao.pagamentos || [])) {
+    if (p && p.emprestimoId) ids.add(String(p.emprestimoId));
+  }
+  return [...ids];
+}
+
+async function recalcularEmprestimos(transacao, usuarioId) {
+  for (const empId of coletarEmprestimosAfetados(transacao)) {
+    try {
+      await emprestimoService.recalcularStatus(empId, usuarioId);
+    } catch (errEmp) {
+      console.error('[controladorTransacao] Erro ao recalcular empréstimo', empId, errEmp.message);
+    }
+  }
+}
+
 function getTagsFilterFromReq(req) {
   if (!req.query.tagsFilter) return null;
   try {
@@ -517,10 +554,13 @@ exports.criarTransacao = async (req, res) => {
           novaTransacao.valorEsperadoRetorno = ver;
         }
       }
-      await novaTransacao.save();
-      if (novaTransacao.emprestimoId) {
-        await emprestimoService.recalcularStatus(novaTransacao.emprestimoId, req.userId);
+      // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
+      const erroExclusividade = validarExclusividadeEmprestimo(novaTransacao);
+      if (erroExclusividade) {
+        return res.status(400).json({ erro: erroExclusividade });
       }
+      await novaTransacao.save();
+      await recalcularEmprestimos(novaTransacao, req.userId);
       return res.status(201).json(novaTransacao);
     }
 
@@ -611,7 +651,10 @@ exports.criarTransacao = async (req, res) => {
               tags: tagsBase,
               installmentNumber: p.installmentNumber,
               installmentTotal: numParcelas,
-              installmentGroupId
+              installmentGroupId,
+              // Replica o vínculo pagamento-level do 1º pagamento (legado) para
+              // todas as parcelas — o legado sempre tem 1 pagamento por TX.
+              emprestimoId: pagamentoBase.emprestimoId || null
             }],
             observacao: observacao || '',
             usuario: req.userId,
@@ -641,11 +684,22 @@ exports.criarTransacao = async (req, res) => {
           transacoesParaInserir.forEach((t) => { t.valorEsperadoRetorno = ver; });
         }
       }
+      // Regra de exclusividade mútua (valida a 1ª TX — todas as parcelas
+      // compartilham a mesma estrutura).
+      if (transacoesParaInserir.length > 0) {
+        const erroExclusividade = validarExclusividadeEmprestimo(transacoesParaInserir[0]);
+        if (erroExclusividade) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ erro: erroExclusividade });
+        }
+      }
 
       const transacoesCriadas = await Transacao.insertMany(transacoesParaInserir, { session });
       await session.commitTransaction();
-      if (req.body.emprestimoId) {
-        await emprestimoService.recalcularStatus(req.body.emprestimoId, req.userId);
+      // Recalcula status de TODOS os empréstimos envolvidos (TX-level + pagamento-level)
+      for (const t of transacoesCriadas) {
+        await recalcularEmprestimos(t, req.userId);
       }
 
       res.status(201).json({
@@ -726,14 +780,18 @@ exports.atualizarTransacao = async (req, res) => {
           }
         }
       }
+      // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
+      const erroExclusividade = validarExclusividadeEmprestimo(transacao);
+      if (erroExclusividade) {
+        return res.status(400).json({ erro: erroExclusividade });
+      }
       await transacao.save();
-      const novoId = transacao.emprestimoId ? transacao.emprestimoId.toString() : null;
-      if (emprestimoIdAntes && emprestimoIdAntes !== novoId) {
+      // Recalcula todos os empréstimos envolvidos: o que existia antes (se
+      // mudou), o novo, e os dos pagamentos.
+      if (emprestimoIdAntes) {
         await emprestimoService.recalcularStatus(emprestimoIdAntes, req.userId);
       }
-      if (novoId) {
-        await emprestimoService.recalcularStatus(novoId, req.userId);
-      }
+      await recalcularEmprestimos(transacao, req.userId);
     } else {
       if (req.body.valorEsperadoRetorno !== undefined) {
         if (req.body.valorEsperadoRetorno === null) {
@@ -747,15 +805,14 @@ exports.atualizarTransacao = async (req, res) => {
           }
         }
       }
-      await transacao.save();
-      // Se a transação tem emprestimoId e o usuário alterou valor/tipo/data/etc,
-      // é necessário recalcular pois isso pode mudar o status do empréstimo.
-      if (transacao.emprestimoId) {
-        await emprestimoService.recalcularStatus(
-          String(transacao.emprestimoId),
-          req.userId
-        );
+      // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
+      const erroExclusividade = validarExclusividadeEmprestimo(transacao);
+      if (erroExclusividade) {
+        return res.status(400).json({ erro: erroExclusividade });
       }
+      await transacao.save();
+      // Recalcula status dos empréstimos afetados (TX-level legado + pagamento-level).
+      await recalcularEmprestimos(transacao, req.userId);
     }
     res.json(transacao);
   } catch (error) {

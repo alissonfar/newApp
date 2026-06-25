@@ -1,6 +1,6 @@
 // src/pages/Emprestimos/EmprestimoDetalhePage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import {
@@ -23,6 +23,7 @@ import './EmprestimoDetalhePage.css';
 
 const EmprestimoDetalhePage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [emprestimo, setEmprestimo] = useState(null);
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,31 @@ const EmprestimoDetalhePage = () => {
   };
 
   const handleDesvincular = async (mov) => {
+    // CAMINHO B — pagamento-level (design 2026-06-24).
+    // O endpoint devolve 1 linha por pagamento emprestado, com `pagamentoIndex`
+    // numérico. Aqui NÃO dá pra remover só o pagamento (o vínculo está embutido
+    // na TX inteira). O usuário precisa editar a TX e desmarcar o checkbox do
+    // pagamento na aba Pagamentos. Abrimos modal explicativo + atalho.
+    if (mov.pagamentoIndex != null) {
+      const result = await Swal.fire({
+        title: 'Vínculo por pagamento',
+        html: `Este pagamento (<strong>${mov.pagamentoPessoa || 'sem pessoa'}</strong> — <strong>${formatarMoedaBRL(mov.valor)}</strong>) está vinculado ao empréstimo <strong>por pagamento</strong>, não pela transação inteira.<br/><br/>Para desvincular apenas este pagamento, edite a transação e desmarque o checkbox <em>"Parte de empréstimo"</em> no pagamento correspondente.`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Editar transação',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#2563eb'
+      });
+      if (result.isConfirmed) {
+        // Navega para a lista de TXs com hint de qual abrir. A página /relatorio
+        // ainda não trata ?edit= automaticamente — orientamos o user pelo toast.
+        navigate(`/relatorio?edit=${mov.transacaoId}`);
+        toast.info('Abra a transação na lista para editar o pagamento.');
+      }
+      return;
+    }
+
+    // CAMINHO A — TX-level legado. Comportamento atual preservado.
     const result = await Swal.fire({
       title: 'Excluir transação do empréstimo?',
       html: `A transação <strong>${mov.descricao || '—'}</strong> no valor de <strong>${formatarMoedaBRL(mov.valor)}</strong> será desvinculada deste empréstimo.<br/>A transação permanece ativa normalmente.`,
@@ -216,53 +242,76 @@ const EmprestimoDetalhePage = () => {
               </tr>
             </thead>
             <tbody>
-              {movimentacoes.map((m) => (
-                <tr key={m.id || m._id}>
-                  <td>{formatarDataBR(m.data)}</td>
-                  <td>
-                    <span className={`emp-tipo-tag ${m.tipo}`}>
-                      {m.tipo === 'gasto' ? '↗ Desembolso' : '↙ Recebimento'}
-                    </span>
-                  </td>
-                  <td>{m.descricao || '—'}</td>
-                  <td className="emp-td-valor">{formatarMoedaBRL(m.valor)}</td>
-                  <td className="emp-td-valor">
-                    {m.tipo === 'gasto' && m.valorEsperadoRetorno != null
-                      ? formatarMoedaBRL(m.valorEsperadoRetorno)
-                      : '—'}
-                  </td>
-                  <td>
-                    {m.status === 'estornado' ? (
-                      <span className="emp-status-estornado">Estornada</span>
-                    ) : (
-                      <span className="emp-status-ok">Ativa</span>
-                    )}
-                  </td>
-                  <td className="emp-td-acoes">
-                    {m.emprestimoEhJurosAuto ? (
-                      <span
-                        className="emp-acao-disabled"
-                        title="Transação de juros auto — não pode ser desvinculada manualmente."
-                        aria-label="Transação de juros auto — não pode ser desvinculada manualmente."
-                      >
-                        🔒
+              {movimentacoes.map((m) => {
+                // Caminho novo (pagamento-level): mostra tag da pessoa ao lado da
+                // descrição. Caminho legado: descrição limpa.
+                const isPagamentoLevel = m.pagamentoIndex != null;
+                return (
+                  <tr key={m.id || m._id}>
+                    <td>{formatarDataBR(m.data)}</td>
+                    <td>
+                      <span className={`emp-tipo-tag ${m.tipo}`}>
+                        {m.tipo === 'gasto' ? '↗ Desembolso' : '↙ Recebimento'}
                       </span>
-                    ) : (
-                      <button
-                        onClick={() => handleDesvincular(m)}
-                        className="emp-btn-desvincular"
-                        title="Excluir do empréstimo"
-                      >
-                        🗑️ Excluir do empréstimo
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      {m.descricao || '—'}
+                      {isPagamentoLevel && m.pagamentoPessoa && (
+                        <span
+                          className="emp-pagamento-pessoa-tag"
+                          title="Vínculo por pagamento individual"
+                        >
+                          ↗ {m.pagamentoPessoa}
+                        </span>
+                      )}
+                    </td>
+                    <td className="emp-td-valor">{formatarMoedaBRL(m.valor)}</td>
+                    <td className="emp-td-valor">
+                      {m.tipo === 'gasto' && m.valorEsperadoRetorno != null
+                        ? formatarMoedaBRL(m.valorEsperadoRetorno)
+                        : '—'}
+                    </td>
+                    <td>
+                      {m.status === 'estornado' ? (
+                        <span className="emp-status-estornado">Estornada</span>
+                      ) : (
+                        <span className="emp-status-ok">Ativa</span>
+                      )}
+                    </td>
+                    <td className="emp-td-acoes">
+                      {m.emprestimoEhJurosAuto ? (
+                        <span
+                          className="emp-acao-disabled"
+                          title="Transação de juros auto — não pode ser desvinculada manualmente."
+                          aria-label="Transação de juros auto — não pode ser desvinculada manualmente."
+                        >
+                          🔒
+                        </span>
+                      ) : isPagamentoLevel ? (
+                        <button
+                          onClick={() => handleDesvincular(m)}
+                          className="emp-btn-desvincular"
+                          title="Vínculo por pagamento — editar TX para desvincular"
+                        >
+                          🔗 Editar vínculo
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDesvincular(m)}
+                          className="emp-btn-desvincular"
+                          title="Excluir do empréstimo"
+                        >
+                          🗑️ Excluir do empréstimo
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={6}><strong>Totais</strong></td>
+                <td colSpan={3}><strong>Totais</strong></td>
                 <td className="emp-td-valor">
                   <strong>{formatarMoedaBRL(
                     movimentacoes.reduce((acc, m) => acc + (m.valor || 0), 0)
@@ -276,7 +325,7 @@ const EmprestimoDetalhePage = () => {
                     )
                   )}</strong>
                 </td>
-                <td></td>
+                <td colSpan={2}></td>
               </tr>
             </tfoot>
           </table>

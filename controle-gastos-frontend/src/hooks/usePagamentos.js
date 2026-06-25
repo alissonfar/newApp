@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
+const empFieldsPadrao = () => ({
+  empAtivo: false,
+  empPessoaId: '',
+  empModo: 'vincular',
+  empNovoTipoRetorno: 'valor_fixo',
+  empNovoPrazoFinal: '',
+  empNovoValorEsperado: '',
+  empEmprestimosPessoa: [],
+  empLoadingEmprestimos: false
+});
+
 export default function usePagamentos({ transacao, proprietarioPadrao, valorTotal, isContaConjunta, pagoPor, parteUsuario, parcelamentos }) {
   const [pagamentos, setPagamentos] = useState(() => {
     if (transacao?.pagamentos?.length > 0) {
@@ -9,10 +20,22 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
         parcelamento: p.parcelamento || null,
         installmentNumber: p.installmentNumber || null,
         installmentTotal: p.installmentTotal || null,
+        // Vínculo pagamento-level de Empréstimo (caminho novo). Mutuamente
+        // exclusivo com `transacao.emprestimoId` (caminho legado).
+        emprestimoId: p.emprestimoId || null,
+        // Campos da suíte de Empréstimo por pagamento (caminho novo,
+        // 2+ pagamentos). Pré-popula a partir do vínculo salvo.
+        ...empFieldsPadrao(),
+        empAtivo: !!p.emprestimoId,
+        empPessoaId: p.emprestimoPessoaId || '',
+        empModo: p.emprestimoModo || 'vincular',
+        empNovoTipoRetorno: p.emprestimoTipoRetorno || 'valor_fixo',
+        empNovoPrazoFinal: p.emprestimoPrazoFinal || '',
+        empNovoValorEsperado: p.emprestimoValorEsperado != null ? String(p.emprestimoValorEsperado) : '',
         fixed: false
       }));
     }
-    return [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, fixed: false }];
+    return [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, emprestimoId: null, ...empFieldsPadrao(), fixed: false }];
   });
 
   const valorEsperadoParaSoma = (isContaConjunta && pagoPor === 'outro')
@@ -29,11 +52,19 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
           parcelamento: p.parcelamento || null,
           installmentNumber: p.installmentNumber || null,
           installmentTotal: p.installmentTotal || null,
+          emprestimoId: p.emprestimoId || null,
+          ...empFieldsPadrao(),
+          empAtivo: !!p.emprestimoId,
+          empPessoaId: p.emprestimoPessoaId || '',
+          empModo: p.emprestimoModo || 'vincular',
+          empNovoTipoRetorno: p.emprestimoTipoRetorno || 'valor_fixo',
+          empNovoPrazoFinal: p.emprestimoPrazoFinal || '',
+          empNovoValorEsperado: p.emprestimoValorEsperado != null ? String(p.emprestimoValorEsperado) : '',
           fixed: false
         }))
       );
     } else if (!transacao) {
-      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, fixed: false }]);
+      setPagamentos([{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, emprestimoId: null, ...empFieldsPadrao(), fixed: false }]);
     }
   }, [transacao, proprietarioPadrao]);
 
@@ -64,7 +95,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
   }, []);
 
   const addPagamento = useCallback(() => {
-    setPagamentos(prev => [...prev, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, fixed: false }]);
+    setPagamentos(prev => [...prev, { pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, emprestimoId: null, ...empFieldsPadrao(), fixed: false }]);
   }, [proprietarioPadrao]);
 
   const removePagamento = useCallback((index = null) => {
@@ -107,6 +138,8 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
           valor: String(i === n - 1 ? remainder : share),
           paymentTags: i === 0 ? { ...tags } : {},
           parcelamento: null,
+          emprestimoId: null,
+          ...empFieldsPadrao(),
           fixed: false
         });
       }
@@ -127,12 +160,112 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     setPagamentos(prev => {
       const source = prev[index];
       if (!source) return prev;
-      const copy = { ...source, paymentTags: { ...(source.paymentTags || {}) }, parcelamento: null, fixed: false };
+      const copy = { ...source, paymentTags: { ...(source.paymentTags || {}) }, parcelamento: null, ...empFieldsPadrao(), fixed: false };
       const novos = [...prev];
       novos.splice(index + 1, 0, copy);
       return novos;
     });
   }, []);
+
+  /**
+   * Seta o `emprestimoId` em um pagamento específico (caminho novo).
+   * Use `null` para desvincular. Validação de exclusividade mútua com
+   * o TX-level emprestimoId é feita no submit do form.
+   *
+   * Mantida por compatibilidade (fluxo antigo: user escolhia empréstimo
+   * direto). O fluxo novo (suíte rica por pagamento) usa
+   * `onPagamentoEmprestimoFieldChange` + `setPagamentoEmprestimoIdByField`
+   * (abaixo) e o `NovaTransacaoForm.handleSubmit` cria o Empréstimo via
+   * `criarEmprestimo` antes de salvar a TX.
+   */
+  const setPagamentoEmprestimoId = useCallback((index, empId) => {
+    setPagamentos(prev => {
+      if (!prev[index]) return prev;
+      const novos = [...prev];
+      novos[index] = { ...novos[index], emprestimoId: empId || null };
+      return novos;
+    });
+  }, []);
+
+  /**
+   * Atualiza qualquer campo da suíte de Empréstimo de um pagamento
+   * específico. Usado pelo `EmprestimoFormFields` aninhado na
+   * `TabPagamentos`. Quando o user desmarca `empAtivo`, limpa o resto
+   * da suíte E o `emprestimoId` final do payload.
+   *
+   * `field` é SEM prefixo `emp` (ex: 'pessoaId', 'modo', 'emprestimoId',
+   * 'novoTipoRetorno', 'novoPrazoFinal', 'novoValorEsperado', 'ativo').
+   * A função prefixa internamente para casar com o state do pagamento.
+   */
+  const onPagamentoEmprestimoFieldChange = useCallback((index, field, value) => {
+    setPagamentos(prev => {
+      if (!prev[index]) return prev;
+      const novos = [...prev];
+      const current = novos[index];
+      // Mapeia campo "legado" (sem prefixo) → campo do state (com prefixo emp)
+      const stateField = field === 'ativo' ? 'empAtivo'
+        : field === 'pessoaId' ? 'empPessoaId'
+        : field === 'modo' ? 'empModo'
+        : field === 'emprestimoId' ? 'emprestimoId' // já é o do payload
+        : field === 'novoTipoRetorno' ? 'empNovoTipoRetorno'
+        : field === 'novoPrazoFinal' ? 'empNovoPrazoFinal'
+        : field === 'novoValorEsperado' ? 'empNovoValorEsperado'
+        : field;
+      const next = { ...current, [stateField]: value };
+      // Toggle off da suíte → limpa tudo (estado consistente)
+      if (field === 'ativo' && !value) {
+        Object.assign(next, empFieldsPadrao(), { fixed: current.fixed });
+      } else if (field === 'pessoaId') {
+        // Trocou de pessoa → limpa lista cacheada e o empréstimo vinculado
+        next.empEmprestimosPessoa = [];
+        next.emprestimoId = null;
+      } else if (field === 'modo' && value === 'vincular') {
+        // Voltou para vincular → limpa campos de "criar"
+        next.empNovoTipoRetorno = 'valor_fixo';
+        next.empNovoPrazoFinal = '';
+      } else if (field === 'modo' && value === 'criar') {
+        // Mudou para criar → limpa o empréstimo vinculado (vai ser
+        // criado pelo NovaTransacaoForm.handleSubmit)
+        next.emprestimoId = null;
+      }
+      novos[index] = next;
+      return novos;
+    });
+  }, []);
+
+  /**
+   * Seta o resultado de carregar a lista de Empréstimos para o pagamento
+   * `index` filtrado por pessoa. Chamado pelo `TabPagamentos` quando o
+   * pai resolve `listarEmprestimos({ pessoaId, status: 'ativo' })`.
+   */
+  const setPagamentoEmprestimosPessoa = useCallback((index, lista) => {
+    setPagamentos(prev => {
+      if (!prev[index]) return prev;
+      const novos = [...prev];
+      novos[index] = {
+        ...novos[index],
+        empEmprestimosPessoa: lista || [],
+        empLoadingEmprestimos: false
+      };
+      return novos;
+    });
+  }, []);
+
+  const setPagamentoEmprestimoLoading = useCallback((index, loading) => {
+    setPagamentos(prev => {
+      if (!prev[index]) return prev;
+      const novos = [...prev];
+      novos[index] = { ...novos[index], empLoadingEmprestimos: !!loading };
+      return novos;
+    });
+  }, []);
+
+  /** Retorna os índices de pagamentos que têm `emprestimoId` setado. */
+  const getPagamentosComEmprestimo = useCallback(() => {
+    return pagamentos
+      .map((p, i) => (p && p.emprestimoId ? i : -1))
+      .filter(i => i >= 0);
+  }, [pagamentos]);
 
   const toggleFixed = useCallback((index) => {
     setPagamentos(prev => {
@@ -186,6 +319,34 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     return Math.abs(valorEsperadoParaSoma - soma) <= 0.01;
   }, [pagamentos, valorEsperadoParaSoma]);
 
+  /**
+   * Validação leve do vínculo de Empréstimo por pagamento (caminho novo).
+   * Retorna uma string de erro ou null. Critérios:
+   *  - empAtivo + pessoaId obrigatório
+   *  - modo 'vincular' + emprestimoId obrigatório
+   *  - modo 'criar' + novoPrazoFinal obrigatório
+   *  - tipoTransacao === 'gasto' + novoValorEsperado ≥ 0 obrigatório
+   */
+  const validarEmprestimos = useCallback((tipoTransacao) => {
+    for (let i = 0; i < pagamentos.length; i++) {
+      const p = pagamentos[i];
+      if (!p.empAtivo) continue;
+      if (!p.empPessoaId) return `Pagamento ${i + 1}: selecione uma pessoa para o empréstimo.`;
+      if (p.empModo === 'vincular') {
+        if (!p.emprestimoId) return `Pagamento ${i + 1}: selecione um empréstimo para vincular.`;
+      } else {
+        if (!p.empNovoPrazoFinal) return `Pagamento ${i + 1}: informe o prazo final do novo empréstimo.`;
+      }
+      if (tipoTransacao === 'gasto') {
+        const v = parseFloat(p.empNovoValorEsperado);
+        if (p.empNovoValorEsperado === '' || isNaN(v) || v < 0) {
+          return `Pagamento ${i + 1}: informe o valor esperado de retorno (≥ 0).`;
+        }
+      }
+    }
+    return null;
+  }, [pagamentos]);
+
   const buildPagamentosPayload = useCallback(() => {
     return pagamentos
       .filter(p => p.pessoa && p.pessoa.trim() !== '')
@@ -202,6 +363,11 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
             quantidade: parseInt(p.parcelamento.quantidade, 10) || 2,
             intervaloDias: parseInt(p.parcelamento.intervaloDias, 10) || 30
           };
+        }
+
+        // Vínculo pagamento-level de Empréstimo (caminho novo).
+        if (p.emprestimoId) {
+          payload.emprestimoId = p.emprestimoId;
         }
 
         return payload;
@@ -221,6 +387,12 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     toggleFixed,
     fillRemaining,
     distributeRemaining,
+    setPagamentoEmprestimoId,
+    onPagamentoEmprestimoFieldChange,
+    setPagamentoEmprestimosPessoa,
+    setPagamentoEmprestimoLoading,
+    getPagamentosComEmprestimo,
+    validarEmprestimos,
     isValid,
     showValidationWarning,
     valorEsperadoParaSoma,

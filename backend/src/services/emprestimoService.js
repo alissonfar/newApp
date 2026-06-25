@@ -30,12 +30,15 @@ async function calcularTotais(emprestimoId, usuarioId) {
   const objectId = typeof emprestimoId === 'string'
     ? new mongoose.Types.ObjectId(emprestimoId)
     : emprestimoId;
+  const usuarioObjId = new mongoose.Types.ObjectId(usuarioId);
 
-  const resultado = await Transacao.aggregate([
+  // CAMINHO 1 — TX-level legado (t.emprestimoId = X).
+  // Soma t.valor por tipo e t.valorEsperadoRetorno (apenas em gastos) na mesma passada.
+  const txLevelAgg = await Transacao.aggregate([
     {
       $match: {
         emprestimoId: objectId,
-        usuario: new mongoose.Types.ObjectId(usuarioId),
+        usuario: usuarioObjId,
         status: 'ativo',
         emprestimoEhJurosAuto: { $ne: true }
       }
@@ -43,38 +46,85 @@ async function calcularTotais(emprestimoId, usuarioId) {
     {
       $group: {
         _id: '$tipo',
-        total: { $sum: '$valor' }
+        total: { $sum: '$valor' },
+        totalEsperado: {
+          $sum: { $cond: [{ $eq: ['$tipo', 'gasto'] }, { $ifNull: ['$valorEsperadoRetorno', 0] }, 0] }
+        }
+      }
+    }
+  ]);
+
+  // CAMINHO 2 — Pagamento-level novo (pagamentos[].emprestimoId = X).
+  // Exclui TXs já contadas no caminho 1 (t.emprestimoId = X) para não duplicar.
+  const pagamentoLevelAgg = await Transacao.aggregate([
+    {
+      $match: {
+        usuario: usuarioObjId,
+        status: 'ativo',
+        emprestimoEhJurosAuto: { $ne: true },
+        'pagamentos.emprestimoId': objectId,
+        emprestimoId: { $ne: objectId }
+      }
+    },
+    { $unwind: '$pagamentos' },
+    { $match: { 'pagamentos.emprestimoId': objectId } },
+    {
+      $group: {
+        _id: '$tipo',
+        total: { $sum: '$pagamentos.valor' }
+      }
+    }
+  ]);
+
+  // Esperado por pagamento: agrega do PAGAMENTO (caminho novo).
+  // Regra: cada TX conta 1x, não por pagamento (para não duplicar se uma TX
+  // tem 2 pagamentos com o mesmo emprestimoId). Como o valorEsperadoRetorno
+  // agora vive no pagamento, agrupamos por TX, pegamos o valorEsperadoRetorno
+  // do PRIMEIRO pagamento emprestado (assume-se que todos os pagamentos
+  // emprestados de uma mesma TX para o mesmo Empréstimo têm o mesmo valor
+  // esperado — coerente com o modelo de "complemento" do design anterior).
+  const esperadoPagamentoAgg = await Transacao.aggregate([
+    {
+      $match: {
+        usuario: usuarioObjId,
+        status: 'ativo',
+        tipo: 'gasto',
+        'pagamentos.emprestimoId': objectId,
+        emprestimoId: { $ne: objectId }
+      }
+    },
+    { $unwind: '$pagamentos' },
+    { $match: { 'pagamentos.emprestimoId': objectId, 'pagamentos.valorEsperadoRetorno': { $ne: null, $gt: 0 } } },
+    {
+      $group: {
+        _id: '$_id',  // agrupa por TX
+        valorEsperado: { $first: '$pagamentos.valorEsperadoRetorno' }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: '$valorEsperado' }
       }
     }
   ]);
 
   let totalDisbursed = 0;
   let totalReceived = 0;
-  for (const r of resultado) {
-    if (r._id === 'gasto') totalDisbursed = r.total;
-    else if (r._id === 'recebivel') totalReceived = r.total;
-  }
-
-  // Soma esperada: apenas TXs de GASTO ativas com valorEsperadoRetorno setado.
-  // Cada TX carrega o seu próprio "quanto espero receber de volta dela".
-  const esperadoAgg = await Transacao.aggregate([
-    {
-      $match: {
-        emprestimoId: objectId,
-        usuario: new mongoose.Types.ObjectId(usuarioId),
-        status: 'ativo',
-        tipo: 'gasto',
-        valorEsperadoRetorno: { $ne: null, $gt: 0 }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: '$valorEsperadoRetorno' }
-      }
+  let totalEsperado = 0;
+  for (const r of txLevelAgg) {
+    if (r._id === 'gasto') {
+      totalDisbursed += r.total;
+      totalEsperado += r.totalEsperado || 0;
+    } else if (r._id === 'recebivel') {
+      totalReceived += r.total;
     }
-  ]);
-  const totalEsperado = (esperadoAgg[0] && esperadoAgg[0].total) ? esperadoAgg[0].total : 0;
+  }
+  for (const r of pagamentoLevelAgg) {
+    if (r._id === 'gasto') totalDisbursed += r.total;
+    else if (r._id === 'recebivel') totalReceived += r.total;
+  }
+  totalEsperado += esperadoPagamentoAgg[0]?.total || 0;
 
   return {
     totalDisbursed,
