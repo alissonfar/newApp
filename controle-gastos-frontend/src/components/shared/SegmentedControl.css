@@ -51,3 +51,19 @@
 .ds-segmented-control__btn--active.ds-segmented-control__btn--success {
   background: var(--cor-sucesso);
 }
+
+/* Dark mode: --cg-color-primary vira azul claro (#60a5fa), texto branco fica ilegível.
+   Forçar texto escuro para o botão ativo. Hex justificado — é o equivalente semântico
+   de "on-primary" (token não existe no projeto ainda). !important cobre ordem de
+   especificidade sem precisar de refactor maior. */
+[data-theme="dark"] .ds-segmented-control__btn--active {
+  color: #0F172A !important;
+}
+
+[data-theme="dark"] .ds-segmented-control__btn--active.ds-segmented-control__btn--error {
+  color: white !important;
+}
+
+[data-theme="dark"] .ds-segmented-control__btn--active.ds-segmented-control__btn--success {
+  color: white !important;
+}

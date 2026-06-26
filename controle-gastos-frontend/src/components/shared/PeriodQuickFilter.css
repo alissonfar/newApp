@@ -15,6 +15,12 @@
   gap: 0.5rem;
 }
 
+.period-quick-filter__buttons--day {
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--cg-color-border);
+}
+
 .period-quick-filter__btn {
   white-space: nowrap;
 }

@@ -63,6 +63,56 @@ export const getYesterdayBR = () => {
 };
 
 /**
+ * Períodos de dia único (Hoje / Ontem / Amanhã) — usados pelo Relatório
+ * quando o user quer ver transações de um único dia.
+ */
+export const PERIODOS_DIA_UNICO = {
+  HOJE: 'HOJE',
+  ONTEM: 'ONTEM',
+  AMANHA: 'AMANHA'
+};
+
+/**
+ * Helper que retorna { dataInicio, dataFim } em formato YYYY-MM-DD para um dia único.
+ * Sempre retorna o mesmo dia em dataInicio e dataFim (período de 1 dia).
+ * @param {string} period - Uma das chaves de PERIODOS_DIA_UNICO
+ * @returns {{ dataInicio: string, dataFim: string } | null}
+ */
+export const getSingleDateRange = (period) => {
+  if (!period) return null;
+
+  const today = getCurrentDateBR();
+  const toStringDate = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  let target;
+  switch (period) {
+    case PERIODOS_DIA_UNICO.HOJE:
+      target = today;
+      break;
+    case PERIODOS_DIA_UNICO.ONTEM: {
+      target = new Date(today);
+      target.setDate(target.getDate() - 1);
+      break;
+    }
+    case PERIODOS_DIA_UNICO.AMANHA: {
+      target = new Date(today);
+      target.setDate(target.getDate() + 1);
+      break;
+    }
+    default:
+      return null;
+  }
+
+  const formatted = toStringDate(target);
+  return { dataInicio: formatted, dataFim: formatted };
+};
+
+/**
  * Períodos rápidos disponíveis (compatível com Relatório e Recebimentos)
  */
 export const PERIODOS_RAPIDOS = {

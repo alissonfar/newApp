@@ -265,6 +265,19 @@ input:focus, select:focus, textarea:focus {
     -webkit-text-fill-color: var(--cg-color-text-primary) !important;
   }
 
+  /* DataTable (grid em <div> com classes cg-*) — sem seletor genérico, precisa override.
+     Sem esta regra, ao alternar tema SEM reload, o texto das células/headers/rows
+     fica preso na cor do tema anterior (bug conhecido pós-refactor TanStack). */
+  .cg-data-table__th,
+  .cg-data-table__td,
+  .cg-data-table__row,
+  .cg-data-table__footer-cell,
+  .cg-data-table__footer-label,
+  .cg-data-table__footer-value {
+    color: var(--cg-color-text-primary) !important;
+    -webkit-text-fill-color: var(--cg-color-text-primary) !important;
+  }
+
   /* MUI Select (quando fechado) — texto do valor selecionado e placeholder */
   .MuiSelect-select,
   .MuiSelect-select.MuiSelect-outlined,

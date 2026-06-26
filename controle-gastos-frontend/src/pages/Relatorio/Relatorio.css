@@ -25,25 +25,17 @@
   .cg-relatorio__stat-grid { grid-template-columns: 1fr; }
 }
 
-/* Seção superior dividida em duas colunas (Painel de Filtros e Resumo) */
-.top-section {
-  display: flex;
-  gap: 25px;
-  align-items: flex-start;
-  margin-bottom: 30px;
+/* === Layout novo (refactor 2026-06-25) === */
+/* O painel de filtros e o summary são cards independentes empilhados verticalmente. */
+.cg-relatorio__summary {
+  margin-bottom: var(--cg-spacing-lg);
 }
 
-/* Painel de Filtros */
+/* .filter-panel agora é o container interno do card RelatorioFiltersPanel */
 .filter-panel {
-  flex: 2;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 25px;
-  background: linear-gradient(135deg, var(--cor-fundo-pagina-escura, #e4e9f0) 0%, var(--cor-primaria-muito-leve-escura, #d0e0f0) 100%);
-  padding: 30px;
-  border-radius: var(--borda-radius-grande, 12px);
-  border: 1px solid var(--cor-primaria-borda-forte, #8ab4f8);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  gap: 20px;
 }
 
 /* Cada seção de filtro como card */
@@ -150,9 +142,8 @@
   transform: translateY(-2px);
 }
 
-/* Painel de Resumo */
+/* Painel de Resumo (legacy, não usado no novo layout — mantido pra não quebrar) */
 .summary-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -212,6 +203,144 @@
   margin-bottom: var(--cg-spacing-md);
 }
 
+/* === Resultados Panel (novo) === */
+.relatorio-results-card {
+  margin-top: var(--cg-spacing-lg);
+}
+
+.relatorio-results-card__title {
+  font-size: var(--cg-font-size-lg);
+  font-weight: var(--cg-font-weight-semibold);
+  color: var(--cg-color-text-primary);
+  margin: 0 0 var(--cg-spacing-md);
+  display: flex;
+  align-items: baseline;
+  gap: var(--cg-spacing-sm);
+  flex-wrap: wrap;
+}
+
+.relatorio-results-card__count {
+  font-size: var(--cg-font-size-sm);
+  font-weight: var(--cg-font-weight-normal);
+  color: var(--cg-color-text-muted);
+}
+
+.relatorio-results-card__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-spacing-base);
+  margin-bottom: var(--cg-spacing-md);
+  flex-wrap: wrap;
+}
+
+.relatorio-results-card__group {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-spacing-sm);
+}
+
+.relatorio-results-card__group-label {
+  font-size: var(--cg-font-size-sm);
+  color: var(--cg-color-text-secondary);
+  font-weight: var(--cg-font-weight-medium);
+}
+
+.relatorio-results-card__group-select {
+  padding: 6px 10px;
+  font-size: var(--cg-font-size-sm);
+  border-radius: var(--cg-radius-sm);
+  border: 1px solid var(--cg-color-border);
+  background: var(--cg-color-surface-elevated);
+  color: var(--cg-color-text-primary);
+}
+
+/* === Group header (DataTable agrupado) === */
+.cg-data-table__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cg-spacing-sm);
+  padding: var(--cg-spacing-sm) var(--cg-spacing-base);
+  margin-top: var(--cg-spacing-sm);
+  background: var(--cg-color-surface);
+  border: 1px solid var(--cg-color-border);
+  border-radius: var(--cg-radius-sm);
+  font-size: var(--cg-font-size-sm);
+  font-weight: var(--cg-font-weight-semibold);
+  color: var(--cg-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cg-data-table__group-header-label {
+  color: var(--cg-color-text-primary);
+}
+
+.cg-data-table__group-header-count {
+  color: var(--cg-color-text-muted);
+  font-weight: var(--cg-font-weight-normal);
+  font-size: var(--cg-font-size-xs);
+}
+
+/* === Filtros compactos (modo colapsado) === */
+.relatorio-filtros-compact {
+  background: var(--cg-color-surface-elevated);
+  border: 1px solid var(--cg-color-border);
+  border-radius: var(--cg-radius-md);
+  padding: var(--cg-spacing-md) var(--cg-spacing-base);
+  margin-bottom: var(--cg-spacing-lg);
+  box-shadow: var(--cg-shadow-sm);
+}
+
+.relatorio-filtros-compact__row {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-spacing-md);
+  flex-wrap: wrap;
+}
+
+.relatorio-filtros-compact__period {
+  flex: 2;
+  min-width: 280px;
+}
+
+.relatorio-filtros-compact__tipo {
+  flex: 0 0 auto;
+}
+
+.relatorio-filtros-compact__search {
+  flex: 1;
+  min-width: 160px;
+}
+
+.relatorio-filtros-compact__input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--cg-color-border);
+  border-radius: var(--cg-radius-sm);
+  background: var(--cg-color-surface);
+  color: var(--cg-color-text-primary);
+  font-size: var(--cg-font-size-sm);
+}
+
+.relatorio-filtros-compact__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-spacing-sm);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .relatorio-filtros-compact__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .relatorio-filtros-compact__period,
+  .relatorio-filtros-compact__search {
+    flex-basis: 100%;
+  }
+}
+
 /* Cores para tipo gasto/recebível dentro do DataTable */
 .tipo-gasto {
   color: var(--cg-color-error);
@@ -227,8 +356,15 @@
 .relatorio-tags-cell {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  max-width: 300px;
+  gap: 4px;
+  max-width: 480px;
+  overflow: visible;
+}
+
+/* Chip individual — pílula com texto inteiro (não corta com ellipsis) */
+.relatorio-tags-cell .tag-chip {
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* Célula de ações no DataTable (botões Editar/Excluir lado a lado) */
@@ -258,17 +394,6 @@
 
 /* Responsividade para telas menores */
 @media (max-width: 1024px) {
-  .top-section {
-    flex-direction: column;
-    gap: 30px;
-  }
-
-  .filter-panel,
-  .summary-panel {
-    flex: none;
-    width: 100%;
-  }
-
   .filter-row {
     gap: 15px;
   }
@@ -281,11 +406,6 @@
 @media (max-width: 768px) {
   .cg-relatorio {
     padding: var(--cg-spacing-md) var(--cg-spacing-base);
-  }
-
-  .filter-panel,
-  .summary-panel {
-    padding: 20px;
   }
 
   .filter-section {
@@ -310,11 +430,6 @@
 @media (max-width: 480px) {
   .cg-relatorio {
     padding: var(--cg-spacing-sm) var(--cg-spacing-md);
-  }
-
-  .filter-panel,
-  .summary-panel {
-    padding: 15px;
   }
 
   .filter-section {

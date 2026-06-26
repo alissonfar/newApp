@@ -1,48 +1,49 @@
 // src/pages/Relatorio/Relatorio.js
-import React, { useEffect, useState, useCallback, useContext } from 'react';
-import Select from 'react-select';
+// Página de Relatórios — refatorada para usar sub-componentes compartilhados.
+// Estrutura:
+//   1. SectionHeader com botão de colapso
+//   2. RelatorioFiltersPanel (expandido) ou RelatorioFiltersCompact (colapsado)
+//   3. RelatorioSummaryPanel
+//   4. RelatorioResultsPanel
+//   5. ModalTransacao (criar/editar)
+import React, { useEffect, useState, useCallback, useContext, useMemo } from 'react';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
-import { obterTransacoesPaginadas, obterTransacoesExport, obterCategorias, obterPessoasDistintas, obterTransacaoPorId, excluirTransacao, estornarGrupoPai, obterTransacoesPorGrupo, gerarRelatorioAvancado, listarTemplatesRelatorio } from '../../api.js';
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import {
+  obterTransacoesPaginadas,
+  obterTransacoesExport,
+  obterCategorias,
+  obterPessoasDistintas,
+  obterTransacaoPorId,
+  excluirTransacao,
+  estornarGrupoPai,
+  obterTransacoesPorGrupo,
+  gerarRelatorioAvancado,
+  listarTemplatesRelatorio
+} from '../../api.js';
 import { useData } from '../../context/DataContext';
 import { AuthContext } from '../../context/AuthContext';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import NovaTransacaoForm from '../../components/Transaction/NovaTransacaoForm';
 import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF, buildReportFilename } from '../../utils/export/exportPDF';
-import IconRenderer from '../../components/shared/IconRenderer';
-import EmprestimoBadge from '../../components/Emprestimos/EmprestimoBadge';
-import './Relatorio.css';
-import { 
-  Menu, 
-  MenuItem,
-  Divider
-} from '@mui/material';
-import {
-  FaArrowDown,
-  FaArrowUp,
-  FaPiggyBank
-} from 'react-icons/fa';
-import { 
-  PictureAsPdf as PdfIcon,
-  TableChart as CsvIcon,
-  Download as DownloadIcon
-} from '@mui/icons-material';
-import { formatDateBR, getDateRangeForPeriod } from '../../utils/dateUtils';
-import { formatarMoeda } from '../../utils/format';
+import { formatDateBR } from '../../utils/dateUtils';
+import { useRelatorioFilters } from '../../hooks/useRelatorioFilters';
 import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
-import Card, { CardHeader, CardContent } from '../../components/shared/Card';
-import StatCard from '../../components/shared/StatCard';
-import DataTable from '../../components/shared/DataTable';
-import EmptyState from '../../components/shared/EmptyState';
+import RelatorioFiltersPanel from '../../components/Relatorio/RelatorioFiltersPanel';
+import RelatorioFiltersCompact from '../../components/Relatorio/RelatorioFiltersCompact';
+import RelatorioSummaryPanel from '../../components/Relatorio/RelatorioSummaryPanel';
+import RelatorioResultsPanel from '../../components/Relatorio/RelatorioResultsPanel';
+import './Relatorio.css';
 
 const PAGE_SIZE = 50;
 
 function flattenTransactions(transArray) {
   const flattened = [];
   (transArray || []).forEach((tr) => {
-    const id = tr.id || tr._id;
+    const transacaoId = tr.id || tr._id;
     const baseEmprestimo = {
       esconderNaLista: !!tr.esconderNaLista,
       emprestimoInfo: tr.emprestimoInfo || null
@@ -58,8 +59,11 @@ function flattenTransactions(transArray) {
       isInstallment: tr.isInstallment || false
     };
     if (!tr.pagamentos || tr.pagamentos.length === 0) {
+      // TX sem pagamentos: 1 linha, id = id da TX (sem colisão)
       flattened.push({
-        id,
+        id: transacaoId,
+        transacaoId,
+        pagamentoIndex: null,
         data: tr.data,
         tipo: tr.tipo,
         descricao: tr.descricao,
@@ -74,9 +78,12 @@ function flattenTransactions(transArray) {
         installmentTotal: null
       });
     } else {
-      tr.pagamentos.forEach((p) => {
+      // TX com pagamentos: 1 linha POR PAGAMENTO, id único composto
+      tr.pagamentos.forEach((p, index) => {
         flattened.push({
-          id,
+          id: `${transacaoId}-${index}`,
+          transacaoId,
+          pagamentoIndex: index,
           data: tr.data,
           tipo: tr.tipo,
           descricao: tr.descricao,
@@ -99,7 +106,6 @@ function flattenTransactions(transArray) {
 const Relatorio = () => {
   const { usuario } = useContext(AuthContext);
   const proprietario = usuario?.preferencias?.proprietario || '';
-  const [filteredRows, setFilteredRows] = useState([]);
   const { tags, loadingData: loadingContextData, errorData: errorContextData } = useData();
   const [categorias, setCategorias] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(true);
@@ -121,8 +127,15 @@ const Relatorio = () => {
     sortDirection: 'desc'
   };
 
-  const [draftFilters, setDraftFilters] = useState(initialFilters);
-  const [appliedFilters, setAppliedFilters] = useState(null);
+  // Hook de filtros (inclui estado de colapso persistido)
+  const filters = useRelatorioFilters(initialFilters);
+
+  // === Sort local (client-side, instantâneo) ===
+  // Não vai pro backend: TanStack Table reordena as rows na página atual sem chamada de API.
+  // 1º clique: desc, 2º clique: asc, 3º clique: volta ao default (data/desc).
+  const [sortColumn, setSortColumn] = useState('data');
+  const [sortDirection, setSortDirection] = useState('desc');
+
   const [selectedTemplate, setSelectedTemplate] = useState('simples');
   const [reportTemplates, setReportTemplates] = useState([]);
 
@@ -142,6 +155,7 @@ const Relatorio = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [filteredRows, setFilteredRows] = useState([]);
 
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
 
@@ -149,6 +163,11 @@ const Relatorio = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [, setIsCreate] = useState(false);
 
+  // === Estados do Results Panel (busca interna, agrupar por, seleção) ===
+  const [groupBy, setGroupBy] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // === Effects: carga inicial ===
   useEffect(() => {
     async function loadCategorias() {
       try {
@@ -156,7 +175,11 @@ const Relatorio = () => {
         setCategorias(cats);
         const initTagFilters = {};
         cats.forEach(cat => { initTagFilters[cat._id] = []; });
-        setDraftFilters(prev => ({ ...prev, tagFilters: Object.keys(prev.tagFilters || {}).length ? prev.tagFilters : initTagFilters }));
+        // Inicializa tagFilters com shape correto na primeira carga
+        filters.onChange({
+          ...initialFilters,
+          tagFilters: initTagFilters
+        });
       } catch (e) {
         setErrorCategorias(e);
       } finally {
@@ -164,6 +187,7 @@ const Relatorio = () => {
       }
     }
     loadCategorias();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -190,6 +214,7 @@ const Relatorio = () => {
     loadTemplates();
   }, []);
 
+  // === Lógica de fetch ===
   const buildTagsFilterFromObj = useCallback((tagFiltersObj) => {
     const filter = {};
     Object.entries(tagFiltersObj || {}).forEach(([catId, tagIds]) => {
@@ -200,8 +225,8 @@ const Relatorio = () => {
     return filter;
   }, []);
 
-  const fetchData = useCallback(async (pageNum = 1, filters) => {
-    const f = filters ?? appliedFilters ?? draftFilters;
+  const fetchData = useCallback(async (pageNum = 1, filtersToApply) => {
+    const f = filtersToApply ?? filters.appliedFilters ?? filters.draftFilters;
     if (!f) return;
 
     setLoadingTransactions(true);
@@ -257,11 +282,10 @@ const Relatorio = () => {
     } finally {
       setLoadingTransactions(false);
     }
-  }, [appliedFilters, draftFilters, buildTagsFilterFromObj]);
+  }, [filters.appliedFilters, filters.draftFilters, buildTagsFilterFromObj]);
 
   // Agrupa as tags por categoria (para exibir nos filtros)
-  // Esta lógica agora usa `categorias` e `tags` do contexto
-  const tagsPorCategoria = React.useMemo(() => {
+  const tagsPorCategoria = useMemo(() => {
     return tags.reduce((acc, tag) => {
       if (!tag.categoria) return acc;
       const categoriaId = typeof tag.categoria === 'object' ? tag.categoria._id : tag.categoria;
@@ -277,30 +301,46 @@ const Relatorio = () => {
       }
       return acc;
     }, {});
-  }, [tags, categorias]); // Recalcula se tags ou categorias mudarem
+  }, [tags, categorias]);
 
-  // Seleção rápida de datas - reutiliza utilitário compartilhado (DRY com Recebimentos)
-  const handleQuickDateRange = (option) => {
-    const range = getDateRangeForPeriod(option);
-    if (!range) return;
-    setDraftFilters(prev => ({
-      ...prev,
-      dataInicio: range.dataInicio,
-      dataFim: range.dataFim
-    }));
-  };
-
+  // === Ações de filtros ===
   const applyFilters = () => {
-    const draft = { ...draftFilters };
-    setAppliedFilters(draft);
+    const applied = filters.apply();
     setPage(1);
-    fetchData(1, draft);
+    fetchData(1, applied);
   };
 
+  const handleClearFilters = () => {
+    // Preserva shape de tagFilters (chave por categoria)
+    const resetTagFilters = {};
+    categorias.forEach(cat => { resetTagFilters[cat._id] = []; });
+    const reset = {
+      ...initialFilters,
+      tagFilters: resetTagFilters
+    };
+    filters.onChange(reset);
+    filters.clear();
+    setQuickRange('');
+    setPage(1);
+    setFilteredRows([]);
+    setTotal(0);
+    setTotalPages(1);
+    setSummaryInfo({
+      totalTransactions: 0,
+      totalValue: '0.00',
+      totalPeople: 0,
+      averagePerPerson: '0.00',
+      totalGastos: '0.00',
+      totalRecebiveis: '0.00',
+      netValue: '0.00'
+    });
+  };
+
+  // === Exportação ===
   const handleExport = async () => {
     try {
-      const f = appliedFilters ?? draftFilters;
-      const filters = {
+      const f = filters.appliedFilters ?? filters.draftFilters;
+      const exportFilters = {
         dataInicio: f.dataInicio || undefined,
         dataFim: f.dataFim || undefined,
         tipo: f.selectedTipo !== 'both' ? f.selectedTipo : undefined,
@@ -308,8 +348,8 @@ const Relatorio = () => {
         excludePessoas: (f.excludePessoas || []).length ? f.excludePessoas : undefined,
         tagsFilter: buildTagsFilterFromObj(f.tagFilters),
         search: (f.searchTerm || '').trim() || undefined,
-        sortBy: f.sortColumn || 'data',
-        sortDir: f.sortDirection || 'desc'
+        sortBy: sortColumn || 'data',
+        sortDir: sortDirection || 'desc'
       };
 
       let normalizedRows;
@@ -320,7 +360,7 @@ const Relatorio = () => {
       if (selectedTemplate !== 'simples') {
         const result = await gerarRelatorioAvancado({
           templateId: selectedTemplate,
-          filters,
+          filters: exportFilters,
           format: 'json'
         });
         normalizedRows = (result.rows || []).map(row => ({
@@ -346,7 +386,7 @@ const Relatorio = () => {
         exportSummary = result.summary || {};
         templateUsed = result.templateUsed || selectedTemplate;
       } else {
-        const res = await obterTransacoesExport(filters);
+        const res = await obterTransacoesExport(exportFilters);
         normalizedRows = flattenTransactions(res.transacoes || []).map(row => ({
           ...row,
           tipo: row.tipo?.toLowerCase(),
@@ -423,35 +463,12 @@ const Relatorio = () => {
     }
   };
 
-  const handleClearFilters = () => {
-    const resetTagFilters = {};
-    categorias.forEach(cat => { resetTagFilters[cat._id] = []; });
-    const reset = {
-      ...initialFilters,
-      tagFilters: resetTagFilters
-    };
-    setDraftFilters(reset);
-    setAppliedFilters(null);
-    setQuickRange('');
-    setPage(1);
-    setFilteredRows([]);
-    setTotal(0);
-    setTotalPages(1);
-    setSummaryInfo({
-      totalTransactions: 0,
-      totalValue: '0.00',
-      totalPeople: 0,
-      averagePerPerson: '0.00',
-      totalGastos: '0.00',
-      totalRecebiveis: '0.00',
-      netValue: '0.00'
-    });
-  };
-
-  // Funções para o menu de exportação
+  // === Ações de row (edit / delete) ===
+  // ATENÇÃO: row.id pode ser composto ("abc123-0") quando a TX tem múltiplos pagamentos.
+  // Para operações de TX (editar/excluir), usar row.transacaoId (id da TX pai).
   const handleEdit = async (row) => {
     try {
-      const transacao = await obterTransacaoPorId(row.id);
+      const transacao = await obterTransacaoPorId(row.transacaoId);
       setEditingTransacao(transacao);
       setIsCreate(false);
       setModalOpen(true);
@@ -523,7 +540,7 @@ const Relatorio = () => {
           try {
             await estornarGrupoPai(row.parentTransactionId);
             toast.success('Grupo estornado com sucesso!');
-            fetchData(page, appliedFilters ?? draftFilters);
+            fetchData(page, filters.appliedFilters ?? filters.draftFilters);
           } catch (error) {
             toast.error('Erro ao estornar grupo.');
           }
@@ -544,9 +561,9 @@ const Relatorio = () => {
     });
     if (result.isConfirmed) {
       try {
-        await excluirTransacao(row.id);
+        await excluirTransacao(row.transacaoId);
         toast.success('Transação excluída com sucesso!');
-        fetchData(page, appliedFilters ?? draftFilters);
+        fetchData(page, filters.appliedFilters ?? filters.draftFilters);
       } catch (error) {
         toast.error('Erro ao excluir transação.');
       }
@@ -566,7 +583,7 @@ const Relatorio = () => {
   };
 
   const handleSuccess = () => {
-    fetchData(page, appliedFilters ?? draftFilters);
+    fetchData(page, filters.appliedFilters ?? filters.draftFilters);
   };
 
   const handleExportClick = (event) => {
@@ -583,9 +600,33 @@ const Relatorio = () => {
     handleExportClose();
   };
 
-  // Adicionar tratamento para loading/erro geral
+  // === Sort handler: client-side, sem chamada de API ===
+  // 1º clique: desc, 2º clique: asc, 3º clique: volta ao default (data/desc).
+  // O TanStack Table dentro do DataTable reordena as rows já em memória.
+  const handleSortChange = useCallback((column) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'desc') {
+        setSortDirection('asc');
+      } else {
+        // terceira vez: limpa ordenação customizada, volta ao default
+        setSortColumn('data');
+        setSortDirection('desc');
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  }, [sortColumn, sortDirection]);
+
+  // === Paginação ===
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    fetchData(newPage, filters.appliedFilters ?? filters.draftFilters);
+  };
+
+  // === Adicionar tratamento para loading/erro geral ===
   if (loadingContextData || loadingTransactions || loadingCategorias) {
-    return <div className="relatorio-loading">Carregando dados do relatório...</div>; // Mensagem unificada
+    return <div className="relatorio-loading">Carregando dados do relatório...</div>;
   }
 
   if (errorContextData || errorTransactions || errorCategorias) {
@@ -598,511 +639,92 @@ const Relatorio = () => {
         title="Relatórios"
         subtitle="Filtre, visualize e exporte suas transações"
         className="cg-relatorio__header"
+        action={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={filters.toggleCollapsed}
+            icon={filters.collapsed ? <FaChevronDown /> : <FaChevronUp />}
+            title={filters.collapsed ? 'Expandir filtros' : 'Recolher filtros'}
+            aria-label={filters.collapsed ? 'Expandir filtros' : 'Recolher filtros'}
+          >
+            {filters.collapsed ? 'Expandir' : 'Recolher'}
+          </Button>
+        }
       />
 
-      <div className="top-section">
-        {/* Painel de Filtros (organizado em seções) */}
-        <div className="filter-panel">
-          {/* Seção 1: Datas */}
-          <div className="filter-section">
-            <h4>Datas</h4>
-            <div className="filter-row">
-              <div className="filter-group">
-                <label>Seleção de Datas:</label>
-                <select
-                  value={quickRange}
-                  onChange={e => {
-                    setQuickRange(e.target.value);
-                    handleQuickDateRange(e.target.value);
-                  }}
-                >
-                  <option value="">-- Selecione --</option>
-                  <option value="MES_ATUAL">Mês Atual</option>
-                  <option value="MES_ANTERIOR">Mês Anterior</option>
-                  <option value="ULTIMOS_60_DIAS">Últimos 60 Dias</option>
-                  <option value="ULTIMOS_30_DIAS">Últimos 30 Dias</option>
-                  <option value="ULTIMOS_15_DIAS">Últimos 15 Dias</option>
-                  <option value="ULTIMOS_7_DIAS">Últimos 7 Dias</option>
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>Data Início:</label>
-                <input
-                  type="date"
-                  value={draftFilters.dataInicio || ''}
-                  onChange={e => setDraftFilters(prev => ({ ...prev, dataInicio: e.target.value }))}
-                />
-              </div>
-
-              <div className="filter-group">
-                <label>Data Fim:</label>
-                <input
-                  type="date"
-                  value={draftFilters.dataFim || ''}
-                  onChange={e => setDraftFilters(prev => ({ ...prev, dataFim: e.target.value }))}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Seção 2: Transação */}
-          <div className="filter-section">
-            <h4>Transação</h4>
-            <div className="filter-row">
-              <div className="filter-group">
-                <label>Pessoas (incluir):</label>
-                <Select
-                  isMulti
-                  options={pessoasOptions}
-                  value={(draftFilters.selectedPessoas || []).map(p => ({ value: p, label: p }))}
-                  onChange={(selectedOptions) => {
-                    const values = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
-                    setDraftFilters(prev => ({ ...prev, selectedPessoas: values }));
-                  }}
-                  classNamePrefix="mySelect"
-                  placeholder="Selecione pessoas..."
-                />
-              </div>
-
-              <div className="filter-group">
-                <label>Excluir pessoas:</label>
-                <Select
-                  isMulti
-                  options={pessoasOptions}
-                  value={(draftFilters.excludePessoas || []).map(p => ({ value: p, label: p }))}
-                  onChange={(selectedOptions) => {
-                    const values = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
-                    setDraftFilters(prev => ({ ...prev, excludePessoas: values }));
-                  }}
-                  classNamePrefix="mySelect"
-                  placeholder="Excluir pessoas..."
-                />
-              </div>
-
-              <div className="filter-group">
-                <label>Tipo de Transação:</label>
-                <select
-                  value={draftFilters.selectedTipo || 'both'}
-                  onChange={e => setDraftFilters(prev => ({ ...prev, selectedTipo: e.target.value }))}
-                >
-                  <option value="both">Ambos</option>
-                  <option value="gasto">Gasto</option>
-                  <option value="recebivel">Recebível</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Seção 3: Tags de Pagamento */}
-          <div className="filter-section">
-            <h4>Tags de Pagamento</h4>
-            <div className="filter-row">
-              {Object.entries(tagsPorCategoria).map(([categoriaId, { nome, tags }]) => (
-                <div key={categoriaId} className="filter-group">
-                  <label>{nome}:</label>
-                  <Select
-                    isMulti
-                    options={tags.map(tag => ({
-                      value: tag._id,  // Usando ID da tag em vez do nome
-                      label: tag.nome,
-                      cor: tag.cor,
-                      icone: tag.icone
-                    }))}
-                    value={((draftFilters.tagFilters || {})[categoriaId] || []).map(tagId => {
-                      const tag = tags.find(t => t._id === tagId);
-                      return tag ? {
-                        value: tag._id,
-                        label: tag.nome,
-                        cor: tag.cor,
-                        icone: tag.icone
-                      } : null;
-                    }).filter(Boolean)}
-                    onChange={(selectedOptions) => {
-                      const selected = selectedOptions ? selectedOptions.map(opt => opt.value) : [];
-                      setDraftFilters(prev => ({
-                        ...prev,
-                        tagFilters: { ...(prev.tagFilters || {}), [categoriaId]: selected }
-                      }));
-                    }}
-                    formatOptionLabel={({ value, label, cor, icone }) => (
-                      <span 
-                        className="tag-chip-like"
-                        style={{ 
-                          backgroundColor: `${cor || '#ccc'}20`,
-                          color: cor || '#666',
-                          border: `1px solid ${cor || '#ccc'}`,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          padding: '4px 10px',
-                          borderRadius: '14px',
-                          fontSize: '0.88rem',
-                          fontWeight: 500,
-                          margin: '2px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {icone && <IconRenderer nome={icone} size={14} cor={cor || '#ccc'} />}
-                        {label}
-                      </span>
-                    )}
-                    components={{ 
-                      MultiValueLabel: (props) => {
-                        const { cor, icone } = props.data;
-                        return (
-                          <span 
-                            className="tag-chip-like"
-                            style={{
-                              backgroundColor: `${cor || '#ccc'}20`,
-                              color: cor || '#666',
-                              border: `1px solid ${cor || '#ccc'}`,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '2px 6px',
-                              borderRadius: '10px',
-                              fontSize: '0.85rem',
-                              fontWeight: 500,
-                              margin: '1px 2px'
-                            }}
-                          >
-                            {icone && <IconRenderer nome={icone} size={12} cor={cor || '#ccc'} />}
-                            {props.children}
-                          </span>
-                        );
-                      }
-                    }}
-                    classNamePrefix="mySelect"
-                    placeholder="Selecione tags..."
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Seção 4: Modelo de Relatório */}
-          <div className="filter-section">
-            <h4>Modelo de Relatório</h4>
-            <div className="filter-row">
-              <div className="filter-group">
-                <label>Template:</label>
-                <select
-                  value={selectedTemplate}
-                  onChange={e => setSelectedTemplate(e.target.value)}
-                >
-                  {reportTemplates.length > 0 ? (
-                    reportTemplates.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="simples">Relatório Simples</option>
-                      <option value="devedor">Relatório de Devedor</option>
-                    </>
-                  )}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Seção 5: Pesquisa & Ordenação */}
-          <div className="filter-section">
-            <h4>Pesquisa & Ordenação</h4>
-            <div className="filter-row">
-              <div className="filter-group">
-                <label>Pesquisar:</label>
-                <input
-                  type="text"
-                  value={draftFilters.searchTerm || ''}
-                  onChange={e => setDraftFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                  placeholder="Buscar descrição ou pessoa..."
-                />
-              </div>
-              <div className="filter-group">
-                <label>Ordenar por:</label>
-                <select
-                  value={draftFilters.sortColumn || 'data'}
-                  onChange={e => setDraftFilters(prev => ({ ...prev, sortColumn: e.target.value }))}
-                >
-                  <option value="">--Nenhum--</option>
-                  <option value="data">Data</option>
-                  <option value="descricao">Descrição</option>
-                  <option value="pessoa">Pessoa</option>
-                  <option value="valorPagamento">Valor (Pagamento)</option>
-                </select>
-                <select
-                  value={draftFilters.sortDirection || 'desc'}
-                  onChange={e => setDraftFilters(prev => ({ ...prev, sortDirection: e.target.value }))}
-                >
-                  <option value="asc">Ascendente</option>
-                  <option value="desc">Descendente</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Seção 6: Botões (Filtrar, Limpar, Nova Transação e Exportar) */}
-          <div className="filter-section filter-actions">
-            <Button variant="primary" onClick={applyFilters}>
-              Filtrar/Buscar/Ordenar
-            </Button>
-            <Button variant="ghost" onClick={handleClearFilters}>
-              Limpar Filtros
-            </Button>
-            <Button variant="success" onClick={handleCreate} startIcon={<span>+</span>}>
-              Nova Transação
-            </Button>
-
-            <div className="export-group">
-              <Button
-                variant="primary"
-                onClick={handleExportClick}
-                startIcon={<DownloadIcon />}
-                className="export-button"
-              >
-                Exportar Relatório
-              </Button>
-              <Menu
-                anchorEl={exportAnchorEl}
-                open={Boolean(exportAnchorEl)}
-                onClose={handleExportClose}
-              >
-                <MenuItem disabled>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ color: '#666', fontSize: '14px', fontWeight: 'bold' }}>
-                      Escolha o formato
-                    </span>
-                    <span style={{ color: '#999', fontSize: '11px', fontWeight: 'normal' }}>
-                      Template: {reportTemplates.find(t => t.id === selectedTemplate)?.name || (selectedTemplate === 'devedor' ? 'Relatório de Devedor' : 'Relatório Simples')}
-                    </span>
-                  </div>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={() => handleExportNow('pdf')}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <PdfIcon style={{ color: '#f44336' }} />
-                      <span>Exportar como PDF</span>
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#666', marginLeft: '32px' }}>
-                      {selectedTemplate === 'devedor' ? 'Com regras de débito (Total Bruto, Pago, Devido)' : 'Soma direta de valores'}
-                    </span>
-                  </div>
-                </MenuItem>
-                <MenuItem onClick={() => handleExportNow('csv')}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CsvIcon style={{ color: '#4caf50' }} />
-                      <span>Exportar como CSV</span>
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#666', marginLeft: '32px' }}>
-                      {selectedTemplate === 'devedor' ? 'Dados com regras aplicadas por tag' : 'Exportação padrão'}
-                    </span>
-                  </div>
-                </MenuItem>
-              </Menu>
-            </div>
-          </div>
-        </div> {/* Fim do filter-panel */}
-
-        {/* Painel de Resumo */}
-        <div className="summary-panel">
-          <Card variant="glass" padding="md">
-            <CardHeader>
-              <SectionHeader
-                title="Resumo dos Resultados"
-                subtitle="Visão geral do período filtrado"
-              />
-            </CardHeader>
-            <CardContent>
-              {/* 3 StatCards no topo (Recebíveis / Gastos / Saldo) */}
-              <div className="cg-relatorio__stat-grid">
-                <StatCard
-                  label="Recebíveis"
-                  value={formatarMoeda(summaryInfo.totalRecebiveis)}
-                  icon={<FaArrowUp />}
-                  accentColor="var(--cg-color-success)"
-                />
-                <StatCard
-                  label="Gastos"
-                  value={formatarMoeda(summaryInfo.totalGastos)}
-                  icon={<FaArrowDown />}
-                  accentColor="var(--cg-color-error)"
-                />
-                <StatCard
-                  label="Saldo"
-                  value={formatarMoeda(summaryInfo.netValue)}
-                  icon={<FaPiggyBank />}
-                  accentColor={summaryInfo.netValue >= 0 ? 'var(--cg-color-info)' : 'var(--cg-color-error)'}
-                />
-              </div>
-
-              {/* Bloco 1: informações gerais (mantido como lista compacta) */}
-              <div className="summary-section">
-                <h4>Informações Gerais</h4>
-                <div className="summary-item">
-                  <span>Total de "Transações" (Pagamentos):</span>
-                  <span><strong>{summaryInfo.totalTransactions}</strong></span>
-                </div>
-                <div className="summary-item">
-                  <span>Total em Valor:</span>
-                  <span><strong>{formatarMoeda(summaryInfo.totalValue)}</strong></span>
-                </div>
-                <div className="summary-item">
-                  <span>Número de Pessoas:</span>
-                  <span><strong>{summaryInfo.totalPeople}</strong></span>
-                </div>
-                <div className="summary-item">
-                  <span>Média por Pessoa:</span>
-                  <span><strong>{formatarMoeda(summaryInfo.averagePerPerson)}</strong></span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div> {/* fim da top-section */}
-
-      <div className="relatorio-results">
-        <SectionHeader
-          title={`Resultados (${filteredRows.length} desta página, ${total} no total)`}
+      {/* Filtros (expandido OU compacto) */}
+      {filters.collapsed ? (
+        <RelatorioFiltersCompact
+          draftFilters={filters.draftFilters}
+          quickRange={quickRange}
+          onChange={(newDraft) => {
+            // Se draftFilters tem _selectedTemplateLocal, propaga pro state externo
+            if (newDraft && newDraft._selectedTemplateLocal) {
+              setSelectedTemplate(newDraft._selectedTemplateLocal);
+              // Remove a chave "local" antes de gravar nos filtros de verdade
+              const { _selectedTemplateLocal, ...rest } = newDraft;
+              filters.onChange(rest);
+            } else {
+              filters.onChange(newDraft);
+            }
+          }}
+          onApply={applyFilters}
+          onClear={handleClearFilters}
         />
-        {filteredRows.length > 0 ? (
-          <DataTable
-            variant="glass"
-            columns={[
-              { key: 'descricao', label: 'Descrição' },
-              { key: 'data', label: 'Data', width: '110px' },
-              { key: 'pessoa', label: 'Pessoa (Pagamento)', width: '150px' },
-              { key: 'valor', label: 'Valor (Pagamento)', align: 'right', width: '140px' },
-              { key: 'tipo', label: 'Tipo', width: '120px' },
-              { key: 'tags', label: 'Tags (Pagamento)' },
-              { key: 'acoes', label: 'Ações', width: '180px' },
-            ]}
-            rows={filteredRows}
-            renderCell={(row, col) => {
-              switch (col.key) {
-                case 'descricao':
-                  return (
-                    <>
-                      {row.descricao}
-                      {row.emprestimoInfo && <EmprestimoBadge emprestimoInfo={row.emprestimoInfo} variant="chip" />}
-                    </>
-                  );
-                case 'data':
-                  return formatDateBR(row.data);
-                case 'pessoa':
-                  return row.pessoa || '—';
-                case 'valor':
-                  return formatarMoeda(row.valorPagamento || 0);
-                case 'tipo':
-                  return (
-                    <span className={row.tipo?.toLowerCase() === 'gasto' ? 'tipo-gasto' : row.tipo?.toLowerCase() === 'recebivel' ? 'tipo-recebivel' : ''}>
-                      {row.tipo}
-                    </span>
-                  );
-                case 'tags':
-                  return (
-                    <div className="relatorio-tags-cell">
-                      {Object.entries(row.tagsPagamento || {}).map(([catId, tagIds], i) => {
-                        const categoria = categorias.find(c =>
-                          c._id === catId || c.nome === catId
-                        );
-                        if (!categoria) return null;
+      ) : (
+        <RelatorioFiltersPanel
+          draftFilters={filters.draftFilters}
+          pessoasOptions={pessoasOptions}
+          tagsPorCategoria={tagsPorCategoria}
+          reportTemplates={reportTemplates}
+          selectedTemplate={selectedTemplate}
+          quickRange={quickRange}
+          exportAnchorEl={exportAnchorEl}
+          onChange={(newDraft) => {
+            if (newDraft && newDraft._selectedTemplateLocal) {
+              setSelectedTemplate(newDraft._selectedTemplateLocal);
+              const { _selectedTemplateLocal, ...rest } = newDraft;
+              filters.onChange(rest);
+            } else {
+              filters.onChange(newDraft);
+            }
+          }}
+          onApply={applyFilters}
+          onClear={handleClearFilters}
+          onCreate={handleCreate}
+          onExportClick={handleExportClick}
+          onExportClose={handleExportClose}
+          onExportNow={handleExportNow}
+        />
+      )}
 
-                        return tagIds.map((tagId, j) => {
-                          const tag = tags.find(t =>
-                            t._id === tagId || t.nome === tagId
-                          );
-                          if (!tag) return null;
+      {/* Painel de Resumo (sempre visível) */}
+      <RelatorioSummaryPanel
+        summary={summaryInfo}
+        className="cg-relatorio__summary"
+      />
 
-                          return (
-                            <span
-                              key={`${row.id}-${i}-${j}`}
-                              className="tag-chip"
-                              style={{
-                                backgroundColor: `${tag.cor}20`,
-                                color: tag.cor,
-                                border: `1px solid ${tag.cor}`,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '0.85rem',
-                                margin: '2px',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              <IconRenderer nome={tag.icone || 'tag'} size={14} cor={tag.cor} />
-                              {`${categoria.nome}: ${tag.nome}`}
-                            </span>
-                          );
-                        });
-                      })}
-                    </div>
-                  );
-                case 'acoes':
-                  return (
-                    <div className="relatorio-acoes-cell">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(row)}
-                        title="Editar"
-                        aria-label="Editar transação"
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(row)}
-                        title="Excluir"
-                        aria-label="Excluir transação"
-                      >
-                        Excluir
-                      </Button>
-                    </div>
-                  );
-                default:
-                  return row[col.key];
-              }
-            }}
-          />
-        ) : appliedFilters === null ? (
-          <EmptyState
-            title="Pronto para começar?"
-            description="Utilize os filtros acima e clique em Filtrar para buscar transações."
-          />
-        ) : (
-          <EmptyState
-            title="Nenhum registro encontrado"
-            description="Tente ajustar os filtros ou expandir o período de busca."
-          />
-        )}
-        {totalPages > 1 && (
-          <div className="relatorio-pagination" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => { setPage(p => p - 1); fetchData(page - 1, appliedFilters ?? draftFilters); }}
-            >
-              Anterior
-            </Button>
-            <span>Página {page} de {totalPages}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => { setPage(p => p + 1); fetchData(page + 1, appliedFilters ?? draftFilters); }}
-            >
-              Próxima
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* Painel de Resultados (grid + bulk + paginação) */}
+      <RelatorioResultsPanel
+        rows={filteredRows}
+        total={total}
+        page={page}
+        totalPages={totalPages}
+        categorias={categorias}
+        tags={tags}
+        selectedIds={selectedIds}
+        setSelectedIds={setSelectedIds}
+        groupBy={groupBy}
+        setGroupBy={setGroupBy}
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSortChange={handleSortChange}
+        onPageChange={handlePageChange}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        hasAppliedFilters={filters.appliedFilters !== null}
+      />
 
       {modalOpen && (
         <ModalTransacao onClose={handleCloseModal}>
@@ -1119,4 +741,3 @@ const Relatorio = () => {
 };
 
 export default Relatorio;
-

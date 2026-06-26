@@ -95,6 +95,7 @@ Em prod: `$env:NODE_ENV="production"; node scripts/migrations/NNN.js`
 - **Formulários/selects:** react-select 5.10
 - **Gráficos:** chart.js 4.4 + react-chartjs-2 5.3
 - **PDFs:** `@react-pdf/renderer` 4.3 + jspdf 3.0
+- **Tabelas (DataTable compartilhado):** `@tanstack/react-table` 8.21 + `@tanstack/match-sorter-utils` 8.19 (headless, sort/resize/select/group client-side; ver [ADR-016](../decisions/2026-06-25-tanstack-sort-reordenacao-manual.md) pra caveat sobre reordenação manual)
 - **Calendário:** react-calendar 5.1
 - **Markdown:** react-markdown 10.1 + rehype-highlight
 - **Toast:** react-toastify 11.0

@@ -30,3 +30,33 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+/* Soma das selecionadas (opt-in via selectedSummary) */
+.bulk-action-bar__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.25rem 0.75rem;
+  background: var(--cor-primaria-clara, rgba(33, 150, 243, 0.08));
+  border: 1px solid var(--cor-primaria, #2196F3);
+  border-radius: 9999px;
+  font-size: 0.875rem;
+}
+
+.bulk-action-bar__summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.bulk-action-bar__summary-label {
+  font-weight: 500;
+  color: var(--cor-primaria, #2196F3);
+  opacity: 0.85;
+}
+
+.bulk-action-bar__summary-value {
+  font-weight: 700;
+  color: var(--cor-primaria, #2196F3);
+}

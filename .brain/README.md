@@ -90,6 +90,16 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
 - **Playbook:**
   - [`playbooks/debug-cores-presas-dark-mode.md`](playbooks/debug-cores-presas-dark-mode.md) — como debugar cores presas em dark mode
 
+### Módulo de Relatórios
+- **Design doc:**
+  - [`2026-06-25-relatorio-reorganizacao-design.md`](sessions/2026-06-25-relatorio-reorganizacao-design.md) — design da reorganização da página de Relatórios (TanStack Table, filtros colapsáveis, atalhos de data, soma condicional)
+- **ADRs:**
+  - [ADR-016](decisions/2026-06-25-tanstack-sort-reordenacao-manual.md) — TanStack Table sort exige reordenação manual quando `data` é prop estável
+- **Sessão:**
+  - [`2026-06-25-relatorio-pos-execucao-consolidada.md`](sessions/2026-06-25-relatorio-pos-execucao-consolidada.md) — pós-execução consolidada (reorganização + TanStack + 4 tentativas de fix do sort + diagnóstico assertivo)
+- **Playbook:**
+  - [`playbooks/debug-tanstack-table-sort.md`](playbooks/debug-tanstack-table-sort.md) — como debugar bug de sort no TanStack Table v8 (logs cirúrgicos + 5 pontos de log)
+
 ### Setup inicial e configurações
 - [`2026-06-21-setup-inicial.md`](sessions/2026-06-21-setup-inicial.md) — setup inicial do vault e dos agentes
 - [`2026-06-21-consolidacao-permissoes.md`](sessions/2026-06-21-consolidacao-permissoes.md) — permissões dos agentes
