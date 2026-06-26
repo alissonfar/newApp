@@ -1,0 +1,216 @@
+/* src/components/Layout/SidebarMenu.css */
+/* Visual da sidebar (item, submenu, section header, tooltip do rail).
+   Usa APENAS tokens (--cg-*) e regras herdadas do MainLayout.css para:
+   - .side-menu (container), .menu-top, .menu-items
+   Este arquivo cuida APENAS do que é específico do SidebarMenu.js. */
+
+/* Wrapper do nav */
+.sidebar-menu {
+  width: 100%;
+}
+
+.sidebar-menu-list,
+.sidebar-section-items,
+.sidebar-submenu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-menu-list-item,
+.sidebar-submenu-item {
+  margin: 0;
+  position: relative;
+}
+
+/* === SECTION HEADER === */
+.sidebar-section {
+  margin-top: var(--cg-menu-section-gap);
+}
+
+.sidebar-section:first-child {
+  margin-top: 0;
+}
+
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-spacing-sm);
+  padding: 0 var(--cg-spacing-sm);
+  margin-bottom: var(--cg-spacing-sm);
+}
+
+.sidebar-section-label {
+  font-size: var(--cg-menu-section-label-size);
+  font-weight: var(--cg-menu-section-label-weight);
+  letter-spacing: var(--cg-menu-section-label-spacing);
+  text-transform: uppercase;
+  color: var(--cg-menu-section-label);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sidebar-section-divider {
+  flex: 1;
+  height: 1px;
+  background-color: var(--cg-menu-section-divider);
+  min-width: 0;
+}
+
+/* === ITEMS === */
+.sidebar-section-items,
+.sidebar-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cg-menu-item-gap);
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-spacing-md);
+  padding: 0.625rem 0.75rem;
+  color: var(--cg-menu-text-secondary);
+  text-decoration: none;
+  transition: background-color var(--cg-menu-transition), color var(--cg-menu-transition);
+  border-radius: var(--cg-radius-sm);
+  font-weight: 500;
+  font-size: var(--cg-menu-item-size);
+  position: relative;
+  border-left: var(--cg-menu-active-bar) solid transparent;
+  margin-left: calc(-1 * var(--cg-menu-active-bar));
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  width: calc(100% + var(--cg-menu-active-bar));
+  text-align: left;
+  font-family: inherit;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.sidebar-item:hover {
+  color: var(--cg-menu-text);
+  background-color: var(--cg-menu-hover);
+}
+
+.sidebar-item:active {
+  background-color: var(--cg-menu-active-bg);
+}
+
+/* Item ativo — borda lateral visível */
+.sidebar-item-active > .sidebar-item,
+.sidebar-menu-list-item.sidebar-item-active > .sidebar-item,
+.sidebar-submenu-item.sidebar-item-active > .sidebar-item {
+  color: var(--cg-menu-active-text);
+  background-color: var(--cg-menu-active-bg);
+  font-weight: 600;
+  border-left-color: var(--cg-menu-text);
+}
+
+/* === ICON === */
+.sidebar-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  width: 20px;
+  height: 20px;
+  font-size: 1.25rem;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.sidebar-item:hover .sidebar-item-icon {
+  transform: scale(1.05);
+}
+
+.sidebar-item-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === SUBMENU TRIGGER === */
+.sidebar-item-with-submenu {
+  justify-content: flex-start;
+}
+
+.sidebar-submenu-arrow {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cg-menu-text-secondary);
+  font-size: 0.85rem;
+  transition: transform var(--cg-menu-transition);
+}
+
+.sidebar-item-active .sidebar-submenu-arrow {
+  color: var(--cg-menu-active-text);
+}
+
+/* === SUBMENU LIST === */
+.sidebar-submenu {
+  margin: var(--cg-spacing-xs) 0 var(--cg-spacing-xs) 0;
+  padding-left: var(--cg-spacing-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cg-menu-item-gap);
+  /* Anima entrada/saída via max-height */
+  max-height: 1000px;
+  overflow: hidden;
+  animation: submenuSlideIn var(--cg-menu-transition);
+}
+
+@keyframes submenuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sidebar-item-sub {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--cg-menu-text-secondary);
+  padding: 0.5rem 0.75rem;
+}
+
+/* === RAIL TOOLTIP (modo colapsado) === */
+.sidebar-rail-tooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--cg-menu-tooltip-bg);
+  color: var(--cg-menu-tooltip-text);
+  padding: 6px 12px;
+  border-radius: var(--cg-radius-sm);
+  font-size: var(--cg-menu-item-size-rail);
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--cg-menu-transition), visibility var(--cg-menu-transition);
+  z-index: 2000;
+  box-shadow: var(--cg-shadow-md);
+}
+
+/* Tooltip aparece no hover do item */
+.sidebar-menu-list-item:hover .sidebar-rail-tooltip,
+.sidebar-submenu-item:hover .sidebar-rail-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 200ms;
+}
+

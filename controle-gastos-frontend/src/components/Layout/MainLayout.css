@@ -1,10 +1,14 @@
 /* src/components/Layout/MainLayout.css */
+/* Estilos BASE do layout: container, aside, main-content, toggle buttons,
+   backdrop mobile, modo colapsado. Sem cores hardcoded — tudo via tokens
+   de src/theme/tokens.css.
 
-/* As variáveis de cor do menu (--cg-menu-* e --cor-*-menu) são definidas
-   em src/theme/tokens.css (single source of truth) e importadas via
-   index.js. Este CSS apenas consome essas variáveis. */
+   Estilos ESPECÍFICOS de items/sections/tooltip vivem em:
+   - SidebarMenu.css  (items, sections, submenu, tooltip)
+   - UserMenuFooter.css (avatar, Configurações, logout)
+*/
 
-/* Layout principal: side-menu + main-content */
+/* === LAYOUT CONTAINER === */
 .main-layout {
   display: flex;
   min-height: 100vh;
@@ -13,12 +17,10 @@
   overflow-x: hidden;
 }
 
-/* Menu lateral */
+/* === SIDEBAR (ASIDE) === */
 .side-menu {
-  /* width: 260px; */
-  /* min-width: 260px; */
-  width: 280px;
-  min-width: 280px;
+  width: var(--cg-menu-expanded-width);
+  min-width: var(--cg-menu-expanded-width);
   background-color: var(--cg-menu-bg);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -26,30 +28,29 @@
   flex-direction: column;
   padding: 1.25rem 1rem;
   border-right: 1px solid var(--cg-menu-border);
-  transition: width 0.3s ease, transform 0.3s ease;
+  transition: width var(--cg-menu-transition), transform var(--cg-menu-transition);
   position: fixed;
   left: 0;
   top: 0;
   height: 100vh;
-  height: 100svh; /* Comportamento mais previsível em zoom e mobile */
+  height: 100svh;
   z-index: 1000;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Estilos específicos para Desktop (sem media query explícita, default) */
+/* === DESKTOP === */
 .side-menu.desktop {
-  /* Mantém posição fixa */
   position: fixed;
   left: 0;
-  transform: translateX(0); /* Garante que esteja visível */
+  transform: translateX(0);
 }
 
 .side-menu.desktop.collapsed {
-  width: 72px;
-  min-width: 72px;
+  width: var(--cg-menu-rail-width);
+  min-width: var(--cg-menu-rail-width);
 }
 
-/* Área superior do menu (logo + itens) - permite rolagem dos itens em zoom */
+/* === ÁREA SUPERIOR (logo + items) === */
 .menu-top {
   flex: 1;
   min-height: 0;
@@ -58,14 +59,13 @@
   overflow: hidden;
 }
 
-/* Logo e nome do sistema */
 .logo {
   display: flex;
   align-items: center;
   gap: 1rem;
   flex-shrink: 0;
   margin-bottom: 1rem;
-  padding: 0.75rem 0.75rem; /* Ajuste leve no padding */
+  padding: 0.75rem;
 }
 
 .logo img {
@@ -73,23 +73,22 @@
   height: 28px;
   object-fit: contain;
   min-width: 28px;
-  transition: transform 0.3s ease;
+  transition: transform var(--cg-menu-transition);
 }
 
 .system-name {
-  /* font-size: 1.125rem; */
-  font-size: 1.2rem; /* Leve ajuste */
-  font-weight: 600; /* Reduzido de 700 para algo menos forte */
+  font-size: 1.2rem;
+  font-weight: 600;
   color: var(--cg-menu-text);
   white-space: nowrap;
-  letter-spacing: 0.3px; /* Reduzido */
+  letter-spacing: 0.3px;
 }
 
 .logo.mobile-padding {
-    padding-top: 45px; /* Espaço para o botão 'X' interno */
+  padding-top: 45px; /* espaço pro botão 'X' interno no mobile */
 }
 
-/* Itens do menu - área rolável em zooms maiores */
+/* === ÁREA DE ITENS (rolável) === */
 .menu-items {
   flex: 1;
   min-height: 0;
@@ -97,549 +96,140 @@
   overflow-x: hidden;
 }
 
-.menu-items ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem; /* Aumentando levemente o espaço entre itens */
-}
-
-.menu-items li {
-  margin: 0;
-  position: relative;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  /* padding: 0.625rem 0.875rem; */
-  padding: 0.75rem 1rem; /* Aumentando padding interno */
-  color: var(--cg-menu-text-secondary);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  border-radius: 6px;
-  font-weight: 500;
-  position: relative;
-  overflow: hidden;
-  border-left: 3px solid transparent; /* Espaço para borda ativa */
-  margin-left: -3px; /* Compensa a borda transparente */
-}
-
-.menu-item:hover {
-  color: var(--cg-menu-text);
-  background-color: var(--cg-menu-hover);
-}
-
-.menu-items li.active > .menu-item,
-.menu-items .submenu li.active > .menu-item
-{
-  color: var(--cg-menu-active-text);
-  background-color: var(--cg-menu-active-bg);
-  font-weight: 600;
-  border-left: 3px solid var(--cg-menu-text); /* Borda esquerda ativa */
-}
-
-.menu-icon {
-  font-size: 1.25rem;
-  min-width: 24px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease;
-}
-
-.menu-item:hover .menu-icon {
-  transform: scale(1.1);
-}
-
-.menu-text {
-  font-size: 0.9375rem;
-  white-space: nowrap;
-  line-height: 1.5;
-}
-
-/* Adiciona ellipsis ao texto dos subitens se transbordar */
-.submenu .menu-item.sub-item .menu-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-
-/* Submenu styles */
-.submenu {
-  list-style: none;
-  /* padding-left: 1.75rem !important; */
-  padding-left: 1.5rem !important; /* Reduzindo um pouco, pois o item pai já tem mais padding */
-  margin: 0.5rem 0 !important; /* Ajustando margem vertical do submenu */
-  width: 100%;
-  position: relative;
-  /* Linha guia opcional */
-  /* &::before {
-    content: '';
-    position: absolute;
-    left: calc(1rem + 12px - 1px); // Alinha com centro do ícone pai
-    top: -0.5rem;
-    bottom: 0.5rem;
-    width: 1px;
-    background-color: var(--cg-menu-border);
-  } */
-}
-
-.menu-item.sub-item {
-  /* padding: 0.5rem 0.875rem; */
-  padding: 0.625rem 1rem; /* Ajustando padding */
-  font-size: 0.875rem;
-  color: var(--cg-menu-text-secondary);
-  border-left-color: transparent; /* Subitem normal não tem borda esquerda */
-}
-
-.menu-items .submenu li.active > .menu-item.sub-item {
-  border-left-color: var(--cg-menu-text); /* Subitem ativo tem borda */
-  /* Outros estilos ativos já herdados/aplicados pela regra geral */
-}
-
-.menu-item.with-submenu {
-  justify-content: space-between;
-  padding-right: 0.75rem;
-}
-
-/* Reset para botão do submenu (acessibilidade - substitui <a href="#">) */
-button.menu-item.with-submenu {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font: inherit;
-  width: 100%;
-  text-align: left;
-}
-
-.submenu-arrow {
-  font-size: 0.75rem;
-  transition: transform 0.2s ease;
-  color: var(--cg-menu-text-secondary);
-  margin-left: auto;
-  padding-left: 0.5rem;
-}
-
-/* Cor da seta no item pai ativo */
-.has-submenu.active > .menu-item.with-submenu .submenu-arrow {
-  color: var(--cg-menu-active-text); /* Branco */
-}
-
-/* Botão de toggle do menu */
-.menu-toggle {
-  position: absolute;
-  right: -15px;
-  top: 1.5rem;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 100;
-  transition: all 0.3s ease;
-  /* background-color: var(--cg-menu-text); */
-  background-color: rgba(255, 255, 255, 0.1); /* Fundo integrado ao tema */
-  border: none;
-  border-radius: 50%;
-  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); */
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); /* Sombra sutil */
-  padding: 0;
-}
-
-.menu-toggle:hover {
-  /* background-color: #f0f0f0; */
-  background-color: rgba(255, 255, 255, 0.2); /* Mais claro no hover */
-  transform: scale(1.05);
-}
-
-.menu-toggle:hover svg {
-  /* color: #1E90FF; */
-  /* Mantém a cor do ícone */
-}
-
-.menu-toggle svg {
-  width: 16px;
-  height: 16px;
-  /* color: var(--cg-menu-bg); */
-  color: var(--cg-menu-text); /* Ícone branco */
-  transition: all 0.3s ease;
-}
-
-.side-menu.collapsed .menu-toggle svg {
-  transform: rotate(180deg);
-}
-
-/* Conteúdo principal */
+/* === MAIN CONTENT === */
 .main-content {
   flex: 1;
-  min-width: 0; /* Permite encolher em zoom, evita overflow horizontal */
+  min-width: 0;
   padding: 2rem;
-  /* margin-left: 260px; */
-  margin-left: 280px; /* Ajustando margem para nova largura do menu */
-  transition: all 0.3s ease;
-  /* width: calc(100% - 260px); */
-  width: calc(100% - 280px); /* Ajustando largura */
+  margin-left: var(--cg-menu-expanded-width);
+  width: calc(100% - var(--cg-menu-expanded-width));
   min-height: 100vh;
-  background-color: transparent; /* Deixa o gradiente do body aparecer atrás do conteúdo (glassmorphism) */
+  background-color: transparent; /* deixa gradiente do body aparecer (glassmorphism) */
+  transition: margin-left var(--cg-menu-transition), width var(--cg-menu-transition);
 }
 
 .main-content.expanded {
-  margin-left: 72px;
-  width: calc(100% - 72px);
+  margin-left: var(--cg-menu-rail-width);
+  width: calc(100% - var(--cg-menu-rail-width));
 }
 
-/* Responsividade */
-@media (max-width: 1024px) {
-  .side-menu {
-    /* width: 240px; */
-    /* min-width: 240px; */
-    width: 260px; /* Ajuste responsivo */
-    min-width: 260px;
-  }
-
-  .side-menu.collapsed {
-    width: 72px;
-    min-width: 72px;
-  }
-
-  .main-content {
-    /* margin-left: 240px; */
-    /* width: calc(100% - 240px); */
-    margin-left: 260px;
-    width: calc(100% - 260px);
-    padding: 1.5rem;
-  }
-
-  .main-content.expanded {
-    margin-left: 72px;
-    width: calc(100% - 72px);
-  }
-}
-
-/* Mobile: desabilitar backdrop-filter no menu (performance) */
-@media (max-width: 768px) {
-  .side-menu {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background-color: rgba(15, 23, 42, 0.96);
-  }
-
-  /* Botão hamburger mobile também fica opaco (combina com o menu opaco) */
-  .main-menu-toggle.mobile {
-    background-color: rgba(15, 23, 42, 0.96);
-  }
-}
-
-/* Rodapé do menu (usuário e links) */
-.menu-footer {
-  flex-shrink: 0;
-  border-top: 1px solid var(--cg-menu-border);
-  padding-top: 1rem; /* Ajuste padding */
-  margin-top: 1rem; /* Ajuste margem */
-  position: relative;
-}
-
-/* Ações do rodapé do menu (ex: ThemeToggle) */
-.menu-footer-actions {
+/* === TOGGLE BUTTONS (base) === */
+.main-menu-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-/* Informações do usuário (avatar + nome) */
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px; /* Ajuste gap */
-  margin-bottom: 0.75rem; /* Ajuste margem */
+  justify-content: center;
   cursor: pointer;
-  padding: 0.625rem 0.75rem; /* Ajuste padding */
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1001;
-  background-color: var(--cg-menu-hover); /* Mesmo fundo do hover dos itens */
-}
-
-.user-info:hover {
-  background-color: rgba(255, 255, 255, 0.15); /* Levemente mais claro no hover */
-}
-
-.user-info .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  min-width: 40px;
-  object-fit: cover;
-  border: 2px solid var(--cg-menu-active-text);
-  transition: transform 0.3s ease;
-}
-
-.user-info:hover .avatar {
-  transform: scale(1.05);
-}
-
-.user-name {
-  font-size: 0.95rem;
+  border: none;
+  background-color: var(--cg-menu-bg);
   color: var(--cg-menu-text);
-  white-space: nowrap;
-  font-weight: 500;
-  flex: 1;
-}
-
-.profile-arrow {
-  font-size: 0.8rem;
-  color: var(--cg-menu-text-secondary);
-  transition: transform 0.3s ease;
-}
-
-.profile-arrow.open {
-  transform: rotate(180deg);
-}
-
-/* Dropdown de perfil (submenu) */
-.profile-dropdown {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  margin-bottom: 8px;
-  min-width: 200px;
-  animation: slideIn 0.2s ease-out;
-  transform-origin: bottom center;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.side-menu.collapsed .profile-dropdown {
-  left: 60px;
-  min-width: 200px;
-}
-
-.profile-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: #333;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  font-weight: 500;
-}
-
-.profile-link:hover {
-  background-color: rgba(var(--cor-primaria-rgb), 0.08);
-  color: var(--cor-primaria);
-  transform: translateX(4px);
-}
-
-.profile-link svg {
-  font-size: 1.1rem;
-  color: #666;
-  transition: color 0.2s ease;
-}
-
-.profile-link:hover svg {
-  color: var(--cor-primaria);
-}
-
-/* Divisor entre seções do dropdown de perfil */
-.profile-dropdown-divider {
-  border: none;
-  height: 1px;
-  background-color: #eee;
-  margin: 4px 0;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color var(--cg-menu-transition), transform var(--cg-menu-transition);
   padding: 0;
 }
 
-/* Wrapper do ThemeToggle dentro do dropdown de perfil */
-.profile-dropdown-toggle-wrapper {
-  display: flex;
-  align-items: center;
+.main-menu-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
 }
 
-/* ThemeToggle renderizado como item de menu dentro do dropdown */
-
-/* Botão de logout */
-.profile-dropdown .logout-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.75rem 1rem;
-  color: #e74c3c;
-  font-weight: 500;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  margin-top: 4px;
-  border-top: 1px solid #eee;
-  transition: all 0.2s ease;
+/* Toggle desktop: preso à viewport (não desce com scroll do main).
+   fixed é relativo ao viewport, então mesmo se o .main-layout crescer
+   com o conteúdo do <main>, o botão fica parado no topo. */
+.main-menu-toggle-desktop {
+  position: fixed;
+  left: calc(var(--cg-menu-expanded-width) - 15px);
+  top: 1.5rem;
+  width: 30px;
+  height: 30px;
+  z-index: 1010;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: left var(--cg-menu-transition), background-color var(--cg-menu-transition);
 }
 
-.profile-dropdown .logout-btn:hover {
-  background-color: rgba(231, 76, 60, 0.08);
-  transform: translateX(4px);
+.main-menu-toggle-desktop:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
-.profile-dropdown .logout-btn svg {
-  color: #e74c3c;
+/* Ajusta posição do toggle desktop quando sidebar colapsada */
+.side-menu.desktop.collapsed + .main-menu-toggle-desktop {
+  left: calc(var(--cg-menu-rail-width) - 15px);
 }
 
-.profile-dropdown .logout-btn:hover svg {
-  color: #e74c3c;
+/* Chevron gira quando sidebar colapsada */
+.side-menu.desktop.collapsed + .main-menu-toggle-desktop svg,
+.side-menu.desktop.collapsed ~ .main-menu-toggle-desktop svg {
+  transform: rotate(180deg);
 }
 
-/* ESTILOS PARA MOBILE (MENU DRAWER) */
-
-/* Breakpoint ajustado para 992px */
+/* === MOBILE (≤ 992px) === */
 @media (max-width: 992px) {
-
-  /* Menu Lateral Mobile: Escondido por padrão */
+  /* Aside vira drawer deslizante */
   .side-menu.mobile {
-    position: fixed; /* Ou absolute dependendo do efeito desejado */
+    position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
     height: 100svh;
-    width: 280px; /* Largura quando aberto */
-    transform: translateX(-100%); /* Escondido fora da tela */
-    transition: transform 0.3s ease; /* Animação de deslize */
-    z-index: 1100; /* Acima do backdrop */
-    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2); /* Sombra mais pronunciada */
-     /* Remove o colapso no mobile, sempre terá largura total quando aberto */
-     min-width: 280px;
-    /* padding-top: 50px; */ /* REMOVIDO: Botão não está mais aqui dentro */
+    width: var(--cg-menu-expanded-width);
+    min-width: var(--cg-menu-expanded-width);
+    transform: translateX(-100%);
+    transition: transform var(--cg-menu-transition);
+    z-index: 1100;
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
   }
 
-  /* Menu Lateral Mobile Aberto */
   .side-menu.mobile.mobile-menu-open {
-    transform: translateX(0); /* Traz para a tela */
+    transform: translateX(0);
   }
 
-  /* Conteúdo Principal Mobile */
-  .main-content {
-    margin-left: 0 !important; 
-    width: 100% !important; 
-    padding: 1rem; 
-    padding-top: 60px !important; /* RE-ADICIONADO: Espaço para o botão fixo */
+  /* Main content: sem margin, padding pro botão fixo */
+  .main-content.mobile-menu-padding {
+    margin-left: 0;
+    width: 100%;
+    padding: 1rem;
+    padding-top: 60px; /* espaço pro botão hamburger fixo */
   }
 
-  /* Botão de Toggle Principal (Hamburger/Close) - Posicionamento Fixo */
-  .main-menu-toggle.mobile {
-    display: flex !important; 
-    position: fixed !important; /* Garante posicionamento fixo */
-    /* position: absolute; */ /* REMOVIDO */
-    top: 10px; /* Distância do topo da TELA */
-    left: 10px; /* Distância da esquerda da TELA */
-    /* right: 10px; */ /* REMOVIDO */ 
-    z-index: 1200; /* Acima de tudo */
-    width: 40px; /* Restaurado tamanho original */
+  /* Toggle mobile: hamburger fixo no canto */
+  .main-menu-toggle-mobile.main-menu-toggle-hamburger {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 40px;
     height: 40px;
-    background-color: var(--cg-menu-bg);
-    color: var(--cg-menu-text);
-    border: none;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.3s ease; /* Adicionada transição de transform */
-  }
-  
-  /* Ajuste opcional: Animar levemente o botão X para a direita quando o menu abre */
-  /* .side-menu.mobile.mobile-menu-open ~ .main-menu-toggle.mobile {
-     transform: translateX(5px); 
-  } */
-
-  /* Esconde o botão de toggle de desktop no mobile */
-  .main-menu-toggle.desktop {
-      display: none;
+    z-index: 1200;
   }
 
-  /* Logo no mobile - Oculta nome quando o menu está fechado (desnecessário com drawer) */
-  /* .side-menu.mobile:not(.mobile-menu-open) .system-name {
+  /* Toggle mobile: X dentro do aside */
+  .main-menu-toggle-mobile.main-menu-toggle-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 35px;
+    height: 35px;
+    z-index: 1150;
+  }
+
+  /* Esconde toggle desktop no mobile */
+  .main-menu-toggle-desktop {
     display: none;
-  } */
+  }
 
-   /* Ajustes no footer do menu para mobile */
-   .side-menu.mobile .menu-footer {
-    /* Pode precisar de ajustes específicos se o layout quebrar */
-   }
+  /* Logo no mobile sem system-name quando drawer fechado (escondido via JSX) */
+  .side-menu.mobile .system-name,
+  .side-menu.mobile .user-menu-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-   .side-menu.mobile .user-info {
-     /* Garante que o avatar e nome sejam exibidos no menu aberto */
-   }
-
-   .side-menu.mobile .profile-dropdown {
-      position: absolute; /* Para não empurrar o conteúdo do menu */
-      bottom: 60px; /* Ajustar posicionamento acima do footer */
-      left: 1rem;
-      right: 1rem;
-      background-color: #3b6aa0; /* Fundo ligeiramente diferente */
-      border-radius: 6px;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-      z-index: 1150;
-   }
-
-    /* Esconde submenu e setas se o menu mobile estiver fechado */
-    /* (Não é necessário se o menu inteiro desliza para fora) */
-    /* .side-menu.mobile:not(.mobile-menu-open) .submenu,
-    .side-menu.mobile:not(.mobile-menu-open) .submenu-arrow {
-        display: none;
-    } */
-
-     /* Garante que o texto não quebre no menu mobile aberto */
-    .side-menu.mobile .menu-text,
-    .side-menu.mobile .system-name,
-    .side-menu.mobile .user-name {
-      white-space: nowrap;
-      overflow: hidden; /* Adiciona overflow hidden para segurança */
-      text-overflow: ellipsis; /* Adiciona ellipsis se necessário */
-    }
-
-  /* Ajusta o padding do topo do menu interno */
   .side-menu.mobile .menu-top {
-      /* padding-top: 1rem; */ /* REMOVIDO ou ajustar se necessário */
-      padding-top: 0; /* Resetar se não for mais necessário */
+    padding-top: 0;
   }
 }
 
-/* Backdrop para o menu mobile */
+/* === BACKDROP MOBILE === */
 .mobile-menu-backdrop {
   position: fixed;
   top: 0;
@@ -647,311 +237,32 @@ button.menu-item.with-submenu {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1050; /* Abaixo do menu, acima do conteúdo */
+  z-index: 1050;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity var(--cg-menu-transition), visibility var(--cg-menu-transition);
 }
 
-.side-menu.mobile.mobile-menu-open + .mobile-menu-backdrop, /* Caso backdrop seja irmão */
-.main-layout > .mobile-menu-backdrop /* Caso backdrop seja filho direto do layout */
-{
-   /* Seletores mais robustos para garantir que funcione */
+.mobile-menu-backdrop.mobile-menu-backdrop-open {
+  opacity: 1;
+  visibility: visible;
 }
 
-/* Mostra o backdrop quando o menu mobile está aberto */
-/* Este seletor assume que o backdrop é irmão direto do aside no JSX */
-/* Se for filho do .main-layout, ajuste o seletor */
-/* .side-menu.mobile.mobile-menu-open ~ .mobile-menu-backdrop { */
-/* Corrigindo seletor para funcionar com a estrutura JS proposta: */
-.mobile-menu-backdrop {
-    /* Aplica diretamente ao backdrop quando renderizado */
-    opacity: 1;
-    visibility: visible;
+/* === MOBILE PERFORMANCE: desabilita backdrop-filter === */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .side-menu {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: rgba(15, 23, 42, 0.96);
+  }
+
+  .main-menu-toggle-mobile.main-menu-toggle-hamburger {
+    background-color: rgba(15, 23, 42, 0.96);
+  }
 }
 
-/* Botão de Toggle Principal (Estilos Gerais e Desktop) */
-.main-menu-toggle {
-  /* Estilos base que podem ser compartilhados */
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  background: none;
-  padding: 0;
-  display: flex; /* Default display */
-  align-items: center;
-  justify-content: center;
-}
-
-.main-menu-toggle.desktop {
-  /* Posição original do botão desktop (fora do aside) */
-  position: absolute;
-  right: -15px; /* Restaurado posicionamento original fora do menu */
-  top: 1.5rem;  
-  width: 30px;
-  height: 30px;
-  background-color: rgba(255, 255, 255, 0.1); 
-  border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); 
-  z-index: 1010; /* Acima do menu lateral padrão */
-}
-
-.main-menu-toggle.desktop:hover {
-  background-color: rgba(255, 255, 255, 0.2); 
-  transform: scale(1.05);
-}
-
-.main-menu-toggle.desktop svg {
-  width: 16px;
-  height: 16px;
-  color: var(--cg-menu-text); 
-  transition: transform 0.3s ease;
-}
-
-/* Rotaciona o chevron quando o menu desktop está colapsado */
-.side-menu.desktop.collapsed ~ .main-menu-toggle.desktop svg,
-.side-menu.desktop.collapsed + .main-menu-toggle.desktop svg /* Seletor alternativo */
-{
-   transform: rotate(180deg);
-}
-
-/* Esconde o botão de toggle mobile no desktop */
-.main-menu-toggle.mobile {
-    /* display: none; */ /* Removido daqui para ser controlado pela media query acima */
-}
-
-
-/* Ajustes finos para garantir que texto não quebre no menu colapsado (Desktop) */
-.side-menu.desktop.collapsed .menu-text,
-.side-menu.desktop.collapsed .system-name,
-.side-menu.desktop.collapsed .user-name,
-.side-menu.desktop.collapsed .submenu-arrow,
-.side-menu.desktop.collapsed .profile-arrow {
-  display: none; /* Esconder texto e setas */
-}
-
+/* === MODO COLAPSADO (DESKTOP) — ajustes finos === */
 .side-menu.desktop.collapsed .logo {
-  justify-content: center; /* Centralizar logo */
+  justify-content: center;
   padding: 0.75rem 0;
 }
-
-.side-menu.desktop.collapsed .menu-item {
-  justify-content: center; /* Centralizar ícone */
-  padding: 0.75rem 0; /* Ajustar padding vertical */
-}
-
-.side-menu.desktop.collapsed .submenu {
-    display: none; /* Esconder submenus quando colapsado */
-}
-
-.side-menu.desktop.collapsed .user-info {
-    justify-content: center;
-    padding: 0.5rem 0; /* Ajustar padding */
-}
-
-.side-menu.desktop.collapsed .avatar {
-    margin: 0; /* Remover margens se houver */
-}
-
-.side-menu.desktop.collapsed .profile-dropdown {
-    display: none; /* Esconder dropdown */
-}
-
-
-/* Remove estilos antigos de responsividade que não são mais necessários */
-/* @media (max-width: 768px) { ... regras antigas ... } */
-
-/* ----- FIM DAS MODIFICAÇÕES ----- */
-
-/* ... (Resto do arquivo CSS original, se houver) ... */
-
-/* BOTÕES DE TOGGLE - ESTILOS */
-
-/* Estilo Base Comum para TODOS os botões de toggle */
-.main-menu-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: none;
-  background-color: var(--cg-menu-bg); /* Fundo azul padrão */
-  color: var(--cg-menu-text); /* Ícone branco padrão */
-  border-radius: 50%;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease, transform 0.3s ease;
-  padding: 0;
-}
-
-.main-menu-toggle:hover {
-  background-color: #3b6aa0; /* Tom mais claro no hover */
-}
-
-.main-menu-toggle svg {
-  font-size: 1.5rem; /* Tamanho padrão do ícone */
-  transition: transform 0.3s ease;
-}
-
-/* Botão Desktop (Chevron) */
-.desktop-toggle {
-  position: absolute;
-  top: 1.5rem;
-  width: 30px;
-  height: 30px;
-  z-index: 1010;
-  /* Calcula posição left baseada na largura padrão do menu, ajustada sem translateX */
-  left: calc(280px - 15px); /* Largura do menu - metade da largura do botão */
-  background-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-  /* Simplificada transição */
-  transition: left 0.3s ease, background-color 0.2s ease;
-}
-
-/* Ajusta posição left quando o menu está colapsado */
-.side-menu.desktop.collapsed + .desktop-toggle {
-   left: calc(72px - 15px); /* Largura do menu colapsado - metade da largura do botão */
-}
-
-.desktop-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.desktop-toggle svg {
-  width: 16px;
-  height: 16px;
-  color: var(--cg-menu-text);
-  transition: transform 0.3s ease;
-}
-
-/* Rotaciona chevron no desktop colapsado */
-.side-menu.desktop.collapsed + .desktop-toggle svg {
-   transform: rotate(180deg);
-}
-
-
-/* ESTILOS MOBILE ESPECÍFICOS (@media query) */
-@media (max-width: 992px) {
-
-  /* Menu Lateral Mobile: Posição e transição */
-  .side-menu.mobile {
-    position: fixed;
-    left: 0;
-    top: 0;
-    height: 100vh;
-    height: 100svh;
-    width: 280px;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    z-index: 1100;
-    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
-    min-width: 280px;
-    /* padding-top: 0; */ /* Resetado, padding agora é no .logo */
-  }
-
-  /* Menu Lateral Mobile Aberto */
-  .side-menu.mobile.mobile-menu-open {
-    transform: translateX(0);
-  }
-
-  /* Conteúdo Principal Mobile com Padding para Botão Fixo */
-  .main-content.mobile-menu-padding {
-    padding-top: 60px !important; /* Espaço garantido no topo */
-    margin-left: 0 !important; /* Garante que não haja margem */
-    width: 100% !important;   /* Garante que ocupe toda a largura */
-    padding-left: 1rem; /* Padding lateral padrão mobile */
-    padding-right: 1rem;
-    padding-bottom: 1rem;
-
-  }
-
-  /* Botão Hamburger (Mobile - Fixo na Tela) */
-  .mobile-hamburger-toggle {
-    position: fixed !important;
-    top: 10px;
-    left: 10px;
-    width: 40px;
-    height: 40px;
-    z-index: 1200; /* Acima de tudo */
-  }
-
-  /* Botão Fechar 'X' (Mobile - Dentro do Menu Aberto) */
-  .mobile-close-toggle {
-    position: absolute !important; /* Relativo ao .side-menu */
-    top: 10px;
-    right: 10px;
-    width: 35px; /* Pode ser um pouco menor */
-    height: 35px;
-    z-index: 1150; /* Acima do conteúdo do menu */
-    /* Herda estilos base de .main-menu-toggle */
-  }
-
-  /* Esconde o botão desktop no mobile */
-  .desktop-toggle {
-    display: none !important; /* Garante que esteja escondido */
-  }
-
-  /* Ajustes de texto e layout interno do menu mobile */
-  .side-menu.mobile .menu-text,
-  .side-menu.mobile .system-name,
-  .side-menu.mobile .user-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Ajustes no footer e dropdown no mobile */
-  .side-menu.mobile .profile-dropdown {
-      position: absolute;
-      bottom: 60px;
-      left: 1rem;
-      right: 1rem;
-      background-color: #3b6aa0;
-      border-radius: 6px;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-      z-index: 1150;
-   }
-}
-
-/* Backdrop */
-.mobile-menu-backdrop {
-  /* ... (estilos existentes do backdrop) ... */
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background-color: rgba(0, 0, 0, 0.5);
-   z-index: 1050; 
-   opacity: 0;
-   visibility: hidden;
-   transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.mobile-menu-backdrop {
-    /* Regra para mostrar o backdrop (quando renderizado no JS) */
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Estilos Desktop .main-content */
-/* Comentando esta segunda definição redundante de main-content que está causando o problema com os modais */
-/*
-.main-content {
-  flex-grow: 1;
-  padding: 1.5rem;
-  background-color: #f4f7fa;
-  margin-left: 280px;
-  transition: margin-left 0.3s ease;
-  width: calc(100% - 280px);
-  min-height: 100vh;
-}
-
-.main-content.expanded {
-  margin-left: 72px;
-  width: calc(100% - 72px);
-}
-*/
-
-/* Ajustes finos menu colapsado (Desktop) */
-/* ... (regras para .side-menu.desktop.collapsed ...) ... */
-
-/* ----- FIM DAS MODIFICAÇÕES ----- */

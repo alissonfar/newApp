@@ -1,40 +1,57 @@
 // src/components/Layout/MainLayout.js
+// Orquestrador do layout: Header + Sidebar (SidebarMenu) + Footer (UserMenuFooter) + MainContent.
+// A sidebar é "dado" via menuStructure; a lógica de menu vive em SidebarMenu.
+// A lógica de perfil/avatar/logout vive em UserMenuFooter.
+//
+// Reduzido de 382 → ~150 linhas. Detalhes em:
+// - SidebarMenu.js — renderiza items, submenus, sections, tooltip do rail
+// - UserMenuFooter.js — renderiza avatar + Configurações + Admin + Logout
+// - menuStructure.js — array declarativo de nodes
+// - menuUtils.js — helpers de active state
+
 import React, { useContext, useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaChartLine, FaLightbulb, FaWallet, FaTags, FaBars, FaChevronLeft, FaQuestionCircle, FaFileImport, FaChevronDown, FaChevronRight, FaUser, FaSignOutAlt, FaUserShield, FaTimes, FaFileAlt, FaHandHoldingUsd, FaHistory, FaPiggyBank, FaUsers, FaCalculator, FaBuilding, FaChartArea, FaExchangeAlt, FaCalendarAlt, FaHandshake, FaAddressBook, FaPlug } from 'react-icons/fa';
+import { useLocation, useNavigate } from 'react-router-dom';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import myLogo from '../../assets/logo.png';
 import { AuthContext } from '../../context/AuthContext';
 import BreadcrumbsNav from '../navigation/BreadcrumbsNav';
 import GradientBackground from '../shared/GradientBackground';
-import ThemeToggle from '../shared/ThemeToggle';
+import SidebarMenu from './SidebarMenu';
+import UserMenuFooter from './UserMenuFooter';
+import { menuStructure } from './menuStructure';
 import './MainLayout.css';
+
+const SIDEBAR_COLLAPSED_KEY = 'cg:sidebar-collapsed';
 
 // Hook para detectar o tamanho da tela
 const useMediaQuery = (query) => {
-  const [matches, setMatches] = useState(window.matchMedia(query).matches);
+  const [matches, setMatches] = useState(
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false
+  );
 
   useEffect(() => {
     const mediaQueryList = window.matchMedia(query);
     const documentChangeHandler = (e) => setMatches(e.matches);
 
-    // Atualizar o estado quando a media query mudar
-    try {
+    const addHandler = () => {
+      try {
         mediaQueryList.addEventListener('change', documentChangeHandler);
-    } catch (e) {
-      // Fallback para navegadores mais antigos
-      mediaQueryList.addListener(documentChangeHandler);
-    }
-
-
-    // Cleanup listener na desmontagem
-    return () => {
-        try {
-            mediaQueryList.removeEventListener('change', documentChangeHandler);
-        } catch (e) {
-            // Fallback para navegadores mais antigos
-            mediaQueryList.removeListener(documentChangeHandler);
-        }
+      } catch (e) {
+        mediaQueryList.addListener(documentChangeHandler);
+      }
     };
+    const removeHandler = () => {
+      try {
+        mediaQueryList.removeEventListener('change', documentChangeHandler);
+      } catch (e) {
+        mediaQueryList.removeListener(documentChangeHandler);
+      }
+    };
+
+    addHandler();
+    return removeHandler;
   }, [query]);
 
   return matches;
@@ -44,89 +61,29 @@ const MainLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { token, usuario, setToken, setUsuario } = useContext(AuthContext);
-  const [isMenuCollapsed, setIsMenuCollapsed] = useState(false);
+
+  // === ESTADO DE LAYOUT ===
+  // isMenuCollapsed: persistido em localStorage (chave cg:sidebar-collapsed)
+  const [isMenuCollapsed, setIsMenuCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 992px)');
-  
-  // Estado para controlar quais submenus estão expandidos
-  const [expandedMenus, setExpandedMenus] = useState({
-    transacoes: true,
-    patrimonio: false,
-    emprestimos: false
-  });
 
-  // Toggle para expandir/colapsar submenus
-  const toggleSubmenu = (key, event) => {
-    event.preventDefault(); // Previne a navegação do link
-    setExpandedMenus(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
+  // Persiste estado de collapse no localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isMenuCollapsed));
+    } catch {
+      // localStorage indisponível — silencioso
+    }
+  }, [isMenuCollapsed]);
 
-  // Função para verificar se o item pai deve ser destacado
-  const isParentActive = (submenuPaths) => {
-    if (!submenuPaths) return false;
-    return submenuPaths.some(path => path && (location.pathname === path || location.pathname.startsWith(path + '/')));
-  };
-
-  // Menu lateral
-  const menuItems = [
-    { name: 'Home', path: '/', icon: <FaHome /> },
-    { name: 'Relatórios', path: '/relatorio', icon: <FaChartLine /> },
-    { name: 'Modelos de Relatório', path: '/modelos-relatorio', icon: <FaFileAlt /> },
-    { name: 'Insights', path: '/insights', icon: <FaLightbulb /> },
-    {
-      name: 'Transações',
-      path: null,
-      icon: <FaWallet />,
-      hasSubmenu: true,
-      key: 'transacoes',
-      submenu: [
-        { name: 'Importação em Massa', path: '/importacao', icon: <FaFileImport />, isSubItem: true },
-        { name: 'Recebimentos', path: '/recebimentos/novo', icon: <FaHandHoldingUsd />, isSubItem: true },
-        { name: 'Histórico de Recebimentos', path: '/recebimentos/historico', icon: <FaHistory />, isSubItem: true }
-      ]
-    },
-    { name: 'Gerenciar Tags', path: '/tags', icon: <FaTags /> },
-    {
-      name: 'Empréstimos',
-      path: null,
-      icon: <FaHandshake />,
-      hasSubmenu: true,
-      key: 'emprestimos',
-      submenu: [
-        { name: 'Lista de Empréstimos', path: '/emprestimos', icon: <FaHandshake />, isSubItem: true },
-        { name: 'Pessoas', path: '/pessoas', icon: <FaAddressBook />, isSubItem: true }
-      ]
-    },
-    {
-      name: 'Patrimônio',
-      path: null,
-      icon: <FaPiggyBank />,
-      hasSubmenu: true,
-      key: 'patrimonio',
-      submenu: [
-        { name: 'Resumo', path: '/patrimonio', icon: <FaPiggyBank />, isSubItem: true },
-        { name: 'Contas', path: '/patrimonio/contas', icon: <FaBuilding />, isSubItem: true },
-        { name: 'Simulador de Rendimentos', path: '/patrimonio/simulador', icon: <FaCalculator />, isSubItem: true },
-        { name: 'Evolução', path: '/patrimonio/evolucao', icon: <FaChartArea />, isSubItem: true },
-        { name: 'Patrimônio Histórico', path: '/patrimonio/historico', icon: <FaCalendarAlt />, isSubItem: true },
-        { name: 'Importar OFX', path: '/patrimonio/importacoes-ofx', icon: <FaFileImport />, isSubItem: true },
-        { name: 'Transferências', path: '/patrimonio/transferencias', icon: <FaExchangeAlt />, isSubItem: true },
-        { name: 'Open Finance', path: '/pluggy', icon: <FaPlug />, isSubItem: true }
-      ]
-    },
-    { name: 'Contas Conjuntas', path: '/conjunto', icon: <FaUsers /> },
-  ];
-
-  // Controle de exibição do menu de perfil
-  const [profileOpen, setProfileOpen] = useState(false);
-  const handleProfileToggle = () => {
-    setProfileOpen(!profileOpen);
-  };
-
-  // Função de logout
+  // === CALLBACKS ===
   const handleLogout = () => {
     localStorage.removeItem('token');
     setToken('');
@@ -134,241 +91,136 @@ const MainLayout = ({ children }) => {
     navigate('/login');
   };
 
-  // Função para fechar o menu mobile
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const handleLinkClick = () => {
+    if (isMobile) closeMobileMenu();
   };
 
-  // Função para lidar com clique nos links do menu (fecha mobile)
-  const handleMenuLinkClick = () => {
-    if (isMobile) {
-      closeMobileMenu();
-    }
-    // Se precisar de lógica adicional para links, adicione aqui
-  };
-
-  // Função de Toggle principal (controla ambos os estados mobile/desktop)
   const handleToggleClick = () => {
     if (isMobile) {
-      setIsMobileMenuOpen(!isMobileMenuOpen);
+      setIsMobileMenuOpen((open) => !open);
     } else {
-      setIsMenuCollapsed(!isMenuCollapsed);
+      setIsMenuCollapsed((collapsed) => !collapsed);
     }
   };
 
-  // Fecha menu mobile se redimensionar para desktop
+  // Sincroniza estados quando redimensiona entre mobile/desktop
   useEffect(() => {
     if (!isMobile && isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
     }
-    // Fecha o menu colapsado se redimensionar para mobile
     if (isMobile && isMenuCollapsed) {
-        setIsMenuCollapsed(false); // Garante que o menu não fique colapsado no mobile
+      setIsMenuCollapsed(false);
     }
   }, [isMobile, isMobileMenuOpen, isMenuCollapsed]);
 
-  // Adicionar handler para fechar o menu ao clicar fora
-  React.useEffect(() => {
-    const handleClickOutside = (event) => {
-      const menuFooter = document.querySelector('.menu-footer');
-      if (profileOpen && menuFooter && !menuFooter.contains(event.target)) {
-        setProfileOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [profileOpen]);
-
-  // Verifica se está em /login ou /registro ou não há token
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/registro';
+  // === AUTH CHECK ===
+  const isAuthPage =
+    location.pathname === '/login' || location.pathname === '/registro';
   if (!token || isAuthPage) {
-    // Se estiver em /login ou /registro (ou sem token), não exibe o menu lateral
-    return (
-      <main className="main-content">
-        {children}
-      </main>
-    );
+    return <main className="main-content">{children}</main>;
   }
 
-  // Determina as classes CSS para o menu lateral
+  // === CLASSES CSS ===
   const sideMenuClasses = [
     'side-menu',
     isMobile ? 'mobile' : 'desktop',
-    isMobile ? (isMobileMenuOpen ? 'mobile-menu-open' : '') : (isMenuCollapsed ? 'collapsed' : ''),
-  ].filter(Boolean).join(' ');
+    isMobile
+      ? isMobileMenuOpen
+        ? 'mobile-menu-open'
+        : ''
+      : isMenuCollapsed
+      ? 'collapsed'
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  // Determina as classes CSS para o conteúdo principal
   const mainContentClasses = [
     'main-content',
-    // Aplica 'expanded' no desktop quando colapsado
-    // Aplica 'mobile-menu-padding' no mobile sempre (para botão fixo)
     !isMobile ? (isMenuCollapsed ? 'expanded' : '') : 'mobile-menu-padding',
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  // Se o usuário estiver autenticado, exibe o layout completo
+  const showFullText = !isMenuCollapsed || isMobile;
+
   return (
     <div className="main-layout">
-      {/* Orbs de profundidade para glassmorphism (rotas autenticadas) */}
       <GradientBackground mode="light" />
 
-      {/* Backdrop para fechar menu mobile */}
+      {/* Backdrop mobile (fecha drawer ao clicar fora) */}
       {isMobile && isMobileMenuOpen && (
-        <div className="mobile-menu-backdrop" onClick={closeMobileMenu}></div>
+        <div
+          className="mobile-menu-backdrop mobile-menu-backdrop-open"
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
       )}
 
-      {/* BOTÕES DE TOGGLE CONDICIONAIS */}
-
-      {/* Botão Hamburger (Mobile - Menu Fechado - FORA do Aside) */}
+      {/* Botão hamburger mobile (fora do aside) */}
       {isMobile && !isMobileMenuOpen && (
         <button
-          className="main-menu-toggle mobile-hamburger-toggle"
+          type="button"
+          className="main-menu-toggle main-menu-toggle-mobile main-menu-toggle-hamburger"
           onClick={handleToggleClick}
-          title="Abrir menu"
+          aria-label="Abrir menu"
         >
-          <FaBars />
+          <MenuIcon fontSize="small" />
         </button>
       )}
 
-      {/* INVERTENDO ORDEM: Aside ANTES do botão Desktop */}
       <aside className={sideMenuClasses}>
-          {/* Botão Fechar 'X' (Mobile - Menu Aberto - DENTRO do Aside) */}
-          {isMobile && isMobileMenuOpen && (
-             <button
-                className="main-menu-toggle mobile-close-toggle"
-                onClick={handleToggleClick}
-                title="Fechar menu"
-             >
-                <FaTimes />
-             </button>
-          )}
+        {/* Botão X (mobile, dentro do aside) */}
+        {isMobile && isMobileMenuOpen && (
+          <button
+            type="button"
+            className="main-menu-toggle main-menu-toggle-mobile main-menu-toggle-close"
+            onClick={handleToggleClick}
+            aria-label="Fechar menu"
+          >
+            <CloseIcon fontSize="small" />
+          </button>
+        )}
 
         <div className="menu-top">
-           {/* Adiciona padding interno no topo APENAS se for mobile para o botão 'X' */}
-           <div className={`logo ${isMobile ? 'mobile-padding' : ''}`}>
-              <img src={myLogo} alt="Logo" />
-               {/* Oculta nome se colapsado no desktop OU se for mobile (independente de aberto/fechado) */}
-              {/*!isMenuCollapsed && !isMobile && <span className="system-name">Controle de Gastos</span>*/}
-               {/* Mostra nome se não colapsado E não for mobile */}
-              {!isMenuCollapsed && !isMobile && <span className="system-name">Controle de Gastos</span>}
-               {/* OU se for mobile E o menu estiver aberto */}
-              {isMobile && isMobileMenuOpen && <span className="system-name">Controle de Gastos</span>}
-           </div>
+          <div className={`logo ${isMobile ? 'mobile-padding' : ''}`}>
+            <img src={myLogo} alt="Logo" />
+            {showFullText && <span className="system-name">Controle de Gastos</span>}
+          </div>
 
-           <nav className="menu-items">
-             <ul>
-              {menuItems.map(item => (
-                <li
-                  key={item.path || item.key}
-                  className={`${item.hasSubmenu && isParentActive(item.submenu.map(subItem => subItem.path)) ? 'active' : (location.pathname === item.path ? 'active' : '')} ${item.hasSubmenu ? 'has-submenu' : ''}`}
-                >
-                  {item.hasSubmenu ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={(e) => toggleSubmenu(item.key, e)}
-                        className="menu-item with-submenu"
-                        aria-expanded={expandedMenus[item.key]}
-                      >
-                        <span className="menu-icon">{item.icon}</span>
-                         {/* Oculta texto se colapsado no desktop */}
-                        {(!isMenuCollapsed || isMobile) && (
-                          <>
-                            <span className="menu-text">{item.name}</span>
-                            <span className="submenu-arrow">
-                              {expandedMenus[item.key] ? <FaChevronDown /> : <FaChevronRight />}
-                            </span>
-                          </>
-                        )}
-                      </button>
-                      {/* Mostra submenu se expandido E (não colapsado OU for mobile) */}
-                      {expandedMenus[item.key] && (!isMenuCollapsed || isMobile) && (
-                        <ul className="submenu">
-                          {item.submenu.map(subItem => (
-                            <li key={subItem.path} className={location.pathname === subItem.path ? 'active' : ''}>
-                              <Link to={subItem.path} className={`menu-item sub-item ${location.pathname === subItem.path ? 'active-item' : ''}`} onClick={handleMenuLinkClick}>
-                                <span className="menu-icon">{subItem.icon}</span>
-                                <span className="menu-text">{subItem.name}</span>
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </>
-                  ) : (
-                    <Link to={item.path} className="menu-item" onClick={handleMenuLinkClick}>
-                      <span className="menu-icon">{item.icon}</span>
-                       {/* Oculta texto se colapsado no desktop */}
-                      {(!isMenuCollapsed || isMobile) && <span className="menu-text">{item.name}</span>}
-                    </Link>
-                  )}
-                </li>
-              ))}
-              
-              {/* Admin Link */}
-              {usuario?.role === 'admin' && (
-                <li className={`${location.pathname === '/admin' ? 'active' : ''}`}>
-                   <Link to="/admin" className="menu-item" onClick={handleMenuLinkClick}>
-                     <span className="menu-icon"><FaUserShield /></span>
-                      {/* Oculta texto se colapsado no desktop */}
-                     {(!isMenuCollapsed || isMobile) && <span className="menu-text">Administração</span>}
-                   </Link>
-                </li>
-              )}
-            </ul>
-          </nav>
+          <div className="menu-items">
+            <SidebarMenu
+              menuStructure={menuStructure}
+              currentPath={location.pathname}
+              isCollapsed={isMenuCollapsed}
+              isMobile={isMobile}
+              onLinkClick={handleLinkClick}
+            />
+          </div>
         </div>
 
-        <div className="menu-footer">
-          <div className="user-info" onClick={handleProfileToggle}>
-             {/* Sempre mostra avatar se não colapsado no desktop, ou se for mobile */}
-             {(!isMenuCollapsed || isMobile) && <img src={myLogo} alt="Avatar do usuário" className="avatar" />}
-             {/* Mostra nome/seta apenas se não colapsado desktop OU se mobile E menu aberto */}
-             {(!isMenuCollapsed || (isMobile && isMobileMenuOpen)) && (
-              <>
-                <span className="user-name">
-                  {usuario ? usuario.nome : 'Usuário'}
-                </span>
-                 {/* Seta só no desktop não colapsado */}
-                 {!isMenuCollapsed && !isMobile && <FaChevronDown className={`profile-arrow ${profileOpen ? 'open' : ''}`} />}
-               </>
-             )}
-           </div>
-
-           {/* Dropdown de perfil - mostra se profileOpen E (não colapsado desktop OU mobile) */}
-           {profileOpen && (!isMenuCollapsed || isMobile) && (
-             <div className="profile-dropdown">
-               {/* ... links do dropdown com handleMenuLinkClick ... */}
-               <Link to="/profile" className="profile-link" onClick={handleMenuLinkClick}>
-                 <FaUser />
-                 Meu Perfil
-               </Link>
-               <Link to="/como-utilizar" className="profile-link" onClick={handleMenuLinkClick}>
-                 <FaQuestionCircle />
-                 Como Utilizar
-               </Link>
-                <div className="profile-dropdown-toggle-wrapper">
-                  <ThemeToggle />
-                </div>
-                <hr className="profile-dropdown-divider" />
-               <button onClick={handleLogout} className="profile-link logout-btn">
-                 <FaSignOutAlt />
-                 Sair
-               </button>
-             </div>
-           )}
-        </div>
+        <UserMenuFooter
+          usuario={usuario}
+          isCollapsed={isMenuCollapsed}
+          isMobile={isMobile}
+          isMobileMenuOpen={isMobileMenuOpen}
+          onLinkClick={handleLinkClick}
+          onLogout={handleLogout}
+        />
       </aside>
 
-       {/* Botão Desktop (Renderizado DEPOIS do Aside) */}
-       {!isMobile && (
-         <button
-            className="main-menu-toggle desktop-toggle"
-            onClick={handleToggleClick}
-            title={isMenuCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          >
-            <FaChevronLeft />
-          </button>
+      {/* Botão de toggle desktop (fora do aside) */}
+      {!isMobile && (
+        <button
+          type="button"
+          className="main-menu-toggle main-menu-toggle-desktop"
+          onClick={handleToggleClick}
+          aria-label={isMenuCollapsed ? 'Expandir menu' : 'Recolher menu'}
+        >
+          <ChevronLeftIcon fontSize="small" />
+        </button>
       )}
 
       <main className={mainContentClasses}>

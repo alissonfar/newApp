@@ -1,0 +1,201 @@
+/* src/components/Layout/UserMenuFooter.css */
+/* Visual do rodapé da sidebar: avatar do usuário (botão) + dropdown de perfil.
+   Comportamento idêntico ao MainLayout.js original (pré-refatoração).
+   Usa tokens reativos (--cg-color-*) para dark mode (regra do ADR-012). */
+
+.user-menu-footer {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-top: 1px solid var(--cg-menu-border);
+  padding-top: var(--cg-spacing-sm);
+  margin-top: var(--cg-spacing-sm);
+  position: relative;
+}
+
+/* === AVATAR (botão que abre dropdown) === */
+.user-menu-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-spacing-md);
+  padding: 0.5rem 0.75rem;
+  margin-bottom: var(--cg-spacing-sm);
+  cursor: pointer;
+  border-radius: var(--cg-radius-sm);
+  transition: background-color var(--cg-menu-transition);
+  background-color: var(--cg-menu-hover);
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: var(--cg-menu-text);
+  font-family: inherit;
+}
+
+.user-menu-avatar-row:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.user-menu-avatar-center {
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.user-menu-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--cg-menu-active-text);
+  transition: transform var(--cg-menu-transition);
+}
+
+.user-menu-avatar-row:hover .user-menu-avatar {
+  transform: scale(1.05);
+}
+
+.user-menu-name {
+  font-size: 0.95rem;
+  color: var(--cg-menu-text);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu-arrow {
+  font-size: 0.95rem;
+  color: var(--cg-menu-text-secondary);
+  transition: transform var(--cg-menu-transition);
+  flex-shrink: 0;
+}
+
+.user-menu-arrow.open {
+  transform: rotate(180deg);
+}
+
+/* === DROPDOWN DE PERFIL === */
+.profile-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid var(--cg-color-border, #ddd);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-bottom: 8px;
+  min-width: 200px;
+  animation: profileSlideIn var(--cg-menu-transition);
+  animation-fill-mode: forwards;
+  color: var(--cg-color-text-primary, #1e293b);
+  border-color: var(--cg-color-border, rgba(255, 255, 255, 0.1));
+  transform-origin: bottom center;
+}
+
+@keyframes profileSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dropdown some no modo rail (não cabe em 72px) */
+.side-menu.desktop.collapsed .profile-dropdown {
+  display: none;
+}
+
+.profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--cg-color-text-primary, #333);
+  text-decoration: none;
+  transition: background-color var(--cg-menu-transition), color var(--cg-menu-transition);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.profile-link:hover {
+  background-color: var(--cg-color-primary-muted, rgba(37, 99, 235, 0.08));
+  color: var(--cg-color-primary);
+  transform: translateX(4px);
+}
+
+.profile-link svg {
+  font-size: 1.1rem;
+  color: var(--cg-color-text-secondary, #666);
+  transition: color var(--cg-menu-transition);
+}
+
+.profile-link:hover svg {
+  color: var(--cg-color-primary);
+}
+
+/* Divisor entre seções do dropdown de perfil */
+.profile-dropdown-divider {
+  border: none;
+  height: 1px;
+  background-color: var(--cg-color-border, #eee);
+  margin: 4px 0;
+  padding: 0;
+}
+
+/* Wrapper do ThemeToggle dentro do dropdown de perfil */
+.profile-dropdown-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+}
+
+/* === LOGOUT (item comum do dropdown, sem destaque) === */
+.profile-dropdown .logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--cg-color-text-primary, #333);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.profile-dropdown .logout-btn:hover {
+  background-color: var(--cg-color-primary-muted, rgba(37, 99, 235, 0.08));
+  color: var(--cg-color-primary, #2563eb);
+  transform: translateX(4px);
+}
+
+.profile-dropdown .logout-btn svg {
+  font-size: 1.1rem;
+  color: var(--cg-color-text-secondary, #666);
+  transition: color 0.2s ease;
+}
+
+.profile-dropdown .logout-btn:hover svg {
+  color: var(--cg-color-primary, #2563eb);
+}
