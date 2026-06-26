@@ -30,7 +30,6 @@ const UserMenuFooter = ({
   const [profileOpen, setProfileOpen] = useState(false);
   const footerRef = useRef(null);
 
-  const showLabels = !isCollapsed || isMobile;
   const showUserInfo = !isCollapsed || (isMobile && isMobileMenuOpen);
 
   // Fecha dropdown ao clicar fora do footer
