@@ -8,7 +8,7 @@ import Button from '../../components/shared/Button';
 import Card from '../../components/shared/Card';
 import Badge from '../../components/shared/Badge';
 import EmptyState from '../../components/shared/EmptyState';
-import { useBreadcrumbOverride } from '../../context/BreadcrumbContext';
+import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
 import { formatDateBR } from '../../utils/dateUtils';
 import './FaturasPage.css';
 
@@ -40,7 +40,7 @@ const FaturasPage = () => {
   const [erro, setErro] = useState(null);
   const [anoMes, setAnoMes] = useState(mesAtual());
 
-  useBreadcrumbOverride('Minhas Faturas');
+  useBreadcrumbTrailing('Minhas Faturas');
 
   const carregar = async (mes) => {
     try {

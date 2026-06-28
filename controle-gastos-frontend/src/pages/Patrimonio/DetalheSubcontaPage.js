@@ -22,7 +22,7 @@ import Pagination from '../../components/shared/Pagination';
 import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
-import { useBreadcrumbOverride } from '../../context/BreadcrumbContext';
+import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
 import '../../components/Patrimonio/PatrimonioForm.css';
 import './DetalheSubcontaPage.css';
 
@@ -190,7 +190,7 @@ const DetalheSubcontaPage = () => {
     setLedgerPagina(1);
   };
 
-  useBreadcrumbOverride(subconta?.nome);
+  useBreadcrumbTrailing(subconta?.nome);
 
   const formatarMoeda = (v) => 'R$ ' + ((v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const formatarData = (d) => d ? formatDateBR(d) : '-';

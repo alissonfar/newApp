@@ -17,7 +17,7 @@ import {
   labelStatus,
   calcularDiasAtraso
 } from '../../utils/emprestimoFormat';
-import { useBreadcrumbOverride } from '../../context/BreadcrumbContext';
+import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
 import EmprestimoForm from '../../components/Emprestimos/EmprestimoForm';
 import './EmprestimoDetalhePage.css';
 
@@ -29,7 +29,7 @@ const EmprestimoDetalhePage = () => {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
 
-  useBreadcrumbOverride(emprestimo?.pessoaNomeSnapshot || null);
+  useBreadcrumbTrailing(emprestimo?.pessoaNomeSnapshot || null);
 
   const load = useCallback(async () => {
     setLoading(true);

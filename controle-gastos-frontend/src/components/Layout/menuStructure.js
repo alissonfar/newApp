@@ -67,6 +67,7 @@ const registrarSection = {
       key: 'transacoes',
       items: [
         { name: 'Importação em Massa', path: '/importacao', icon: FileUploadIcon, key: 'importacao' },
+        { name: 'Nova Importação', path: '/importacao/nova', icon: FileUploadIcon, key: 'importacao-nova' },
         { name: 'Recebimentos', path: '/recebimentos/novo', icon: PaidIcon, key: 'recebimentos-novo' },
         { name: 'Histórico de Recebimentos', path: '/recebimentos/historico', icon: HistoryIcon, key: 'recebimentos-historico' },
       ],
@@ -85,6 +86,7 @@ const patrimonioSection = {
     {
       type: 'submenu',
       name: 'Patrimônio',
+      path: '/patrimonio',
       icon: SavingsIcon,
       key: 'patrimonio',
       items: [
@@ -95,12 +97,14 @@ const patrimonioSection = {
         { name: 'Patrimônio Histórico', path: '/patrimonio/historico', icon: CalendarMonthIcon, key: 'patrimonio-historico' },
         { name: 'Importar OFX', path: '/patrimonio/importacoes-ofx', icon: FileDownloadIcon, key: 'patrimonio-ofx' },
         { name: 'Transferências', path: '/patrimonio/transferencias', icon: SwapHorizIcon, key: 'patrimonio-transferencias' },
+        { name: 'Faturas', path: '/patrimonio/faturas', icon: CalendarMonthIcon, key: 'patrimonio-faturas' },
         { name: 'Open Finance', path: '/pluggy', icon: HubIcon, key: 'patrimonio-pluggy' },
       ],
     },
     {
       type: 'submenu',
       name: 'Empréstimos',
+      path: '/emprestimos',
       icon: HandshakeIcon,
       key: 'emprestimos',
       items: [
@@ -136,3 +140,121 @@ export const defaultExpandedMenus = {
   patrimonio: false,
   emprestimos: false,
 };
+
+/**
+ * Detecta se um segmento de URL parece ser um ID (MongoDB ObjectId ou UUID).
+ * Reaproveita a heurística que existia no BreadcrumbsNav.jsx antigo.
+ */
+function looksLikeId(segment) {
+  if (!segment || typeof segment !== 'string') return false;
+  return /^[a-fA-F0-9]{24}$/.test(segment) || /^[a-fA-F0-9-]{36}$/.test(segment);
+}
+
+/**
+ * Overrides manuais para rotas que estão fora do menuStructure
+ * (Profile, Como Utilizar, Admin) mas precisam de label canônico
+ * no breadcrumb. Mantém o fallback humanizado bom para casos
+ * imprevistos sem inflar o menuStructure (e sem poluir a sidebar).
+ */
+const FALLBACK_LABELS = {
+  '/profile': 'Meu Perfil',
+  '/como-utilizar': 'Como Utilizar',
+  '/admin': 'Administração',
+};
+
+/**
+ * Constrói o mapa `path → parentPath` a partir do menuStructure.
+ * Usado pelo BreadcrumbsNav para derivar a hierarquia de qualquer rota.
+ *
+ * Regras:
+ * - `item` simples vira `path → parentPath`.
+ * - `submenu` COM path próprio vira `path → parentPath` e cada filho vira `childPath → submenuPath`.
+ * - `submenu` SEM path próprio: os filhos caem direto no `parentPath` do submenu
+ *   (no caso, a raiz `'/'`).
+ * - `section` é só agrupamento — não vira nó, mas seus `items` são visitáveis.
+ *
+ * Exemplo de saída:
+ *   '/emprestimos/123' → '/emprestimos'
+ *   '/emprestimos'     → '/'
+ *   '/'                → null (ausente do map, propositalmente)
+ */
+export function buildParentMap(structure) {
+  const map = new Map();
+  const homeKey = '/';
+
+  function visit(items, parentPath) {
+    for (const item of items) {
+      if (item.type === 'item' && item.path) {
+        // Se o path já foi registrado (ex: o submenu pai registrou antes
+        // do item "Resumo" com mesmo path), mantém a primeira inserção.
+        if (!map.has(item.path)) {
+          map.set(item.path, parentPath);
+        }
+      } else if (item.type === 'submenu') {
+        // O submenu PAI tem prioridade no map. Insere PRIMEIRO e não sobrescreve.
+        if (item.path && !map.has(item.path)) {
+          map.set(item.path, parentPath);
+        }
+        // Filhos do submenu. Se o pai não tem path, eles caem no parentPath do submenu.
+        for (const child of item.items || []) {
+          if (child.path && !map.has(child.path)) {
+            map.set(child.path, item.path || parentPath);
+          }
+        }
+      } else if (item.type === 'section') {
+        visit(item.items || [], parentPath);
+      }
+    }
+  }
+
+  visit(structure, homeKey);
+  return map;
+}
+
+/**
+ * Acha o label canônico de uma rota dentro do menuStructure.
+ * Desce recursivamente em submenus (que têm seus próprios `items`).
+ * Retorna `null` se não encontrar — caller decide se cai no fallback humanizado.
+ */
+export function findLabelInMenu(path, structure) {
+  for (const node of structure) {
+    if (node.type === 'item' && node.path === path) return node.name;
+    if (node.type === 'submenu' && node.path === path) return node.name;
+    if (node.type === 'section' || node.type === 'submenu') {
+      for (const child of node.items || []) {
+        // Recursão: o filho pode ser outro submenu com items aninhados
+        // (ex: /importacao está 2 níveis: section → submenu Transações → item).
+        if (child.path === path) return child.name;
+        if (child.type === 'submenu' && child.items) {
+          const found = findLabelInMenu(path, [child]);
+          if (found) return found;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Fallback final: humaniza o último segmento de uma URL quando
+ * nem o menuStructure nem o MAP de labels dinâmicos conhece a rota.
+ *
+ * Comportamento:
+ * - Se o path exato tem override em FALLBACK_LABELS, retorna o override.
+ * - Se o último segmento parece ser um ID (ObjectId/UUID), retorna 'Detalhe'.
+ * - Caso contrário: troca `-` por espaço e capitaliza a primeira letra de cada palavra.
+ */
+export function humanizeSegment(path) {
+  if (!path) return '';
+  if (FALLBACK_LABELS[path]) return FALLBACK_LABELS[path];
+
+  const segments = path.split('/').filter(Boolean);
+  const last = segments[segments.length - 1] || path;
+
+  if (looksLikeId(last)) return 'Detalhe';
+
+  return last
+    .split('-')
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ''))
+    .join(' ');
+}
