@@ -23,6 +23,7 @@ function getHeaders(isJson = true) {
 
 /* ----- Categorias ----- */
 export async function obterCategorias(incluirInativas = false) {
+  if (!getToken()) return [];
   const query = incluirInativas ? '?incluirInativas=true' : '';
   const resposta = await fetch(`${API_BASE}/categorias${query}`, {
     headers: getHeaders(false)
@@ -115,6 +116,7 @@ export async function excluirCategoria(codigo) {
 
 /* ----- Tags ----- */
 export async function obterTags() {
+  if (!getToken()) return [];
   const resposta = await fetch(`${API_BASE}/tags`, {
     headers: getHeaders(false)
   });
