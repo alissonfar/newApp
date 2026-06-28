@@ -100,6 +100,15 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
 - **Playbook:**
   - [`playbooks/debug-tanstack-table-sort.md`](playbooks/debug-tanstack-table-sort.md) — como debugar bug de sort no TanStack Table v8 (logs cirúrgicos + 5 pontos de log)
 
+### Módulo de Breadcrumb / Navegação
+- **Design doc:**
+  - [`2026-06-28-breadcrumb-reorganizacao-design.md`](sessions/2026-06-28-breadcrumb-reorganizacao-design.md) — design da reorganização do breadcrumb (menuStructure como fonte de verdade, MAP scoped por rota, ellipsis responsivo, tokens)
+- **ADR:**
+  - [ADR-017](decisions/2026-06-28-breadcrumb-menu-structure-fonte-verdade.md) — `menuStructure` como fonte de verdade única + label dinâmico scoped por rota
+- **Sessões:**
+  - [`2026-06-26-sidebar-reorganizacao-design.md`](sessions/2026-06-26-sidebar-reorganizacao-design.md) — design da reorganização da sidebar (criou o `menuStructure.js` que o breadcrumb depois reaproveitou)
+  - [`2026-06-28-breadcrumb-reorganizacao-pos-execucao.md`](sessions/2026-06-28-breadcrumb-reorganizacao-pos-execucao.md) — pós-execução consolidada (refactor arquitetural + redesign visual + fix de race condition)
+
 ### Setup inicial e configurações
 - [`2026-06-21-setup-inicial.md`](sessions/2026-06-21-setup-inicial.md) — setup inicial do vault e dos agentes
 - [`2026-06-21-consolidacao-permissoes.md`](sessions/2026-06-21-consolidacao-permissoes.md) — permissões dos agentes
@@ -288,5 +297,5 @@ A estrutura atual (4 pastas) é um **começo**, não uma camisa-de-força. Se vo
 ## Status
 
 - **Criado em:** 2026-06-21
-- **Última atualização:** 2026-06-25 (índice por módulo + ADRs de Empréstimos)
+- **Última atualização:** 2026-06-28 (módulo de Breadcrumb: ADR-017 + sessões de design/pós-execução; stack.md atualizado com arquitetura nova)
 - **Mantido por:** Alisson + newapp-planner

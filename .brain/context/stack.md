@@ -133,6 +133,20 @@ controle-gastos-frontend/src/
 AuthProvider > DataProvider > BreadcrumbProvider > ImportacaoProvider
 ```
 
+### Breadcrumb (reorganizado 2026-06-28)
+
+- **Fonte de verdade única:** `src/components/Layout/menuStructure.js` — a mesma estrutura declarativa que a sidebar consome. Adicionar uma rota nova = atualizar `menuStructure`, o breadcrumb segue automaticamente.
+- **Funções puras exportadas** em `menuStructure.js`:
+  - `buildParentMap(structure)` — converte a árvore aninhada em `Map<path, parentPath>` pra derivar hierarquia.
+  - `findLabelInMenu(path, structure)` — busca recursiva do label canônico.
+  - `humanizeSegment(path)` — fallback final (formata slug, detecta IDs, usa `FALLBACK_LABELS` pra rotas estáveis fora do menu como `/profile`, `/como-utilizar`, `/admin`).
+- **Estado:** `BreadcrumbContext` mantém `dynamicLabels: Map<pathname, label>` (não é singleton global). Cada página de detalhe registra seu label sob a key da **própria** rota, então uma página não consegue sobrescrever a de outra.
+- **Hook:** `useBreadcrumbTrailing(label)` substitui o antigo `useBreadcrumbOverride(label)` (sem alias deprecated). Guard `window.location.pathname === pathname` no cleanup resolve race condition quando o usuário navega entre detalhes em sequência rápida.
+- **Componente:** `src/components/navigation/BreadcrumbsNav.jsx` lê `menuStructure` + `BreadcrumbContext`, renderiza via `<MuiLink component={Link}>` com container glassmorphism (`var(--cg-color-surface)` + `backdrop-filter: blur(12px)`), separador `·` (middle dot, Linear-style), `maxItems={4}` desktop / `maxItems={3}` mobile, ellipsis via `itemsBeforeCollapse` + `itemsAfterCollapse` do MUI.
+- **Visual:** 100% tokens (`var(--cg-color-text-primary)`, `var(--cg-color-text-secondary)`, `var(--cg-color-text-muted)`, `var(--cg-font-size-sm)`, `var(--cg-radius-sm/md)`). Zero hex hardcoded. Dark mode reativo sem reload (regra do ADR-012).
+- **Acessibilidade:** `aria-current="page"` no último item, `aria-label="breadcrumb"`, separador decorativo.
+- **Detalhes:** ver [ADR-017](../decisions/2026-06-28-breadcrumb-menu-structure-fonte-verdade.md) e sessão [`2026-06-28-breadcrumb-reorganizacao-pos-execucao.md`](../sessions/2026-06-28-breadcrumb-reorganizacao-pos-execucao.md).
+
 ### Duas API clients (importante!)
 
 1. `src/api.js` — wrappers em `fetch` nativo, **mapeia `_id` → `codigo` (categorias/tags) ou `id` (transações)** pra compatibilidade com UI
