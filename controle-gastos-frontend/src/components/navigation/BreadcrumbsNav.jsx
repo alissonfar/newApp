@@ -57,10 +57,10 @@ function buildBreadcrumbItems(pathname, parentMap, dynamicLabels) {
   if (!parentMap.has(pathname)) {
     const found = findAncestor(pathname);
     if (found) {
-      const ancestorLabel = resolveLabel(found.ancestor);
       // O item atual (pathname) é sempre o último.
       const lastLabel = resolveLabel(pathname);
-      // Sobe a partir do ancestral.
+      // Sobe a partir do ancestral. O label do ancestral já vem dentro de `rest`
+      // (buildChainFromPath usa resolveLabel pra cada nível da chain).
       const rest = buildChainFromPath(found.ancestor, parentMap, dynamicLabels, resolveLabel);
       return [
         ...rest,
@@ -69,8 +69,6 @@ function buildBreadcrumbItems(pathname, parentMap, dynamicLabels) {
         ...item,
         isLast: index === arr.length - 1,
       }));
-      // O ancestorLabel já vem de rest (incluindo a chain acima).
-      void ancestorLabel; // silenciar lint
     }
   }
 
