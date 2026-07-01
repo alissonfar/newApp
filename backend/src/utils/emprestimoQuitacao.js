@@ -43,29 +43,25 @@ async function buscarSnapshotUltimoRecebimento(emprestimoId) {
   return recebiveis[0] || null;
 }
 
-async function calcularTotaisRecebEDisbursed(emprestimoId) {
-  const agregados = await Transacao.aggregate([
-    {
-      $match: {
-        emprestimoId: new mongoose.Types.ObjectId(String(emprestimoId)),
-        status: 'ativo',
-        emprestimoEhJurosAuto: { $ne: true }
-      }
-    },
-    {
-      $group: {
-        _id: '$tipo',
-        total: { $sum: '$valor' }
-      }
-    }
-  ]);
-  let desembolso = 0;
-  let recebimento = 0;
-  for (const a of agregados) {
-    if (a._id === 'gasto') desembolso = a.total;
-    else if (a._id === 'recebivel') recebimento = a.total;
-  }
-  return { desembolso, recebimento };
+/**
+ * Helper: retorna o desembolso total e o recebimento total do Empréstimo,
+ * somando caminho 1 (TX-level legado) e caminho 2 (pagamento-level novo).
+ *
+ * Usado por `recalcularJurosAuto` pra montar a observação da TX de juros
+ * automáticos.
+ *
+ * @param {string|ObjectId} emprestimoId
+ * @param {string|ObjectId} usuarioId
+ * @returns {Promise<{ desembolso: number, recebimento: number }>}
+ */
+async function calcularTotaisRecebEDisbursed(emprestimoId, usuarioId) {
+  // Lazy require pra evitar circular dependency com services/emprestimoService
+  const { _agregarTotaisEmprestimo } = require('../services/emprestimoService');
+  const t = await _agregarTotaisEmprestimo(emprestimoId, usuarioId);
+  return {
+    desembolso: t.totalDesembolsadoC1 + t.totalDesembolsadoC2,
+    recebimento: t.totalRecebidoC1 + t.totalRecebidoC2
+  };
 }
 
 function saoIguais(a, b, tolerancia = 0.005) {
@@ -110,7 +106,7 @@ async function recalcularJurosAuto(emprestimo, lucro, opcoes = {}) {
     if (!ultima) {
       return { acao: 'nenhuma', transacao: null };
     }
-    const { desembolso, recebimento } = await calcularTotaisRecebEDisbursed(emprestimoId);
+    const { desembolso, recebimento } = await calcularTotaisRecebEDisbursed(emprestimoId, emprestimo.usuario);
     const pessoaNome = emprestimo.pessoaNomeSnapshot || 'empréstimo';
     const nova = new Transacao({
       _id: new mongoose.Types.ObjectId(),
@@ -144,7 +140,7 @@ async function recalcularJurosAuto(emprestimo, lucro, opcoes = {}) {
     return { acao: 'deletada', transacao: null };
   }
 
-  const { desembolso, recebimento } = await calcularTotaisRecebEDisbursed(emprestimoId);
+  const { desembolso, recebimento } = await calcularTotaisRecebEDisbursed(emprestimoId, emprestimo.usuario);
   const pessoaNome = emprestimo.pessoaNomeSnapshot || 'empréstimo';
   const observacao = montarObservacao({ pessoaNome, desembolso, totalReceb: recebimento, lucro: lucroArred });
   const valorMudou = !saoIguais(txExistente.valor, lucroArred);

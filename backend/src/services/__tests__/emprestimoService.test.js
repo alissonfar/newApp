@@ -59,6 +59,7 @@ const {
   validarDadosEmprestimo,
   recalcularStatus,
   calcularTotais,
+  calcularLucro,
   STATUS_EMPRESTIMO,
   TIPOS_RETORNO
 } = require('../emprestimoService');
@@ -95,7 +96,6 @@ const EMP_ID = new mongoose.Types.ObjectId();
 function mockAggregateSequence(
   txLevelResult,
   esperadoPagamentoResult,
-  lucroResult,
   pagamentoLevelResult = []
 ) {
   const calls = [];
@@ -108,7 +108,6 @@ function mockAggregateSequence(
       calls.push(esperadoPagamentoResult);
     }
   }
-  if (lucroResult !== undefined) calls.push(lucroResult);
   for (const r of calls) {
     mockTransacaoAggregate.mockResolvedValueOnce(r);
   }
@@ -247,12 +246,16 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     const empQuitado = { ...emp, status: 'quitado', dataQuitacao: new Date() };
 
     mockEmprestimoFindOne.mockResolvedValue(emp);
-    // calcularTotais: 1ª agregado por tipo, 2ª soma esperada
-    // calcularLucro: 1ª agregado por tipo (mesma coisa)
+    // calcularTotais consome 3 mocks (txLevel + pagamentoLevel + esperado).
+    // calcularLucro também consome 3 mocks (via _agregarTotaisEmprestimo).
+    // Empilhamos 2 sequências iguais (mesmos dados pros 2 calls).
     mockAggregateSequence(
       [{ _id: 'gasto', total: 1100 }, { _id: 'recebivel', total: 1300 }],
-      1300,
-      [{ _id: 'gasto', total: 1100 }, { _id: 'recebivel', total: 1300 }]
+      1300
+    );
+    mockAggregateSequence(
+      [{ _id: 'gasto', total: 1100 }, { _id: 'recebivel', total: 1300 }],
+      1300
     );
     mockEmprestimoFindOneAndUpdate.mockResolvedValue(empQuitado);
     mockRecalcularJurosAuto.mockResolvedValue({ acao: 'criada', transacao: { _id: 'tx', valor: 200 } });
@@ -282,8 +285,11 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     mockEmprestimoFindOne.mockResolvedValue(emp);
     mockAggregateSequence(
       [{ _id: 'gasto', total: 1000 }, { _id: 'recebivel', total: 1000 }],
-      1000,
-      [{ _id: 'gasto', total: 1000 }, { _id: 'recebivel', total: 1000 }]
+      1000
+    );
+    mockAggregateSequence(
+      [{ _id: 'gasto', total: 1000 }, { _id: 'recebivel', total: 1000 }],
+      1000
     );
     mockEmprestimoFindOneAndUpdate.mockResolvedValue(empQuitado);
     mockRecalcularJurosAuto.mockResolvedValue({ acao: 'nenhuma', transacao: null });
@@ -323,12 +329,14 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     const emp = makeEmprestimo({ status: 'quitado', dataQuitacao: new Date() });
 
     mockEmprestimoFindOne.mockResolvedValue(emp);
-    // calcularTotais: 1ª agregado, 2ª soma esperada
-    // calcularLucro: 1ª agregado
+    // calcularTotais: 3 mocks. calcularLucro: 3 mocks (via _agregarTotaisEmprestimo).
     mockAggregateSequence(
       [{ _id: 'gasto', total: 600 }, { _id: 'recebivel', total: 800 }],
-      800,
-      [{ _id: 'gasto', total: 600 }, { _id: 'recebivel', total: 800 }]
+      800
+    );
+    mockAggregateSequence(
+      [{ _id: 'gasto', total: 600 }, { _id: 'recebivel', total: 800 }],
+      800
     );
     mockRecalcularJurosAuto.mockResolvedValue({ acao: 'atualizada', transacao: { _id: 'tx', valor: 200 } });
 
@@ -384,8 +392,11 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     // desembolso zero, mas recebimento 800 (atinge valor esperado 800)
     mockAggregateSequence(
       [{ _id: 'recebivel', total: 800 }],
-      800,
-      [{ _id: 'recebivel', total: 800 }]
+      800
+    );
+    mockAggregateSequence(
+      [{ _id: 'recebivel', total: 800 }],
+      800
     );
     mockEmprestimoFindOneAndUpdate.mockResolvedValue(empQuitado);
     mockRecalcularJurosAuto.mockResolvedValue({ acao: 'criada', transacao: {} });
@@ -472,5 +483,54 @@ describe('emprestimoService.calcularTotais - pagamento-level (design 2026-06-24)
 
     expect(totais.totalDisbursed).toBe(900);
     expect(totais.totalEsperado).toBe(1000);
+  });
+});
+
+describe('emprestimoService - caminho 2 (pagamento-level) — bug fix 2026-06-30', () => {
+  beforeEach(() => {
+    mockEmprestimoFindOne.mockReset();
+    mockEmprestimoFindOneAndUpdate.mockReset();
+    mockTransacaoAggregate.mockReset();
+    mockTransacaoFind.mockReset();
+    mockRecalcularJurosAuto.mockReset();
+  });
+
+  test('calcularTotais soma desembolso de caminho 2 (pagamento-level)', async () => {
+    // Cenário: 2 TXs de gasto, cada uma com 1 pagamento que tem emprestimoId
+    // (caminho 2 puro, sem t.emprestimoId em nenhuma TX).
+    mockAggregateSequence(
+      [],  // caminho 1: vazio (nenhuma TX com t.emprestimoId)
+      0,   // esperado pagamento: 0
+      [    // caminho 2: 2 pagamentos de R$ 500 cada
+        { _id: 'gasto', total: 1000 }
+      ]
+    );
+
+    const totais = await calcularTotais(EMP_ID, USER_ID);
+    expect(totais.totalDisbursed).toBe(1000);
+    expect(totais.totalReceived).toBe(0);
+  });
+
+  test('calcularLucro retorna lucro correto em cenário mix caminho 1 + caminho 2', async () => {
+    // Cenário "Estrela" simplificado:
+    //   - caminho 1: 1 gasto de R$ 600
+    //   - caminho 2: 3 pagamentos de gasto (R$ 500 + R$ 447,50 + R$ 380 = R$ 1.327,50)
+    //   - caminho 1: 1 recebimento de R$ 2.127,50
+    //   - Total desembolso = 600 + 1.327,50 = 1.927,50
+    //   - Total recebido = 2.127,50
+    //   - Lucro esperado = 2.127,50 - 1.927,50 = 200,00
+    mockAggregateSequence(
+      [   // caminho 1
+        { _id: 'gasto', total: 600, totalEsperado: 800 },
+        { _id: 'recebivel', total: 2127.50 }
+      ],
+      0,   // esperado pagamento
+      [   // caminho 2 (3 pagamentos somam 1.327,50)
+        { _id: 'gasto', total: 1327.50 }
+      ]
+    );
+
+    const lucro = await calcularLucro(EMP_ID, USER_ID);
+    expect(lucro).toBe(200);
   });
 });

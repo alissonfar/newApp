@@ -26,14 +26,37 @@ function validarDadosEmprestimo(dados, { parcial = false } = {}) {
   return erros;
 }
 
-async function calcularTotais(emprestimoId, usuarioId) {
+/**
+ * Função privada compartilhada: agrega todos os totais de um Empréstimo
+ * (desembolso, recebimento, esperado) considerando os 2 caminhos:
+ *  - C1 (caminho 1 / legado): t.emprestimoId = X no nível da Transação
+ *  - C2 (caminho 2 / novo): pagamentos[].emprestimoId = X no nível do Pagamento
+ *
+ * Quem consome (calcularTotais, calcularLucro, calcularTotaisRecebEDisbursed)
+ * soma C1 + C2 conforme precisar. Separar por caminho evita double-counting
+ * (regra de exclusividade mútua do ADR-015).
+ *
+ * Exclui TXs de juros auto (emprestimoEhJurosAuto) e TXs inativas.
+ *
+ * @returns {Promise<{
+ *   totalDesembolsadoC1: number,
+ *   totalDesembolsadoC2: number,
+ *   totalRecebidoC1: number,
+ *   totalRecebidoC2: number,
+ *   totalEsperadoC1: number,
+ *   totalEsperadoC2: number
+ * }>}
+ */
+async function _agregarTotaisEmprestimo(emprestimoId, usuarioId) {
   const objectId = typeof emprestimoId === 'string'
     ? new mongoose.Types.ObjectId(emprestimoId)
     : emprestimoId;
-  const usuarioObjId = new mongoose.Types.ObjectId(usuarioId);
+  const usuarioObjId = typeof usuarioId === 'string'
+    ? new mongoose.Types.ObjectId(usuarioId)
+    : usuarioId;
 
   // CAMINHO 1 — TX-level legado (t.emprestimoId = X).
-  // Soma t.valor por tipo e t.valorEsperadoRetorno (apenas em gastos) na mesma passada.
+  // Soma t.valor por tipo e t.valorEsperadoRetorno (apenas em gastos).
   const txLevelAgg = await Transacao.aggregate([
     {
       $match: {
@@ -48,14 +71,20 @@ async function calcularTotais(emprestimoId, usuarioId) {
         _id: '$tipo',
         total: { $sum: '$valor' },
         totalEsperado: {
-          $sum: { $cond: [{ $eq: ['$tipo', 'gasto'] }, { $ifNull: ['$valorEsperadoRetorno', 0] }, 0] }
+          $sum: {
+            $cond: [
+              { $eq: ['$tipo', 'gasto'] },
+              { $ifNull: ['$valorEsperadoRetorno', 0] },
+              0
+            ]
+          }
         }
       }
     }
   ]);
 
   // CAMINHO 2 — Pagamento-level novo (pagamentos[].emprestimoId = X).
-  // Exclui TXs já contadas no caminho 1 (t.emprestimoId = X) para não duplicar.
+  // Exclui TXs já contadas no caminho 1.
   const pagamentoLevelAgg = await Transacao.aggregate([
     {
       $match: {
@@ -76,13 +105,10 @@ async function calcularTotais(emprestimoId, usuarioId) {
     }
   ]);
 
-  // Esperado por pagamento: agrega do PAGAMENTO (caminho novo).
-  // Regra: cada TX conta 1x, não por pagamento (para não duplicar se uma TX
-  // tem 2 pagamentos com o mesmo emprestimoId). Como o valorEsperadoRetorno
-  // agora vive no pagamento, agrupamos por TX, pegamos o valorEsperadoRetorno
-  // do PRIMEIRO pagamento emprestado (assume-se que todos os pagamentos
-  // emprestados de uma mesma TX para o mesmo Empréstimo têm o mesmo valor
-  // esperado — coerente com o modelo de "complemento" do design anterior).
+  // Esperado do pagamento (caminho 2): agrupa por TX (1x por TX) e soma
+  // pagamentos[].valorEsperadoRetorno. Assume que todos os pagamentos
+  // emprestados de uma mesma TX pro mesmo Empréstimo têm o mesmo valor
+  // esperado (coerente com o modelo de "complemento").
   const esperadoPagamentoAgg = await Transacao.aggregate([
     {
       $match: {
@@ -94,10 +120,15 @@ async function calcularTotais(emprestimoId, usuarioId) {
       }
     },
     { $unwind: '$pagamentos' },
-    { $match: { 'pagamentos.emprestimoId': objectId, 'pagamentos.valorEsperadoRetorno': { $ne: null, $gt: 0 } } },
+    {
+      $match: {
+        'pagamentos.emprestimoId': objectId,
+        'pagamentos.valorEsperadoRetorno': { $ne: null, $gt: 0 }
+      }
+    },
     {
       $group: {
-        _id: '$_id',  // agrupa por TX
+        _id: '$_id',
         valorEsperado: { $first: '$pagamentos.valorEsperadoRetorno' }
       }
     },
@@ -109,27 +140,43 @@ async function calcularTotais(emprestimoId, usuarioId) {
     }
   ]);
 
-  let totalDisbursed = 0;
-  let totalReceived = 0;
-  let totalEsperado = 0;
+  let totalDesembolsadoC1 = 0;
+  let totalRecebidoC1 = 0;
+  let totalEsperadoC1 = 0;
   for (const r of txLevelAgg) {
     if (r._id === 'gasto') {
-      totalDisbursed += r.total;
-      totalEsperado += r.totalEsperado || 0;
+      totalDesembolsadoC1 = r.total;
+      totalEsperadoC1 = r.totalEsperado || 0;
     } else if (r._id === 'recebivel') {
-      totalReceived += r.total;
+      totalRecebidoC1 = r.total;
     }
   }
+
+  let totalDesembolsadoC2 = 0;
+  let totalRecebidoC2 = 0;
   for (const r of pagamentoLevelAgg) {
-    if (r._id === 'gasto') totalDisbursed += r.total;
-    else if (r._id === 'recebivel') totalReceived += r.total;
+    if (r._id === 'gasto') totalDesembolsadoC2 = r.total;
+    else if (r._id === 'recebivel') totalRecebidoC2 = r.total;
   }
-  totalEsperado += esperadoPagamentoAgg[0]?.total || 0;
+
+  const totalEsperadoC2 = esperadoPagamentoAgg[0]?.total || 0;
 
   return {
-    totalDisbursed,
-    totalReceived,
-    totalEsperado,
+    totalDesembolsadoC1,
+    totalDesembolsadoC2,
+    totalRecebidoC1,
+    totalRecebidoC2,
+    totalEsperadoC1,
+    totalEsperadoC2
+  };
+}
+
+async function calcularTotais(emprestimoId, usuarioId) {
+  const t = await _agregarTotaisEmprestimo(emprestimoId, usuarioId);
+  return {
+    totalDisbursed: t.totalDesembolsadoC1 + t.totalDesembolsadoC2,
+    totalReceived: t.totalRecebidoC1 + t.totalRecebidoC2,
+    totalEsperado: t.totalEsperadoC1 + t.totalEsperadoC2,
     saldoAReceber: 0, // preenchido em quem consome (com `totalEsperado - totalReceived`)
     lucro: 0          // preenchido em quem consome (com `totalEsperado - totalDisbursed`)
   };
@@ -161,40 +208,19 @@ async function obterEmprestimoComTotais(emprestimo) {
  *   lucro = soma_recebíveis - soma_gastos
  * (sem FIFO, sem split por transação).
  *
+ * Considera os 2 caminhos:
+ *  - C1 (legado): t.emprestimoId = X
+ *  - C2 (novo): pagamentos[].emprestimoId = X
+ *
  * @param {string|ObjectId} emprestimoId
  * @param {string|ObjectId} usuarioId
  * @returns {Promise<number>}
  */
 async function calcularLucro(emprestimoId, usuarioId) {
-  const objectId = typeof emprestimoId === 'string'
-    ? new mongoose.Types.ObjectId(emprestimoId)
-    : emprestimoId;
-
-  const resultado = await Transacao.aggregate([
-    {
-      $match: {
-        emprestimoId: objectId,
-        usuario: new mongoose.Types.ObjectId(usuarioId),
-        status: 'ativo',
-        emprestimoEhJurosAuto: { $ne: true }
-      }
-    },
-    {
-      $group: {
-        _id: '$tipo',
-        total: { $sum: '$valor' }
-      }
-    }
-  ]);
-
-  let totalDisbursed = 0;
-  let totalReceived = 0;
-  for (const r of resultado) {
-    if (r._id === 'gasto') totalDisbursed = r.total;
-    else if (r._id === 'recebivel') totalReceived = r.total;
-  }
-
-  return totalReceived - totalDisbursed;
+  const t = await _agregarTotaisEmprestimo(emprestimoId, usuarioId);
+  const totalDesembolsado = t.totalDesembolsadoC1 + t.totalDesembolsadoC2;
+  const totalRecebido = t.totalRecebidoC1 + t.totalRecebidoC2;
+  return totalRecebido - totalDesembolsado;
 }
 
 /**
@@ -258,6 +284,65 @@ async function recalcularStatus(emprestimoId, usuarioId) {
   return emprestimo;
 }
 
+/**
+ * Reverte a quitação de um Empréstimo:
+ *  1. Deleta a TX de juros automáticos (se existir)
+ *  2. Volta o Empréstimo para status 'ativo' e limpa dataQuitacao
+ *  3. Dispara recalcularStatus() — sistema detecta que ainda está quitado
+ *     (totalReceived >= totalEsperado) e recria a TX de juros com o valor
+ *     correto (calculado agora com caminho 2 enxergado)
+ *
+ * Edge cases:
+ *  - Se a TX de juros auto já foi deletada manualmente antes, o deleteOne
+ *    é no-op (0 docs removidos). O recalcularStatus recria a TX normalmente.
+ *  - Se o usuário desvinculou TXs de desembolso depois da quitação, o
+ *    recalcularStatus pode detectar que NÃO está mais quitado. Empréstimo
+ *    fica 'ativo' e a TX de juros auto NÃO é recriada.
+ *
+ * @param {string|ObjectId} emprestimoId
+ * @param {string|ObjectId} usuarioId
+ * @returns {Promise<Object>} Empréstimo detalhado (via obterEmprestimoComTotais)
+ * @throws {Error} se Empréstimo não encontrado ou não está 'quitado'
+ */
+async function reverterQuitacao(emprestimoId, usuarioId) {
+  const Emprestimo = require('../models/emprestimo');
+  const { recalcularJurosAuto } = require('../utils/emprestimoQuitacao');
+
+  const objectId = typeof emprestimoId === 'string'
+    ? new mongoose.Types.ObjectId(emprestimoId)
+    : emprestimoId;
+  const usuarioObjId = typeof usuarioId === 'string'
+    ? new mongoose.Types.ObjectId(usuarioId)
+    : usuarioId;
+
+  const emprestimo = await Emprestimo.findOne({ _id: objectId, usuario: usuarioObjId });
+  if (!emprestimo) {
+    throw new Error('Empréstimo não encontrado.');
+  }
+  if (emprestimo.status !== 'quitado') {
+    throw new Error('Apenas empréstimos quitados podem ter a quitação revertida.');
+  }
+
+  // 1. Deleta TX de juros auto (idempotente — 0 docs se já não existir)
+  await Transacao.deleteOne({
+    emprestimoId: emprestimo._id,
+    emprestimoEhJurosAuto: true,
+    status: 'ativo'
+  });
+
+  // 2. Volta Empréstimo pra ativo
+  emprestimo.status = 'ativo';
+  emprestimo.dataQuitacao = null;
+  await emprestimo.save();
+
+  // 3. Recalcula status (pode recriar TX de juros auto se ainda estiver quitado)
+  await recalcularStatus(emprestimo._id, usuarioObjId);
+
+  // 4. Retorna Empréstimo detalhado
+  const atualizado = await Emprestimo.findOne({ _id: emprestimo._id, usuario: usuarioObjId });
+  return await obterEmprestimoComTotais(atualizado);
+}
+
 async function validarEmprestimoParaTransacao(emprestimoId, usuarioId) {
   if (emprestimoId === undefined || emprestimoId === null || emprestimoId === '') {
     return null;
@@ -283,9 +368,11 @@ module.exports = {
   validarDadosEmprestimo,
   STATUS_EMPRESTIMO,
   TIPOS_RETORNO,
+  _agregarTotaisEmprestimo,    // <-- NOVO
   calcularTotais,
   obterEmprestimoComTotais,
   calcularLucro,
   recalcularStatus,
-  validarEmprestimoParaTransacao
+  validarEmprestimoParaTransacao,
+  reverterQuitacao             // <-- NOVO (Task 6)
 };

@@ -19,6 +19,7 @@ import {
 } from '../../utils/emprestimoFormat';
 import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
 import EmprestimoForm from '../../components/Emprestimos/EmprestimoForm';
+import { abrirModalReverterQuitacao } from '../../components/Emprestimos/ReverterQuitacaoModal';
 import './EmprestimoDetalhePage.css';
 
 const EmprestimoDetalhePage = () => {
@@ -159,6 +160,22 @@ const EmprestimoDetalhePage = () => {
               <button onClick={() => setEditOpen(!editOpen)} className="emp-btn-secundario">
                 {editOpen ? 'Fechar edição' : 'Editar'}
               </button>
+              {emprestimo.status === 'quitado' && (
+                <button
+                  onClick={() => {
+                    const txJurosAuto = movimentacoes.find(m => m.emprestimoEhJurosAuto);
+                    abrirModalReverterQuitacao({
+                      emprestimo,
+                      transacaoJurosAuto: txJurosAuto,
+                      onConfirmado: () => load()
+                    });
+                  }}
+                  className="emp-btn-secundario"
+                  title="Reverter a quitação e recalcular a TX de juros automáticos"
+                >
+                  Reverter quitação
+                </button>
+              )}
               <button onClick={handleCancelar} className="emp-btn-perigo">
                 Cancelar empréstimo
               </button>

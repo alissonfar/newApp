@@ -821,3 +821,13 @@ export async function obterTransacoesEmprestimo(id) {
   return dados;
 }
 
+export async function reverterQuitacaoEmprestimo(id) {
+  const resposta = await fetch(`${API_BASE}/emprestimos/${id}/reverter-quitacao`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao reverter quitação.`);
+  return dados;
+}
+

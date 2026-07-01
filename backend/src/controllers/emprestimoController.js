@@ -215,6 +215,22 @@ exports.cancelar = async (req, res) => {
   }
 };
 
+exports.reverterQuitacao = async (req, res) => {
+  try {
+    const oid = toObjectId(req.params.id);
+    if (!oid) return res.status(400).json({ erro: 'id inválido.' });
+
+    const detalhado = await service.reverterQuitacao(oid, req.userId);
+    res.json(detalhado);
+  } catch (error) {
+    console.error('Erro ao reverter quitação:', error);
+    let status = 500;
+    if (error.message.includes('não encontrado')) status = 404;
+    else if (error.message.includes('Apenas empréstimos quitados')) status = 400;
+    res.status(status).json({ erro: error.message });
+  }
+};
+
 exports.listarTransacoes = async (req, res) => {
   try {
     const oid = toObjectId(req.params.id);

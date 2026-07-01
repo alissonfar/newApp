@@ -174,10 +174,14 @@ describe('emprestimoQuitacao - recalcularJurosAuto (parâmetro = lucro)', () => 
       pagamentos: [{ pessoa: 'P', valor: 210 }]
     };
     mockTransacaoFindOne.mockReturnValue({ session: () => Promise.resolve(txExistente) });
-    mockTransacaoAggregate.mockResolvedValue([
-      { _id: 'gasto', total: 640 },
-      { _id: 'recebivel', total: 850 }
-    ]);
+    // _agregarTotaisEmprestimo consome 3 aggregates: caminho 1, caminho 2, esperado pagamento.
+    mockTransacaoAggregate
+      .mockResolvedValueOnce([   // caminho 1
+        { _id: 'gasto', total: 640 },
+        { _id: 'recebivel', total: 850 }
+      ])
+      .mockResolvedValueOnce([])  // caminho 2 vazio
+      .mockResolvedValueOnce([]); // esperado pagamento vazio
 
     const resultado = await recalcularJurosAuto(emprestimo, 210);
 
@@ -208,24 +212,85 @@ describe('emprestimoQuitacao - recalcularJurosAuto (parâmetro = lucro)', () => 
     await expect(recalcularJurosAuto(null, 100)).rejects.toThrow();
     await expect(recalcularJurosAuto({}, 100)).rejects.toThrow();
   });
+
+  test('criada: lucro correto em cenário caminho 2 (pagamento-level) — bug fix 2026-06-30', async () => {
+    const emprestimo = makeEmprestimo();
+
+    // 1ª chamada: Transacao.findOne (procura TX juros auto existente) → null
+    // 2ª chamada: Transacao.find (buscar último recebimento pra snapshot) → 1 doc
+    // 3ª chamada: Transacao.aggregate (dentro de calcularTotaisRecebEDisbursed
+    //             → _agregarTotaisEmprestimo, 3 chamadas empilhadas)
+    mockTransacaoFindOne.mockReturnValueOnce({
+      session: () => Promise.resolve(null)
+    });
+    mockTransacaoFind.mockReturnValueOnce({
+      sort: () => ({
+        lean: () => Promise.resolve([{
+          _id: 'rec1',
+          data: new Date('2026-06-30'),
+          categoria: 'cat1',
+          categoriaNome: 'Cat',
+          pagamentos: [{ pessoa: 'Estrela', valor: 2127.50, tags: {} }]
+        }])
+      })
+    });
+    // 3 aggregates empilhados de _agregarTotaisEmprestimo:
+    mockTransacaoAggregate
+      .mockResolvedValueOnce([   // caminho 1: 1 gasto + 1 recebimento
+        { _id: 'gasto', total: 600, totalEsperado: 800 },
+        { _id: 'recebivel', total: 2127.50 }
+      ])
+      .mockResolvedValueOnce([   // caminho 2: 1.327,50
+        { _id: 'gasto', total: 1327.50 }
+      ])
+      .mockResolvedValueOnce([]);  // esperado pagamento: 0
+
+    let savedInstance = null;
+    mockSaveInstance.mockImplementation(function () {
+      savedInstance = this;
+      return Promise.resolve({ _id: 'novoId' });
+    });
+
+    const lucro = 200; // 2.127,50 - 1.927,50
+    const resultado = await recalcularJurosAuto(emprestimo, lucro);
+
+    expect(resultado.acao).toBe('criada');
+    expect(savedInstance).toBeTruthy();
+    expect(savedInstance.valor).toBe(200);  // <-- O FIX: antes gravava 1.527,50
+    expect(savedInstance.emprestimoEhJurosAuto).toBe(true);
+    expect(savedInstance.observacao).toContain('Desembolsos: R$ 1927.50');
+    expect(savedInstance.observacao).toContain('Recebimentos: R$ 2127.50');
+    expect(savedInstance.observacao).toContain('Lucro: R$ 200.00');
+  });
 });
 
-describe('emprestimoQuitacao - calcularTotaisRecebEDisbursed', () => {
-  test('soma gastos e recebíveis separadamente', async () => {
+describe('emprestimoQuitacao - calcularTotaisRecebEDisbursed (com caminho 2)', () => {
+  test('retorna desembolso + recebimento considerando caminho 1 E caminho 2', async () => {
     const empId = new mongoose.Types.ObjectId();
-    mockTransacaoAggregate.mockResolvedValue([
-      { _id: 'gasto', total: 600 },
-      { _id: 'recebivel', total: 850 }
-    ]);
-    const totais = await calcularTotaisRecebEDisbursed(empId);
-    expect(totais.desembolso).toBe(600);
-    expect(totais.recebimento).toBe(850);
+    const userId = USER_ID;
+
+    // _agregarTotaisEmprestimo é lazy-required e mockado indiretamente
+    // via mockTransacaoAggregate. Como o mock é global, podemos simular
+    // os 3 retornos que _agregarTotaisEmprestimo espera.
+    mockTransacaoAggregate
+      .mockResolvedValueOnce([   // caminho 1: 1 gasto + 1 recebimento
+        { _id: 'gasto', total: 600, totalEsperado: 800 },
+        { _id: 'recebivel', total: 2127.50 }
+      ])
+      .mockResolvedValueOnce([   // caminho 2: 1 pagamento gasto de 1.327,50
+        { _id: 'gasto', total: 1327.50 }
+      ])
+      .mockResolvedValueOnce([]);  // esperado pagamento: 0
+
+    const totais = await calcularTotaisRecebEDisbursed(empId, userId);
+    expect(totais.desembolso).toBe(1927.50);  // 600 + 1.327,50
+    expect(totais.recebimento).toBe(2127.50);
   });
 
   test('retorna zeros quando aggregate vazio', async () => {
     const empId = new mongoose.Types.ObjectId();
     mockTransacaoAggregate.mockResolvedValue([]);
-    const totais = await calcularTotaisRecebEDisbursed(empId);
+    const totais = await calcularTotaisRecebEDisbursed(empId, USER_ID);
     expect(totais.desembolso).toBe(0);
     expect(totais.recebimento).toBe(0);
   });
