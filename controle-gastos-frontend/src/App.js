@@ -16,6 +16,7 @@ import DetalhesImportacaoPage from './pages/ImportacaoMassa/DetalhesImportacaoPa
 import Insights from './pages/Insights/Insights';
 import Tags from './pages/Tags/Tags';
 import ContasFixas from './pages/ContasFixas/ContasFixas';
+import PendenciasContasFixas from './pages/ContasFixas/PendenciasContasFixas';
 import Login from './pages/Login/Login';
 import Registro from './pages/Registro/Registro';
 import Profile from './pages/Profile/Profile';
@@ -156,6 +157,16 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <ContasFixas />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/contas-fixas/pendencias"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <PendenciasContasFixas />
                     </MainLayout>
                   </PrivateRoute>
                 }

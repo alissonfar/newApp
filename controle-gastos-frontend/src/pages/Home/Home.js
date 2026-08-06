@@ -46,6 +46,7 @@ import IconRenderer from '../../components/shared/IconRenderer';
 import StatCard from '../../components/shared/StatCard';
 import TransactionRow from '../../components/shared/TransactionRow';
 import EmprestimoBadge from '../../components/Emprestimos/EmprestimoBadge';
+import contaFixaApi from '../../services/contaFixaApi';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -76,6 +77,13 @@ const Home = () => {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [buscaTransacao, setBuscaTransacao] = useState('');
   const [transacaoDuplicar, setTransacaoDuplicar] = useState(null);
+  const [totalPendenciasContaFixa, setTotalPendenciasContaFixa] = useState(0);
+
+  useEffect(() => {
+    contaFixaApi.listarPendencias()
+      .then((pendencias) => setTotalPendenciasContaFixa(pendencias.length))
+      .catch(() => setTotalPendenciasContaFixa(0));
+  }, []);
 
   const proprietario = usuario?.preferencias?.proprietario || '';
   const usuarioCarregado = !carregandoUsuario;
@@ -363,6 +371,18 @@ const Home = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {totalPendenciasContaFixa > 0 && (
+              <Card variant="glass" padding="md" className="dashboard-section contas-fixas-pendentes">
+                <CardContent>
+                  <SectionHeader title="Contas Fixas Pendentes" />
+                  <p>{totalPendenciasContaFixa} conta{totalPendenciasContaFixa > 1 ? 's' : ''} fixa{totalPendenciasContaFixa > 1 ? 's' : ''} aguardando confirmação este mês.</p>
+                  <Button variant="primary" onClick={() => navigate('/contas-fixas/pendencias')}>
+                    Revisar agora
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             <Card variant="glass" padding="md" className="dashboard-section grafico">
               <CardContent>
