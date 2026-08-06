@@ -128,6 +128,13 @@ app.listen(PORT, () => {
   } catch (err) {
     console.warn('[Startup] Falha ao iniciar cron Pluggy:', err.message);
   }
+
+  try {
+    const contaFixaCron = require('./services/contaFixaCronService');
+    contaFixaCron.iniciarCron();
+  } catch (err) {
+    console.warn('[Startup] Falha ao iniciar cron Conta Fixa:', err.message);
+  }
 });
 
 module.exports = app;
