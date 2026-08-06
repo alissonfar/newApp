@@ -67,7 +67,9 @@ const TransacaoSchema = new mongoose.Schema({
   // "quanto espero receber de volta especificamente desta transação". Null = sem
   // expectativa (recebimento, ou gasto sem Empréstimo). Apenas faz sentido em TXs
   // de gasto com emprestimoId vinculado.
-  valorEsperadoRetorno: { type: Number, min: 0, default: null }
+  valorEsperadoRetorno: { type: Number, min: 0, default: null },
+  // Módulo Conta Fixa - rastro de que esta transação foi gerada por uma regra recorrente
+  contaFixaId: { type: mongoose.Schema.Types.ObjectId, ref: 'ContaFixa', default: null }
 });
 
 TransacaoSchema.index({ usuario: 1, settlementAsSource: 1 }, { sparse: true });
@@ -81,5 +83,6 @@ TransacaoSchema.index({ usuario: 1, 'contaConjunta.ativo': 1, 'contaConjunta.vin
 TransacaoSchema.index({ usuario: 1, emprestimoId: 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, emprestimoId: 1, tipo: 1 }, { sparse: true });
 TransacaoSchema.index({ 'pagamentos.emprestimoId': 1 }, { sparse: true });
+TransacaoSchema.index({ usuario: 1, contaFixaId: 1 }, { sparse: true });
 
 module.exports = mongoose.model('Transacao', TransacaoSchema);
