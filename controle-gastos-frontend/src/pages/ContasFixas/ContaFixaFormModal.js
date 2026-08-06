@@ -5,6 +5,7 @@ import { useData } from '../../context/DataContext';
 import TagSelector from '../../components/Transaction/TagSelector';
 import Button from '../../components/shared/Button';
 import '../../components/Transaction/NovaTransacaoForm.css';
+import '../../components/Transaction/TransacaoTabs.css';
 
 const valorPadraoPagamento = () => ({ pessoa: '', percentual: 100, tagsOverride: null });
 
@@ -70,6 +71,7 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
     <ModalTransacao onClose={onClose}>
       <h2 className="nova-transacao-form-title">{contaFixa ? 'Editar Conta Fixa' : 'Nova Conta Fixa'}</h2>
 
+      <div className="transacao-tab-content">
       {erro && <p className="error-message">{erro}</p>}
 
       <div className="form-grid">
@@ -202,6 +204,7 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
             onTagsChange={(novasTags) => setForm({ ...form, tagsPadrao: novasTags })}
           />
         </div>
+      </div>
       </div>
 
       <div className="form-buttons">
