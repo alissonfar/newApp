@@ -52,8 +52,30 @@ function verificarEEncerrar(contaFixa, dataReferencia = new Date()) {
   return false;
 }
 
+function montarPagamentos(pagamentosTemplate, valorTotal, tagsPadrao = {}) {
+  const total = new Decimal(valorTotal);
+
+  const valoresCalculados = pagamentosTemplate.map((p) =>
+    total.times(p.percentual).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+  );
+
+  const somaParcial = valoresCalculados
+    .slice(0, -1)
+    .reduce((acc, v) => acc.plus(v), new Decimal(0));
+
+  const ultimoIndice = valoresCalculados.length - 1;
+  valoresCalculados[ultimoIndice] = total.minus(somaParcial).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+  return pagamentosTemplate.map((p, i) => ({
+    pessoa: p.pessoa,
+    valor: valoresCalculados[i].toNumber(),
+    tags: p.tagsOverride || tagsPadrao
+  }));
+}
+
 module.exports = {
   calcularCiclo,
   cicloJaProcessado,
-  verificarEEncerrar
+  verificarEEncerrar,
+  montarPagamentos
 };
