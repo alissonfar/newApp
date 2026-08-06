@@ -101,6 +101,7 @@ app.use('/api/settlements', rotasSettlement);
 app.use('/api/taxa-cdi', rotasTaxaCDI);
 app.use('/api/instituicoes', rotasInstituicao);
 app.use('/api/subcontas', rotasSubconta);
+app.use('/api/contas-fixas', require('./routes/rotasContaFixa'));
 app.use('/api/patrimonio/importacoes-ofx', rotasImportacaoOFX);
 app.use('/api/patrimonio/transferencias', rotasTransferencia);
 app.use('/api/patrimonio', rotasPatrimonio);
