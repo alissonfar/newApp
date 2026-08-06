@@ -28,6 +28,7 @@ import HandshakeIcon from '@mui/icons-material/Handshake';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import ContactsIcon from '@mui/icons-material/Contacts';
 import GroupIcon from '@mui/icons-material/Group';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 
 /**
  * Bloco 1: Home (destaque no topo, sem header de seção).
@@ -73,6 +74,16 @@ const registrarSection = {
       ],
     },
     { type: 'item', name: 'Tags', path: '/tags', icon: LocalOfferIcon, key: 'tags' },
+    {
+      type: 'submenu',
+      name: 'Contas Fixas',
+      icon: EventRepeatIcon,
+      key: 'contas-fixas',
+      items: [
+        { name: 'Gerenciar', path: '/contas-fixas', icon: EventRepeatIcon, key: 'contas-fixas-lista' },
+        { name: 'Pendências do Mês', path: '/contas-fixas/pendencias', icon: EventRepeatIcon, key: 'contas-fixas-pendencias' }
+      ]
+    },
   ],
 };
 
