@@ -4,8 +4,10 @@ import ModalTransacao from '../../components/Modal/ModalTransacao';
 import { useData } from '../../context/DataContext';
 import TagSelector from '../../components/Transaction/TagSelector';
 import Button from '../../components/shared/Button';
+import Card from '../../components/shared/Card';
 import '../../components/Transaction/NovaTransacaoForm.css';
 import '../../components/Transaction/TransacaoTabs.css';
+import './ContaFixaFormModal.css';
 
 const valorPadraoPagamento = () => ({ pessoa: '', percentual: 100, tagsOverride: null });
 
@@ -69,6 +71,7 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
 
   return (
     <ModalTransacao onClose={onClose}>
+      <Card variant="glass" padding="md" className="conta-fixa-form-card">
       <h2 className="nova-transacao-form-title">{contaFixa ? 'Editar Conta Fixa' : 'Nova Conta Fixa'}</h2>
 
       <div className="transacao-tab-content">
@@ -211,6 +214,7 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
         <Button variant="ghost" onClick={onClose} disabled={salvando}>Cancelar</Button>
         <Button variant="primary" onClick={handleSalvar} loading={salvando}>Salvar</Button>
       </div>
+      </Card>
     </ModalTransacao>
   );
 };

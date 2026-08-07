@@ -1,0 +1,10 @@
+.conta-fixa-form-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.conta-fixa-form-card.cg-card:hover {
+  transform: none;
+}
