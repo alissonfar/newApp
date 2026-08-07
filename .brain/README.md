@@ -82,6 +82,7 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
   - [ADR-010](decisions/2026-06-23-migracao-app-css-tokens.md) — Migração do App.css para tokens
   - [ADR-011](decisions/2026-06-23-theme-body-gradient-emotion-stylis-bug.md) — Gradiente do body: split `GlobalStyles` + `MuiCssBaseline`
   - [ADR-012](decisions/2026-06-23-css-variable-para-cores-presas-em-dark-mode.md) — Elementos com cor presa de wrappers globais
+  - [ADR-018](decisions/2026-08-07-modal-exige-card-glass-interno.md) — `ModalTransacao` exige `Card` `glass` interno (senão vaza o fundo)
 - **Sessões:**
   - [`2026-06-23-modernizacao-visual-design.md`](sessions/2026-06-23-modernizacao-visual-design.md) — design da modernização visual
   - [`2026-06-23-modernizacao-visual-plano.md`](sessions/2026-06-23-modernizacao-visual-plano.md) — plano de execução
@@ -99,6 +100,22 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
   - [`2026-06-25-relatorio-pos-execucao-consolidada.md`](sessions/2026-06-25-relatorio-pos-execucao-consolidada.md) — pós-execução consolidada (reorganização + TanStack + 4 tentativas de fix do sort + diagnóstico assertivo)
 - **Playbook:**
   - [`playbooks/debug-tanstack-table-sort.md`](playbooks/debug-tanstack-table-sort.md) — como debugar bug de sort no TanStack Table v8 (logs cirúrgicos + 5 pontos de log)
+
+### Módulo de Conta Fixa
+- **Specs (Superpowers):**
+  - [`docs/superpowers/specs/2026-08-05-conta-fixa-design.md`](../docs/superpowers/specs/2026-08-05-conta-fixa-design.md)
+  - [`docs/superpowers/specs/2026-08-05-descontinuacao-conta-conjunta-design.md`](../docs/superpowers/specs/2026-08-05-descontinuacao-conta-conjunta-design.md) — **spec aprovada, sem plano/execução ainda** (handoff pra sessão nova)
+- **Planos (Superpowers):**
+  - [`docs/superpowers/plans/2026-08-05-conta-fixa.md`](../docs/superpowers/plans/2026-08-05-conta-fixa.md)
+  - [`docs/superpowers/plans/2026-08-05-conta-fixa-ui-fix.md`](../docs/superpowers/plans/2026-08-05-conta-fixa-ui-fix.md)
+- **ADR:**
+  - [ADR-018](decisions/2026-08-07-modal-exige-card-glass-interno.md) — `ModalTransacao` exige `Card` `glass` interno
+- **Contexto (regras de negócio):**
+  - [`context/conta-fixa.md`](context/conta-fixa.md)
+- **Playbook:**
+  - [`playbooks/criar-tela-consistente-design-system.md`](playbooks/criar-tela-consistente-design-system.md) — checklist pra não repetir o erro de HTML cru
+- **Sessão:**
+  - [`2026-08-07-conta-fixa-implementacao-e-fix-visual.md`](sessions/2026-08-07-conta-fixa-implementacao-e-fix-visual.md) — implementação completa + 2 rodadas de fix visual + handoff da descontinuação de conta conjunta
 
 ### Módulo de Breadcrumb / Navegação
 - **Design doc:**
@@ -297,5 +314,5 @@ A estrutura atual (4 pastas) é um **começo**, não uma camisa-de-força. Se vo
 ## Status
 
 - **Criado em:** 2026-06-21
-- **Última atualização:** 2026-06-28 (módulo de Breadcrumb: ADR-017 + sessões de design/pós-execução; stack.md atualizado com arquitetura nova)
+- **Última atualização:** 2026-08-07 (módulo de Conta Fixa: implementação completa + ADR-018 sobre composição de modal + playbook de checklist de design system; handoff da descontinuação de conta conjunta documentado pra sessão nova)
 - **Mantido por:** Alisson + newapp-planner
