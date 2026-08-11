@@ -3,8 +3,6 @@
 /* ===== Container principal (BEM cg-*) ===== */
 .cg-home {
   padding: var(--cg-spacing-lg) var(--cg-spacing-xl);
-  max-width: 1400px;
-  margin: 0 auto;
   min-height: 100vh;
 }
 
