@@ -53,7 +53,7 @@ async function buscarMatchesHistorico(usuarioId, descricaoBase, dataReferencia, 
     data: { $gte: dataCorte },
     descricao: regex
   })
-    .select('_id descricao valor data pagamentos')
+    .select('_id descricao descricaoApelido valor data pagamentos')
     .lean();
 
   return matches;
@@ -125,6 +125,7 @@ async function inferirPessoaPorDescricao(usuarioId, params) {
         entry.sample = {
           _id: t._id,
           descricao: t.descricao,
+          descricaoApelido: t.descricaoApelido || null,
           data: t.data,
           valor: t.valor,
           pessoa: pag.pessoa

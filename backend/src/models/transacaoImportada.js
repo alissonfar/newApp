@@ -134,6 +134,7 @@ const TransacaoImportadaSchema = new mongoose.Schema({
   pessoaSugeridaSample: {
     _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Transacao' },
     descricao: { type: String },
+    descricaoApelido: { type: String, default: null },
     data: { type: Date },
     valor: { type: Number },
     pessoa: { type: String }
