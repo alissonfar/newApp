@@ -147,7 +147,7 @@ const ModalSugestaoPessoa = ({ transacao, importacaoId, onFechar, onAtualizar })
               Como está agora
             </div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>
-              {transacao.descricao}
+              {transacao.descricaoApelido || transacao.descricao}
             </div>
             <Campo icone={<FaUser />} label="Pessoa" valor={pessoaAtual} />
             <Campo icone={<FaCalendarAlt />} label="Data" valor={formatarData(transacao.data)} />
@@ -187,7 +187,7 @@ const ModalSugestaoPessoa = ({ transacao, importacaoId, onFechar, onAtualizar })
               transacoesExemplo.map((t, idx) => (
                 <EvidenciaLinha
                   key={idx}
-                  descricao={t.descricao}
+                  descricao={t.descricaoApelido || t.descricao}
                   data={t.data}
                   valor={t.valor}
                   pessoa={t.pessoa}
