@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { Tooltip, IconButton } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { criarTransacao, atualizarTransacao, listarEmprestimos, listarPessoas } from '../../api';
+import { criarTransacao, atualizarTransacao, listarEmprestimos, listarPessoas, listarDivisaoPresets } from '../../api';
 import { useData } from '../../context/DataContext';
 import useTransacaoForm from '../../hooks/useTransacaoForm';
 import usePagamentos from '../../hooks/usePagamentos';
@@ -77,6 +77,17 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       .then((lista) => setPessoas(lista || []))
       .catch(() => setPessoas([]))
       .finally(() => setLoadingPessoas(false));
+  }, []);
+
+  const [divisaoPresets, setDivisaoPresets] = useState([]);
+  const divisaoPresetsCarregadosRef = useRef(false);
+
+  useEffect(() => {
+    if (divisaoPresetsCarregadosRef.current) return;
+    divisaoPresetsCarregadosRef.current = true;
+    listarDivisaoPresets()
+      .then((lista) => setDivisaoPresets(lista || []))
+      .catch(() => setDivisaoPresets([]));
   }, []);
 
   const adicionarPessoa = useCallback((novaPessoa) => {
@@ -394,6 +405,8 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           removePagamento={pagamentos.removePagamento}
           splitEqually={pagamentos.splitEqually}
           splitInto={pagamentos.splitInto}
+          applyPreset={pagamentos.applyPreset}
+          divisaoPresets={divisaoPresets}
           duplicatePagamento={pagamentos.duplicatePagamento}
           toggleFixed={pagamentos.toggleFixed}
           fillRemaining={pagamentos.fillRemaining}
