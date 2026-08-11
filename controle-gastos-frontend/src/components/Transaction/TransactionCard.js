@@ -4,6 +4,7 @@ import { FaArrowUp, FaArrowDown, FaEdit, FaTrash } from 'react-icons/fa';
 import './TransactionCard.css';
 import { obterCategorias, obterTags } from '../../api';
 import { formatDateBR } from '../../utils/dateUtils';
+import { getDescricaoExibicao } from '../../utils/descricaoUtils';
 
 const TransactionCard = ({ transacao, onEdit, onDelete }) => {
   const [categorias, setCategorias] = useState([]);
@@ -63,7 +64,7 @@ const TransactionCard = ({ transacao, onEdit, onDelete }) => {
             )}
           </span>
           <h3>
-            {transacao.descricao}
+            {getDescricaoExibicao(transacao)}
             {hasLegacyInstallment && (
               <span className="parcela-badge">Parcela {transacao.installmentNumber}/{transacao.installmentTotal}</span>
             )}

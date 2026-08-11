@@ -9,6 +9,7 @@ import ModalTransacao from '../../components/Modal/ModalTransacao';
 import { AuthContext } from '../../context/AuthContext';
 import './Transacoes.css';
 import { formatDateBR } from '../../utils/dateUtils';
+import { getDescricaoExibicao } from '../../utils/descricaoUtils';
 
 const Transacoes = () => {
   const { usuario } = useContext(AuthContext);
@@ -85,7 +86,7 @@ const Transacoes = () => {
       const search = searchTerm.toLowerCase();
       resultado = resultado.filter((tr) => {
         // Verifica se a descrição bate
-        const matchDescricao = tr.descricao.toLowerCase().includes(search);
+        const matchDescricao = getDescricaoExibicao(tr).toLowerCase().includes(search);
 
         // Verifica se o searchTerm aparece em "pessoa" (nos pagamentos)
         const matchPessoa =
@@ -185,7 +186,7 @@ const Transacoes = () => {
                 }).join('<br>');
                 return `<tr>
                   <td style="padding:4px 8px;text-align:left;white-space:nowrap">${data}</td>
-                  <td style="padding:4px 8px;text-align:left">${t.descricao || '—'}</td>
+                  <td style="padding:4px 8px;text-align:left">${getDescricaoExibicao(t) || '—'}</td>
                   <td style="padding:4px 8px;text-align:right;white-space:nowrap">R$ ${parseFloat(t.valor || 0).toFixed(2)}</td>
                   <td style="padding:4px 8px;text-align:left;font-size:0.8em">${pessoas}</td>
                 </tr>`;

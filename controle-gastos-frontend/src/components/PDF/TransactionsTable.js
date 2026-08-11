@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
+import { getDescricaoExibicao } from '../../utils/descricaoUtils';
 
 const styles = StyleSheet.create({
   section: {
@@ -175,7 +176,7 @@ const TransactionsTable = ({ data = [], categorias, tags }) => {
                 </Text>
               </View>
               <View style={[styles.tableCol, styles.colDescricao]}>
-                <Text style={styles.tableCell}>{row.descricao || '-'}</Text>
+                <Text style={styles.tableCell}>{getDescricaoExibicao(row) || '-'}</Text>
               </View>
               <View style={[styles.tableCol, styles.colPessoa]}>
                 <Text style={styles.tableCell}>{row.pessoa || '-'}</Text>

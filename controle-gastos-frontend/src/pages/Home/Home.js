@@ -47,6 +47,7 @@ import StatCard from '../../components/shared/StatCard';
 import TransactionRow from '../../components/shared/TransactionRow';
 import EmprestimoBadge from '../../components/Emprestimos/EmprestimoBadge';
 import contaFixaApi from '../../services/contaFixaApi';
+import { getDescricaoExibicao } from '../../utils/descricaoUtils';
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -486,7 +487,7 @@ const Home = () => {
                             type={t.tipo}
                             description={
                               <>
-                                {t.descricao}
+                                {getDescricaoExibicao(t)}
                                 {t.emprestimoInfo && <EmprestimoBadge emprestimoInfo={t.emprestimoInfo} variant="chip" />}
                               </>
                             }
