@@ -6,6 +6,7 @@ import { FaUser, FaEnvelope, FaPhone, FaBriefcase, FaBuilding, FaCalendar,
          FaCamera, FaSpinner, FaUserTie } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
+import { listarDivisaoPresets, criarDivisaoPreset, atualizarDivisaoPreset, excluirDivisaoPreset } from '../../api';
 import './Profile.css';
 
 function Profile() {
@@ -43,6 +44,105 @@ function Profile() {
     moedaPadrao: usuario?.preferencias?.moedaPadrao || 'BRL',
     proprietario: usuario?.preferencias?.proprietario || ''
   });
+
+  const [divisaoPresets, setDivisaoPresets] = useState([]);
+  const [loadingPresets, setLoadingPresets] = useState(false);
+  const [editandoPresetId, setEditandoPresetId] = useState(null);
+  const [presetForm, setPresetForm] = useState({ nome: '', partes: [{ pessoa: '', percentual: '' }, { pessoa: '', percentual: '' }] });
+
+  const carregarPresets = useCallback(async () => {
+    setLoadingPresets(true);
+    try {
+      const lista = await listarDivisaoPresets();
+      setDivisaoPresets(lista);
+    } catch (error) {
+      toast.error('Erro ao carregar presets de divisão');
+    } finally {
+      setLoadingPresets(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'divisoes') carregarPresets();
+  }, [activeTab, carregarPresets]);
+
+  const resetPresetForm = () => {
+    setEditandoPresetId(null);
+    setPresetForm({ nome: '', partes: [{ pessoa: '', percentual: '' }, { pessoa: '', percentual: '' }] });
+  };
+
+  const iniciarEdicaoPreset = (preset) => {
+    setEditandoPresetId(preset._id);
+    setPresetForm({
+      nome: preset.nome,
+      partes: preset.partes.map(p => ({ pessoa: p.pessoa, percentual: String(p.percentual) }))
+    });
+  };
+
+  const handlePresetParteChange = (index, field, value) => {
+    setPresetForm(prev => {
+      const partes = [...prev.partes];
+      partes[index] = { ...partes[index], [field]: value };
+      return { ...prev, partes };
+    });
+  };
+
+  const addPresetParte = () => {
+    setPresetForm(prev => ({ ...prev, partes: [...prev.partes, { pessoa: '', percentual: '' }] }));
+  };
+
+  const removePresetParte = (index) => {
+    setPresetForm(prev => {
+      if (prev.partes.length <= 2) return prev;
+      return { ...prev, partes: prev.partes.filter((_, i) => i !== index) };
+    });
+  };
+
+  const somaPresetForm = presetForm.partes.reduce((acc, p) => acc + (parseFloat(p.percentual) || 0), 0);
+
+  const handlePresetSubmit = async (e) => {
+    e.preventDefault();
+    if (!presetForm.nome.trim()) {
+      toast.error('Informe um nome para o preset.');
+      return;
+    }
+    if (Math.abs(somaPresetForm - 100) > 0.1) {
+      toast.error(`A soma dos percentuais precisa ser 100% (está em ${somaPresetForm.toFixed(2)}%).`);
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = {
+        nome: presetForm.nome.trim(),
+        partes: presetForm.partes.map(p => ({ pessoa: p.pessoa.trim(), percentual: parseFloat(p.percentual) }))
+      };
+      if (editandoPresetId) {
+        await atualizarDivisaoPreset(editandoPresetId, payload);
+        toast.success('Preset atualizado com sucesso');
+      } else {
+        await criarDivisaoPreset(payload);
+        toast.success('Preset criado com sucesso');
+      }
+      resetPresetForm();
+      carregarPresets();
+    } catch (error) {
+      toast.error(error.message || 'Erro ao salvar preset');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExcluirPreset = async (preset) => {
+    if (!window.confirm(`Excluir o preset "${preset.nome}"?`)) return;
+    try {
+      await excluirDivisaoPreset(preset._id);
+      toast.success('Preset excluído');
+      if (editandoPresetId === preset._id) resetPresetForm();
+      carregarPresets();
+    } catch (error) {
+      toast.error(error.message || 'Erro ao excluir preset');
+    }
+  };
 
   const carregarPerfil = useCallback(async () => {
     try {
@@ -250,6 +350,12 @@ function Profile() {
             onClick={() => setActiveTab('preferencias')}
           >
             Preferências
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'divisoes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('divisoes')}
+          >
+            Divisões
           </button>
         </div>
       </div>
@@ -525,6 +631,93 @@ function Profile() {
               )}
             </button>
           </form>
+        )}
+
+        {activeTab === 'divisoes' && (
+          <div className="divisoes-preset-container">
+            <form onSubmit={handlePresetSubmit} className="preset-form">
+              <h3>{editandoPresetId ? 'Editar preset' : 'Novo preset de divisão'}</h3>
+              <div className="form-group">
+                <label>Nome do preset</label>
+                <input
+                  type="text"
+                  value={presetForm.nome}
+                  onChange={(e) => setPresetForm(prev => ({ ...prev, nome: e.target.value }))}
+                  placeholder="Ex: Aluguel com Marina"
+                  required
+                />
+              </div>
+
+              {presetForm.partes.map((parte, index) => (
+                <div key={index} className="preset-parte-row">
+                  <div className="form-group">
+                    <label>Pessoa</label>
+                    <input
+                      type="text"
+                      value={parte.pessoa}
+                      onChange={(e) => handlePresetParteChange(index, 'pessoa', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Percentual (%)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={parte.percentual}
+                      onChange={(e) => handlePresetParteChange(index, 'percentual', e.target.value)}
+                      required
+                    />
+                  </div>
+                  {presetForm.partes.length > 2 && (
+                    <button type="button" className="btn-remove-parte" onClick={() => removePresetParte(index)}>
+                      Remover
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <div className="preset-form-actions">
+                <button type="button" className="btn-add-parte" onClick={addPresetParte}>
+                  + Adicionar parte
+                </button>
+                <span className={`preset-soma ${Math.abs(somaPresetForm - 100) > 0.1 ? 'soma-diff' : 'soma-ok'}`}>
+                  Soma: {somaPresetForm.toFixed(2)}%
+                </span>
+              </div>
+
+              <div className="preset-form-actions">
+                <button type="submit" className="btn-submit" disabled={loading}>
+                  {editandoPresetId ? 'Salvar alterações' : 'Criar preset'}
+                </button>
+                {editandoPresetId && (
+                  <button type="button" className="btn-cancelar-edicao" onClick={resetPresetForm}>
+                    Cancelar edição
+                  </button>
+                )}
+              </div>
+            </form>
+
+            <div className="presets-lista">
+              <h3>Presets salvos</h3>
+              {loadingPresets && <p>Carregando...</p>}
+              {!loadingPresets && divisaoPresets.length === 0 && <p>Nenhum preset salvo ainda.</p>}
+              {divisaoPresets.map(preset => (
+                <div key={preset._id} className="preset-item">
+                  <div className="preset-item-info">
+                    <strong>{preset.nome}</strong>
+                    <span>{preset.partes.map(p => `${p.pessoa} (${p.percentual}%)`).join(' + ')}</span>
+                  </div>
+                  <div className="preset-item-actions">
+                    <button type="button" onClick={() => iniciarEdicaoPreset(preset)}>Editar</button>
+                    <button type="button" onClick={() => handleExcluirPreset(preset)}>Excluir</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -335,4 +335,58 @@
     padding: 10px;
     font-size: 14px;
   }
-} 
+}
+
+.divisoes-preset-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.preset-parte-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.preset-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.preset-soma.soma-ok {
+  color: var(--cg-color-success);
+}
+
+.preset-soma.soma-diff {
+  color: var(--cg-color-error);
+}
+
+.presets-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preset-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--cg-color-border);
+  border-radius: 6px;
+}
+
+.preset-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preset-item-actions {
+  display: flex;
+  gap: 8px;
+}
