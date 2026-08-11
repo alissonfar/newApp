@@ -642,14 +642,6 @@ class ImportacaoController {
                     installmentIntervalMonths: null,
                     installmentIntervalDays: intervalDays != null ? intervalDays : null
                 };
-                if (ti.contaConjunta?.ativo) {
-                    const preparado = transacaoService.prepararValorEContaConjunta({
-                        valor,
-                        contaConjunta: { ...ti.contaConjunta, ativo: true }
-                    });
-                    obj.valor = preparado.valor;
-                    obj.contaConjunta = preparado.contaConjunta;
-                }
                 return obj;
             };
 
@@ -709,16 +701,6 @@ class ImportacaoController {
                 const dataVal = ti.data instanceof Date ? ti.data : new Date(ti.data);
                 transacoesReais.push(montarTransacao(ti, ti.valor, dataVal, null, null, null, null));
                 mapeamentoTiParaTransacao.push({ ti, transacaoIndex: transacoesReais.length - 1 });
-            }
-
-            for (const tr of transacoesReais) {
-                if (tr.contaConjunta?.ativo) {
-                    transacaoService.validarSomaPagamentos(tr, tr.pagamentos);
-                    await transacaoService.validarContaConjunta({
-                        contaConjunta: tr.contaConjunta,
-                        usuarioId: tr.usuario
-                    });
-                }
             }
 
             const { subcontaId, saldo } = req.body || {};
