@@ -11,7 +11,8 @@ const TabPrincipal = ({
   valorTotal, onValorTotalChange, valorRef,
   observacao, setObservacao,
   onToday, onYesterday,
-  showValidationWarning
+  showValidationWarning,
+  isImportada
 }) => {
   return (
     <div data-tab="principal" className="tab-panel tab-principal">
@@ -24,7 +25,15 @@ const TabPrincipal = ({
       </div>
       <div className="form-section">
         <label>Descrição:</label>
-        <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required ref={descricaoRef} tabIndex={2} />
+        <input
+          type="text"
+          value={descricao}
+          onChange={e => setDescricao(e.target.value)}
+          required
+          ref={descricaoRef}
+          tabIndex={2}
+          title={isImportada ? 'Apelido de exibição — o texto original da importação é preservado para deduplicação' : undefined}
+        />
       </div>
       <DateFieldWithShortcuts value={data} onChange={setData} onToday={onToday} onYesterday={onYesterday} tabIndex={3} />
       <ValorMonetarioInput value={valorTotal} onChange={onValorTotalChange} showWarning={showValidationWarning} ref={valorRef} tabIndex={4} />

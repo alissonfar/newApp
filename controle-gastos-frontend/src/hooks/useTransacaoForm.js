@@ -4,7 +4,7 @@ import { getTodayBR, toISOStringBR } from '../utils/dateUtils';
 export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
   const [_id, set_Id] = useState(transacao?._id);
   const [tipo, setTipo] = useState(transacao ? transacao.tipo : 'gasto');
-  const [descricao, setDescricao] = useState(transacao ? transacao.descricao : '');
+  const [descricao, setDescricao] = useState(transacao ? (transacao.descricaoApelido || transacao.descricao) : '');
   const [data, setData] = useState(() => {
     if (transacao) {
       if (typeof transacao.data === 'string') return transacao.data.split('T')[0];
@@ -31,7 +31,7 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
     if (transacao) {
       set_Id(transacao._id);
       setTipo(transacao.tipo);
-      setDescricao(transacao.descricao);
+      setDescricao(transacao.descricaoApelido || transacao.descricao);
       setData(
         typeof transacao.data === 'string'
           ? transacao.data.split('T')[0]
@@ -68,14 +68,14 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
     const payload = {
       _id,
       tipo,
-      descricao,
       data: toISOStringBR(data),
       valor: parseFloat(valorTotal),
       observacao,
+      ...(isImportada ? { descricaoApelido: descricao } : { descricao }),
       ...overrides
     };
     return payload;
-  }, [_id, tipo, descricao, data, valorTotal, observacao]);
+  }, [_id, tipo, descricao, data, valorTotal, observacao, isImportada]);
 
   const setHoje = useCallback(() => setData(getTodayBR()), []);
   const setOntem = useCallback(() => {

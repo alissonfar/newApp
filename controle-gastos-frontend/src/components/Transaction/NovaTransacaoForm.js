@@ -373,6 +373,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           descricao={formState.descricao}
           setDescricao={fsSetters.setDescricao}
           descricaoRef={refs.descricaoRef}
+          isImportada={formState.isImportada}
           data={formState.data}
           setData={fsSetters.setData}
           valorTotal={formState.valorTotal}
