@@ -1,0 +1,187 @@
+.tags-inativos-page-container {
+  padding: 24px;
+}
+
+.tags-inativos-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.btn-voltar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--cor-texto);
+}
+
+.tags-inativos-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.tags-inativos-tabs button {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  color: var(--cor-texto);
+  border-bottom: 2px solid transparent;
+  font-family: var(--fonte-titulos);
+}
+
+.tags-inativos-tabs button.tab-ativa {
+  border-bottom-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+  font-weight: 600;
+}
+
+.inativos-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inativo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  background-color: var(--cor-fundo-card);
+}
+
+.inativo-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inativo-nome {
+  color: var(--cor-texto);
+}
+
+.inativo-item .icone-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+}
+
+.inativo-item .btn-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--fonte-titulos);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: var(--cor-sucesso);
+  color: var(--cor-branca);
+  flex-shrink: 0;
+}
+
+.inativo-item .btn-success:hover {
+  background-color: #43a047;
+}
+
+.inativo-categoria-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 10px;
+}
+
+.chip-inativa-marca {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.badge-ativa {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background-color: rgba(76, 175, 80, 0.2);
+  color: var(--cor-sucesso);
+  border-radius: 6px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.badge-inativa {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background-color: rgba(158, 158, 158, 0.25);
+  color: #757575;
+  border-radius: 6px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.categorias-inativas-accordions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.categoria-inativa-accordion {
+  border: 1px solid var(--cor-borda) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.categoria-inativa-accordion::before {
+  display: none;
+}
+
+.categoria-accordion-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.categoria-accordion-summary .inativo-nome {
+  flex: 1;
+  font-weight: 600;
+}
+
+.tags-count-badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background-color: var(--cor-primaria-clara);
+  color: var(--cor-primaria);
+  flex-shrink: 0;
+}
+
+.categoria-accordion-actions {
+  margin-bottom: 12px;
+}
+
+.inativos-list-aninhada {
+  margin-top: 0;
+}

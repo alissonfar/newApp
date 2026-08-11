@@ -115,9 +115,10 @@ export async function excluirCategoria(codigo) {
 }
 
 /* ----- Tags ----- */
-export async function obterTags() {
+export async function obterTags(incluirInativas = false) {
   if (!getToken()) return [];
-  const resposta = await fetch(`${API_BASE}/tags`, {
+  const query = incluirInativas ? '?incluirInativas=true' : '';
+  const resposta = await fetch(`${API_BASE}/tags${query}`, {
     headers: getHeaders(false)
   });
   const dados = await resposta.json();
@@ -185,6 +186,30 @@ export async function excluirTag(codigo) {
     ...dados,
     codigo: dados._id
   };
+}
+
+export async function ativarTag(codigo) {
+  const resposta = await fetch(`${API_BASE}/tags/${codigo}/ativar`, {
+    method: 'PUT',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) {
+    throw new Error(dados.erro || 'Erro ao ativar tag.');
+  }
+  return { ...dados, codigo: dados._id };
+}
+
+export async function inativarTag(codigo) {
+  const resposta = await fetch(`${API_BASE}/tags/${codigo}/inativar`, {
+    method: 'PUT',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) {
+    throw new Error(dados.erro || 'Erro ao inativar tag.');
+  }
+  return { ...dados, codigo: dados._id };
 }
 
 /* ----- Autenticação ----- */

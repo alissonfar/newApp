@@ -1,5 +1,6 @@
 // src/controllers/controladorTag.js
 const Tag = require('../models/tag');
+const Categoria = require('../models/categoria');
 const { tagEstaVinculada } = require('../services/vinculoTagCategoriaService');
 
 exports.obterTodasTags = async (req, res) => {
@@ -130,6 +131,16 @@ exports.ativarTag = async (req, res) => {
       usuario: req.userId
     });
     if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
+
+    // Não permite reativar uma tag cuja categoria está inativa — evita
+    // tag "ativa" presa embaixo de categoria inativa.
+    const categoria = await Categoria.findOne({
+      $or: [{ _id: tag.categoria }, { codigo: tag.categoria }],
+      usuario: req.userId
+    });
+    if (categoria && categoria.ativo === false) {
+      return res.status(400).json({ erro: `A categoria "${categoria.nome}" está inativa. Ative a categoria primeiro.` });
+    }
 
     tag.ativo = true;
     await tag.save();

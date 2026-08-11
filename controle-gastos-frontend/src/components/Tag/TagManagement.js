@@ -1,10 +1,11 @@
 // src/components/Tag/TagManagement.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { FaEdit, FaTrash, FaBan, FaCheckCircle } from 'react-icons/fa';
-import { toast } from 'react-toastify';     
-import Swal from 'sweetalert2';            
+import { useNavigate } from 'react-router-dom';
+import { FaEdit, FaTrash, FaBan } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import { useData } from '../../context/DataContext';
-import { obterCategorias, criarTag, atualizarTag, excluirTag, criarCategoria, atualizarCategoria, excluirCategoria, ativarCategoria, inativarCategoria } from '../../api.js';
+import { obterCategorias, criarTag, atualizarTag, excluirTag, inativarTag, criarCategoria, atualizarCategoria, excluirCategoria, inativarCategoria } from '../../api.js';
 import IconSelector from './IconSelector';
 import IconRenderer from '../shared/IconRenderer';
 import ColorPicker from './ColorPicker';
@@ -12,16 +13,18 @@ import './TagManagement.css';
 
 const TagManagement = () => {
   const { tags, loadingData, errorData, refreshData } = useData();
+  const navigate = useNavigate();
   const [categorias, setCategorias] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(true);
   const [errorCategorias, setErrorCategorias] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
+  // Tela principal mostra só ativas — itens inativos só aparecem em /tags/inativos.
   const fetchCategorias = useCallback(async () => {
     setLoadingCategorias(true);
     setErrorCategorias(null);
     try {
-      const cats = await obterCategorias(true);
+      const cats = await obterCategorias(false);
       setCategorias(cats);
     } catch (error) {
       setErrorCategorias(error);
@@ -166,7 +169,7 @@ const TagManagement = () => {
   const handleExcluirTag = async (codigo) => {
     Swal.fire({
       title: 'Tem certeza que deseja excluir esta tag?',
-      text: 'Essa ação não pode ser desfeita.',
+      text: 'Se a tag não tiver nenhuma transação vinculada, ela será excluída definitivamente. Caso contrário, será apenas inativada.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -176,12 +179,41 @@ const TagManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await excluirTag(codigo);
+          const resultado = await excluirTag(codigo);
           await refreshData();
-          toast.success('Tag excluída com sucesso!');
+          if (resultado?.inativada) {
+            toast.info('Tag possui transações vinculadas — foi inativada em vez de excluída.');
+          } else {
+            toast.success('Tag excluída com sucesso!');
+          }
         } catch (error) {
           console.error('Erro ao excluir tag:', error);
           toast.error('Erro ao excluir tag.');
+        }
+      }
+    });
+  };
+
+  const handleInativarTag = async (codigo, e) => {
+    e?.stopPropagation();
+    Swal.fire({
+      title: 'Inativar tag?',
+      text: 'A tag não aparecerá nos modais de transação, mas o histórico será preservado. Você pode reativá-la em "Ver inativos".',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, inativar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await inativarTag(codigo);
+          await refreshData();
+          toast.success('Tag inativada com sucesso!');
+        } catch (error) {
+          console.error('Erro ao inativar tag:', error);
+          toast.error('Erro ao inativar tag.');
         }
       }
     });
@@ -259,24 +291,14 @@ const TagManagement = () => {
     }
   };
 
-  const handleAtivarCategoria = async (codigo, e) => {
-    e?.stopPropagation();
-    try {
-      await ativarCategoria(codigo);
-      await fetchCategorias();
-      await refreshData();
-      toast.success('Categoria ativada com sucesso!');
-    } catch (error) {
-      console.error('Erro ao ativar categoria:', error);
-      toast.error('Erro ao ativar categoria.');
-    }
-  };
-
   const handleInativarCategoria = async (codigo, e) => {
     e?.stopPropagation();
+    const tagsDaCategoria = tags.filter(t => t.categoria === codigo).length;
     Swal.fire({
       title: 'Inativar categoria?',
-      text: 'A categoria não aparecerá nos modais de transação, mas o histórico será preservado.',
+      text: tagsDaCategoria > 0
+        ? `A categoria não aparecerá nos modais de transação. Isso também inativará ${tagsDaCategoria} tag(s) desta categoria. Você pode reativar tudo em "Ver inativos".`
+        : 'A categoria não aparecerá nos modais de transação, mas o histórico será preservado. Você pode reativá-la em "Ver inativos".',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -286,10 +308,14 @@ const TagManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await inativarCategoria(codigo);
+          const resultado = await inativarCategoria(codigo);
           await fetchCategorias();
           await refreshData();
-          toast.success('Categoria inativada com sucesso!');
+          if (resultado?.tagsInativadas > 0) {
+            toast.success(`Categoria inativada! ${resultado.tagsInativadas} tag(s) também foram inativadas.`);
+          } else {
+            toast.success('Categoria inativada com sucesso!');
+          }
         } catch (error) {
           console.error('Erro ao inativar categoria:', error);
           toast.error('Erro ao inativar categoria.');
@@ -301,7 +327,7 @@ const TagManagement = () => {
   const handleExcluirCategoria = async (codigo) => {
     Swal.fire({
       title: 'Tem certeza que deseja excluir esta categoria?',
-      text: 'Todas as tags associadas também serão excluídas. Essa ação não pode ser desfeita.',
+      text: 'Se não houver tags nem transações vinculadas, será excluída definitivamente. Caso contrário, será apenas inativada.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -311,13 +337,17 @@ const TagManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await excluirCategoria(codigo);
+          const resultado = await excluirCategoria(codigo);
           if (selectedCategory && selectedCategory.codigo === codigo) {
             setSelectedCategory(null);
           }
           await fetchCategorias();
           await refreshData();
-          toast.success('Categoria excluída com sucesso!');
+          if (resultado?.inativada) {
+            toast.info('Categoria possui tags ou transações vinculadas — foi inativada em vez de excluída.');
+          } else {
+            toast.success('Categoria excluída com sucesso!');
+          }
         } catch (error) {
           console.error('Erro ao excluir categoria:', error);
           toast.error('Erro ao excluir categoria.');
@@ -336,7 +366,12 @@ const TagManagement = () => {
 
   return (
     <div className="tag-management-page-container">
-      <h2>Gerenciar Categorias e Tags</h2>
+      <div className="tag-management-header-actions">
+        <h2>Gerenciar Categorias e Tags</h2>
+        <button className="btn-ver-inativos" onClick={() => navigate('/tags/inativos')}>
+          Ver inativos
+        </button>
+      </div>
       <div className="tag-management-container">
         {/* Seção de Categorias */}
         <div className="category-section">
@@ -346,7 +381,7 @@ const TagManagement = () => {
               {categorias.map(cat => (
                 <li
                   key={cat.codigo}
-                  className={`${selectedCategory && cat.codigo === selectedCategory.codigo ? 'selected' : ''} ${cat.ativo === false ? 'categoria-inativa' : ''}`}
+                  className={selectedCategory && cat.codigo === selectedCategory.codigo ? 'selected' : ''}
                   onClick={() => setSelectedCategory(cat)}
                 >
                   <div className="categoria-item">
@@ -354,27 +389,16 @@ const TagManagement = () => {
                       <IconRenderer nome={cat.icone} size={28} cor={cat.cor} />
                     </div>
                     <div className="categoria-item-content">
-                      <div className="categoria-item-header">
-                        <span className="categoria-nome">{cat.nome}</span>
-                        <span className={cat.ativo === false ? 'badge-inativa' : 'badge-ativa'}>
-                          {cat.ativo === false ? 'Inativa' : 'Ativa'}
-                        </span>
-                      </div>
+                      <span className="categoria-nome">{cat.nome}</span>
                       {cat.descricao && (
                         <span className="categoria-descricao">{cat.descricao}</span>
                       )}
                     </div>
                   </div>
                   <div className="acoes-categoria" onClick={e => e.stopPropagation()}>
-                    {cat.ativo !== false ? (
-                      <button className="btn-warning" title="Inativar" onClick={(e) => handleInativarCategoria(cat.codigo, e)}>
-                        <FaBan size={14} /> Inativar
-                      </button>
-                    ) : (
-                      <button className="btn-success" title="Ativar" onClick={(e) => handleAtivarCategoria(cat.codigo, e)}>
-                        <FaCheckCircle size={14} /> Ativar
-                      </button>
-                    )}
+                    <button className="btn-warning" title="Inativar" onClick={(e) => handleInativarCategoria(cat.codigo, e)}>
+                      <FaBan size={14} /> Inativar
+                    </button>
                     <button className="btn-editar" title="Editar" onClick={() => handleEditarCategoria(cat)}>
                       <FaEdit size={14} /> Editar
                     </button>
@@ -572,6 +596,9 @@ const TagManagement = () => {
                             </div>
                           </div>
                           <div className="acoes-tag">
+                            <button className="btn-warning" title="Inativar" onClick={(e) => handleInativarTag(tag.codigo, e)}>
+                              <FaBan size={14} /> Inativar
+                            </button>
                             <button className="btn-editar" title="Editar" onClick={() => handleEditarTag(tag)}>
                               <FaEdit size={14} /> Editar
                             </button>

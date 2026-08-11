@@ -9,6 +9,34 @@
   box-sizing: border-box;
 }
 
+.tag-management-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.tag-management-header-actions h2 {
+  margin-bottom: 0;
+}
+
+.btn-ver-inativos {
+  font-family: var(--fonte-titulos);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--cor-primaria);
+  background: transparent;
+  color: var(--cor-primaria);
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-ver-inativos:hover {
+  background-color: var(--cor-primaria-clara);
+}
+
 .tag-management-page-container h2 {
   font-family: var(--fonte-titulos);
   text-align: center;
@@ -357,6 +385,13 @@
   white-space: nowrap;
 }
 
+.tag-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
 .tag-descricao {
   font-size: 0.85rem;
   color: #666;
@@ -400,6 +435,25 @@
 
 .acoes-tag button.btn-editar:hover {
   background-color: var(--cor-secundaria);
+}
+
+.acoes-tag button.btn-warning {
+  background-color: transparent;
+  color: var(--cor-alerta);
+  border: 1px solid var(--cor-alerta);
+}
+
+.acoes-tag button.btn-warning:hover {
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+.acoes-tag button.btn-success {
+  background-color: var(--cor-sucesso);
+  color: var(--cor-branca);
+}
+
+.acoes-tag button.btn-success:hover {
+  background-color: #43a047;
 }
 
 .acoes-tag button.btn-danger {

@@ -15,6 +15,7 @@ import GerenciamentoImportacoesPage from './pages/ImportacaoMassa/GerenciamentoI
 import DetalhesImportacaoPage from './pages/ImportacaoMassa/DetalhesImportacaoPage';
 import Insights from './pages/Insights/Insights';
 import Tags from './pages/Tags/Tags';
+import TagsInativos from './pages/TagsInativos/TagsInativos';
 import ContasFixas from './pages/ContasFixas/ContasFixas';
 import PendenciasContasFixas from './pages/ContasFixas/PendenciasContasFixas';
 import Login from './pages/Login/Login';
@@ -145,6 +146,16 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <Tags />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/tags/inativos"
+                element={
+                  <PrivateRoute>
+                    <MainLayout>
+                      <TagsInativos />
                     </MainLayout>
                   </PrivateRoute>
                 }

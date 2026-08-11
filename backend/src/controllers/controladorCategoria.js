@@ -1,5 +1,6 @@
 // src/controllers/controladorCategoria.js
 const Categoria = require('../models/categoria');
+const Tag = require('../models/tag');
 const { categoriaEstaVinculada } = require('../services/vinculoTagCategoriaService');
 
 exports.obterTodasCategorias = async (req, res) => {
@@ -113,6 +114,10 @@ exports.excluirCategoria = async (req, res) => {
     if (vinculada) {
       categoria.ativo = false;
       await categoria.save();
+      await Tag.updateMany(
+        { categoria: String(categoria._id), usuario: req.userId, ativo: true },
+        { ativo: false }
+      );
       return res.json({ mensagem: 'Categoria possui tags ou transações vinculadas — foi inativada em vez de excluída.', inativada: true });
     }
 
@@ -134,11 +139,18 @@ exports.ativarCategoria = async (req, res) => {
       usuario: req.userId
     });
     if (!categoria) return res.status(404).json({ erro: 'Categoria não encontrada.' });
-    
+
     categoria.ativo = true;
     await categoria.save();
-    
-    res.json(categoria);
+
+    // Cascata simétrica: reativa as tags desta categoria que estavam inativas
+    // (inclui as que foram inativadas junto da categoria e quaisquer outras).
+    const { modifiedCount } = await Tag.updateMany(
+      { categoria: String(categoria._id), usuario: req.userId, ativo: false },
+      { ativo: true }
+    );
+
+    res.json({ ...categoria.toObject({ virtuals: true }), tagsAtivadas: modifiedCount });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao ativar categoria.', detalhe: error.message });
   }
@@ -156,11 +168,18 @@ exports.inativarCategoria = async (req, res) => {
       ativo: true
     });
     if (!categoria) return res.status(404).json({ erro: 'Categoria não encontrada.' });
-    
+
     categoria.ativo = false;
     await categoria.save();
-    
-    res.json(categoria);
+
+    // Cascata: inativa todas as tags ativas desta categoria (evita tag
+    // "ativa" presa embaixo de categoria inativa).
+    const { modifiedCount } = await Tag.updateMany(
+      { categoria: String(categoria._id), usuario: req.userId, ativo: true },
+      { ativo: false }
+    );
+
+    res.json({ ...categoria.toObject({ virtuals: true }), tagsInativadas: modifiedCount });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao inativar categoria.', detalhe: error.message });
   }
