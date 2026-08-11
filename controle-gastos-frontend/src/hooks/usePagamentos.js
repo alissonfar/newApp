@@ -169,6 +169,40 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     });
   }, [valorEsperadoParaSoma, proprietarioPadrao]);
 
+  const applyPreset = useCallback((preset) => {
+    setPagamentos(prev => {
+      if (!preset || !Array.isArray(preset.partes) || preset.partes.length < 2) return prev;
+      const total = valorEsperadoParaSoma;
+      if (total <= 0) return prev;
+      const n = preset.partes.length;
+      const tagsPrincipal = prev[0]?.paymentTags || {};
+
+      // Calcula os valores pelo percentual de cada parte; a última parte
+      // absorve a diferença de arredondamento (mesmo padrão de splitInto).
+      let somaParcial = 0;
+      const valoresBrutos = preset.partes.map((parte, i) => {
+        if (i === n - 1) return null; // último calculado por diferença
+        const v = Math.floor((total * (Number(parte.percentual) / 100)) * 100) / 100;
+        somaParcial += v;
+        return v;
+      });
+      const ultimoValor = Math.round((total - somaParcial) * 100) / 100;
+
+      return preset.partes.map((parte, i) => {
+        const tagsExistentes = i === 0 ? tagsPrincipal : (prev[i]?.paymentTags || {});
+        return {
+          pessoa: parte.pessoa,
+          valor: String(i === n - 1 ? ultimoValor : valoresBrutos[i]),
+          paymentTags: i === 0 ? { ...tagsPrincipal } : mergeTagsAditivo(tagsPrincipal, tagsExistentes),
+          parcelamento: null,
+          emprestimoId: null,
+          ...empFieldsPadrao(),
+          fixed: false
+        };
+      });
+    });
+  }, [valorEsperadoParaSoma]);
+
   const clearPaymentTags = useCallback((index) => {
     setPagamentos(prev => {
       if (!prev[index]) return prev;
@@ -404,6 +438,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     removePagamento,
     splitEqually,
     splitInto,
+    applyPreset,
     clearPaymentTags,
     duplicatePagamento,
     toggleFixed,
