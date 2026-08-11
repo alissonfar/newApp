@@ -52,6 +52,8 @@ const TabPagamentos = ({
   removePagamento,
   splitEqually,
   splitInto,
+  applyPreset,
+  divisaoPresets = [],
   duplicatePagamento,
   toggleFixed,
   fillRemaining,
@@ -141,6 +143,24 @@ const TabPagamentos = ({
                 <option value="10">10</option>
               </select>
             </div>
+            {divisaoPresets.length > 0 && (
+              <div className="divide-by-select aplicar-preset-select">
+                <span>Aplicar divisão</span>
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const preset = divisaoPresets.find(p => p._id === e.target.value);
+                    if (preset) applyPreset(preset);
+                    e.target.value = '';
+                  }}
+                >
+                  <option value="" disabled>—</option>
+                  {divisaoPresets.map(preset => (
+                    <option key={preset._id} value={preset._id}>{preset.nome}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
