@@ -16,6 +16,7 @@ const TagSchema = new mongoose.Schema({
   icone: { type: String, default: 'default-icon' },
   ativo: { type: Boolean, default: true },
   mostrarNoDashboard: { type: Boolean, default: false },
+  mostrarNoLancamento: { type: Boolean, default: true },
   dataCriacao: { type: Date, default: Date.now },
   dataAtualizacao: { type: Date, default: Date.now },
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true }

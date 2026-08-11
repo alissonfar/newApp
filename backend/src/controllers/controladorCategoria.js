@@ -51,7 +51,7 @@ exports.obterCategoriaPorId = async (req, res) => {
 };
 
 exports.criarCategoria = async (req, res) => {
-  const { nome, descricao, cor, icone } = req.body;
+  const { nome, descricao, cor, icone, mostrarNoLancamento } = req.body;
   if (!nome) {
     return res.status(400).json({ erro: 'O campo nome é obrigatório para categoria.' });
   }
@@ -62,6 +62,7 @@ exports.criarCategoria = async (req, res) => {
       descricao,
       cor,
       icone,
+      mostrarNoLancamento: mostrarNoLancamento !== false,
       usuario: req.userId
     });
     await novaCategoria.save();
@@ -88,6 +89,7 @@ exports.atualizarCategoria = async (req, res) => {
     if (req.body.descricao !== undefined) categoria.descricao = req.body.descricao;
     if (req.body.cor) categoria.cor = req.body.cor;
     if (req.body.icone) categoria.icone = req.body.icone;
+    if (req.body.mostrarNoLancamento !== undefined) categoria.mostrarNoLancamento = req.body.mostrarNoLancamento === true;
 
     await categoria.save();
     res.json(categoria);
