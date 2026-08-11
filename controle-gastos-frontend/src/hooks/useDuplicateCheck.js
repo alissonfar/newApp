@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { obterTransacoes } from '../api';
+import { obterTransacoesPaginadas } from '../api';
 
 export default function useDuplicateCheck({ descricao, data, valorTotal, enabled }) {
   const [isDuplicate, setIsDuplicate] = useState(null);
@@ -18,14 +18,15 @@ export default function useDuplicateCheck({ descricao, data, valorTotal, enabled
 
     timerRef.current = setTimeout(async () => {
       try {
-        const result = await obterTransacoes({
+        const result = await obterTransacoesPaginadas({
+          page: 1,
+          limit: 5,
           search: descricao,
           dataInicio: data,
-          dataFim: data,
-          limit: 5
+          dataFim: data
         });
 
-        const transacoes = result?.transacoes || [];
+        const transacoes = result?.data || [];
         if (transacoes.length === 0) {
           setIsDuplicate(false);
         } else {
