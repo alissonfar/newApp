@@ -14,7 +14,13 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
   });
   const [valorTotal, setValorTotal] = useState(transacao ? String(transacao.valor) : '');
   const [observacao, setObservacao] = useState(transacao ? transacao.observacao : '');
-  const [isImportada, setIsImportada] = useState(!!transacao?.importacao);
+  // isImportada = "esta transação nasceu de uma importação" — usado para decidir se a
+  // edição de descrição grava em descricaoApelido (preservando o texto original do banco).
+  // `transacao.importacao` só existe em TransacaoImportada (pré-finalização, editada a
+  // partir da tela de revisão). Depois de finalizada, a Transacao real não tem esse campo,
+  // mas sempre tem deduplicationKey (só o pipeline de importação atribui esse campo —
+  // criação manual nunca gera deduplicationKey), então serve como sinal equivalente.
+  const [isImportada, setIsImportada] = useState(!!(transacao?.importacao || transacao?.deduplicationKey));
   const [importacaoId, setImportacaoId] = useState(transacao?.importacao || null);
 
   const tipoRef = useRef(null);
@@ -41,7 +47,7 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
       );
       setValorTotal(String(transacao.valor));
       setObservacao(transacao.observacao || '');
-      setIsImportada(!!transacao.importacao);
+      setIsImportada(!!(transacao.importacao || transacao.deduplicationKey));
       setImportacaoId(transacao.importacao || null);
     }
   }, [transacao]);
