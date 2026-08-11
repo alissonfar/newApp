@@ -71,7 +71,7 @@ const transacaoImportadaController = {
       });
 
       // Campos permitidos para atualização (installment* tratados separadamente abaixo)
-      const camposPermitidos = ['descricao', 'valor', 'data', 'tipo', 'observacao', 'pagamentos', 'subconta', 'emprestimoId', 'emprestimoConfig'];
+      const camposPermitidos = ['descricaoApelido', 'valor', 'data', 'tipo', 'observacao', 'pagamentos', 'subconta', 'emprestimoId', 'emprestimoConfig'];
       
       // Atualiza apenas os campos permitidos que foram enviados
       camposPermitidos.forEach(campo => {
