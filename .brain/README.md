@@ -142,6 +142,16 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
 - **Sessão:**
   - [`2026-08-11-descricao-apelido-execucao.md`](sessions/2026-08-11-descricao-apelido-execucao.md) — design + implementação + 3 rodadas de bugfix em teste manual real
 
+### Divisões Pré-Configuradas
+- **Plano (Superpowers):**
+  - [`docs/superpowers/plans/2026-08-11-divisoes-pre-configuradas.md`](../docs/superpowers/plans/2026-08-11-divisoes-pre-configuradas.md) — 9 tasks (8 de implementação + 1 de verificação manual end-to-end)
+- **ADR:**
+  - [ADR-023](decisions/2026-08-11-divisoes-pre-configuradas.md) — presets de percentual sobre `pagamentos[]`, sem tocar em `/pessoas`, sem reintroduzir Conta Conjunta
+- **Contexto (mapa de onde vive cada peça, cálculo de arredondamento, propagação de tags):**
+  - [`context/divisoes-pre-configuradas.md`](context/divisoes-pre-configuradas.md)
+- **Sessão:**
+  - [`2026-08-11-divisoes-pre-configuradas-execucao.md`](sessions/2026-08-11-divisoes-pre-configuradas-execucao.md) — brainstorming + writing-plans + executing-plans, achado de bug pré-existente em `Profile.css` (media query sem fechar)
+
 ### Módulo de Breadcrumb / Navegação
 - **Design doc:**
   - [`2026-06-28-breadcrumb-reorganizacao-design.md`](sessions/2026-06-28-breadcrumb-reorganizacao-design.md) — design da reorganização do breadcrumb (menuStructure como fonte de verdade, MAP scoped por rota, ellipsis responsivo, tokens)
@@ -339,5 +349,5 @@ A estrutura atual (4 pastas) é um **começo**, não uma camisa-de-força. Se vo
 ## Status
 
 - **Criado em:** 2026-06-21
-- **Última atualização:** 2026-08-11 (feature de apelido de descrição — ADR-021; playbook de caminhos paralelos atualizado pela 2ª vez e generalizado pra "adicionar OU remover" campo; novo mapa `context/transacao-importada-pontos-acoplamento.md`)
+- **Última atualização:** 2026-08-11 (Divisões Pré-Configuradas — ADR-023; presets de percentual sobre `pagamentos[]`, 4ª aba em `/profile`, sem tocar em `/pessoas` nem reintroduzir Conta Conjunta)
 - **Mantido por:** Alisson + newapp-planner
