@@ -114,7 +114,7 @@ function generateInstallments({ totalAmount, totalInstallments, intervalInDays, 
  *   { pessoa, valor, tags?, parcelamento?: { ativo, quantidade, intervaloDias } }
  * @param {string|Date} params.startDate - Data base para início do parcelamento
  * @param {Object} params.baseTransacao - Campos base para todas as transações geradas
- *   { tipo, descricao, observacao, usuario, subconta, contaConjunta? }
+ *   { tipo, descricao, observacao, usuario, subconta }
  * @returns {{ transacoes: Array, parentTransactionId: ObjectId }}
  */
 function gerarTransacoesComParcelamento({ pagamentos, startDate, baseTransacao }) {

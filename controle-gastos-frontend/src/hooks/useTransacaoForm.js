@@ -46,11 +46,9 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
     }
   }, [transacao]);
 
-  const handleValorTotalChange = useCallback((raw, pagamentos, isContaConjunta, pagoPor, handlePagamentoChangeFn) => {
+  const handleValorTotalChange = useCallback((raw, pagamentos, handlePagamentoChangeFn) => {
     setValorTotal(raw);
-    if (isContaConjunta && pagoPor === 'outro') {
-      if (pagamentos.length === 1 && handlePagamentoChangeFn) handlePagamentoChangeFn(0, 'valor', raw);
-    } else if (pagamentos.length === 1 && handlePagamentoChangeFn) {
+    if (pagamentos.length === 1 && handlePagamentoChangeFn) {
       handlePagamentoChangeFn(0, 'valor', raw);
     }
   }, []);
