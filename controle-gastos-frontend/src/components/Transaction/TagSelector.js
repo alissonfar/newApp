@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import Select from 'react-select';
 import IconRenderer from '../shared/IconRenderer';
+import { filtrarCategoriasParaLancamento, filtrarTagsParaLancamento } from '../../utils/tagVisibility';
 
 const selectStyles = {
   control: (provided) => ({
@@ -51,20 +52,30 @@ const formatOptionLabel = ({ label, cor, icone }) => (
 );
 
 const TagSelector = React.memo(({ categorias, allTags, paymentTags, onTagsChange, tabIndex = 50 }) => {
+  const categoriasVisiveis = useMemo(() => {
+    const categoriasJaSelecionadas = Object.keys(paymentTags || {});
+    return filtrarCategoriasParaLancamento(categorias, categoriasJaSelecionadas);
+  }, [categorias, paymentTags]);
+
+  const tagsVisiveis = useMemo(() => {
+    const tagsJaSelecionadas = Object.values(paymentTags || {}).flat();
+    return filtrarTagsParaLancamento(allTags, categoriasVisiveis, tagsJaSelecionadas);
+  }, [allTags, categoriasVisiveis, paymentTags]);
+
   const optionsByCategory = useMemo(() => {
     const map = {};
-    categorias.forEach(cat => {
-      map[cat._id] = allTags
+    categoriasVisiveis.forEach(cat => {
+      map[cat._id] = tagsVisiveis
         .filter(t => t.categoria === cat._id)
         .map(t => ({ value: t._id, label: t.nome, cor: t.cor, icone: t.icone }));
     });
     return map;
-  }, [categorias, allTags]);
+  }, [categoriasVisiveis, tagsVisiveis]);
 
   return (
     <div className="tags-section">
       <h4>Tags para Pagamento</h4>
-      {categorias.map((cat) => {
+      {categoriasVisiveis.map((cat) => {
         const options = optionsByCategory[cat._id] || [];
         const rawValues = (paymentTags && paymentTags[cat._id]) || [];
         const selectedValues = rawValues
