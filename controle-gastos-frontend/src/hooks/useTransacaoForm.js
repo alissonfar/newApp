@@ -97,7 +97,7 @@ export default function useTransacaoForm({ transacao, proprietarioPadrao }) {
   }, [transacao]);
 
   return {
-    formState: { _id, tipo, descricao, data, valorTotal, observacao, isImportada, importacaoId },
+    formState: { _id, tipo, descricao, descricaoOriginal: transacao?.descricao || null, data, valorTotal, observacao, isImportada, importacaoId },
     setters: { setTipo, setDescricao, setData, setValorTotal, setObservacao, setId: set_Id, setIsImportada, setImportacaoId },
     handleValorTotalChange,
     resetForm,

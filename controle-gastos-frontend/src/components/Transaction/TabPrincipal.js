@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DateFieldWithShortcuts from './DateFieldWithShortcuts';
 import ValorMonetarioInput from './ValorMonetarioInput';
 
@@ -12,8 +12,12 @@ const TabPrincipal = ({
   observacao, setObservacao,
   onToday, onYesterday,
   showValidationWarning,
-  isImportada
+  isImportada,
+  descricaoOriginal
 }) => {
+  const [mostrarOriginal, setMostrarOriginal] = useState(false);
+  const temApelido = isImportada && descricaoOriginal && descricaoOriginal !== descricao;
+
   return (
     <div data-tab="principal" className="tab-panel tab-principal">
       <div className="form-section">
@@ -32,8 +36,31 @@ const TabPrincipal = ({
           required
           ref={descricaoRef}
           tabIndex={2}
-          title={isImportada ? 'Apelido de exibição — o texto original da importação é preservado para deduplicação' : undefined}
         />
+        {temApelido && (
+          <div style={{ marginTop: 6 }}>
+            <button
+              type="button"
+              onClick={() => setMostrarOriginal(v => !v)}
+              style={{
+                background: 'none', border: 'none', padding: 0,
+                color: '#2563eb', fontSize: 12, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 4
+              }}
+            >
+              {mostrarOriginal ? '▾ Ocultar descrição original' : '▸ Ver descrição original'}
+            </button>
+            {mostrarOriginal && (
+              <div style={{
+                marginTop: 4, fontSize: 12, color: '#64748b',
+                background: '#f8fafc', border: '1px solid #e2e8f0',
+                borderRadius: 6, padding: '6px 10px'
+              }}>
+                {descricaoOriginal}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <DateFieldWithShortcuts value={data} onChange={setData} onToday={onToday} onYesterday={onYesterday} tabIndex={3} />
       <ValorMonetarioInput value={valorTotal} onChange={onValorTotalChange} showWarning={showValidationWarning} ref={valorRef} tabIndex={4} />

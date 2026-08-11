@@ -30,6 +30,7 @@ import { exportDataToCSV } from '../../utils/export/exportData';
 import { exportDataToPDF, buildReportFilename } from '../../utils/export/exportPDF';
 import { formatDateBR } from '../../utils/dateUtils';
 import { useRelatorioFilters } from '../../hooks/useRelatorioFilters';
+import { getDescricaoExibicao } from '../../utils/descricaoUtils';
 import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
 import RelatorioFiltersPanel from '../../components/Relatorio/RelatorioFiltersPanel';
@@ -44,6 +45,7 @@ function flattenTransactions(transArray) {
   const flattened = [];
   (transArray || []).forEach((tr) => {
     const transacaoId = tr.id || tr._id;
+    const descricaoExibicao = getDescricaoExibicao(tr);
     const baseEmprestimo = {
       esconderNaLista: !!tr.esconderNaLista,
       emprestimoInfo: tr.emprestimoInfo || null
@@ -60,7 +62,7 @@ function flattenTransactions(transArray) {
         pagamentoIndex: null,
         data: tr.data,
         tipo: tr.tipo,
-        descricao: tr.descricao,
+        descricao: descricaoExibicao,
         valor: tr.valor,
         pessoa: null,
         valorPagamento: 0,
@@ -79,7 +81,7 @@ function flattenTransactions(transArray) {
           pagamentoIndex: index,
           data: tr.data,
           tipo: tr.tipo,
-          descricao: tr.descricao,
+          descricao: descricaoExibicao,
           valor: tr.valor,
           pessoa: p.pessoa,
           valorPagamento: p.valor,
