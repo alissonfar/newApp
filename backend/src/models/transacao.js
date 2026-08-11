@@ -26,6 +26,7 @@ const PagamentoSchema = new mongoose.Schema({
 const TransacaoSchema = new mongoose.Schema({
   tipo: { type: String, enum: ['gasto', 'recebivel'], required: true },
   descricao: { type: String, required: true },
+  descricaoApelido: { type: String, default: null, trim: true, maxlength: 200 },
   valor: { type: Number, required: true },
   data: { type: Date, required: true },
   observacao: { type: String, required: false },

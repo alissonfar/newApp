@@ -33,11 +33,17 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     ref: 'Importacao', 
     required: true 
   },
-  descricao: { 
-    type: String, 
-    required: true 
+  descricao: {
+    type: String,
+    required: true
   },
-  valor: { 
+  descricaoApelido: {
+    type: String,
+    default: null,
+    trim: true,
+    maxlength: 200
+  },
+  valor: {
     type: Number, 
     required: true 
   },
@@ -193,6 +199,7 @@ TransacaoImportadaSchema.methods.paraTransacao = function() {
   const result = {
     tipo: this.tipo,
     descricao: this.descricao,
+    descricaoApelido: this.descricaoApelido || null,
     valor: this.valor,
     data: this.data,
     observacao: this.observacao || '',
