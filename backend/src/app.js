@@ -81,6 +81,7 @@ const rotasTransferencia = require('./routes/rotasTransferencia');
 const rotasNetWorth = require('./routes/rotasNetWorth');
 const rotasDashboard = require('./routes/rotasDashboard');
 const rotasPessoa = require('./routes/rotasPessoa');
+const rotasDivisaoPreset = require('./routes/rotasDivisaoPreset');
 const rotasEmprestimo = require('./routes/rotasEmprestimo');
 const rotasPluggy = require('./routes/rotasPluggy');
 
@@ -105,6 +106,7 @@ app.use('/api/patrimonio/transferencias', rotasTransferencia);
 app.use('/api/patrimonio', rotasPatrimonio);
 app.use('/api/net-worth', rotasNetWorth);
 app.use('/api/pessoas', rotasPessoa);
+app.use('/api/divisao-presets', rotasDivisaoPreset);
 app.use('/api/emprestimos', rotasEmprestimo);
 app.use('/api/pluggy', rotasPluggy);
 
