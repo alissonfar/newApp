@@ -723,3 +723,45 @@ export async function reverterQuitacaoEmprestimo(id) {
   return dados;
 }
 
+/* ----- Divisões Pré-Configuradas ----- */
+export async function listarDivisaoPresets() {
+  const resposta = await fetch(`${API_BASE}/divisao-presets`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao listar presets de divisão.`);
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function criarDivisaoPreset(preset) {
+  const resposta = await fetch(`${API_BASE}/divisao-presets`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(preset)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao criar preset de divisão.`);
+  return dados;
+}
+
+export async function atualizarDivisaoPreset(id, preset) {
+  const resposta = await fetch(`${API_BASE}/divisao-presets/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(preset)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao atualizar preset de divisão.`);
+  return dados;
+}
+
+export async function excluirDivisaoPreset(id) {
+  const resposta = await fetch(`${API_BASE}/divisao-presets/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao excluir preset de divisão.`);
+  return dados;
+}
+
