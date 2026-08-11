@@ -515,21 +515,8 @@ exports.criarTransacao = async (req, res) => {
   try {
     if (!temParcelamentoPorPagamento && !ehParceladoLegado) {
       // Fluxo transação única (sem parcelamento)
-      let valorFinal = parseFloat(valor) || 0;
-      let contaConjuntaParaSalvar = undefined;
-      if (req.body.contaConjunta?.ativo) {
-        await transacaoService.validarContaConjunta({
-          contaConjunta: req.body.contaConjunta,
-          usuarioId: req.userId
-        });
-        const preparado = transacaoService.prepararValorEContaConjunta(req.body);
-        valorFinal = preparado.valor;
-        contaConjuntaParaSalvar = preparado.contaConjunta;
-      }
-      transacaoService.validarSomaPagamentos(
-        { valor: valorFinal, contaConjunta: req.body.contaConjunta },
-        pagamentos
-      );
+      const valorFinal = parseFloat(valor) || 0;
+      transacaoService.validarSomaPagamentos({ valor: valorFinal }, pagamentos);
       const novaTransacao = new Transacao({
         tipo,
         descricao,
@@ -538,8 +525,7 @@ exports.criarTransacao = async (req, res) => {
         pagamentos,
         observacao,
         usuario: req.userId,
-        subconta: subcontaId,
-        contaConjunta: contaConjuntaParaSalvar
+        subconta: subcontaId
       });
       if (req.body.emprestimoId) {
         await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
@@ -565,17 +551,7 @@ exports.criarTransacao = async (req, res) => {
     }
 
     // Fluxo parcelado: suporta NOVO modelo (por pagamento) e LEGADO (top-level)
-    let valorFinal = parseFloat(valor) || 0;
-    let contaConjuntaParaSalvar = undefined;
-    if (req.body.contaConjunta?.ativo) {
-      await transacaoService.validarContaConjunta({
-        contaConjunta: req.body.contaConjunta,
-        usuarioId: req.userId
-      });
-      const preparado = transacaoService.prepararValorEContaConjunta(req.body);
-      valorFinal = preparado.valor;
-      contaConjuntaParaSalvar = preparado.contaConjunta;
-    }
+    const valorFinal = parseFloat(valor) || 0;
 
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -594,8 +570,7 @@ exports.criarTransacao = async (req, res) => {
             descricao,
             observacao: observacao || '',
             usuario: req.userId,
-            subconta: subcontaId,
-            contaConjunta: contaConjuntaParaSalvar
+            subconta: subcontaId
           }
         });
 
@@ -659,7 +634,6 @@ exports.criarTransacao = async (req, res) => {
             observacao: observacao || '',
             usuario: req.userId,
             subconta: subcontaId,
-            contaConjunta: contaConjuntaParaSalvar,
             parentTransactionId,
             isInstallment: true,
             installmentGroupId,
@@ -723,37 +697,14 @@ exports.atualizarTransacao = async (req, res) => {
     const transacao = await Transacao.findOne({ _id: req.params.id, usuario: req.userId });
     if (!transacao) return res.status(404).json({ erro: 'Transação não encontrada.' });
     const pagamentosAtual = req.body.pagamentos || transacao.pagamentos;
-    let valorAtual = req.body.valor !== undefined ? parseFloat(req.body.valor) : transacao.valor;
-    let contaConjuntaAtual = transacao.contaConjunta && transacao.contaConjunta.toObject ? transacao.contaConjunta.toObject() : transacao.contaConjunta;
-    if (req.body.contaConjunta !== undefined) {
-      if (req.body.contaConjunta?.ativo) {
-        await transacaoService.validarContaConjunta({
-          contaConjunta: req.body.contaConjunta,
-          usuarioId: req.userId
-        });
-        const preparado = transacaoService.prepararValorEContaConjunta({
-          valor: req.body.valor,
-          contaConjunta: req.body.contaConjunta
-        });
-        valorAtual = preparado.valor;
-        contaConjuntaAtual = preparado.contaConjunta;
-      } else {
-        contaConjuntaAtual = { ativo: false };
-      }
-    }
-    transacaoService.validarSomaPagamentos(
-      { valor: valorAtual, contaConjunta: req.body.contaConjunta ?? contaConjuntaAtual },
-      pagamentosAtual
-    );
+    const valorAtual = req.body.valor !== undefined ? parseFloat(req.body.valor) : transacao.valor;
+    transacaoService.validarSomaPagamentos({ valor: valorAtual }, pagamentosAtual);
     transacao.tipo = req.body.tipo || transacao.tipo;
     transacao.descricao = req.body.descricao || transacao.descricao;
     transacao.valor = valorAtual;
     transacao.data = req.body.data || transacao.data;
     transacao.pagamentos = pagamentosAtual;
     transacao.observacao = req.body.observacao !== undefined ? req.body.observacao : transacao.observacao;
-    if (req.body.contaConjunta !== undefined) {
-      transacao.contaConjunta = contaConjuntaAtual;
-    }
     if (req.body.subconta !== undefined) {
       if (req.body.subconta && mongoose.Types.ObjectId.isValid(req.body.subconta)) {
         const sub = await Subconta.findOne({ _id: req.body.subconta, usuario: req.userId, ativo: true });
