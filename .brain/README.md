@@ -128,6 +128,20 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
 - **Sessão:**
   - [`2026-08-11-descontinuacao-conta-conjunta-execucao.md`](sessions/2026-08-11-descontinuacao-conta-conjunta-execucao.md) — revisão da spec + execução completa (backend e frontend), sem migration
 
+### Apelido de Descrição de Transações
+- **Spec (Superpowers):**
+  - [`docs/superpowers/specs/2026-08-11-descricao-apelido-transacoes-design.md`](../docs/superpowers/specs/2026-08-11-descricao-apelido-transacoes-design.md)
+- **Plano (Superpowers):**
+  - [`docs/superpowers/plans/2026-08-11-descricao-apelido-transacoes.md`](../docs/superpowers/plans/2026-08-11-descricao-apelido-transacoes.md) — 10 tasks + 3 rodadas de bugfix pós-teste-manual (não documentadas em plano separado, ver sessão)
+- **ADR:**
+  - [ADR-021](decisions/2026-08-11-descricao-apelido-transacoes.md) — campo `descricaoApelido` desacoplado de `descricao`, preserva dedup e inferência de pessoa intactas
+- **Contexto (mapa de acoplamento, referência pra qualquer mudança futura em campo de `Transacao`):**
+  - [`context/transacao-importada-pontos-acoplamento.md`](context/transacao-importada-pontos-acoplamento.md)
+- **Playbook (atualizado 2x — remoção de conta conjunta + este caso de adição):**
+  - [`playbooks/investigar-caminhos-paralelos-antes-de-remover-campo.md`](playbooks/investigar-caminhos-paralelos-antes-de-remover-campo.md)
+- **Sessão:**
+  - [`2026-08-11-descricao-apelido-execucao.md`](sessions/2026-08-11-descricao-apelido-execucao.md) — design + implementação + 3 rodadas de bugfix em teste manual real
+
 ### Módulo de Breadcrumb / Navegação
 - **Design doc:**
   - [`2026-06-28-breadcrumb-reorganizacao-design.md`](sessions/2026-06-28-breadcrumb-reorganizacao-design.md) — design da reorganização do breadcrumb (menuStructure como fonte de verdade, MAP scoped por rota, ellipsis responsivo, tokens)
@@ -325,5 +339,5 @@ A estrutura atual (4 pastas) é um **começo**, não uma camisa-de-força. Se vo
 ## Status
 
 - **Criado em:** 2026-06-21
-- **Última atualização:** 2026-08-11 (módulo de Conta Conjunta removido por completo — backend e frontend — via ADR-019; playbook novo sobre investigar caminhos paralelos antes de remover campo cross-cutting)
+- **Última atualização:** 2026-08-11 (feature de apelido de descrição — ADR-021; playbook de caminhos paralelos atualizado pela 2ª vez e generalizado pra "adicionar OU remover" campo; novo mapa `context/transacao-importada-pontos-acoplamento.md`)
 - **Mantido por:** Alisson + newapp-planner
