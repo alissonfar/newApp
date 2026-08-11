@@ -171,16 +171,8 @@ const TransacaoImportadaSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Emprestimo',
     default: null
-  },
-  contaConjunta: {
-    ativo: { type: Boolean, default: false },
-    vinculoId: { type: mongoose.Schema.Types.ObjectId, ref: 'VinculoConjunto' },
-    pagoPor: { type: String, enum: ['usuario', 'outro'] },
-    valorTotal: { type: Number, min: 0 },
-    parteUsuario: { type: Number, min: 0 },
-    parteOutro: { type: Number, min: 0 }
   }
-}, { 
+}, {
   timestamps: true,
   toJSON: { 
     virtuals: true,
@@ -217,17 +209,6 @@ TransacaoImportadaSchema.methods.paraTransacao = function() {
     installmentIntervalDays: this.installmentIntervalDays,
     parentTransactionId: this.parentTransactionId || undefined
   };
-  if (this.contaConjunta?.ativo) {
-    result.contaConjunta = {
-      ativo: true,
-      vinculoId: this.contaConjunta.vinculoId,
-      pagoPor: this.contaConjunta.pagoPor,
-      valorTotal: this.contaConjunta.valorTotal,
-      parteUsuario: this.contaConjunta.parteUsuario,
-      parteOutro: this.contaConjunta.parteOutro,
-      acertadoEm: null
-    };
-  }
   return result;
 };
 
