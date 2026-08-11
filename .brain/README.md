@@ -104,7 +104,6 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
 ### Módulo de Conta Fixa
 - **Specs (Superpowers):**
   - [`docs/superpowers/specs/2026-08-05-conta-fixa-design.md`](../docs/superpowers/specs/2026-08-05-conta-fixa-design.md)
-  - [`docs/superpowers/specs/2026-08-05-descontinuacao-conta-conjunta-design.md`](../docs/superpowers/specs/2026-08-05-descontinuacao-conta-conjunta-design.md) — **spec aprovada, sem plano/execução ainda** (handoff pra sessão nova)
 - **Planos (Superpowers):**
   - [`docs/superpowers/plans/2026-08-05-conta-fixa.md`](../docs/superpowers/plans/2026-08-05-conta-fixa.md)
   - [`docs/superpowers/plans/2026-08-05-conta-fixa-ui-fix.md`](../docs/superpowers/plans/2026-08-05-conta-fixa-ui-fix.md)
@@ -116,6 +115,18 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
   - [`playbooks/criar-tela-consistente-design-system.md`](playbooks/criar-tela-consistente-design-system.md) — checklist pra não repetir o erro de HTML cru
 - **Sessão:**
   - [`2026-08-07-conta-fixa-implementacao-e-fix-visual.md`](sessions/2026-08-07-conta-fixa-implementacao-e-fix-visual.md) — implementação completa + 2 rodadas de fix visual + handoff da descontinuação de conta conjunta
+
+### Descontinuação de Conta Conjunta (módulo removido)
+- **Spec (Superpowers):**
+  - [`docs/superpowers/specs/2026-08-05-descontinuacao-conta-conjunta-design.md`](../docs/superpowers/specs/2026-08-05-descontinuacao-conta-conjunta-design.md) — aprovada 2026-08-05, revisada e estendida em 2026-08-11 (escopo do módulo de Importação)
+- **Plano (Superpowers):**
+  - [`docs/superpowers/plans/2026-08-07-descontinuacao-conta-conjunta.md`](../docs/superpowers/plans/2026-08-07-descontinuacao-conta-conjunta.md) — 12 tasks executadas (Task 13 de migration descartada por decisão do usuário)
+- **ADR:**
+  - [ADR-019](decisions/2026-08-11-descontinuacao-conta-conjunta.md) — decisão de remover o módulo por completo, `pagamentos[]` mantido intacto
+- **Playbook:**
+  - [`playbooks/investigar-caminhos-paralelos-antes-de-remover-campo.md`](playbooks/investigar-caminhos-paralelos-antes-de-remover-campo.md) — checklist pra não repetir a lacuna de investigação (módulo de Importação tinha um caminho paralelo não coberto na spec original)
+- **Sessão:**
+  - [`2026-08-11-descontinuacao-conta-conjunta-execucao.md`](sessions/2026-08-11-descontinuacao-conta-conjunta-execucao.md) — revisão da spec + execução completa (backend e frontend), sem migration
 
 ### Módulo de Breadcrumb / Navegação
 - **Design doc:**
@@ -314,5 +325,5 @@ A estrutura atual (4 pastas) é um **começo**, não uma camisa-de-força. Se vo
 ## Status
 
 - **Criado em:** 2026-06-21
-- **Última atualização:** 2026-08-07 (módulo de Conta Fixa: implementação completa + ADR-018 sobre composição de modal + playbook de checklist de design system; handoff da descontinuação de conta conjunta documentado pra sessão nova)
+- **Última atualização:** 2026-08-11 (módulo de Conta Conjunta removido por completo — backend e frontend — via ADR-019; playbook novo sobre investigar caminhos paralelos antes de remover campo cross-cutting)
 - **Mantido por:** Alisson + newapp-planner
