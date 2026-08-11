@@ -619,6 +619,7 @@ class ImportacaoController {
                 const obj = {
                     tipo: ti.tipo,
                     descricao: ti.descricao,
+                    descricaoApelido: ti.descricaoApelido || null,
                     valor,
                     data,
                     observacao: ti.observacao || `Importado via importação #${ti.importacao}`,
