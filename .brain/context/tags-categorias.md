@@ -5,6 +5,7 @@ created: 2026-08-11
 tags: [tags, categorias, pagamentos, regras-de-negocio]
 related:
   - .brain/decisions/2026-08-11-tags-categorias-ciclo-ativo-inativo.md
+  - .brain/decisions/2026-08-11-mostrar-no-lancamento.md
 ---
 
 # Tags e Categorias — regras de negócio
@@ -14,7 +15,8 @@ related:
 ## Modelo de dados
 
 - `Categoria` (`backend/src/models/categoria.js`): `nome`, `descricao`, `cor`, `icone`, `ativo` (boolean, default `true`).
-- `Tag` (`backend/src/models/tag.js`): mesmos campos + `categoria` — **string** com o `_id` da categoria (não é `ObjectId` ref do Mongoose), + `mostrarNoDashboard`.
+- `Tag` (`backend/src/models/tag.js`): mesmos campos + `categoria` — **string** com o `_id` da categoria (não é `ObjectId` ref do Mongoose), + `mostrarNoDashboard`, `mostrarNoLancamento`.
+- `Categoria` também tem `mostrarNoLancamento` (boolean, default `true`).
 - Uma tag é usada num pagamento através de `Transacao.pagamentos[].tags`, um objeto livre (`type: Object` no schema, não estruturado): `{ [categoriaId: string]: [tagId: string, ...] }`. Ou seja, cada pagamento pode ter várias tags por categoria.
 
 ## Ciclo ativo/inativo
@@ -27,6 +29,18 @@ Ver [ADR-020](../decisions/2026-08-11-tags-categorias-ciclo-ativo-inativo.md) pa
 - **Bloqueio tag → categoria:** não é possível ativar uma tag cuja categoria está inativa (HTTP 400 do backend) — precisa ativar a categoria primeiro.
 - **Tela principal `/tags`** mostra só itens **ativos**. Tudo que é inativo só aparece em `/tags/inativos` (duas abas: Tags inativas / Categorias inativas — categorias em `Accordion` mostrando as tags vinculadas).
 - **`DataContext`** (`controle-gastos-frontend/src/context/DataContext.js`) mantém `tags`/`categorias` globais (só ativos, via `refreshData()`). Qualquer tela que muta tag/categoria (`TagManagement.js`, `TagsInativos.js`) precisa chamar `refreshData()` depois da mutação, senão outras telas ficam com dado velho até reload manual — bug já corrido uma vez em `TagsInativos.js` (2026-08-11).
+
+## Visibilidade no lançamento (`mostrarNoLancamento`)
+
+Ver [ADR-022](../decisions/2026-08-11-mostrar-no-lancamento.md). Eixo **ortogonal** ao ciclo ativo/inativo: uma tag/categoria pode continuar `ativo:true` (visível em relatórios) e ainda assim ficar oculta especificamente nas telas de lançamento.
+
+- Campo `mostrarNoLancamento: Boolean, default: true` em Tag e Categoria. Curadoria 100% manual (checkbox em `TagManagement.js`, ao lado de "Mostrar no Dashboard") — sem automação por uso/idade.
+- Categoria oculta esconde o grupo inteiro (categoria + todas as tags dela) do lançamento, independente do flag de cada tag.
+- **Filtragem é só frontend** — o backend (`obterTodasTags`/`obterTodasCategorias`) não filtra por esse campo, continua devolvendo tudo que é ativo. A regra vive em `controle-gastos-frontend/src/utils/tagVisibility.js` (`filtrarCategoriasParaLancamento`, `filtrarTagsParaLancamento`), reusada em:
+  - `TagSelector.js` (form de nova transação, edição de transação, conta fixa recorrente).
+  - `pages/Recebimentos/components/TabConfiguracao.js` e `components/Recebimentos/ConfiguracaoRecebimentosModal.js` (filtro próprio, sem passar pelo utilitário compartilhado, porque essas telas não agrupam por categoria).
+- **Editar preserva, sem expandir:** uma tag/categoria oculta já usada numa transação continua pré-selecionada na edição, mas não dá para adicionar *outra* oculta na mesma edição — precisa reativar em `/tags` primeiro. Não existe "mostrar tudo" (escape hatch) dentro do seletor.
+- **Relatório e telas read-only não mudam:** `RelatorioFiltersPanel.js`, `TransactionCard.js`, abas de exibição de Recebimentos continuam mostrando qualquer item ativo, independente desse campo.
 
 ## Tags em pagamentos: divisão/rateio
 
