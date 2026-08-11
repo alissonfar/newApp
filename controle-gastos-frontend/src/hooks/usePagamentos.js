@@ -11,6 +11,24 @@ const empFieldsPadrao = () => ({
   empLoadingEmprestimos: false
 });
 
+/**
+ * Mescla as tags do pagamento de origem em um paymentTags existente, sem
+ * duplicar e sem remover tags que já estavam lá manualmente. Para cada
+ * categoria presente em `origem`, adiciona os tagIds que ainda não estão
+ * no destino — nunca remove o que já existe. Mesmo padrão de
+ * `mergeTagsPadrao` no backend (backend/src/services/importacaoService.js).
+ */
+function mergeTagsAditivo(origem, destino) {
+  const origemObj = origem && typeof origem === 'object' ? origem : {};
+  const destinoObj = destino && typeof destino === 'object' ? { ...destino } : {};
+  Object.keys(origemObj).forEach((catId) => {
+    const tagsOrigem = Array.isArray(origemObj[catId]) ? origemObj[catId] : [];
+    const tagsDestino = Array.isArray(destinoObj[catId]) ? destinoObj[catId] : [];
+    destinoObj[catId] = [...new Set([...tagsDestino.map(String), ...tagsOrigem.map(String)])];
+  });
+  return destinoObj;
+}
+
 export default function usePagamentos({ transacao, proprietarioPadrao, valorTotal, parcelamentos }) {
   const [pagamentos, setPagamentos] = useState(() => {
     if (transacao?.pagamentos?.length > 0) {
@@ -113,9 +131,11 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
       if (total <= 0 || prev.length === 1) return prev;
       const share = Math.floor((total / prev.length) * 100) / 100;
       const remainder = Math.round((total - share * (prev.length - 1)) * 100) / 100;
+      const tagsPrincipal = prev[0]?.paymentTags || {};
       return prev.map((p, i) => ({
         ...p,
-        valor: String(i === prev.length - 1 ? remainder : share)
+        valor: String(i === prev.length - 1 ? remainder : share),
+        paymentTags: i === 0 ? p.paymentTags : mergeTagsAditivo(tagsPrincipal, p.paymentTags)
       }));
     });
   }, [valorEsperadoParaSoma]);
@@ -128,13 +148,17 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
       const share = Math.floor((total / n) * 100) / 100;
       const remainder = Math.round((total - share * (n - 1)) * 100) / 100;
       const pessoa = prev[0]?.pessoa || proprietarioPadrao || '';
-      const tags = prev[0]?.paymentTags || {};
+      const tagsPrincipal = prev[0]?.paymentTags || {};
       const newPayments = [];
       for (let i = 0; i < n; i++) {
+        // Índice 0 mantém suas próprias tags intactas. Os demais recebem merge
+        // aditivo das tags do principal com o que já tinham (se o pagamento já
+        // existia nessa posição) — mesmo comportamento aditivo do "Rateio igual".
+        const tagsExistentes = i === 0 ? tagsPrincipal : (prev[i]?.paymentTags || {});
         newPayments.push({
           pessoa,
           valor: String(i === n - 1 ? remainder : share),
-          paymentTags: i === 0 ? { ...tags } : {},
+          paymentTags: i === 0 ? { ...tagsPrincipal } : mergeTagsAditivo(tagsPrincipal, tagsExistentes),
           parcelamento: null,
           emprestimoId: null,
           ...empFieldsPadrao(),
