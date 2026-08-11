@@ -44,6 +44,7 @@ const TagManagement = () => {
   const [novoTagCor, setNovoTagCor] = useState('#000000');
   const [novoTagIcone, setNovoTagIcone] = useState('tag');
   const [novoTagMostrarNoDashboard, setNovoTagMostrarNoDashboard] = useState(false);
+  const [novoTagMostrarNoLancamento, setNovoTagMostrarNoLancamento] = useState(true);
 
   // Estados para edição de tag
   const [editTagCodigo, setEditTagCodigo] = useState(null);
@@ -52,12 +53,14 @@ const TagManagement = () => {
   const [editTagCor, setEditTagCor] = useState('#000000');
   const [editTagIcone, setEditTagIcone] = useState('tag');
   const [editTagMostrarNoDashboard, setEditTagMostrarNoDashboard] = useState(false);
+  const [editTagMostrarNoLancamento, setEditTagMostrarNoLancamento] = useState(true);
 
   // Estados para nova categoria
   const [novoCatNome, setNovoCatNome] = useState('');
   const [novoCatDescricao, setNovoCatDescricao] = useState('');
   const [novoCatCor, setNovoCatCor] = useState('#000000');
   const [novoCatIcone, setNovoCatIcone] = useState('folder');
+  const [novoCatMostrarNoLancamento, setNovoCatMostrarNoLancamento] = useState(true);
 
   // Estados para edição de categoria
   const [editCatCodigo, setEditCatCodigo] = useState(null);
@@ -65,6 +68,7 @@ const TagManagement = () => {
   const [editCatDescricao, setEditCatDescricao] = useState('');
   const [editCatCor, setEditCatCor] = useState('#000000');
   const [editCatIcone, setEditCatIcone] = useState('folder');
+  const [editCatMostrarNoLancamento, setEditCatMostrarNoLancamento] = useState(true);
 
   useEffect(() => {
     if (!loadingCategorias && !errorCategorias && categorias.length > 0 && !selectedCategory) {
@@ -114,13 +118,15 @@ const TagManagement = () => {
         categoria: selectedCategory._id,
         cor: novoTagCor,
         icone: novoTagIcone,
-        mostrarNoDashboard: novoTagMostrarNoDashboard
+        mostrarNoDashboard: novoTagMostrarNoDashboard,
+        mostrarNoLancamento: novoTagMostrarNoLancamento
       });
       setNovoTagNome('');
       setNovoTagDescricao('');
       setNovoTagCor('#000000');
       setNovoTagIcone('tag');
       setNovoTagMostrarNoDashboard(false);
+      setNovoTagMostrarNoLancamento(true);
       await refreshData();
       toast.success('Tag criada com sucesso!');
     } catch (error) {
@@ -136,6 +142,7 @@ const TagManagement = () => {
     setEditTagCor(tag.cor || '#000000');
     setEditTagIcone(tag.icone || 'tag');
     setEditTagMostrarNoDashboard(tag.mostrarNoDashboard ?? false);
+    setEditTagMostrarNoLancamento(tag.mostrarNoLancamento ?? true);
   };
 
   const handleSalvarEdicaoTag = async () => {
@@ -150,7 +157,8 @@ const TagManagement = () => {
         categoria: selectedCategory._id,
         cor: editTagCor,
         icone: editTagIcone,
-        mostrarNoDashboard: editTagMostrarNoDashboard
+        mostrarNoDashboard: editTagMostrarNoDashboard,
+        mostrarNoLancamento: editTagMostrarNoLancamento
       });
       setEditTagCodigo(null);
       setEditTagNome('');
@@ -158,6 +166,7 @@ const TagManagement = () => {
       setEditTagCor('#000000');
       setEditTagIcone('tag');
       setEditTagMostrarNoDashboard(false);
+      setEditTagMostrarNoLancamento(true);
       await refreshData();
       toast.success('Tag atualizada com sucesso!');
     } catch (error) {
@@ -241,12 +250,14 @@ const TagManagement = () => {
         nome: novoCatNome.trim(),
         descricao: novoCatDescricao.trim(),
         cor: novoCatCor,
-        icone: novoCatIcone
+        icone: novoCatIcone,
+        mostrarNoLancamento: novoCatMostrarNoLancamento
       });
       setNovoCatNome('');
       setNovoCatDescricao('');
       setNovoCatCor('#000000');
       setNovoCatIcone('folder');
+      setNovoCatMostrarNoLancamento(true);
       await fetchCategorias();
       await refreshData();
       toast.success('Categoria criada com sucesso!');
@@ -262,6 +273,7 @@ const TagManagement = () => {
     setEditCatDescricao(categoria.descricao || '');
     setEditCatCor(categoria.cor || '#000000');
     setEditCatIcone(categoria.icone || 'folder');
+    setEditCatMostrarNoLancamento(categoria.mostrarNoLancamento ?? true);
     setSelectedCategory(categoria);
   };
 
@@ -275,13 +287,15 @@ const TagManagement = () => {
         nome: editCatNome.trim(),
         descricao: editCatDescricao.trim(),
         cor: editCatCor,
-        icone: editCatIcone
+        icone: editCatIcone,
+        mostrarNoLancamento: editCatMostrarNoLancamento
       });
       setEditCatCodigo(null);
       setEditCatNome('');
       setEditCatDescricao('');
       setEditCatCor('#000000');
       setEditCatIcone('folder');
+      setEditCatMostrarNoLancamento(true);
       await fetchCategorias();
       await refreshData();
       toast.success('Categoria atualizada com sucesso!');
@@ -413,6 +427,7 @@ const TagManagement = () => {
             <p>Nenhuma categoria encontrada.</p>
           )}
           
+          {!editCatCodigo && (
           <div className="tag-form-section">
             <h4>Adicionar Nova Categoria</h4>
             <div className="form-row">
@@ -456,9 +471,20 @@ const TagManagement = () => {
                 />
               </div>
             </div>
+            <div className="form-row">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={novoCatMostrarNoLancamento}
+                  onChange={(e) => setNovoCatMostrarNoLancamento(e.target.checked)}
+                />
+                Mostrar no lançamento de transações
+              </label>
+            </div>
             <button onClick={handleAdicionarCategoria}>Adicionar</button>
           </div>
-          
+          )}
+
           {editCatCodigo && (
             <div className="tag-form-section">
               <h4>Editar Categoria</h4>
@@ -503,9 +529,19 @@ const TagManagement = () => {
                   />
                 </div>
               </div>
+              <div className="form-row">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={editCatMostrarNoLancamento}
+                    onChange={(e) => setEditCatMostrarNoLancamento(e.target.checked)}
+                  />
+                  Mostrar no lançamento de transações
+                </label>
+              </div>
               <div className="form-actions">
                 <button onClick={handleSalvarEdicaoCategoria}>Salvar</button>
-                <button onClick={() => setEditCatCodigo(null)} className="secondary">Cancelar</button>
+                <button onClick={() => { setEditCatCodigo(null); setEditCatMostrarNoLancamento(true); }} className="secondary">Cancelar</button>
               </div>
             </div>
           )}
@@ -577,9 +613,19 @@ const TagManagement = () => {
                               Mostrar no Dashboard
                             </label>
                           </div>
+                          <div className="form-row">
+                            <label className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={editTagMostrarNoLancamento}
+                                onChange={(e) => setEditTagMostrarNoLancamento(e.target.checked)}
+                              />
+                              Mostrar no lançamento de transações
+                            </label>
+                          </div>
                           <div className="form-actions">
                             <button onClick={handleSalvarEdicaoTag}>Salvar</button>
-                            <button onClick={() => { setEditTagCodigo(null); setEditTagMostrarNoDashboard(false); }} className="secondary">Cancelar</button>
+                            <button onClick={() => { setEditTagCodigo(null); setEditTagMostrarNoDashboard(false); setEditTagMostrarNoLancamento(true); }} className="secondary">Cancelar</button>
                           </div>
                         </div>
                       ) : (
@@ -614,6 +660,7 @@ const TagManagement = () => {
               ) : (
                 <p>Nenhuma tag cadastrada nesta categoria.</p>
               )}
+              {!editTagCodigo && (
               <div className="tag-form-section">
                 <h4>Adicionar Nova Tag</h4>
                 <div className="form-row">
@@ -667,8 +714,19 @@ const TagManagement = () => {
                     Mostrar no Dashboard
                   </label>
                 </div>
+                <div className="form-row">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={novoTagMostrarNoLancamento}
+                      onChange={(e) => setNovoTagMostrarNoLancamento(e.target.checked)}
+                    />
+                    Mostrar no lançamento de transações
+                  </label>
+                </div>
                 <button onClick={handleAdicionarTag}>Adicionar</button>
               </div>
+              )}
             </>
           )}
         </div>
