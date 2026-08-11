@@ -3,6 +3,7 @@ import { FaEdit, FaTrash, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useImportacao } from '../../../contexts/ImportacaoContext';
 import { formatDateBR } from '../../../utils/dateUtils';
+import { getDescricaoExibicao } from '../../../utils/descricaoUtils';
 import './ListaTransacoesImportadas.css';
 
 const ListaTransacoesImportadas = ({ importacaoId }) => {
@@ -41,7 +42,7 @@ const ListaTransacoesImportadas = ({ importacaoId }) => {
   const handleEditarClick = (transacao) => {
     setTransacaoEditando(transacao.id);
     setFormData({
-      descricao: transacao.descricao,
+      descricao: getDescricaoExibicao(transacao),
       valor: transacao.valor.toString(),
       data: transacao.data,
       categoria: transacao.categoria,
@@ -62,8 +63,10 @@ const ListaTransacoesImportadas = ({ importacaoId }) => {
 
   const handleSalvarEdicao = async (transacaoId) => {
     try {
+      const { descricao, ...resto } = formData;
       const transacaoAtualizada = {
-        ...formData,
+        ...resto,
+        descricaoApelido: descricao,
         valor: parseFloat(formData.valor)
       };
 
@@ -142,7 +145,15 @@ const ListaTransacoesImportadas = ({ importacaoId }) => {
                       className="edit-input"
                     />
                   ) : (
-                    transacao.descricao
+                    <span
+                      title={
+                        transacao.descricaoApelido
+                          ? `Original do banco: ${transacao.descricao}`
+                          : undefined
+                      }
+                    >
+                      {getDescricaoExibicao(transacao)}
+                    </span>
                   )}
                 </td>
                 <td>
