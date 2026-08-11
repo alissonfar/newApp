@@ -1,7 +1,5 @@
 .gerenciamento-importacoes {
   padding: var(--espacamento-padrao);
-  max-width: 1200px;
-  margin: 0 auto;
   background-color: var(--cor-fundo);
   min-height: calc(100vh - 4rem);
 }
