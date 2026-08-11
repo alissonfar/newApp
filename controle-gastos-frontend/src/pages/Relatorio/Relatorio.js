@@ -48,12 +48,6 @@ function flattenTransactions(transArray) {
       esconderNaLista: !!tr.esconderNaLista,
       emprestimoInfo: tr.emprestimoInfo || null
     };
-    const baseContaConjunta = tr.contaConjunta?.ativo ? {
-      valorTotal: tr.contaConjunta.valorTotal,
-      parteUsuario: tr.contaConjunta.parteUsuario,
-      pagoPor: tr.contaConjunta.pagoPor,
-      vinculo: tr.contaConjunta.vinculoId?.nome || tr.vinculoNome || (tr.contaConjunta.vinculoId?._id || tr.contaConjunta.vinculoId) || ''
-    } : {};
     const baseParcelamento = {
       parentTransactionId: tr.parentTransactionId || null,
       isInstallment: tr.isInstallment || false
@@ -71,7 +65,6 @@ function flattenTransactions(transArray) {
         pessoa: null,
         valorPagamento: 0,
         tagsPagamento: {},
-        ...baseContaConjunta,
         ...baseParcelamento,
         ...baseEmprestimo,
         installmentNumber: null,
@@ -91,7 +84,6 @@ function flattenTransactions(transArray) {
           pessoa: p.pessoa,
           valorPagamento: p.valor,
           tagsPagamento: p.tags || {},
-          ...baseContaConjunta,
           ...baseParcelamento,
           ...baseEmprestimo,
           installmentNumber: p.installmentNumber || null,
@@ -428,18 +420,14 @@ const Relatorio = () => {
             Status: r.status || '',
             Pessoa: r.pessoa,
             Valor: r.valorPagamento,
-            Tags: tagsStr,
-            'Valor Total': r.valorTotal ?? '',
-            'Parte Usuário': r.parteUsuario ?? '',
-            'Pago Por': r.pagoPor ?? '',
-            'Vínculo': r.vinculo ?? ''
+            Tags: tagsStr
           };
         });
         exportDataToCSV(
           csvRows,
           filename,
           {
-            customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags', 'Valor Total', 'Parte Usuário', 'Pago Por', 'Vínculo'],
+            customHeaders: ['Data', 'Descrição', 'Tipo', 'Status', 'Pessoa', 'Valor', 'Tags'],
             formatDates: true,
             formatCurrency: true
           }

@@ -321,8 +321,7 @@ const DetalhesImportacaoPage = () => {
             installmentNumber: transacao.installmentNumber,
             installmentIntervalMonths: transacao.installmentIntervalMonths,
             installmentIntervalDays: transacao.installmentIntervalDays,
-            valorEhTotalNaImportacao,
-            contaConjunta: transacao.contaConjunta
+            valorEhTotalNaImportacao
         };
         
         setTransacaoEmEdicao(transacaoFormatada);
@@ -1192,23 +1191,6 @@ const DetalhesImportacaoPage = () => {
                                                 </div>
 
                                                 {/* Conta Conjunta */}
-                                                <div className="resumo-item">
-                                                    <div className="resumo-label">
-                                                        <FaUser />
-                                                        <span>Conta Conjunta</span>
-                                                    </div>
-                                                    <div className="resumo-valor">
-                                                        {transacao.contaConjunta?.ativo ? (
-                                                            <span>
-                                                                Sim · {transacao.contaConjunta.pagoPor === 'outro' ? 'Outro pagou' : 'Eu paguei'} · 
-                                                                Total: {formatarValor(transacao.contaConjunta.valorTotal)} · 
-                                                                Minha parte: {formatarValor(transacao.contaConjunta.parteUsuario)}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="texto-vazio">Não · Clique em Editar para configurar</span>
-                                                        )}
-                                                    </div>
-                                                </div>
 
                                                 {/* Tags */}
                                                 <div className="resumo-item">
