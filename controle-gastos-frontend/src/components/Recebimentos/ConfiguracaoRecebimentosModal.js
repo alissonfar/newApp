@@ -31,7 +31,14 @@ const ConfiguracaoRecebimentosModal = ({ aberto, onFechar, onSalvo }) => {
 
   if (!aberto) return null;
 
-  const opcoesTags = (tags || []).map(t => ({
+  // Oculta tags com mostrarNoLancamento:false, preservando as já configuradas
+  // (evita perder uma configuração existente que ficou oculta depois).
+  const tagsVisiveis = (tags || []).filter(t =>
+    t.mostrarNoLancamento !== false ||
+    String(t._id) === String(tagReceberId) ||
+    String(t._id) === String(tagRemoverId)
+  );
+  const opcoesTags = tagsVisiveis.map(t => ({
     value: t._id,
     label: t.nome,
     cor: t.cor,

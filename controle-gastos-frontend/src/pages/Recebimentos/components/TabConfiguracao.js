@@ -39,6 +39,15 @@ const TabConfiguracao = () => {
   const { tags } = useData();
   const { usuario } = useAuth();
 
+  // Oculta tags com mostrarNoLancamento:false, preservando a que já estiver
+  // configurada (evita perder uma configuração existente que ficou oculta depois).
+  const tagsParaAplicarOptions = tags.filter(t =>
+    t.mostrarNoLancamento !== false || String(t._id) === String(tagSelecionada)
+  );
+  const tagsParaRemoverOptions = tags.filter(t =>
+    t.mostrarNoLancamento !== false || String(t._id) === String(removeTagSelecionada)
+  );
+
   // Defaults configurados (podem ser null se não configurados)
   const tagReceberPadraoId = usuario?.preferencias?.tagReceberPadraoId || null;
   const tagRemoverPadraoId = usuario?.preferencias?.tagRemoverPadraoId || null;
@@ -167,7 +176,7 @@ const TabConfiguracao = () => {
                         setTagSelecionada(opt?.value || '');
                         setEditandoTag(false);
                       }}
-                      options={(tags || []).map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
+                      options={tagsParaAplicarOptions.map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
                       placeholder="-- Escolha uma tag --"
                       isClearable
                       className="tag-select-recebimentos"
@@ -238,7 +247,7 @@ const TabConfiguracao = () => {
                         setRemoveTagSelecionada(opt?.value || '');
                         setEditandoRemoveTag(false);
                       }}
-                      options={(tags || []).map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
+                      options={tagsParaRemoverOptions.map((tag) => ({ value: tag._id, label: tag.nome, cor: tag.cor, icone: tag.icone }))}
                       placeholder="-- Nenhuma (opcional) --"
                       isClearable
                       className="tag-select-recebimentos"
