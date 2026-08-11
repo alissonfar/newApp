@@ -16,6 +16,10 @@ router.get('/:id', controladorTag.obterTagPorId);
 // Criar uma nova tag
 router.post('/', controladorTag.criarTag);
 
+// Ativar/Inativar tag (rotas específicas antes do PUT genérico)
+router.put('/:id/ativar', controladorTag.ativarTag);
+router.put('/:id/inativar', controladorTag.inativarTag);
+
 // Atualizar uma tag
 router.put('/:id', controladorTag.atualizarTag);
 

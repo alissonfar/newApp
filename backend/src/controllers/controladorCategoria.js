@@ -1,5 +1,6 @@
 // src/controllers/controladorCategoria.js
 const Categoria = require('../models/categoria');
+const { categoriaEstaVinculada } = require('../services/vinculoTagCategoriaService');
 
 exports.obterTodasCategorias = async (req, res) => {
   try {
@@ -96,8 +97,7 @@ exports.atualizarCategoria = async (req, res) => {
 
 exports.excluirCategoria = async (req, res) => {
   try {
-    // Realiza soft delete da categoria
-    const categoria = await Categoria.findOne({ 
+    const categoria = await Categoria.findOne({
       $or: [
         { _id: req.params.id },
         { codigo: req.params.id }
@@ -105,13 +105,19 @@ exports.excluirCategoria = async (req, res) => {
       usuario: req.userId,
       ativo: true
     });
-    
+
     if (!categoria) return res.status(404).json({ erro: 'Categoria não encontrada.' });
-    
-    categoria.ativo = false;
-    await categoria.save();
-    
-    res.json({ mensagem: 'Categoria removida com sucesso.' });
+
+    const vinculada = await categoriaEstaVinculada(categoria._id, req.userId);
+
+    if (vinculada) {
+      categoria.ativo = false;
+      await categoria.save();
+      return res.json({ mensagem: 'Categoria possui tags ou transações vinculadas — foi inativada em vez de excluída.', inativada: true });
+    }
+
+    await Categoria.deleteOne({ _id: categoria._id });
+    res.json({ mensagem: 'Categoria excluída com sucesso.', inativada: false });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao excluir categoria.', detalhe: error.message });
   }

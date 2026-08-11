@@ -1,5 +1,6 @@
 // src/controllers/controladorTag.js
 const Tag = require('../models/tag');
+const { tagEstaVinculada } = require('../services/vinculoTagCategoriaService');
 
 exports.obterTodasTags = async (req, res) => {
   try {
@@ -10,10 +11,12 @@ exports.obterTodasTags = async (req, res) => {
       sort: { nome: 1 } // Opcional: ordenar por nome
     };
 
-    // Filtro: apenas tags ativas do usuário autenticado
+    // Filtro: usuário autenticado. Inclui inativas apenas quando incluirInativas=true
+    // (mesmo padrão de obterTodasCategorias).
+    const incluirInativas = req.query.incluirInativas === 'true';
     const query = {
       usuario: req.userId,
-      ativo: true
+      ...(incluirInativas ? {} : { ativo: true })
     };
 
     // Usa paginate em vez de find
@@ -30,13 +33,12 @@ exports.obterTodasTags = async (req, res) => {
 
 exports.obterTagPorId = async (req, res) => {
   try {
-    const tag = await Tag.findOne({ 
+    const tag = await Tag.findOne({
       $or: [
         { _id: req.params.id },
         { codigo: req.params.id }
       ],
-      usuario: req.userId,
-      ativo: true
+      usuario: req.userId
     });
     if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
     res.json(tag);
@@ -69,13 +71,12 @@ exports.criarTag = async (req, res) => {
 
 exports.atualizarTag = async (req, res) => {
   try {
-    const tag = await Tag.findOne({ 
+    const tag = await Tag.findOne({
       $or: [
         { _id: req.params.id },
         { codigo: req.params.id }
       ],
-      usuario: req.userId,
-      ativo: true
+      usuario: req.userId
     });
     if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
 
@@ -96,7 +97,7 @@ exports.atualizarTag = async (req, res) => {
 
 exports.excluirTag = async (req, res) => {
   try {
-    const tag = await Tag.findOne({ 
+    const tag = await Tag.findOne({
       $or: [
         { _id: req.params.id },
         { codigo: req.params.id }
@@ -104,14 +105,55 @@ exports.excluirTag = async (req, res) => {
       usuario: req.userId,
       ativo: true
     });
-    
+
     if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
-    
-    tag.ativo = false;
-    await tag.save();
-    
-    res.json({ mensagem: 'Tag removida com sucesso.' });
+
+    const vinculada = await tagEstaVinculada(tag._id, req.userId);
+
+    if (vinculada) {
+      tag.ativo = false;
+      await tag.save();
+      return res.json({ mensagem: 'Tag possui transações vinculadas — foi inativada em vez de excluída.', inativada: true });
+    }
+
+    await Tag.deleteOne({ _id: tag._id });
+    res.json({ mensagem: 'Tag excluída com sucesso.', inativada: false });
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao excluir tag.', detalhe: error.message });
+  }
+};
+
+exports.ativarTag = async (req, res) => {
+  try {
+    const tag = await Tag.findOne({
+      $or: [{ _id: req.params.id }, { codigo: req.params.id }],
+      usuario: req.userId
+    });
+    if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
+
+    tag.ativo = true;
+    await tag.save();
+
+    res.json(tag);
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao ativar tag.', detalhe: error.message });
+  }
+};
+
+exports.inativarTag = async (req, res) => {
+  try {
+    const tag = await Tag.findOne({
+      $or: [{ _id: req.params.id }, { codigo: req.params.id }],
+      usuario: req.userId,
+      ativo: true
+    });
+    if (!tag) return res.status(404).json({ erro: 'Tag não encontrada.' });
+
+    tag.ativo = false;
+    await tag.save();
+
+    res.json(tag);
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao inativar tag.', detalhe: error.message });
   }
 };
