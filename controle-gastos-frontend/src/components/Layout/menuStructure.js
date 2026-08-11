@@ -27,7 +27,6 @@ import HubIcon from '@mui/icons-material/Hub';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import ContactsIcon from '@mui/icons-material/Contacts';
-import GroupIcon from '@mui/icons-material/Group';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 
 /**
@@ -123,7 +122,6 @@ const patrimonioSection = {
         { name: 'Pessoas', path: '/pessoas', icon: ContactsIcon, key: 'pessoas' },
       ],
     },
-    { type: 'item', name: 'Contas Conjuntas', path: '/conjunto', icon: GroupIcon, key: 'conjunto' },
   ],
 };
 

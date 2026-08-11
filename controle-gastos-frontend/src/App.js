@@ -39,8 +39,6 @@ import TransferenciasPage from './pages/Patrimonio/TransferenciasPage';
 import SimuladorRendimentosPage from './pages/Patrimonio/SimuladorRendimentosPage';
 import PatrimonioHistoricoPage from './pages/Patrimonio/PatrimonioHistoricoPage';
 import FaturasPage from './pages/Patrimonio/FaturasPage';
-import ConjuntoPage from './pages/Conjunto/ConjuntoPage';
-import DetalheVinculoPage from './pages/Conjunto/DetalheVinculoPage';
 import PessoasPage from './pages/Pessoas/PessoasPage';
 import EmprestimosPage from './pages/Emprestimos/EmprestimosPage';
 import EmprestimoDetalhePage from './pages/Emprestimos/EmprestimoDetalhePage';
@@ -267,26 +265,6 @@ function App() {
                   <PrivateRoute>
                     <MainLayout>
                       <FaturasPage />
-                    </MainLayout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/conjunto"
-                element={
-                  <PrivateRoute>
-                    <MainLayout>
-                      <ConjuntoPage />
-                    </MainLayout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/conjunto/:id"
-                element={
-                  <PrivateRoute>
-                    <MainLayout>
-                      <DetalheVinculoPage />
                     </MainLayout>
                   </PrivateRoute>
                 }
