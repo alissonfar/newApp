@@ -10,12 +10,13 @@ function flattenTransactions(transacoes) {
   const flattened = [];
   (transacoes || []).forEach((tr) => {
     const id = tr.id || tr._id;
+    const descricaoExibicao = tr.descricaoApelido || tr.descricao;
     if (!tr.pagamentos || tr.pagamentos.length === 0) {
       flattened.push({
         id,
         data: tr.data,
         tipo: tr.tipo,
-        descricao: tr.descricao,
+        descricao: descricaoExibicao,
         valor: tr.valor,
         pessoa: null,
         valorPagamento: 0,
@@ -27,7 +28,7 @@ function flattenTransactions(transacoes) {
           id,
           data: tr.data,
           tipo: tr.tipo,
-          descricao: tr.descricao,
+          descricao: descricaoExibicao,
           valor: tr.valor,
           pessoa: p.pessoa,
           valorPagamento: p.valor,

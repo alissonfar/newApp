@@ -106,6 +106,7 @@ function buildMatchStage(req) {
     const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     match.$or = [
       { descricao: regex },
+      { descricaoApelido: regex },
       { 'pagamentos.pessoa': regex }
     ];
   }
