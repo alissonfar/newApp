@@ -13,7 +13,7 @@ const Badge = ({ ok, warn, error, label, children }) => {
   );
 };
 
-const TabResumo = ({ formState, pagamentos, parcelamento, contaConjunta, allTags, categorias, duplicate }) => {
+const TabResumo = ({ formState, pagamentos, parcelamento, allTags, categorias, duplicate }) => {
   const somaPagamentos = pagamentos.pagamentos.reduce((acc, p) => acc + (parseFloat(p.valor || 0) || 0), 0);
   const valorTotal = parseFloat(formState.valorTotal || 0);
   const sumDiff = Math.abs(valorTotal - somaPagamentos);
@@ -45,9 +45,8 @@ const TabResumo = ({ formState, pagamentos, parcelamento, contaConjunta, allTags
   if (!isSumOk) issues.push({ type: 'error', msg: `Diferenca de R$ ${sumDiff.toFixed(2)} entre valor total e soma dos pagamentos` });
   if (pessoasVazias.length > 0) issues.push({ type: 'error', msg: `${pessoasVazias.length} pagamento(s) sem pessoa` });
   if (valoresZerados.length > 0) issues.push({ type: 'error', msg: `${valoresZerados.length} pagamento(s) com valor zerado` });
-  if (contaConjunta.state.isContaConjunta && !contaConjunta.state.vinculoId) issues.push({ type: 'error', msg: 'Conta conjunta sem vinculo selecionado' });
   if (hasDuplicatePeople) issues.push({ type: 'warn', msg: 'Pessoas duplicadas nos pagamentos' });
-  if (anyTagMissing && !contaConjunta.state.isContaConjunta) issues.push({ type: 'warn', msg: 'Nenhuma tag aplicada nos pagamentos' });
+  if (anyTagMissing) issues.push({ type: 'warn', msg: 'Nenhuma tag aplicada nos pagamentos' });
 
   return (
     <div data-tab="resumo" className="tab-panel tab-resumo">
@@ -84,15 +83,6 @@ const TabResumo = ({ formState, pagamentos, parcelamento, contaConjunta, allTags
                   </span>
                 );
               })}
-            </div>
-          )}
-          {contaConjunta.state.isContaConjunta && contaConjunta.state.vinculoId && (
-            <div className="resumo-row">
-              <Badge label={contaConjunta.state.pagoPor === 'usuario' ? 'Eu paguei' : 'Outro pagou'} />
-              <span style={{ fontSize: '0.75rem', color: 'var(--cor-texto)', opacity: 0.7 }}>
-                Minha parte: R$ {parseFloat(contaConjunta.state.parteUsuario || 0).toFixed(2).replace('.', ',')}
-                {' | '}Outro: R$ {contaConjunta.parteOutro.toFixed(2).replace('.', ',')}
-              </span>
             </div>
           )}
         </div>

@@ -11,7 +11,7 @@ const empFieldsPadrao = () => ({
   empLoadingEmprestimos: false
 });
 
-export default function usePagamentos({ transacao, proprietarioPadrao, valorTotal, isContaConjunta, pagoPor, parteUsuario, parcelamentos }) {
+export default function usePagamentos({ transacao, proprietarioPadrao, valorTotal, parcelamentos }) {
   const [pagamentos, setPagamentos] = useState(() => {
     if (transacao?.pagamentos?.length > 0) {
       return transacao.pagamentos.map(p => ({
@@ -38,9 +38,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
     return [{ pessoa: proprietarioPadrao || '', valor: '', paymentTags: {}, parcelamento: null, emprestimoId: null, ...empFieldsPadrao(), fixed: false }];
   });
 
-  const valorEsperadoParaSoma = (isContaConjunta && pagoPor === 'outro')
-    ? parseFloat(parteUsuario || 0)
-    : parseFloat(valorTotal || 0);
+  const valorEsperadoParaSoma = parseFloat(valorTotal || 0);
 
   useEffect(() => {
     if (transacao?.pagamentos?.length > 0) {

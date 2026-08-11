@@ -6,7 +6,6 @@ import { criarTransacao, atualizarTransacao, listarEmprestimos, listarPessoas } 
 import { useData } from '../../context/DataContext';
 import useTransacaoForm from '../../hooks/useTransacaoForm';
 import usePagamentos from '../../hooks/usePagamentos';
-import useContaConjunta from '../../hooks/useContaConjunta';
 import useParcelamento from '../../hooks/useParcelamento';
 import useDuplicateCheck from '../../hooks/useDuplicateCheck';
 import useEmprestimoForm from '../../hooks/useEmprestimoForm';
@@ -26,7 +25,6 @@ import { toISOStringBR } from '../../utils/dateUtils';
 const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao = '', mostrarParcelamentoEmEdicao = false }) => {
   const containerRef = useRef(null);
   const form = useTransacaoForm({ transacao, proprietarioPadrao });
-  const contaConjunta = useContaConjunta({ transacao });
   const parcelamento = useParcelamento({
     valorTotal: form.formState.valorTotal,
     data: form.formState.data,
@@ -37,9 +35,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     transacao,
     proprietarioPadrao,
     valorTotal: form.formState.valorTotal,
-    isContaConjunta: contaConjunta.state.isContaConjunta,
-    pagoPor: contaConjunta.state.pagoPor,
-    parteUsuario: contaConjunta.state.parteUsuario,
     parcelamentos: parcelamento.state.parcelamentos
   });
 
@@ -115,35 +110,14 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
   const onValorTotalChange = useCallback((e) => {
     const raw = e.target.value;
     fsSetters.setValorTotal(raw);
-    if (contaConjunta.state.isContaConjunta && contaConjunta.state.pagoPor === 'outro') {
-      contaConjunta.setters.setParteUsuario(raw);
-      if (pagamentos.pagamentos.length === 1) pagamentos.handlePagamentoChange(0, 'valor', raw);
-    } else if (pagamentos.pagamentos.length === 1) {
-      pagamentos.handlePagamentoChange(0, 'valor', raw);
-    }
-  }, [fsSetters, contaConjunta.state.isContaConjunta, contaConjunta.state.pagoPor, contaConjunta.setters, pagamentos]);
-
-  const onParteUsuarioChange = useCallback((raw) => {
-    contaConjunta.setters.setParteUsuario(raw);
-    if (contaConjunta.state.pagoPor === 'outro') {
-      fsSetters.setValorTotal(raw);
-      if (pagamentos.pagamentos.length === 1) {
-        pagamentos.handlePagamentoChange(0, 'valor', raw);
-      }
-    }
-  }, [contaConjunta.state.pagoPor, contaConjunta.setters, fsSetters, pagamentos]);
+    if (pagamentos.pagamentos.length === 1) pagamentos.handlePagamentoChange(0, 'valor', raw);
+  }, [fsSetters, pagamentos]);
 
   const handleSubmit = useCallback(async (e, closeModal = true) => {
     e?.preventDefault?.();
 
     if (!pagamentos.isValid()) {
       toast.error('A soma dos pagamentos deve ser igual ao valor total da transacao.');
-      return;
-    }
-
-    const ccError = contaConjunta.validateContaConjunta(formState.valorTotal);
-    if (ccError) {
-      toast.error(ccError);
       return;
     }
 
@@ -162,11 +136,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
 
     setIsSaving(true);
     try {
-      let valorFinal = parseFloat(formState.valorTotal);
-      let contaConjuntaPayload = contaConjunta.buildPayload(formState.valorTotal);
-      if (contaConjuntaPayload) {
-        valorFinal = contaConjunta.getValorFinal(formState.valorTotal);
-      }
+      const valorFinal = parseFloat(formState.valorTotal);
 
       let emprestimoIdParaTransacao = null;
       let valorEsperadoRetornoParaTransacao = null;
@@ -271,7 +241,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         observacao: formState.observacao,
         pagamentos: pagamentosComParcelamento
       };
-      if (contaConjuntaPayload) transacaoData.contaConjunta = contaConjuntaPayload;
       if (emprestimoIdParaTransacao) transacaoData.emprestimoId = emprestimoIdParaTransacao;
       else transacaoData.emprestimoId = null;
       // valorEsperadoRetorno vai na Transação (não no Empréstimo).
@@ -316,7 +285,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           empLoadingEmprestimos: false,
           fixed: false
         }]);
-        contaConjunta.reset();
         parcelamento.reset();
         emprestimoForm.reset();
         toast.success('Salvo! Pronto para a proxima.', { autoClose: 1500 });
@@ -328,7 +296,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
     } finally {
       setIsSaving(false);
     }
-  }, [formState, form, pagamentos, contaConjunta, parcelamento, emprestimoForm, onSuccess, onClose, proprietarioPadrao, refs]);
+  }, [formState, form, pagamentos, parcelamento, emprestimoForm, onSuccess, onClose, proprietarioPadrao, refs]);
 
   handleSubmitRef.current = handleSubmit;
 
@@ -453,10 +421,7 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
         <TabAvancado
           data-tab="avancado"
           parcelamento={parcelamento}
-          contaConjunta={contaConjunta}
           valorTotal={formState.valorTotal}
-          parteUsuario={contaConjunta.state.parteUsuario}
-          setParteUsuario={onParteUsuarioChange}
           transacao={transacao}
           emprestimoForm={emprestimoForm}
           tipoTransacao={formState.tipo}
@@ -467,7 +432,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           formState={formState}
           pagamentos={pagamentos}
           parcelamento={parcelamento}
-          contaConjunta={contaConjunta}
           allTags={allTags}
           categorias={categorias}
           duplicate={duplicate}
