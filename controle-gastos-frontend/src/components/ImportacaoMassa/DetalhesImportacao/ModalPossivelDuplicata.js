@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaExclamationTriangle, FaCalendarAlt, FaMoneyBillWave, FaTag, FaFileSignature } from 'react-icons/fa';
 import { formatDateBR } from '../../../utils/dateUtils';
+import { getDescricaoExibicao } from '../../../utils/descricaoUtils';
 
 const formatarData = (data) => {
   if (!data) return '—';
@@ -94,7 +95,7 @@ const ModalPossivelDuplicata = ({ transacao, onFechar }) => {
               Importada agora
             </div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>
-              {transacao.descricao}
+              {getDescricaoExibicao(transacao)}
             </div>
             <LinhaComparacao
               icone={<FaCalendarAlt />}

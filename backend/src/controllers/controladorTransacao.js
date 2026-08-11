@@ -701,6 +701,9 @@ exports.atualizarTransacao = async (req, res) => {
     const valorAtual = req.body.valor !== undefined ? parseFloat(req.body.valor) : transacao.valor;
     transacaoService.validarSomaPagamentos({ valor: valorAtual }, pagamentosAtual);
     transacao.tipo = req.body.tipo || transacao.tipo;
+    if (req.body.descricao !== undefined) {
+      transacao.descricao = req.body.descricao || transacao.descricao;
+    }
     if (req.body.descricaoApelido !== undefined) {
       transacao.descricaoApelido = req.body.descricaoApelido || null;
     }

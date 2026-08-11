@@ -235,11 +235,11 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       const transacaoData = {
         _id: formState._id,
         tipo: formState.tipo,
-        descricao: formState.descricao,
         data: toISOStringBR(formState.data),
         valor: valorFinal,
         observacao: formState.observacao,
-        pagamentos: pagamentosComParcelamento
+        pagamentos: pagamentosComParcelamento,
+        ...(formState.isImportada ? { descricaoApelido: formState.descricao } : { descricao: formState.descricao })
       };
       if (emprestimoIdParaTransacao) transacaoData.emprestimoId = emprestimoIdParaTransacao;
       else transacaoData.emprestimoId = null;

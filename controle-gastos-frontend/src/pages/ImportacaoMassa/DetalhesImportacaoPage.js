@@ -15,6 +15,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
 import './DetalhesImportacaoPage.css';
 import { formatDateBR } from '../../utils/dateUtils';
+import { getDescricaoExibicao } from '../../utils/descricaoUtils';
 
 const STATUS_PROCESSANDO = ['pendente', 'processando'];
 const POLLING_INTERVAL_MS = 1500;
@@ -301,6 +302,7 @@ const DetalhesImportacaoPage = () => {
             importacao: transacao.importacao,
             tipo: transacao.tipo,
             descricao: transacao.descricao,
+            descricaoApelido: transacao.descricaoApelido || null,
             data: transacao.data,
             valor: transacao.valor,
             observacao: transacao.observacao || '',
@@ -1045,7 +1047,7 @@ const DetalhesImportacaoPage = () => {
                                         </button>
                                     </td>
                                     <td>
-                                        {transacao.descricao}
+                                        {getDescricaoExibicao(transacao)}
                                         {transacao.status === 'possivel_duplicata' && transacao.transacaoSemelhanteDistanciaDias != null && (
                                             <div style={{ fontSize: 11, color: '#92400e', marginTop: 2 }}>
                                                 <FaExclamationTriangle size={10} style={{ marginRight: 4 }} />
