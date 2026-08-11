@@ -2,9 +2,11 @@
 type: context
 status: active
 created: 2026-08-07
-tags: [conta-fixa, regras-de-negocio, backend, cron]
+updated: 2026-08-11
+tags: [conta-fixa, regras-de-negocio, backend, cron, tags, ui]
 related:
   - .brain/sessions/2026-08-07-conta-fixa-implementacao-e-fix-visual.md
+  - .brain/decisions/2026-08-11-conta-fixa-tags-por-pagamento-e-resumo.md
 ---
 
 # Módulo Conta Fixa — regras de negócio estáveis
@@ -16,7 +18,7 @@ Lançamento recorrente mensal (despesa ou receita) que gera `Transacao` reais, a
 - `ContaFixa` é uma **entidade própria**, independente de `Transacao` — representa a regra recorrente, não uma ocorrência.
 - `Transacao.contaFixaId` (ref opcional) é o único rastro de que uma transação foi gerada por uma regra.
 - `tipo` usa o mesmo enum de `Transacao.tipo`: `'gasto' | 'recebivel'` (não `'despesa'/'receita'` — não existe tradução, é o mesmo valor).
-- Categorização não é um campo próprio — `ContaFixa.tagsPadrao` usa o mesmo formato de `Transacao.pagamentos[].tags` (`{ categoriaId: [tagIds] }`).
+- Categorização é **por pagamento**, igual ao modal de Transações: `pagamentosTemplate[].tagsOverride` usa o mesmo formato de `Transacao.pagamentos[].tags` (`{ categoriaId: [tagIds] }`). `ContaFixa.tagsPadrao` (mesmo formato, nível raiz) existe só como fallback pra registros antigos que não tinham `tagsOverride` por item — ver [ADR-023](../decisions/2026-08-11-conta-fixa-tags-por-pagamento-e-resumo.md). `montarPagamentos()` resolve com `tagsOverride || tagsPadrao` por item.
 
 ## Dois dias, não um
 
@@ -43,6 +45,11 @@ Lançamento recorrente mensal (despesa ou receita) que gera `Transacao` reais, a
 
 - Guarda **percentuais**, não valores fixos — porque o valor real de cada ciclo pode variar (ex: conta de luz), mas a divisão proporcional entre pessoas deve se manter.
 - `montarPagamentos()` (em `contaFixaService.js`) usa `decimal.js` e ajusta o **último** item do array pra absorver a diferença de arredondamento, garantindo que a soma sempre bate exatamente com o valor total (nunca perde/ganha centavo por arredondamento de percentual).
+
+## UI do modal (`ContaFixaFormModal.js`)
+
+- Duas abas, mesmo padrão visual do modal de Transações (`transacao-tabs-bar`/`transacao-tab`): "Principal" (formulário) e "Resumo" (preview antes de salvar — dados básicos, soma de percentuais, valor calculado por pessoa com tags, alertas de consistência). Implementado inline no próprio arquivo, não reusa `TabResumo.js` de Transações (shape de dados diferente o bastante pra não compensar abstrair ainda).
+- `TagSelector` fica dentro do loop de `pagamentosTemplate`, um por pagamento — ver ADR-023.
 
 ## Cron (automático)
 
