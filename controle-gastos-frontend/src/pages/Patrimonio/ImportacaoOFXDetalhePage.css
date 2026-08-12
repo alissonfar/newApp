@@ -22,15 +22,6 @@
   margin-bottom: 1.5rem;
 }
 
-.detalhe-header h1 {
-  margin-bottom: 0.25rem;
-}
-
-.detalhe-header p {
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
 .resumo {
   display: flex;
   flex-wrap: wrap;

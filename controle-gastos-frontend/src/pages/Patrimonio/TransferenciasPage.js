@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { formatDateBR } from '../../utils/dateUtils';
 import SubcontaSelect from '../../components/shared/SubcontaSelect';
+import PageHeader from '../../components/shared/PageHeader';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import './TransferenciasPage.css';
 
 const TransferenciasPage = () => {
@@ -99,12 +101,17 @@ const TransferenciasPage = () => {
         ← Voltar ao Patrimônio
       </button>
 
-      <h1><FaExchangeAlt /> Transferências entre Contas</h1>
-      <p className="subtitulo">
-        Registre transferências entre suas subcontas (ex.: Caixinha → Conta Corrente).
-        Ao importar OFX, você poderá vincular transações do extrato a transferências pendentes.
-        Se seu banco não exporta extrato, confirme manualmente quando a transferência for realizada.
-      </p>
+      <PageHeader
+        icon={<SwapHorizIcon />}
+        title="Transferências entre Contas"
+        subtitle={
+          <>
+            Registre transferências entre suas subcontas (ex.: Caixinha → Conta Corrente).
+            Ao importar OFX, você poderá vincular transações do extrato a transferências pendentes.
+            Se seu banco não exporta extrato, confirme manualmente quando a transferência for realizada.
+          </>
+        }
+      />
 
       <section className="transferencia-form-section">
         <h2>Nova transferência</h2>

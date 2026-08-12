@@ -26,14 +26,6 @@
   cursor: pointer;
 }
 
-.faturas-header h1 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.6rem;
-  margin: 0;
-}
-
 .faturas-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;

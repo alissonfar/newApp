@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import { formatDateBR } from '../../utils/dateUtils';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
 import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
+import PageHeader from '../../components/shared/PageHeader';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import './ImportacaoOFXDetalhePage.css';
 
 const ImportacaoOFXDetalhePage = () => {
@@ -115,8 +117,11 @@ const ImportacaoOFXDetalhePage = () => {
       </button>
 
       <header className="detalhe-header">
-        <h1>{importacao.nomeArquivo}</h1>
-        <p>{importacao.subconta?.nome} • {formatarData(importacao.dtStart)} a {formatarData(importacao.dtEnd)}</p>
+        <PageHeader
+          icon={<FileDownloadIcon />}
+          title={importacao.nomeArquivo}
+          subtitle={`${importacao.subconta?.nome} • ${formatarData(importacao.dtStart)} a ${formatarData(importacao.dtEnd)}`}
+        />
         <div className="resumo">
           <span>Saldo extrato: <strong>{formatarMoeda(importacao.saldoFinalExtrato)}</strong></span>
           <span>Créditos: {formatarMoeda(importacao.totalCreditos)}</span>

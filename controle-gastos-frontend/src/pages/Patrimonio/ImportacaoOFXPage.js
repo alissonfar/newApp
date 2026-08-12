@@ -4,6 +4,8 @@ import { FaUpload, FaSpinner, FaChevronRight, FaFileAlt } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import { toast } from 'react-toastify';
 import SubcontaSelect from '../../components/shared/SubcontaSelect';
+import PageHeader from '../../components/shared/PageHeader';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import './ImportacaoOFXPage.css';
 import { formatDateBR } from '../../utils/dateUtils';
 
@@ -67,8 +69,11 @@ const ImportacaoOFXPage = () => {
 
   return (
     <div className="importacao-ofx-page">
-      <h1>Importação OFX</h1>
-      <p className="subtitulo">Importe extratos bancários no formato OFX para atualizar o saldo da subconta.</p>
+      <PageHeader
+        icon={<FileDownloadIcon />}
+        title="Importação OFX"
+        subtitle="Importe extratos bancários no formato OFX para atualizar o saldo da subconta."
+      />
 
       <section className="upload-section">
         <h2>Nova importação</h2>

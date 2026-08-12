@@ -20,22 +20,6 @@
   text-decoration: underline;
 }
 
-.transferencias-page h1 {
-  font-size: 1.75rem;
-  color: #2c3e50;
-  margin-bottom: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.transferencias-page .subtitulo {
-  color: #666;
-  font-size: 0.95rem;
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
-}
-
 .transferencia-form-section {
   background: white;
   padding: 1.5rem;

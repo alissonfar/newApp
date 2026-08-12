@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSpinner, FaExclamationTriangle, FaArrowRight, FaCreditCard } from 'react-icons/fa';
+import { FaSpinner, FaExclamationTriangle, FaArrowRight } from 'react-icons/fa';
 import patrimonioApi from '../../services/patrimonioApi';
 import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
 import SectionHeader from '../../components/shared/SectionHeader';
@@ -10,6 +10,8 @@ import Badge from '../../components/shared/Badge';
 import EmptyState from '../../components/shared/EmptyState';
 import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
 import { formatDateBR } from '../../utils/dateUtils';
+import PageHeader from '../../components/shared/PageHeader';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import './FaturasPage.css';
 
 function gerarOpcoesMes() {
@@ -89,23 +91,26 @@ const FaturasPage = () => {
 
   return (
     <div className="faturas-page">
-      <div className="faturas-header">
-        <h1><FaCreditCard /> Minhas Faturas</h1>
-        <div className="faturas-header-actions">
-          <select
-            className="faturas-mes-select"
-            value={anoMes}
-            onChange={(e) => setAnoMes(e.target.value)}
-          >
-            {OPCOES_MES.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <Button variant="primary" onClick={() => carregar(anoMes)}>
-            Atualizar
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={<CalendarMonthIcon />}
+        title="Minhas Faturas"
+        action={
+          <div className="faturas-header-actions">
+            <select
+              className="faturas-mes-select"
+              value={anoMes}
+              onChange={(e) => setAnoMes(e.target.value)}
+            >
+              {OPCOES_MES.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <Button variant="primary" onClick={() => carregar(anoMes)}>
+              Atualizar
+            </Button>
+          </div>
+        }
+      />
 
       {faturas.length > 0 && (
         <div className="faturas-cards">
