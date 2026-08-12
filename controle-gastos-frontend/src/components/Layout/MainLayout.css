@@ -100,7 +100,7 @@
 .main-content {
   flex: 1;
   min-width: 0;
-  padding: 2rem;
+  padding: 1.5rem;
   margin-left: var(--cg-menu-expanded-width);
   width: calc(100% - var(--cg-menu-expanded-width));
   min-height: 100vh;
