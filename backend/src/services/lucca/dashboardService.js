@@ -22,4 +22,31 @@ function calcularIdadeCorrigida(dataNascimento, idadeGestacionalNascimento, data
   };
 }
 
-module.exports = { calcularIdade, calcularIdadeCorrigida };
+function calcularProximaMamadaEstimada(eventosAlimentacao, agora = new Date()) {
+  const concluidos = eventosAlimentacao
+    .filter((e) => e.fim)
+    .sort((a, b) => new Date(b.inicio) - new Date(a.inicio));
+
+  if (concluidos.length < 2) return null;
+
+  const ultimos = concluidos.slice(0, 5);
+  let somaIntervalosMs = 0;
+  for (let i = 0; i < ultimos.length - 1; i++) {
+    somaIntervalosMs += new Date(ultimos[i].inicio) - new Date(ultimos[i + 1].inicio);
+  }
+  const intervaloMedioMs = somaIntervalosMs / (ultimos.length - 1);
+  const ultimaMamada = new Date(ultimos[0].inicio);
+  return new Date(ultimaMamada.getTime() + intervaloMedioMs);
+}
+
+function calcularProximaSonecaEstimada(ultimoSonoFim, janelaVigiliaAlvoMinutos) {
+  if (!ultimoSonoFim || !janelaVigiliaAlvoMinutos) return null;
+  return new Date(new Date(ultimoSonoFim).getTime() + janelaVigiliaAlvoMinutos * 60 * 1000);
+}
+
+module.exports = {
+  calcularIdade,
+  calcularIdadeCorrigida,
+  calcularProximaMamadaEstimada,
+  calcularProximaSonecaEstimada
+};
