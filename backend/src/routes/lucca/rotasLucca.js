@@ -4,6 +4,7 @@ const { autenticacao, exigirAcessoLucca } = require('../../middlewares/autentica
 const bebeController = require('../../controllers/lucca/bebeController');
 const sonoController = require('../../controllers/lucca/sonoController');
 const alimentacaoController = require('../../controllers/lucca/alimentacaoController');
+const bombeamentoController = require('../../controllers/lucca/bombeamentoController');
 
 router.use(autenticacao);
 router.use(exigirAcessoLucca);
@@ -20,5 +21,10 @@ router.get('/alimentacao', alimentacaoController.listar);
 router.post('/alimentacao', alimentacaoController.criar);
 router.patch('/alimentacao/:id', alimentacaoController.atualizar);
 router.delete('/alimentacao/:id', alimentacaoController.excluir);
+
+router.get('/bombeamento', bombeamentoController.listar);
+router.post('/bombeamento', bombeamentoController.criar);
+router.patch('/bombeamento/:id', bombeamentoController.atualizar);
+router.delete('/bombeamento/:id', bombeamentoController.excluir);
 
 module.exports = router;
