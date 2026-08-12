@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 import { FaPlus, FaSpinner, FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
 import importacaoService from '../../services/importacaoService';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
+import PageHeader from '../../components/shared/PageHeader';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import './GerenciamentoImportacoesPage.css';
 import { formatDateBR } from '../../utils/dateUtils';
 
@@ -139,11 +141,7 @@ const GerenciamentoImportacoesPage = () => {
   if (loading) {
     return (
       <div className="gerenciamento-importacoes">
-        <div className="page-header">
-          <div className="header-content">
-            <h1>Gerenciamento de Importações</h1>
-          </div>
-        </div>
+        <PageHeader icon={<FileUploadIcon />} title="Gerenciamento de Importações" />
         <div className="loading-state">
           <FaSpinner className="spinner" />
           <p>Carregando importações...</p>
@@ -155,17 +153,18 @@ const GerenciamentoImportacoesPage = () => {
   if (error) {
     return (
       <div className="gerenciamento-importacoes">
-        <div className="page-header">
-          <div className="header-content">
-            <h1>Gerenciamento de Importações</h1>
-            <button 
+        <PageHeader
+          icon={<FileUploadIcon />}
+          title="Gerenciamento de Importações"
+          action={
+            <button
               className="btn-nova-importacao"
               onClick={handleNovaImportacao}
             >
               <FaPlus /> Nova Importação
             </button>
-          </div>
-        </div>
+          }
+        />
         <div className="error-state">
           <p>{error}</p>
           <button onClick={() => carregarImportacoes(1)} className="btn-retry">
@@ -178,15 +177,18 @@ const GerenciamentoImportacoesPage = () => {
 
   return (
     <div className="gerenciamento-importacoes">
-      <div className="page-title">
-        <h1>Gerenciamento de Importações</h1>
-        <button 
-          className="btn-nova-importacao"
-          onClick={handleNovaImportacao}
-        >
-          + Nova Importação
-        </button>
-      </div>
+      <PageHeader
+        icon={<FileUploadIcon />}
+        title="Gerenciamento de Importações"
+        action={
+          <button
+            className="btn-nova-importacao"
+            onClick={handleNovaImportacao}
+          >
+            + Nova Importação
+          </button>
+        }
+      />
 
       {importacoes.length === 0 ? (
         <div className="empty-state">

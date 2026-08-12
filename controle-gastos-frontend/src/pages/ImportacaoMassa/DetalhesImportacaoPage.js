@@ -13,6 +13,8 @@ import { useData } from '../../context/DataContext';
 import { obterCategorias } from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import { useConfirmacao } from '../../hooks/useConfirmacao';
+import PageHeader from '../../components/shared/PageHeader';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import './DetalhesImportacaoPage.css';
 import { formatDateBR } from '../../utils/dateUtils';
 import { getDescricaoExibicao } from '../../utils/descricaoUtils';
@@ -622,7 +624,7 @@ const DetalhesImportacaoPage = () => {
                     </svg>
                     Voltar
                 </button>
-                <h1>Detalhes da Importação</h1>
+                <PageHeader icon={<FileUploadIcon />} title="Detalhes da Importação" />
             </div>
 
             {STATUS_PROCESSANDO.includes(importacao.status) && (
