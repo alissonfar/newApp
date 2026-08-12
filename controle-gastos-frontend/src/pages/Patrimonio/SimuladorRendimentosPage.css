@@ -8,15 +8,6 @@
   margin-bottom: 1.5rem;
 }
 
-.simulador-rendimentos-title {
-  font-size: 1.75rem;
-  color: var(--cor-texto);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--fonte-titulos);
-  margin: 1rem 0 0 0;
-}
 
 .simulador-rendimentos-grid {
   display: grid;

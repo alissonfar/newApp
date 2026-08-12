@@ -1,11 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaCalculator } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa';
 import useCdiData from '../../hooks/useCdiData';
 import CdiDataCard from '../../components/Patrimonio/CdiDataCard';
 import SimuladorForm from '../../components/Patrimonio/SimuladorForm';
 import ComparacaoRapidaCard from '../../components/Patrimonio/ComparacaoRapidaCard';
 import Button from '../../components/shared/Button';
+import PageHeader from '../../components/shared/PageHeader';
+import CalculateIcon from '@mui/icons-material/Calculate';
 import './SimuladorRendimentosPage.css';
 
 const SimuladorRendimentosPage = () => {
@@ -18,9 +20,7 @@ const SimuladorRendimentosPage = () => {
         <Button variant="ghost" icon={<FaArrowLeft size={14} />} onClick={() => navigate('/patrimonio')}>
           Voltar
         </Button>
-        <h1 className="simulador-rendimentos-title">
-          <FaCalculator /> Simulador de Rendimentos
-        </h1>
+        <PageHeader icon={<CalculateIcon />} title="Simulador de Rendimentos" />
       </div>
 
       <div className="simulador-rendimentos-grid">

@@ -10,13 +10,6 @@
   margin-bottom: 1.5rem;
 }
 
-.evolucao-header h1 {
-  font-size: 1.5rem;
-  color: var(--cor-texto);
-  font-family: var(--fonte-titulos);
-  margin: 0.5rem 0 0 0;
-}
-
 .evolucao-filtros {
   display: flex;
   gap: 1rem;

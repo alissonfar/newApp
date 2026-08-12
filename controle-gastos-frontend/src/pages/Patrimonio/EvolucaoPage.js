@@ -17,6 +17,8 @@ import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import { format, subMonths } from 'date-fns';
 import { formatDateBR } from '../../utils/dateUtils';
+import PageHeader from '../../components/shared/PageHeader';
+import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
 import './EvolucaoPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -67,7 +69,7 @@ const EvolucaoPage = () => {
         <Button variant="ghost" icon={<FaArrowLeft size={14} />} onClick={() => navigate('/patrimonio')}>
           Voltar
         </Button>
-        <h1>Evolução do Patrimônio</h1>
+        <PageHeader icon={<StackedBarChartIcon />} title="Evolução do Patrimônio" />
       </div>
 
       <div className="evolucao-filtros">

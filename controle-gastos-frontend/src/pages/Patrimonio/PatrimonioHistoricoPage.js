@@ -20,6 +20,8 @@ import EmptyState from '../../components/shared/EmptyState';
 import PeriodQuickFilter, { PERIODOS_RAPIDOS } from '../../components/shared/PeriodQuickFilter';
 import { format, subMonths } from 'date-fns';
 import { formatDateBR } from '../../utils/dateUtils';
+import PageHeader from '../../components/shared/PageHeader';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import './PatrimonioHistoricoPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -165,10 +167,11 @@ const PatrimonioHistoricoPage = () => {
         <Button variant="ghost" icon={<FaArrowLeft size={14} />} onClick={() => navigate('/patrimonio')}>
           Voltar
         </Button>
-        <h1>Patrimônio Histórico</h1>
-        <p className="patrimonio-historico-subtitle">
-          Baseado no Ledger — consulte quanto você possuía em qualquer data
-        </p>
+        <PageHeader
+          icon={<CalendarMonthIcon />}
+          title="Patrimônio Histórico"
+          subtitle="Baseado no Ledger — consulte quanto você possuía em qualquer data"
+        />
       </div>
 
       <div className="patrimonio-historico-card-principal">
