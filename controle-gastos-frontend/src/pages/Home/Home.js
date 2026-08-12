@@ -18,6 +18,8 @@ import {
   FaCalendarAlt,
   FaPiggyBank
 } from 'react-icons/fa';
+import PageHeader from '../../components/shared/PageHeader';
+import HomeIcon from '@mui/icons-material/Home';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -224,9 +226,10 @@ const Home = () => {
   return (
     <div className="cg-home">
       <div className="cg-home__header">
-        <h1 className="cg-home__title">
-          Dashboard {proprietarioExibicao ? `- ${proprietarioExibicao}` : ''}
-        </h1>
+        <PageHeader
+          icon={<HomeIcon />}
+          title={`Dashboard${proprietarioExibicao ? ` - ${proprietarioExibicao}` : ''}`}
+        />
 
         {carregandoUsuario && (
           <div className="carregando-container">

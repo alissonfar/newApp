@@ -10,14 +10,6 @@
   margin-bottom: var(--cg-spacing-lg);
 }
 
-.cg-home__title {
-  font-family: var(--cg-font-family);
-  font-size: 2rem;
-  font-weight: var(--cg-font-weight-bold);
-  color: var(--cg-color-text-primary);
-  margin: 0 0 var(--cg-spacing-sm) 0;
-}
-
 .cg-home__periodo {
   display: flex;
   flex-wrap: wrap;
