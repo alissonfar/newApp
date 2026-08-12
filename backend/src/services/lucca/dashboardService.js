@@ -65,10 +65,68 @@ function calcularValidadeLeite(evento, agora = new Date()) {
   return { pertoDeVencer, expiraEm };
 }
 
+const Bebe = require('../../models/lucca/bebe');
+const EventoSono = require('../../models/lucca/eventoSono');
+const EventoAlimentacao = require('../../models/lucca/eventoAlimentacao');
+const EventoBombeamento = require('../../models/lucca/eventoBombeamento');
+const EventoFralda = require('../../models/lucca/eventoFralda');
+
+async function obterDashboard(bebeId) {
+  const bebe = await Bebe.findById(bebeId);
+  const agora = new Date();
+  const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const fimHoje = new Date(inicioHoje.getTime() + 24 * 60 * 60 * 1000);
+
+  const [sonoHoje, alimentacaoHoje, fraldaHoje, bombeamentoHoje, bombeamentosAtivos] = await Promise.all([
+    EventoSono.find({ bebeId, inicio: { $gte: inicioHoje, $lt: fimHoje } }),
+    EventoAlimentacao.find({ bebeId, inicio: { $gte: inicioHoje, $lt: fimHoje } }),
+    EventoFralda.find({ bebeId, horario: { $gte: inicioHoje, $lt: fimHoje } }),
+    EventoBombeamento.find({ bebeId, inicio: { $gte: inicioHoje, $lt: fimHoje } }),
+    EventoBombeamento.find({ bebeId, armazenadoComo: { $ne: 'uso_imediato' }, fim: { $ne: null } })
+  ]);
+
+  const [sonoEmAndamento, alimentacaoEmAndamento, bombeamentoEmAndamento] = await Promise.all([
+    EventoSono.findOne({ bebeId, fim: null }).populate('registradoPor', 'nome'),
+    EventoAlimentacao.findOne({ bebeId, fim: null }).populate('registradoPor', 'nome'),
+    EventoBombeamento.findOne({ bebeId, fim: null }).populate('registradoPor', 'nome')
+  ]);
+
+  const ultimoSono = await EventoSono.findOne({ bebeId, fim: { $ne: null } }).sort({ fim: -1 });
+
+  const minutosSonoHoje = sonoHoje.reduce((total, evento) => {
+    if (!evento.fim) return total;
+    return total + (new Date(evento.fim) - new Date(evento.inicio)) / (1000 * 60);
+  }, 0);
+
+  return {
+    idadeCronologica: bebe ? calcularIdade(bebe.dataNascimento) : null,
+    idadeCorrigida: bebe ? calcularIdadeCorrigida(bebe.dataNascimento, bebe.idadeGestacionalNascimento) : null,
+    pills: {
+      horasSonoHoje: Math.round((minutosSonoHoje / 60) * 10) / 10,
+      numeroMamadasHoje: alimentacaoHoje.length,
+      numeroFraldasHoje: fraldaHoje.length,
+      numeroBombeamentosHoje: bombeamentoHoje.length
+    },
+    proximaMamadaEstimada: calcularProximaMamadaEstimada(alimentacaoHoje),
+    proximaSonecaEstimada: bebe && ultimoSono
+      ? calcularProximaSonecaEstimada(ultimoSono.fim, bebe.janelaVigiliaAlvoMinutos)
+      : null,
+    alertasValidadeLeite: bombeamentosAtivos
+      .map((evento) => ({ eventoId: evento._id, ...calcularValidadeLeite(evento) }))
+      .filter((alerta) => alerta.pertoDeVencer),
+    eventosEmAndamento: {
+      sono: sonoEmAndamento,
+      alimentacao: alimentacaoEmAndamento,
+      bombeamento: bombeamentoEmAndamento
+    }
+  };
+}
+
 module.exports = {
   calcularIdade,
   calcularIdadeCorrigida,
   calcularProximaMamadaEstimada,
   calcularProximaSonecaEstimada,
-  calcularValidadeLeite
+  calcularValidadeLeite,
+  obterDashboard
 };
