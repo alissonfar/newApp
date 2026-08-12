@@ -10,6 +10,8 @@ import {
   excluirModeloRelatorio
 } from '../../api';
 import { useData } from '../../context/DataContext';
+import PageHeader from '../../components/shared/PageHeader';
+import DescriptionIcon from '@mui/icons-material/Description';
 import './ModelosRelatorio.css';
 
 const EFFECT_OPTIONS = [
@@ -211,15 +213,16 @@ const ModelosRelatorio = () => {
 
   return (
     <div className="modelos-relatorio-container">
-      <div className="modelos-relatorio-header">
-        <h2>Modelos de Relatório</h2>
-        <p className="modelos-relatorio-desc">
-          Defina como cada tag afeta os totais. Tags não configuradas entram como soma. Depois selecione o modelo na página de Relatórios.
-        </p>
-        <button className="modelos-relatorio-btn-novo" onClick={() => openModal()}>
-          + Novo Modelo
-        </button>
-      </div>
+      <PageHeader
+        icon={<DescriptionIcon />}
+        title="Modelos de Relatório"
+        subtitle="Defina como cada tag afeta os totais. Tags não configuradas entram como soma. Depois selecione o modelo na página de Relatórios."
+        action={
+          <button className="modelos-relatorio-btn-novo" onClick={() => openModal()}>
+            + Novo Modelo
+          </button>
+        }
+      />
 
       <div className="modelos-relatorio-list">
         {modelos.length === 0 ? (

@@ -9,6 +9,8 @@ import { obterCategorias, criarTag, atualizarTag, excluirTag, inativarTag, criar
 import IconSelector from './IconSelector';
 import IconRenderer from '../shared/IconRenderer';
 import ColorPicker from './ColorPicker';
+import PageHeader from '../shared/PageHeader';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import './TagManagement.css';
 
 const TagManagement = () => {
@@ -380,12 +382,15 @@ const TagManagement = () => {
 
   return (
     <div className="tag-management-page-container">
-      <div className="tag-management-header-actions">
-        <h2>Gerenciar Categorias e Tags</h2>
-        <button className="btn-ver-inativos" onClick={() => navigate('/tags/inativos')}>
-          Ver inativos
-        </button>
-      </div>
+      <PageHeader
+        icon={<LocalOfferIcon />}
+        title="Gerenciar Categorias e Tags"
+        action={
+          <button className="btn-ver-inativos" onClick={() => navigate('/tags/inativos')}>
+            Ver inativos
+          </button>
+        }
+      />
       <div className="tag-management-container">
         {/* Seção de Categorias */}
         <div className="category-section">

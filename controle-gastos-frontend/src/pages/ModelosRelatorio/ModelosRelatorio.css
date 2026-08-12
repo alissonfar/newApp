@@ -1,25 +1,6 @@
 /* src/pages/ModelosRelatorio/ModelosRelatorio.css */
 .modelos-relatorio-container {
   padding: 24px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.modelos-relatorio-header {
-  margin-bottom: 24px;
-}
-
-.modelos-relatorio-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 1.5rem;
-  color: #333;
-}
-
-.modelos-relatorio-desc {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0 0 16px 0;
-  line-height: 1.4;
 }
 
 .modelos-relatorio-btn-novo {
