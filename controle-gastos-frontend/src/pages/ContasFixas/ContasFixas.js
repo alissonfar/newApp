@@ -6,7 +6,8 @@ import Swal from 'sweetalert2';
 import contaFixaApi from '../../services/contaFixaApi';
 import ContaFixaFormModal from './ContaFixaFormModal';
 import Card, { CardContent, CardHeader } from '../../components/shared/Card';
-import SectionHeader from '../../components/shared/SectionHeader';
+import PageHeader from '../../components/shared/PageHeader';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import Button from '../../components/shared/Button';
 import Badge from '../../components/shared/Badge';
 import DataTable from '../../components/shared/DataTable';
@@ -144,7 +145,8 @@ const ContasFixas = () => {
     <div className="contas-fixas-page">
       <Card variant="glass" padding="md">
         <CardHeader>
-          <SectionHeader
+          <PageHeader
+            icon={<EventRepeatIcon />}
             title="Contas Fixas"
             subtitle="Lançamentos recorrentes mensais"
             action={

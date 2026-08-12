@@ -31,7 +31,8 @@ import { exportDataToPDF, buildReportFilename } from '../../utils/export/exportP
 import { formatDateBR } from '../../utils/dateUtils';
 import { useRelatorioFilters } from '../../hooks/useRelatorioFilters';
 import { getDescricaoExibicao } from '../../utils/descricaoUtils';
-import SectionHeader from '../../components/shared/SectionHeader';
+import PageHeader from '../../components/shared/PageHeader';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import Button from '../../components/shared/Button';
 import RelatorioFiltersPanel from '../../components/Relatorio/RelatorioFiltersPanel';
 import RelatorioFiltersCompact from '../../components/Relatorio/RelatorioFiltersCompact';
@@ -625,10 +626,10 @@ const Relatorio = () => {
 
   return (
     <div className="cg-relatorio">
-      <SectionHeader
+      <PageHeader
+        icon={<ShowChartIcon />}
         title="Relatórios"
         subtitle="Filtre, visualize e exporte suas transações"
-        className="cg-relatorio__header"
         action={
           <Button
             variant="ghost"

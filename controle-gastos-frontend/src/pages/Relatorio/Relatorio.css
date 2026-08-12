@@ -5,10 +5,6 @@
   box-sizing: border-box;
 }
 
-.cg-relatorio__header {
-  margin-bottom: var(--cg-spacing-base);
-}
-
 /* Grid de StatCards no resumo (3 colunas em desktop, 1 em mobile) */
 .cg-relatorio__stat-grid {
   display: grid;

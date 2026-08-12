@@ -3,7 +3,8 @@ import { FaCheck, FaForward } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import contaFixaApi from '../../services/contaFixaApi';
 import Card, { CardContent, CardHeader } from '../../components/shared/Card';
-import SectionHeader from '../../components/shared/SectionHeader';
+import PageHeader from '../../components/shared/PageHeader';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import { formatarMoeda } from '../../utils/format';
@@ -54,7 +55,7 @@ const PendenciasContasFixas = () => {
     <div className="pendencias-contas-fixas-page">
       <Card variant="glass" padding="md">
         <CardHeader>
-          <SectionHeader title="Contas Fixas Pendentes" subtitle="Revise e confirme os lançamentos deste mês" />
+          <PageHeader icon={<EventRepeatIcon />} title="Contas Fixas Pendentes" subtitle="Revise e confirme os lançamentos deste mês" />
         </CardHeader>
         <CardContent>
           {carregando ? (
