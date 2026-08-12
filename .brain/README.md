@@ -152,6 +152,18 @@ Dica: use o **Graph View** (`Ctrl+G`) para visualizar conexões entre decisões,
 - **Sessão:**
   - [`2026-08-11-divisoes-pre-configuradas-execucao.md`](sessions/2026-08-11-divisoes-pre-configuradas-execucao.md) — brainstorming + writing-plans + executing-plans, achado de bug pré-existente em `Profile.css` (media query sem fechar)
 
+### Layout: largura fluida + padronização de cabeçalhos (`PageHeader`)
+- **Specs/Planos (Superpowers):**
+  - [`docs/superpowers/specs/2026-08-11-pageheader-padronizacao-design.md`](../docs/superpowers/specs/2026-08-11-pageheader-padronizacao-design.md) — spec do componente `PageHeader`, tabela de migração das 30 páginas
+  - [`docs/superpowers/plans/2026-08-11-largura-fluida-paginas.md`](../docs/superpowers/plans/2026-08-11-largura-fluida-paginas.md) — 18 arquivos CSS, remoção de `max-width`/`margin:auto`
+  - [`docs/superpowers/plans/2026-08-11-pageheader-padronizacao.md`](../docs/superpowers/plans/2026-08-11-pageheader-padronizacao.md) — 12 tasks, componente + 30 páginas + padding
+- **ADR:**
+  - [ADR-024](decisions/2026-08-11-pageheader-componente-padrao.md) — `PageHeader` como componente novo (não estende `SectionHeader`), regra de ícone = mesmo da sidebar
+- **Contexto (mecanismo de largura, API do PageHeader, pendências pra próxima sessão):**
+  - [`context/layout-largura-e-pageheader.md`](context/layout-largura-e-pageheader.md)
+- **Sessão:**
+  - [`2026-08-11-layout-largura-e-pageheader-execucao.md`](sessions/2026-08-11-layout-largura-e-pageheader-execucao.md) — as duas partes (largura + cabeçalhos), 17 commits, achado de 3 páginas de código morto (task de remoção pendente)
+
 ### Módulo de Breadcrumb / Navegação
 - **Design doc:**
   - [`2026-06-28-breadcrumb-reorganizacao-design.md`](sessions/2026-06-28-breadcrumb-reorganizacao-design.md) — design da reorganização do breadcrumb (menuStructure como fonte de verdade, MAP scoped por rota, ellipsis responsivo, tokens)
@@ -349,5 +361,5 @@ A estrutura atual (4 pastas) é um **começo**, não uma camisa-de-força. Se vo
 ## Status
 
 - **Criado em:** 2026-06-21
-- **Última atualização:** 2026-08-11 (Divisões Pré-Configuradas — ADR-023; presets de percentual sobre `pagamentos[]`, 4ª aba em `/profile`, sem tocar em `/pessoas` nem reintroduzir Conta Conjunta)
+- **Última atualização:** 2026-08-11 (Layout: largura fluida + `PageHeader` — ADR-024; 30 páginas migradas, pendências de confirmação visual e remoção de código morto documentadas em `context/layout-largura-e-pageheader.md`)
 - **Mantido por:** Alisson + newapp-planner
