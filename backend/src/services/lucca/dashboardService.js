@@ -44,9 +44,31 @@ function calcularProximaSonecaEstimada(ultimoSonoFim, janelaVigiliaAlvoMinutos) 
   return new Date(new Date(ultimoSonoFim).getTime() + janelaVigiliaAlvoMinutos * 60 * 1000);
 }
 
+const PRAZO_VALIDADE_MS = {
+  geladeira: 24 * 60 * 60 * 1000,
+  freezer: 180 * 24 * 60 * 60 * 1000
+};
+
+const LIMIAR_ALERTA_MS = {
+  geladeira: 4 * 60 * 60 * 1000,
+  freezer: 7 * 24 * 60 * 60 * 1000
+};
+
+function calcularValidadeLeite(evento, agora = new Date()) {
+  if (evento.armazenadoComo === 'uso_imediato') {
+    return { pertoDeVencer: false, expiraEm: null };
+  }
+  const referencia = new Date(evento.fim || evento.inicio);
+  const expiraEm = new Date(referencia.getTime() + PRAZO_VALIDADE_MS[evento.armazenadoComo]);
+  const msRestantes = expiraEm.getTime() - agora.getTime();
+  const pertoDeVencer = msRestantes > 0 && msRestantes <= LIMIAR_ALERTA_MS[evento.armazenadoComo];
+  return { pertoDeVencer, expiraEm };
+}
+
 module.exports = {
   calcularIdade,
   calcularIdadeCorrigida,
   calcularProximaMamadaEstimada,
-  calcularProximaSonecaEstimada
+  calcularProximaSonecaEstimada,
+  calcularValidadeLeite
 };

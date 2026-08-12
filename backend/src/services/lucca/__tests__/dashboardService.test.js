@@ -57,3 +57,26 @@ describe('calcularProximaSonecaEstimada', () => {
     expect(calcularProximaSonecaEstimada('2026-08-20T10:00:00Z', null)).toBeNull();
   });
 });
+
+const { calcularValidadeLeite } = require('../dashboardService');
+
+describe('calcularValidadeLeite', () => {
+  test('leite na geladeira há 21h (3h restantes) está perto de vencer', () => {
+    const evento = { armazenadoComo: 'geladeira', fim: '2026-08-20T09:00:00Z' };
+    const resultado = calcularValidadeLeite(evento, new Date('2026-08-21T06:00:00Z'));
+    expect(resultado.pertoDeVencer).toBe(true);
+    expect(resultado.expiraEm.toISOString()).toBe('2026-08-21T09:00:00.000Z');
+  });
+
+  test('leite na geladeira recém guardado não está perto de vencer', () => {
+    const evento = { armazenadoComo: 'geladeira', fim: '2026-08-20T09:00:00Z' };
+    const resultado = calcularValidadeLeite(evento, new Date('2026-08-20T10:00:00Z'));
+    expect(resultado.pertoDeVencer).toBe(false);
+  });
+
+  test('leite de uso imediato nunca está perto de vencer', () => {
+    const evento = { armazenadoComo: 'uso_imediato', fim: '2026-08-20T09:00:00Z' };
+    const resultado = calcularValidadeLeite(evento, new Date('2026-08-25T09:00:00Z'));
+    expect(resultado).toEqual({ pertoDeVencer: false, expiraEm: null });
+  });
+});
