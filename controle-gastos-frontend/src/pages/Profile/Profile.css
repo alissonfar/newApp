@@ -8,12 +8,6 @@
   margin-bottom: 30px;
 }
 
-.profile-header h1 {
-  font-size: 2rem;
-  color: #2c3e50;
-  margin-bottom: 20px;
-}
-
 .profile-tabs {
   display: flex;
   gap: 10px;
@@ -243,10 +237,6 @@
     padding: 15px;
   }
 
-  .profile-header h1 {
-    font-size: 1.8rem;
-  }
-
   .profile-content {
     padding: 20px;
   }
@@ -294,11 +284,6 @@
 @media (max-width: 480px) {
   .profile-container {
     padding: 10px;
-  }
-
-  .profile-header h1 {
-    font-size: 1.5rem;
-    text-align: center;
   }
 
   .profile-content {

@@ -3,31 +3,6 @@
   color: #333;
 }
 
-.how-to-use-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, #6b8dd6 0%, #8e37d7 100%);
-  border-radius: 15px;
-  color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.header-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.how-to-use-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.how-to-use-header p {
-  font-size: 1.2rem;
-  opacity: 0.9;
-}
-
 .steps-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -162,14 +137,6 @@
 @media (max-width: 768px) {
   .how-to-use-container {
     padding: 1rem;
-  }
-
-  .how-to-use-header {
-    padding: 1.5rem;
-  }
-
-  .how-to-use-header h1 {
-    font-size: 2rem;
   }
 
   .steps-container {

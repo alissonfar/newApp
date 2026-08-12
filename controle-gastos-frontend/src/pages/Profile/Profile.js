@@ -7,6 +7,8 @@ import { FaUser, FaEnvelope, FaPhone, FaBriefcase, FaBuilding, FaCalendar,
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 import { listarDivisaoPresets, criarDivisaoPreset, atualizarDivisaoPreset, excluirDivisaoPreset } from '../../api';
+import PageHeader from '../../components/shared/PageHeader';
+import PersonIcon from '@mui/icons-material/Person';
 import './Profile.css';
 
 function Profile() {
@@ -331,7 +333,7 @@ function Profile() {
   return (
     <div className="profile-container">
       <div className="profile-header">
-        <h1>Meu Perfil</h1>
+        <PageHeader icon={<PersonIcon />} title="Meu Perfil" />
         <div className="profile-tabs">
           <button
             className={`tab-button ${activeTab === 'perfil' ? 'active' : ''}`}

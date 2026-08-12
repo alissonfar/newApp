@@ -7,6 +7,8 @@ import { toast } from 'react-toastify';
 import { obterTags, obterCategorias, ativarTag, ativarCategoria } from '../../api.js';
 import { useData } from '../../context/DataContext';
 import IconRenderer from '../../components/shared/IconRenderer';
+import PageHeader from '../../components/shared/PageHeader';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import './TagsInativos.css';
 
 const TagsInativos = () => {
@@ -86,7 +88,7 @@ const TagsInativos = () => {
         <button className="btn-voltar" onClick={() => navigate('/tags')}>
           <FaArrowLeft size={14} /> Voltar
         </button>
-        <h2>Itens Inativados</h2>
+        <PageHeader icon={<LocalOfferIcon />} title="Itens Inativados" />
       </div>
 
       <div className="tags-inativos-tabs">

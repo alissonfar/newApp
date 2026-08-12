@@ -1,14 +1,18 @@
 import React from 'react';
-import { FaUserCog, FaMoneyBillWave, FaChartLine, FaClipboardList, FaUserTie, FaInfoCircle } from 'react-icons/fa';
+import { FaUserCog, FaMoneyBillWave, FaChartLine, FaClipboardList, FaUserTie } from 'react-icons/fa';
+import PageHeader from '../../components/shared/PageHeader';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import './HowToUse.css';
 
 const HowToUse = () => {
   return (
     <div className="how-to-use-container">
       <header className="how-to-use-header">
-        <FaInfoCircle className="header-icon" />
-        <h1>Como Utilizar o Sistema</h1>
-        <p>Siga este guia passo a passo para aproveitar ao máximo nosso sistema de controle de gastos</p>
+        <PageHeader
+          icon={<HelpOutlineIcon />}
+          title="Como Utilizar o Sistema"
+          subtitle="Siga este guia passo a passo para aproveitar ao máximo nosso sistema de controle de gastos"
+        />
       </header>
 
       <div className="steps-container">
