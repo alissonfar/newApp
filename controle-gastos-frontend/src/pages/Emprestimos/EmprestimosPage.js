@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { listarEmprestimos } from '../../api';
 import { formatarMoedaBRL, formatarDataBR, labelTipoRetorno, labelStatus } from '../../utils/emprestimoFormat';
+import PageHeader from '../../components/shared/PageHeader';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 import './EmprestimosPage.css';
 
 const EmprestimosPage = () => {
@@ -43,19 +45,16 @@ const EmprestimosPage = () => {
 
   return (
     <div className="emprestimos-container">
-      <div className="emprestimos-header">
-        <h2>Empréstimos</h2>
-        <p className="emprestimos-desc">
-          Acompanhe quem te deve, prazos e retornos esperados. Empréstimos concedidos
-          não contam como gasto nos relatórios — o que volta é devolução de principal,
-          juros são income real.
-        </p>
-        <p className="emprestimos-hint">
-          <strong>Como criar um novo empréstimo:</strong> abra o formulário de uma nova transação
-          (Home, Transações, etc.) e marque a opção "Esta transação faz parte de um empréstimo"
-          na aba Avançado.
-        </p>
-      </div>
+      <PageHeader
+        icon={<HandshakeIcon />}
+        title="Empréstimos"
+        subtitle="Acompanhe quem te deve, prazos e retornos esperados. Empréstimos concedidos não contam como gasto nos relatórios — o que volta é devolução de principal, juros são income real."
+      />
+      <p className="emprestimos-hint">
+        <strong>Como criar um novo empréstimo:</strong> abra o formulário de uma nova transação
+        (Home, Transações, etc.) e marque a opção "Esta transação faz parte de um empréstimo"
+        na aba Avançado.
+      </p>
 
       <div className="emp-filtros">
         <button

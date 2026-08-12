@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaSync, FaCog, FaSpinner, FaCheck, FaPlus, FaTrash, FaPlug, FaLink, FaTimes, FaChevronRight } from 'react-icons/fa';
+import { FaSync, FaCog, FaSpinner, FaCheck, FaPlus, FaTrash, FaLink, FaTimes, FaChevronRight } from 'react-icons/fa';
 import { PluggyConnect } from 'react-pluggy-connect';
 import pluggyApi from '../../services/pluggyApi';
 import patrimonioApi from '../../services/patrimonioApi';
@@ -7,6 +7,8 @@ import { toast } from 'react-toastify';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import Pagination from '../../components/shared/Pagination';
+import PageHeader from '../../components/shared/PageHeader';
+import HubIcon from '@mui/icons-material/Hub';
 import './PluggyPage.css';
 import { formatDateBR } from '../../utils/dateUtils';
 
@@ -383,8 +385,11 @@ const PluggyPage = () => {
 
   return (
     <div className="pluggy-page">
-      <h1><FaPlug /> Pluggy - Open Finance</h1>
-      <p className="subtitulo">Sincronize automaticamente transacoes das suas contas bancarias via Pluggy.</p>
+      <PageHeader
+        icon={<HubIcon />}
+        title="Open Finance"
+        subtitle="Sincronize automaticamente transações das suas contas bancárias via Pluggy."
+      />
 
       <Card className="pluggy-section">
         <h2>Configuracao</h2>

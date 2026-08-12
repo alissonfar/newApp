@@ -3,21 +3,6 @@
   padding: 24px;
 }
 
-.pessoas-header {
-  margin-bottom: 24px;
-}
-
-.pessoas-header h2 {
-  margin: 0 0 8px;
-  font-size: 24px;
-}
-
-.pessoas-desc {
-  color: #6b7280;
-  margin: 0 0 16px;
-  font-size: 14px;
-}
-
 .pessoas-btn-novo {
   background: #2563eb;
   color: white;

@@ -20,6 +20,8 @@ import {
 import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
 import EmprestimoForm from '../../components/Emprestimos/EmprestimoForm';
 import { abrirModalReverterQuitacao } from '../../components/Emprestimos/ReverterQuitacaoModal';
+import PageHeader from '../../components/shared/PageHeader';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 import './EmprestimoDetalhePage.css';
 
 const EmprestimoDetalhePage = () => {
@@ -147,13 +149,16 @@ const EmprestimoDetalhePage = () => {
       </div>
 
       <div className="emp-detalhe-header">
-        <div>
-          <h2>{emprestimo.pessoaNomeSnapshot}</h2>
-          <p className="emp-detalhe-subtitulo">
-            <span className={`emp-status-badge ${status.cls}`}>{status.text}</span>
-            {emprestimo.observacao && <span className="emp-detalhe-obs">· {emprestimo.observacao}</span>}
-          </p>
-        </div>
+        <PageHeader
+          icon={<HandshakeIcon />}
+          title={emprestimo.pessoaNomeSnapshot}
+          subtitle={
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className={`emp-status-badge ${status.cls}`}>{status.text}</span>
+              {emprestimo.observacao && <span className="emp-detalhe-obs">· {emprestimo.observacao}</span>}
+            </span>
+          }
+        />
         <div className="emp-detalhe-acoes">
           {emprestimo.status !== 'cancelado' && (
             <>

@@ -3,17 +3,6 @@
   padding: 24px;
 }
 
-.emprestimos-header h2 {
-  margin: 0 0 8px;
-  font-size: 24px;
-}
-
-.emprestimos-desc {
-  color: #6b7280;
-  font-size: 14px;
-  margin: 0 0 16px;
-}
-
 .emp-btn-novo {
   background: #2563eb;
   color: white;

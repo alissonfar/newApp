@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { listarPessoas, criarPessoa, atualizarPessoa, excluirPessoa } from '../../api';
+import PageHeader from '../../components/shared/PageHeader';
+import ContactsIcon from '@mui/icons-material/Contacts';
 import './PessoasPage.css';
 
 const PessoasPage = () => {
@@ -94,14 +96,12 @@ const PessoasPage = () => {
 
   return (
     <div className="pessoas-container">
-      <div className="pessoas-header">
-        <h2>Pessoas</h2>
-        <p className="pessoas-desc">
-          Cadastre as pessoas para quem você empresta dinheiro. Use nos empréstimos para
-          vincular transações e controlar quem te deve.
-        </p>
-        <button className="pessoas-btn-novo" onClick={() => openModal()}>+ Nova Pessoa</button>
-      </div>
+      <PageHeader
+        icon={<ContactsIcon />}
+        title="Pessoas"
+        subtitle="Cadastre as pessoas para quem você empresta dinheiro. Use nos empréstimos para vincular transações e controlar quem te deve."
+        action={<button className="pessoas-btn-novo" onClick={() => openModal()}>+ Nova Pessoa</button>}
+      />
 
       {pessoas.length === 0 ? (
         <div className="pessoas-empty">
