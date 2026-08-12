@@ -109,6 +109,7 @@ app.use('/api/pessoas', rotasPessoa);
 app.use('/api/divisao-presets', rotasDivisaoPreset);
 app.use('/api/emprestimos', rotasEmprestimo);
 app.use('/api/pluggy', rotasPluggy);
+app.use('/api/lucca', require('./routes/lucca/rotasLucca'));
 
 // Tratamento de erros
 app.use((err, req, res, next) => {
