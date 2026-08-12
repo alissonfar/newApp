@@ -4,7 +4,9 @@
 
 ## Goal
 
-Criar um componente `PageHeader` reutilizável e migrar as 26 páginas/rotas do app pra usá-lo, eliminando a inconsistência visual de título/ícone/subtítulo, e reduzir levemente o padding do `.main-content` pra aproximar o conteúdo da sidebar.
+Criar um componente `PageHeader` reutilizável e migrar as 30 páginas/rotas do app pra usá-lo, eliminando a inconsistência visual de título/ícone/subtítulo, e reduzir levemente o padding do `.main-content` pra aproximar o conteúdo da sidebar.
+
+**Nota de revisão (pós-primeira leitura do spec):** a primeira versão deste documento listava 26 páginas, todas derivadas do `menuStructure.js` (a sidebar). Uma conferência cruzada contra as rotas reais de `App.js` encontrou 4 rotas privadas que não aparecem na sidebar (acessadas via menu do usuário/rodapé) e por isso ficaram de fora da primeira varredura: `/tags/inativos`, `/profile`, `/como-utilizar` e `/admin`. Estão incluídas na tabela abaixo (linhas 27-30).
 
 ## Fora de escopo
 
@@ -81,7 +83,7 @@ Cada `PageHeader` usa o mesmo componente de ícone `@mui/icons-material` já map
 
 Isso troca a biblioteca de ícone em várias páginas que hoje usam `react-icons/fa` (ex: `FaPlug`, `FaPiggyBank`, `FaCalculator`) — essas importações são substituídas pelo ícone `@mui/icons-material` equivalente da sidebar. Páginas que já não tinham ícone algum (a maioria) ganham um pela primeira vez.
 
-### Tabela de migração (26 páginas)
+### Tabela de migração (30 páginas)
 
 | # | Página | Arquivo JSX | Rota | Ícone MUI | Subtítulo hoje | Action | Mecanismo atual → novo |
 |---|---|---|---|---|---|---|---|
@@ -111,6 +113,12 @@ Isso troca a biblioteca de ícone em várias páginas que hoje usam `react-icons
 | 24 | Empréstimos | `pages/Emprestimos/EmprestimosPage.js` | `/emprestimos` | `HandshakeIcon` | sim | não | `h2` manual → `PageHeader` |
 | 25 | Detalhe de Empréstimo | `pages/Emprestimos/EmprestimoDetalhePage.js` | `/emprestimos/:id` | `HandshakeIcon` (herdado) | sim | não | `h2` manual → `PageHeader` |
 | 26 | Pessoas | `pages/Pessoas/PessoasPage.js` | `/pessoas` | `ContactsIcon` | sim | não | `h2` manual → `PageHeader` |
+| 27 | Itens Inativados (Tags) | `pages/TagsInativos/TagsInativos.js` | `/tags/inativos` | `LocalOfferIcon` (herdado de Tags) | não | não | `h2` manual → `PageHeader` |
+| 28 | Meu Perfil | `pages/Profile/Profile.js` | `/profile` | `PersonIcon` | não | não | `h1` manual → `PageHeader` |
+| 29 | Como Utilizar | `pages/HowToUse/HowToUse.js` | `/como-utilizar` | `HelpOutlineIcon` (troca `FaInfoCircle`) | sim | não | `h1` + ícone manual → `PageHeader` |
+| 30 | Painel de Administração | `pages/Admin/AdminDashboard.js` | `/admin` | `AdminPanelSettingsIcon` | não | não | `h1` manual → `PageHeader` |
+
+Páginas 28-30 (`/profile`, `/como-utilizar`, `/admin`) não têm entrada na sidebar — não existe um ícone "correto" derivável de `menuStructure.js` pra elas. Os ícones acima foram escolhidos e confirmados diretamente com o usuário.
 
 Cada linha, no plano de implementação, vira uma edição pontual: importar `PageHeader` e o ícone MUI correto, substituir o bloco de título/subtítulo/ação atual pela chamada do componente, remover CSS de título que ficou órfão (ex: `.cg-relatorio__header` continua existindo só pra `margin-bottom`, mas as regras de `h1`/`color` específicas somem).
 
@@ -120,7 +128,7 @@ Em `src/components/Layout/MainLayout.css:103`, reduzir `padding: 2rem` para `pad
 
 ## Testes
 
-Sem testes automatizados de frontend (convenção do projeto). Verificação via smoke test manual: percorrer as 26 rotas com sidebar aberta/fechada, conferir que todas têm título grande + ícone + (quando existente) subtítulo no mesmo estilo visual do Pluggy, e que os botões de ação que existiam antes continuam funcionando no mesmo lugar.
+Sem testes automatizados de frontend (convenção do projeto). Verificação via smoke test manual: percorrer as 30 rotas com sidebar aberta/fechada, conferir que todas têm título grande + ícone + (quando existente) subtítulo no mesmo estilo visual do Pluggy, e que os botões de ação que existiam antes continuam funcionando no mesmo lugar. `/admin` só é testável logado como usuário `admin` — se a conta de teste não tiver esse papel, reportar como não verificado em vez de assumir que está OK.
 
 ## Riscos identificados
 
