@@ -8,6 +8,8 @@ import TabSelecao from './components/TabSelecao';
 import TabResumo from './components/TabResumo';
 import RecebimentosStepper from './components/RecebimentosStepper';
 import ConfiguracaoRecebimentosModal from '../../components/Recebimentos/ConfiguracaoRecebimentosModal';
+import PageHeader from '../../components/shared/PageHeader';
+import PaidIcon from '@mui/icons-material/Paid';
 import '../../components/shared/Button.css';
 import './Recebimentos.css';
 
@@ -38,9 +40,11 @@ function NovaConciliacaoContent() {
   return (
     <div className="recebimentos-novo-page">
       <header className="recebimentos-novo-header">
-        <div className="header-top">
-          <h1>Nova Conciliação</h1>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <PageHeader
+          icon={<PaidIcon />}
+          title="Nova Conciliação"
+          action={
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {mostrarBotaoConfig && (
               <button
                 type="button"
@@ -76,8 +80,9 @@ function NovaConciliacaoContent() {
             <Link to="/recebimentos/historico" className="ds-button ds-button--ghost ds-button--md">
               Ver Histórico
             </Link>
-          </div>
-        </div>
+            </div>
+          }
+        />
         <RecebimentosStepper activeStep={tabAtiva} onStepClick={setTabAtiva} />
       </header>
       <div className="recebimentos-content-area">

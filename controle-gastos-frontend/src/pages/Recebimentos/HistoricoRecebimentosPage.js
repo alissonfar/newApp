@@ -10,6 +10,8 @@ import TagBadge from './components/TagBadge';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import Card, { CardContent } from '../../components/shared/Card';
+import PageHeader from '../../components/shared/PageHeader';
+import HistoryIcon from '@mui/icons-material/History';
 import PeriodQuickFilter from '../../components/shared/PeriodQuickFilter';
 import { formatDateBR } from '../../utils/dateUtils';
 import '../../components/shared/Button.css';
@@ -108,10 +110,15 @@ const HistoricoRecebimentosPage = () => {
   return (
     <div className="recebimentos-historico-page">
       <header className="recebimentos-historico-header">
-        <h1>Histórico de Conciliações</h1>
-        <Link to="/recebimentos/novo" className="ds-button ds-button--primary ds-button--md" style={{ textDecoration: 'none' }}>
-          Nova Conciliação
-        </Link>
+        <PageHeader
+          icon={<HistoryIcon />}
+          title="Histórico de Conciliações"
+          action={
+            <Link to="/recebimentos/novo" className="ds-button ds-button--primary ds-button--md" style={{ textDecoration: 'none' }}>
+              Nova Conciliação
+            </Link>
+          }
+        />
       </header>
 
       <div className="recebimentos-historico-content">
