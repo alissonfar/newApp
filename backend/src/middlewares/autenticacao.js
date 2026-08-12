@@ -65,4 +65,31 @@ async function isAdmin(req, res, next) {
   }
 }
 
-module.exports = { autenticacao, isAdmin };
+// Middleware para verificar se o usuário tem acesso ao domínio lucca
+async function exigirAcessoLucca(req, res, next) {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({
+        erro: 'Usuário não autenticado.',
+        redirectUrl: require('../config/config').loginRedirectUrl
+      });
+    }
+
+    const usuario = await Usuario.findById(req.userId).select('acessoLucca');
+
+    if (!usuario) {
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    if (!usuario.acessoLucca) {
+      return res.status(403).json({ erro: 'Acesso negado. Este usuário não tem acesso ao módulo do Lucca.' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Erro no middleware exigirAcessoLucca:', error);
+    res.status(500).json({ erro: 'Erro interno do servidor ao verificar permissão.' });
+  }
+}
+
+module.exports = { autenticacao, isAdmin, exigirAcessoLucca };
