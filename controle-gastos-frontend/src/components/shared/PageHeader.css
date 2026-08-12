@@ -1,0 +1,44 @@
+/* src/components/shared/PageHeader.css */
+.cg-page-header { margin-bottom: 1.5rem; }
+
+.cg-page-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cg-page-header__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--fonte-titulos);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--cg-color-text-primary);
+  margin: 0;
+}
+
+.cg-page-header__icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1em;
+  color: currentColor;
+}
+
+.cg-page-header__icon svg {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.cg-page-header__subtitle {
+  color: var(--cg-color-text-secondary);
+  margin: 0.5rem 0 0;
+  font-size: var(--cg-font-size-base);
+}
+
+.cg-page-header__action {
+  flex-shrink: 0;
+}
