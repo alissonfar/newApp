@@ -4,22 +4,6 @@
   min-height: 100vh;
 }
 
-.contas-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.contas-header h1 {
-  font-size: 1.75rem;
-  color: var(--cor-texto);
-  font-family: var(--fonte-titulos);
-  margin: 0;
-}
-
 .contas-actions {
   display: flex;
   gap: 0.5rem;

@@ -23,6 +23,8 @@ import SectionHeader from '../../components/shared/SectionHeader';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
+import PageHeader from '../../components/shared/PageHeader';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import '../../components/Patrimonio/PatrimonioForm.css';
 import './DetalheSubcontaPage.css';
 
@@ -324,7 +326,7 @@ const DetalheSubcontaPage = () => {
         <Button variant="ghost" icon={<FaArrowLeft size={14} />} onClick={() => navigate('/patrimonio/contas')}>
           Voltar
         </Button>
-        <h1>{subconta.instituicao?.nome} - {subconta.nome}</h1>
+        <PageHeader icon={<AccountBalanceIcon />} title={`${subconta.instituicao?.nome} - ${subconta.nome}`} />
       </div>
 
       <div className="detalhe-cards">

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPiggyBank, FaBuilding, FaChartPie, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
+import { FaBuilding, FaChartPie, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
+import PageHeader from '../../components/shared/PageHeader';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import patrimonioApi from '../../services/patrimonioApi';
 import PatrimonioStatCard from '../../components/Patrimonio/PatrimonioStatCard';
 import PatrimonioAlerta from '../../components/Patrimonio/PatrimonioAlerta';
@@ -58,12 +60,15 @@ const PatrimonioPage = () => {
 
   return (
     <div className="patrimonio-page">
-      <div className="patrimonio-header">
-        <h1><FaPiggyBank /> Patrimônio</h1>
-        <Button variant="primary" onClick={() => navigate('/patrimonio/contas')}>
-          Gerenciar Contas
-        </Button>
-      </div>
+      <PageHeader
+        icon={<DashboardIcon />}
+        title="Patrimônio"
+        action={
+          <Button variant="primary" onClick={() => navigate('/patrimonio/contas')}>
+            Gerenciar Contas
+          </Button>
+        }
+      />
 
       <div className="patrimonio-cards">
         <PatrimonioStatCard

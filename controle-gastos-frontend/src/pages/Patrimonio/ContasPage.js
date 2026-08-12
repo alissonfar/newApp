@@ -7,6 +7,8 @@ import SubcontaForm from '../../components/Patrimonio/SubcontaForm';
 import InstituicaoCard from '../../components/Patrimonio/InstituicaoCard';
 import Button from '../../components/shared/Button';
 import EmptyState from '../../components/shared/EmptyState';
+import PageHeader from '../../components/shared/PageHeader';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import './ContasPage.css';
 
 const DIAS_ALERTA = 7;
@@ -128,18 +130,21 @@ const ContasPage = () => {
 
   return (
     <div className="contas-page">
-      <div className="contas-header">
-        <h1>Contas Bancárias</h1>
-        <div className="contas-actions">
-          <Button
-            variant="primary"
-            icon={<FaPlus size={14} />}
-            onClick={() => { setEditandoInstituicao(null); setModalInstituicao(true); }}
-          >
-            Nova Instituição
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={<AccountBalanceIcon />}
+        title="Contas Bancárias"
+        action={
+          <div className="contas-actions">
+            <Button
+              variant="primary"
+              icon={<FaPlus size={14} />}
+              onClick={() => { setEditandoInstituicao(null); setModalInstituicao(true); }}
+            >
+              Nova Instituição
+            </Button>
+          </div>
+        }
+      />
 
       <div className="contas-arvore">
         {grupos.map(({ instituicao, subcontas: subs }) => {
