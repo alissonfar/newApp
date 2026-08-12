@@ -6,6 +6,7 @@ const sonoController = require('../../controllers/lucca/sonoController');
 const alimentacaoController = require('../../controllers/lucca/alimentacaoController');
 const bombeamentoController = require('../../controllers/lucca/bombeamentoController');
 const fraldaController = require('../../controllers/lucca/fraldaController');
+const crescimentoController = require('../../controllers/lucca/crescimentoController');
 
 router.use(autenticacao);
 router.use(exigirAcessoLucca);
@@ -31,5 +32,10 @@ router.delete('/bombeamento/:id', bombeamentoController.excluir);
 router.get('/fralda', fraldaController.listar);
 router.post('/fralda', fraldaController.criar);
 router.delete('/fralda/:id', fraldaController.excluir);
+
+router.get('/crescimento', crescimentoController.listar);
+router.post('/crescimento', crescimentoController.criar);
+router.patch('/crescimento/:id', crescimentoController.atualizar);
+router.delete('/crescimento/:id', crescimentoController.excluir);
 
 module.exports = router;
