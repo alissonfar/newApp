@@ -1,11 +1,6 @@
 // backend/src/models/contaFixa.js
 const mongoose = require('mongoose');
-
-const PagamentoTemplateSchema = new mongoose.Schema({
-  pessoa: { type: String, required: true },
-  percentual: { type: Number, required: true, min: 0, max: 100 },
-  tagsOverride: { type: Object, default: null }
-}, { _id: false });
+const { PagamentoSchema } = require('./transacao');
 
 const CicloSchema = new mongoose.Schema({
   mes: { type: Number, required: true, min: 0, max: 11 },
@@ -20,9 +15,8 @@ const ContaFixaSchema = new mongoose.Schema({
   diaLancamento: { type: Number, required: true, min: 1, max: 31 },
   diaVencimento: { type: Number, required: true, min: 1, max: 31 },
   vencimentoMesSeguinte: { type: Boolean, default: false },
-  tagsPadrao: { type: Object, default: {} },
   modo: { type: String, enum: ['automatico', 'confirmacao'], required: true },
-  pagamentosTemplate: { type: [PagamentoTemplateSchema], required: true },
+  pagamentosTemplate: { type: [PagamentoSchema], required: true },
   dataInicio: { type: Date, required: true, default: Date.now },
   dataFim: { type: Date, default: null },
   totalRepeticoes: { type: Number, default: null, min: 1 },
