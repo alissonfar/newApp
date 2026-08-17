@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import React, { useState, useMemo } from 'react';
 import ModalTransacao from '../../components/Modal/ModalTransacao';
 import { useData } from '../../context/DataContext';
-import TagSelector from '../../components/Transaction/TagSelector';
+import usePagamentos from '../../hooks/usePagamentos';
+import TabPagamentos from '../../components/Transaction/TabPagamentos';
 import Button from '../../components/shared/Button';
 import Card from '../../components/shared/Card';
 import '../../components/Transaction/NovaTransacaoForm.css';
 import '../../components/Transaction/TransacaoTabs.css';
 import '../../components/Transaction/TabResumo.css';
 import './ContaFixaFormModal.css';
-
-const valorPadraoPagamento = () => ({ pessoa: '', percentual: 100, tagsOverride: null });
 
 const Badge = ({ ok, warn, error, label }) => {
   const color = error ? '#d32f2f' : warn ? '#ff9800' : '#2ecc71';
@@ -27,70 +25,45 @@ const TIPO_LABEL = { gasto: 'Despesa', recebivel: 'Receita' };
 
 const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
   const { categorias, tags } = useData();
-  const [form, setForm] = useState(() => contaFixa || {
-    nome: '',
-    tipo: 'gasto',
-    valorEsperado: '',
-    diaLancamento: 1,
-    diaVencimento: 1,
-    vencimentoMesSeguinte: false,
-    modo: 'automatico',
-    tagsPadrao: {},
-    pagamentosTemplate: [valorPadraoPagamento()],
-    dataFim: '',
-    totalRepeticoes: ''
-  });
+  const [form, setForm] = useState(() => ({
+    nome: contaFixa?.nome || '',
+    tipo: contaFixa?.tipo || 'gasto',
+    valorEsperado: contaFixa?.valorEsperado ?? '',
+    diaLancamento: contaFixa?.diaLancamento ?? 1,
+    diaVencimento: contaFixa?.diaVencimento ?? 1,
+    vencimentoMesSeguinte: contaFixa?.vencimentoMesSeguinte || false,
+    modo: contaFixa?.modo || 'automatico',
+    dataFim: contaFixa?.dataFim || '',
+    totalRepeticoes: contaFixa?.totalRepeticoes || ''
+  }));
   const [erro, setErro] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [activeTab, setActiveTab] = useState('principal');
 
-  const somaPercentual = form.pagamentosTemplate.reduce((acc, p) => acc + Number(p.percentual || 0), 0);
-  const somaOk = Math.abs(somaPercentual - 100) < 0.01;
+  const transacaoParaPagamentos = useMemo(
+    () => (contaFixa ? { pagamentos: contaFixa.pagamentosTemplate } : null),
+    [contaFixa]
+  );
 
-  const getPagamentoTags = (p) => {
-    const tagsDoItem = p.tagsOverride || form.tagsPadrao || {};
-    const result = [];
-    Object.entries(tagsDoItem).forEach(([catId, tagIds]) => {
-      if (!Array.isArray(tagIds) || tagIds.length === 0) return;
-      const cat = categorias.find(c => c._id === catId);
-      tagIds.forEach(tid => {
-        const tag = tags.find(t => t._id === tid);
-        if (tag) result.push({ catNome: cat?.nome || catId, tagNome: tag.nome, tagCor: tag.cor });
-      });
-    });
-    return result;
-  };
-
-  const pessoas = form.pagamentosTemplate.map(p => p.pessoa.trim()).filter(Boolean);
-  const pessoasVazias = form.pagamentosTemplate.filter(p => !p.pessoa.trim());
-  const percentuaisZerados = form.pagamentosTemplate.filter(p => Number(p.percentual || 0) === 0);
-  const hasDuplicatePeople = new Set(pessoas).size !== pessoas.length;
-  const anyTagMissing = form.pagamentosTemplate.length > 0 && form.pagamentosTemplate.every(p => getPagamentoTags(p).length === 0);
+  const pagamentos = usePagamentos({
+    transacao: transacaoParaPagamentos,
+    proprietarioPadrao: '',
+    valorTotal: form.valorEsperado
+  });
 
   const resumoIssues = [];
-  if (!somaOk) resumoIssues.push({ type: 'error', msg: `Soma dos percentuais é ${somaPercentual}%, deveria ser 100%` });
+  if (!pagamentos.isValid()) {
+    resumoIssues.push({ type: 'error', msg: `Soma dos pagamentos é R$ ${pagamentos.soma.toFixed(2).replace('.', ',')}, deveria ser R$ ${pagamentos.valorEsperadoParaSoma.toFixed(2).replace('.', ',')}` });
+  }
+  const pessoasVazias = pagamentos.pagamentos.filter(p => !p.pessoa || !p.pessoa.trim());
   if (pessoasVazias.length > 0) resumoIssues.push({ type: 'error', msg: `${pessoasVazias.length} pagamento(s) sem pessoa` });
-  if (percentuaisZerados.length > 0) resumoIssues.push({ type: 'error', msg: `${percentuaisZerados.length} pagamento(s) com percentual zerado` });
+  const pessoasPreenchidas = pagamentos.pagamentos.map(p => (p.pessoa || '').trim()).filter(Boolean);
+  const hasDuplicatePeople = new Set(pessoasPreenchidas).size !== pessoasPreenchidas.length;
   if (hasDuplicatePeople) resumoIssues.push({ type: 'warn', msg: 'Pessoas duplicadas nos pagamentos' });
-  if (anyTagMissing) resumoIssues.push({ type: 'warn', msg: 'Nenhuma tag aplicada nos pagamentos' });
-
-  const atualizarPagamento = (index, campo, valor) => {
-    const novos = [...form.pagamentosTemplate];
-    novos[index] = { ...novos[index], [campo]: valor };
-    setForm({ ...form, pagamentosTemplate: novos });
-  };
-
-  const adicionarPagamento = () => {
-    setForm({ ...form, pagamentosTemplate: [...form.pagamentosTemplate, valorPadraoPagamento()] });
-  };
-
-  const removerPagamento = (index) => {
-    setForm({ ...form, pagamentosTemplate: form.pagamentosTemplate.filter((_, i) => i !== index) });
-  };
 
   const handleSalvar = async () => {
-    if (!somaOk) {
-      setErro('A soma dos percentuais de divisão deve ser 100%.');
+    if (!pagamentos.isValid()) {
+      setErro('A soma dos pagamentos deve ser igual ao valor esperado.');
       return;
     }
     setErro('');
@@ -102,7 +75,8 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
         diaLancamento: Number(form.diaLancamento),
         diaVencimento: Number(form.diaVencimento),
         totalRepeticoes: form.totalRepeticoes ? Number(form.totalRepeticoes) : null,
-        dataFim: form.dataFim || null
+        dataFim: form.dataFim || null,
+        pagamentosTemplate: pagamentos.buildPagamentosPayload()
       });
     } catch (err) {
       setErro(err.message || 'Erro ao salvar conta fixa.');
@@ -222,54 +196,27 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
           />
         </div>
 
-        <div className="form-section pagamentos-section">
-          <div className="pagamentos-header">
-            <h3>Divisão de pagamento</h3>
-            <span className={somaOk ? 'resumo-ok' : 'resumo-diff'}>Soma atual: {somaPercentual}%</span>
-          </div>
-
-          {form.pagamentosTemplate.map((p, index) => (
-            <div className="pagamento-item" key={index}>
-              <div className="pagamento-item-header">
-                <span className="pagamento-numero">Pagamento {index + 1}</span>
-                {form.pagamentosTemplate.length > 1 && (
-                  <div className="pagamento-item-actions">
-                    <button type="button" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }} onClick={() => removerPagamento(index)}>
-                      <FaTrash /> Remover
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="pagamento-campos-principais">
-                <div className="form-section pagamento-field-pessoa">
-                  <label>Pessoa</label>
-                  <input value={p.pessoa} onChange={(e) => atualizarPagamento(index, 'pessoa', e.target.value)} />
-                </div>
-                <div className="form-section pagamento-field-valor">
-                  <label>%</label>
-                  <input
-                    type="number"
-                    value={p.percentual}
-                    onChange={(e) => atualizarPagamento(index, 'percentual', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="pagamento-tags-summary">
-                <TagSelector
-                  categorias={categorias}
-                  allTags={tags}
-                  paymentTags={p.tagsOverride || form.tagsPadrao || {}}
-                  onTagsChange={(novasTags) => atualizarPagamento(index, 'tagsOverride', novasTags)}
-                />
-              </div>
-            </div>
-          ))}
-
-          <button type="button" className="btn-adicionar-pagamento" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={adicionarPagamento}>
-            <FaPlus /> Adicionar pessoa
-          </button>
-        </div>
+        <TabPagamentos
+          pagamentos={pagamentos.pagamentos}
+          handlePagamentoChange={pagamentos.handlePagamentoChange}
+          addPagamento={pagamentos.addPagamento}
+          removePagamento={pagamentos.removePagamento}
+          splitEqually={pagamentos.splitEqually}
+          splitInto={pagamentos.splitInto}
+          applyPreset={pagamentos.applyPreset}
+          duplicatePagamento={pagamentos.duplicatePagamento}
+          toggleFixed={pagamentos.toggleFixed}
+          fillRemaining={pagamentos.fillRemaining}
+          distributeRemaining={pagamentos.distributeRemaining}
+          categorias={categorias}
+          allTags={tags}
+          proprietarioPadrao=""
+          valorTotal={form.valorEsperado}
+          showValidationWarning={pagamentos.showValidationWarning}
+          soma={pagamentos.soma}
+          saldoRestante={pagamentos.saldoRestante}
+          enableEmprestimo={false}
+        />
       </div>
       )}
 
@@ -292,38 +239,11 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
           </div>
 
           <div className="resumo-block">
-            <h4 className="resumo-block-title">Divisão de pagamento <Badge ok={somaOk} error={!somaOk} label={somaOk ? 'OK' : 'Divergente'} /></h4>
+            <h4 className="resumo-block-title">Divisão de pagamento <Badge ok={pagamentos.isValid()} error={!pagamentos.isValid()} label={pagamentos.isValid() ? 'OK' : 'Divergente'} /></h4>
             <div className="resumo-grid">
-              <div className="resumo-field"><span className="resumo-label">Soma dos percentuais</span><span className="resumo-value" style={!somaOk ? { color: '#ff9800' } : {}}>{somaPercentual}%</span></div>
-              <div className="resumo-field"><span className="resumo-label">Qtd. pagamentos</span><span className="resumo-value">{form.pagamentosTemplate.length}</span></div>
+              <div className="resumo-field"><span className="resumo-label">Soma dos pagamentos</span><span className="resumo-value" style={!pagamentos.isValid() ? { color: '#ff9800' } : {}}>R$ {pagamentos.soma.toFixed(2).replace('.', ',')}</span></div>
+              <div className="resumo-field"><span className="resumo-label">Qtd. pagamentos</span><span className="resumo-value">{pagamentos.pagamentos.length}</span></div>
             </div>
-          </div>
-
-          <div className="resumo-block">
-            <h4 className="resumo-block-title">Pagamentos</h4>
-            {form.pagamentosTemplate.map((p, i) => {
-              const valorCalculado = (parseFloat(form.valorEsperado) || 0) * (Number(p.percentual || 0) / 100);
-              const paymentTags = getPagamentoTags(p);
-              return (
-                <div key={i} className="resumo-pagamento-row">
-                  <div className="resumo-pag-header">
-                    <span className="resumo-pag-pessoa">{p.pessoa || '(vazio)'}</span>
-                    <span className="resumo-pag-valor">{p.percentual}% · R$ {valorCalculado.toFixed(2).replace('.', ',')}</span>
-                    {!p.pessoa.trim() && <Badge error label="Sem pessoa" />}
-                    {Number(p.percentual || 0) === 0 && <Badge error label="0%" />}
-                  </div>
-                  {paymentTags.length > 0 && (
-                    <div className="resumo-pag-tags-list">
-                      {paymentTags.map((t, ti) => (
-                        <span key={ti} className="resumo-tag-chip" style={{ backgroundColor: (t.tagCor || '#666') + '18', color: t.tagCor || '#666', borderColor: (t.tagCor || '#666') + '30' }}>
-                          {t.catNome}: {t.tagNome}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
           </div>
 
           <div className="resumo-block">
