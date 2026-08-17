@@ -72,6 +72,7 @@ const TabPagamentos = ({
   saldoRestante,
   // Empréstimo por pagamento (caminho novo)
   tipoTransacao,
+  enableEmprestimo = true,
   pessoas = [],
   loadingPessoas = false,
   adicionarPessoa,
@@ -80,9 +81,10 @@ const TabPagamentos = ({
   setPagamentoEmprestimosPessoa,
   setPagamentoEmprestimoLoading
 }) => {
-  // Coluna "Empréstimo" só aparece para 2+ pagamentos (caminho novo).
+  // Coluna "Empréstimo" só aparece para 2+ pagamentos (caminho novo) e quando
+  // o contexto de uso habilita (ex: desligada na Conta Fixa, ver enableEmprestimo).
   // Com 1 pagamento, o usuário usa a seção legado na aba Avançado.
-  const mostrarColunaEmprestimo = pagamentos.length > 1;
+  const mostrarColunaEmprestimo = enableEmprestimo && pagamentos.length > 1;
 
   const totalFormatado = parseFloat(valorTotal || 0).toFixed(2).replace('.', ',');
   const somaFormatada = soma.toFixed(2).replace('.', ',');
