@@ -1,4 +1,4 @@
-const { calcularCiclo, cicloJaProcessado, verificarEEncerrar, montarPagamentos } = require('../contaFixaService');
+const { calcularCiclo, cicloJaProcessado, verificarEEncerrar, confirmarPendencia } = require('../contaFixaService');
 
 describe('calcularCiclo', () => {
   it('calcula lançamento e vencimento no mesmo mês quando vencimentoMesSeguinte é false', () => {
@@ -81,48 +81,10 @@ describe('verificarEEncerrar', () => {
   });
 });
 
-describe('montarPagamentos', () => {
-  it('divide o valor proporcionalmente e a soma bate exatamente com o valor total', () => {
-    const template = [
-      { pessoa: 'Alisson', percentual: 60 },
-      { pessoa: 'Outra Pessoa', percentual: 40 }
-    ];
-    const pagamentos = montarPagamentos(template, 100.01);
-
-    const soma = pagamentos.reduce((acc, p) => acc + p.valor, 0);
-    expect(Math.round(soma * 100) / 100).toBe(100.01);
-    expect(pagamentos[0].valor).toBe(60.01);
-    expect(pagamentos[1].valor).toBe(40);
-  });
-
-  it('pagamento único (100%) retorna o valor total sem perda de centavos', () => {
-    const template = [{ pessoa: 'Alisson', percentual: 100 }];
-    const pagamentos = montarPagamentos(template, 33.33);
-
-    expect(pagamentos).toHaveLength(1);
-    expect(pagamentos[0].valor).toBe(33.33);
-  });
-
-  it('usa tagsOverride do template quando presente, senão cai no tagsPadrao', () => {
-    const template = [
-      { pessoa: 'Alisson', percentual: 50, tagsOverride: { cat1: ['tagA'] } },
-      { pessoa: 'Outra Pessoa', percentual: 50 }
-    ];
-    const pagamentos = montarPagamentos(template, 100, { catPadrao: ['tagB'] });
-
-    expect(pagamentos[0].tags).toEqual({ cat1: ['tagA'] });
-    expect(pagamentos[1].tags).toEqual({ catPadrao: ['tagB'] });
-  });
-
-  it('divide três partes iguais sem perder centavos na soma', () => {
-    const template = [
-      { pessoa: 'A', percentual: 33.34 },
-      { pessoa: 'B', percentual: 33.33 },
-      { pessoa: 'C', percentual: 33.33 }
-    ];
-    const pagamentos = montarPagamentos(template, 10);
-
-    const soma = pagamentos.reduce((acc, p) => acc + p.valor, 0);
-    expect(Math.round(soma * 100) / 100).toBe(10);
+describe('confirmarPendencia — validação de soma', () => {
+  it('rejeita confirmação sem array de pagamentos', async () => {
+    await expect(
+      confirmarPendencia('id-invalido', 'usuario-invalido', { valor: 100 })
+    ).rejects.toThrow();
   });
 });

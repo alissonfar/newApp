@@ -1,9 +1,7 @@
 // backend/src/services/contaFixaService.js
-const Decimal = require('decimal.js');
 const ContaFixa = require('../models/contaFixa');
 const Transacao = require('../models/transacao');
-
-Decimal.set({ precision: 20, rounding: 4 });
+const { validarSomaPagamentos } = require('./transacaoService');
 
 function ultimoDiaDoMes(ano, mesIndexZeroBased) {
   return new Date(ano, mesIndexZeroBased + 1, 0).getDate();
@@ -54,29 +52,16 @@ function verificarEEncerrar(contaFixa, dataReferencia = new Date()) {
   return false;
 }
 
-function montarPagamentos(pagamentosTemplate, valorTotal, tagsPadrao = {}) {
-  const total = new Decimal(valorTotal);
-
-  const valoresCalculados = pagamentosTemplate.map((p) =>
-    total.times(p.percentual).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
-  );
-
-  const somaParcial = valoresCalculados
-    .slice(0, -1)
-    .reduce((acc, v) => acc.plus(v), new Decimal(0));
-
-  const ultimoIndice = valoresCalculados.length - 1;
-  valoresCalculados[ultimoIndice] = total.minus(somaParcial).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-
-  return pagamentosTemplate.map((p, i) => ({
+function copiarPagamentos(pagamentosTemplate) {
+  return pagamentosTemplate.map((p) => ({
     pessoa: p.pessoa,
-    valor: valoresCalculados[i].toNumber(),
-    tags: p.tagsOverride || tagsPadrao
+    valor: p.valor,
+    tags: p.tags || {}
   }));
 }
 
 async function gerarTransacaoParaCiclo(contaFixa, ciclo) {
-  const pagamentos = montarPagamentos(contaFixa.pagamentosTemplate, contaFixa.valorEsperado, contaFixa.tagsPadrao);
+  const pagamentos = copiarPagamentos(contaFixa.pagamentosTemplate);
 
   const transacao = new Transacao({
     tipo: contaFixa.tipo,
@@ -133,6 +118,10 @@ async function listarPendencias(usuarioId, dataReferencia = new Date()) {
 }
 
 async function confirmarPendencia(contaFixaId, usuarioId, dadosConfirmados = {}) {
+  if (!dadosConfirmados.pagamentos || dadosConfirmados.pagamentos.length === 0) {
+    throw new Error('Pagamentos são obrigatórios para confirmar o lançamento.');
+  }
+
   const contaFixa = await ContaFixa.findOne({ _id: contaFixaId, usuario: usuarioId });
   if (!contaFixa) throw new Error('Conta fixa não encontrada.');
 
@@ -143,9 +132,8 @@ async function confirmarPendencia(contaFixaId, usuarioId, dadosConfirmados = {})
 
   const valorFinal = dadosConfirmados.valor != null ? dadosConfirmados.valor : contaFixa.valorEsperado;
   const dataFinal = dadosConfirmados.data ? new Date(dadosConfirmados.data) : ciclo.dataVencimento;
-  const pagamentos = dadosConfirmados.pagamentos && dadosConfirmados.pagamentos.length > 0
-    ? dadosConfirmados.pagamentos
-    : montarPagamentos(contaFixa.pagamentosTemplate, valorFinal, contaFixa.tagsPadrao);
+
+  validarSomaPagamentos({ valor: valorFinal }, dadosConfirmados.pagamentos);
 
   const transacao = new Transacao({
     tipo: contaFixa.tipo,
@@ -153,7 +141,7 @@ async function confirmarPendencia(contaFixaId, usuarioId, dadosConfirmados = {})
     valor: valorFinal,
     data: dataFinal,
     usuario: contaFixa.usuario,
-    pagamentos,
+    pagamentos: dadosConfirmados.pagamentos,
     contaFixaId: contaFixa._id
   });
   await transacao.save();
@@ -186,7 +174,6 @@ module.exports = {
   calcularCiclo,
   cicloJaProcessado,
   verificarEEncerrar,
-  montarPagamentos,
   gerarTransacaoParaCiclo,
   processarContasFixasAutomaticas,
   listarPendencias,
