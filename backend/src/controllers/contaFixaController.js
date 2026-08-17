@@ -1,6 +1,7 @@
 // backend/src/controllers/contaFixaController.js
 const ContaFixa = require('../models/contaFixa');
 const contaFixaService = require('../services/contaFixaService');
+const { validarSomaPagamentos } = require('../services/transacaoService');
 
 exports.criar = async (req, res) => {
   const {
@@ -12,9 +13,10 @@ exports.criar = async (req, res) => {
     return res.status(400).json({ erro: 'Campos obrigatórios: nome, tipo, valorEsperado, diaLancamento, diaVencimento, modo, pagamentosTemplate.' });
   }
 
-  const somaPercentual = pagamentosTemplate.reduce((acc, p) => acc + p.percentual, 0);
-  if (Math.abs(somaPercentual - 100) > 0.01) {
-    return res.status(400).json({ erro: 'A soma dos percentuais em pagamentosTemplate deve ser 100.' });
+  try {
+    validarSomaPagamentos({ valor: valorEsperado }, pagamentosTemplate);
+  } catch (err) {
+    return res.status(400).json({ erro: err.message });
   }
 
   try {
@@ -72,6 +74,12 @@ exports.atualizar = async (req, res) => {
     camposPermitidos.forEach((campo) => {
       if (req.body[campo] !== undefined) contaFixa[campo] = req.body[campo];
     });
+
+    try {
+      validarSomaPagamentos({ valor: contaFixa.valorEsperado }, contaFixa.pagamentosTemplate);
+    } catch (err) {
+      return res.status(400).json({ erro: err.message });
+    }
 
     await contaFixa.save();
     res.json(contaFixa);
