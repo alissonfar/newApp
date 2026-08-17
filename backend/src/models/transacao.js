@@ -75,4 +75,7 @@ TransacaoSchema.index({ usuario: 1, emprestimoId: 1, tipo: 1 }, { sparse: true }
 TransacaoSchema.index({ 'pagamentos.emprestimoId': 1 }, { sparse: true });
 TransacaoSchema.index({ usuario: 1, contaFixaId: 1 }, { sparse: true });
 
-module.exports = mongoose.model('Transacao', TransacaoSchema);
+const Transacao = mongoose.model('Transacao', TransacaoSchema);
+Transacao.PagamentoSchema = PagamentoSchema;
+
+module.exports = Transacao;
