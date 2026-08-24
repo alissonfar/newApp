@@ -6,7 +6,7 @@ const { validarSomaPagamentos } = require('../services/transacaoService');
 exports.criar = async (req, res) => {
   const {
     nome, tipo, valorEsperado, diaLancamento, diaVencimento, vencimentoMesSeguinte,
-    tagsPadrao, modo, pagamentosTemplate, dataInicio, dataFim, totalRepeticoes
+    modo, pagamentosTemplate, dataInicio, dataFim, totalRepeticoes
   } = req.body;
 
   if (!nome || !tipo || !valorEsperado || !diaLancamento || !diaVencimento || !modo || !pagamentosTemplate || pagamentosTemplate.length === 0) {
@@ -28,7 +28,6 @@ exports.criar = async (req, res) => {
       diaLancamento,
       diaVencimento,
       vencimentoMesSeguinte: !!vencimentoMesSeguinte,
-      tagsPadrao: tagsPadrao || {},
       modo,
       pagamentosTemplate,
       dataInicio: dataInicio || new Date(),
@@ -68,7 +67,7 @@ exports.atualizar = async (req, res) => {
 
     const camposPermitidos = [
       'nome', 'tipo', 'valorEsperado', 'diaLancamento', 'diaVencimento',
-      'vencimentoMesSeguinte', 'tagsPadrao', 'modo', 'pagamentosTemplate',
+      'vencimentoMesSeguinte', 'modo', 'pagamentosTemplate',
       'dataInicio', 'dataFim', 'totalRepeticoes'
     ];
     camposPermitidos.forEach((campo) => {
