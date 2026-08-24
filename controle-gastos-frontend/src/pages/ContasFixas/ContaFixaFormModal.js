@@ -23,6 +23,21 @@ const Badge = ({ ok, warn, error, label }) => {
 const MODO_LABEL = { automatico: 'Automático (lança sozinho)', confirmacao: 'Confirmação manual' };
 const TIPO_LABEL = { gasto: 'Despesa', recebivel: 'Receita' };
 
+const getPaymentTags = (p, categorias, allTags) => {
+  const result = [];
+  if (p.paymentTags) {
+    Object.entries(p.paymentTags).forEach(([catId, tagIds]) => {
+      if (!Array.isArray(tagIds) || tagIds.length === 0) return;
+      const cat = categorias.find(c => c._id === catId);
+      tagIds.forEach(tid => {
+        const tag = allTags.find(t => t._id === tid);
+        if (tag) result.push({ catNome: cat?.nome || catId, tagNome: tag.nome, tagCor: tag.cor });
+      });
+    });
+  }
+  return result;
+};
+
 const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
   const { categorias, tags } = useData();
   const [form, setForm] = useState(() => ({
@@ -57,6 +72,8 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
   }
   const pessoasVazias = pagamentos.pagamentos.filter(p => !p.pessoa || !p.pessoa.trim());
   if (pessoasVazias.length > 0) resumoIssues.push({ type: 'error', msg: `${pessoasVazias.length} pagamento(s) sem pessoa` });
+  const valoresZerados = pagamentos.pagamentos.filter(p => parseFloat(p.valor || 0) === 0);
+  if (valoresZerados.length > 0) resumoIssues.push({ type: 'error', msg: `${valoresZerados.length} pagamento(s) com valor zerado` });
   const pessoasPreenchidas = pagamentos.pagamentos.map(p => (p.pessoa || '').trim()).filter(Boolean);
   const hasDuplicatePeople = new Set(pessoasPreenchidas).size !== pessoasPreenchidas.length;
   if (hasDuplicatePeople) resumoIssues.push({ type: 'warn', msg: 'Pessoas duplicadas nos pagamentos' });
@@ -99,6 +116,15 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
           onClick={() => setActiveTab('principal')}
         >
           Principal
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'pagamentos'}
+          className={`transacao-tab ${activeTab === 'pagamentos' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pagamentos')}
+        >
+          Pagamentos
         </button>
         <button
           type="button"
@@ -195,7 +221,11 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
             onChange={(e) => setForm({ ...form, totalRepeticoes: e.target.value })}
           />
         </div>
+      </div>
+      )}
 
+      {activeTab === 'pagamentos' && (
+      <div className="form-grid">
         <TabPagamentos
           pagamentos={pagamentos.pagamentos}
           handlePagamentoChange={pagamentos.handlePagamentoChange}
@@ -244,6 +274,33 @@ const ContaFixaFormModal = ({ contaFixa, onSave, onClose }) => {
               <div className="resumo-field"><span className="resumo-label">Soma dos pagamentos</span><span className="resumo-value" style={!pagamentos.isValid() ? { color: '#ff9800' } : {}}>R$ {pagamentos.soma.toFixed(2).replace('.', ',')}</span></div>
               <div className="resumo-field"><span className="resumo-label">Qtd. pagamentos</span><span className="resumo-value">{pagamentos.pagamentos.length}</span></div>
             </div>
+          </div>
+
+          <div className="resumo-block">
+            <h4 className="resumo-block-title">Pagamentos</h4>
+            {pagamentos.pagamentos.map((p, i) => {
+              const paymentTags = getPaymentTags(p, categorias, tags);
+              return (
+                <div key={i} className="resumo-pagamento-row">
+                  <div className="resumo-pag-header">
+                    <span className="resumo-pag-pessoa">{p.pessoa || '(vazio)'}</span>
+                    <span className="resumo-pag-valor">R$ {parseFloat(p.valor || 0).toFixed(2).replace('.', ',')}</span>
+                    {!p.pessoa.trim() && <Badge error label="Sem pessoa" />}
+                    {parseFloat(p.valor || 0) === 0 && <Badge error label="R$ 0" />}
+                  </div>
+                  {paymentTags.length > 0 && (
+                    <div className="resumo-pag-tags-list">
+                      {paymentTags.map((t, ti) => (
+                        <span key={ti} className="resumo-tag-chip" style={{ backgroundColor: (t.tagCor || '#666') + '18', color: t.tagCor || '#666', borderColor: (t.tagCor || '#666') + '30' }}>
+                          {t.catNome}: {t.tagNome}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {hasDuplicatePeople && <div className="resumo-row"><Badge warn label="Pessoas duplicadas" /></div>}
           </div>
 
           <div className="resumo-block">
