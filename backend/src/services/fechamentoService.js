@@ -45,10 +45,16 @@ function periodoOverlapMatch(dataInicioFiltro, dataFimFiltro) {
 }
 
 /**
- * Busca as transações de uma pessoa (por nome, case-insensitive) num período, aplica as regras
- * do modelo de relatório e agrega — reaproveita o reportEngine sem alterá-lo.
+ * Busca as transações de uma pessoa (por nome, case-insensitive) num período e agrega em DOIS
+ * modos, reaproveitando o reportEngine sem alterá-lo (mesma query, `aggregate()` chamado 2x):
+ *  - `resumoCru`: sem nenhuma regra de tag aplicada (todo pagamento com effect 'add'), sempre no
+ *    formato 'default' — é a soma bruta de tudo, independente do modelo escolhido.
+ *  - `resumoModelo`: com as regras reais do modelo de relatório da pessoa (add/subtract/ignore por
+ *    tag) e no formato de agregação que o modelo define ('default' ou 'devedor').
+ * `rows` (usado na tabela de detalhe e no PDF) reflete o modelo — é o que já era usado antes desta
+ * função existir em 2 modos.
  */
-async function buscarLinhasEResumo(usuarioId, pessoaNome, dataInicioStr, dataFimStr, modeloDoc) {
+async function buscarLinhasEResumos(usuarioId, pessoaNome, dataInicioStr, dataFimStr, modeloDoc) {
   const match = {
     usuario: new mongoose.Types.ObjectId(usuarioId),
     status: 'ativo',
@@ -67,10 +73,13 @@ async function buscarLinhasEResumo(usuarioId, pessoaNome, dataInicioStr, dataFim
   const regras = modeloDoc ? modelRulesToEngineRules(modeloDoc.regras) : [];
   const aggregationType = modeloDoc?.aggregation || 'default';
 
-  const rows = processWithRules(transacoes, regras, tags, { pessoas: [pessoaNome] });
-  const summary = aggregate(rows, aggregationType);
+  const rowsCru = processWithRules(transacoes, [], tags, { pessoas: [pessoaNome] });
+  const resumoCru = aggregate(rowsCru, 'default');
 
-  return { rows, summary };
+  const rows = processWithRules(transacoes, regras, tags, { pessoas: [pessoaNome] });
+  const resumoModelo = aggregate(rows, aggregationType);
+
+  return { rows, resumoCru, resumoModelo };
 }
 
 // --- Cadastros ---
@@ -139,17 +148,18 @@ async function listarInstancias(usuarioId, { dataInicio, dataFim } = {}) {
     })
     .lean();
 
+  const resumoVazio = { totalValue: '0.00', totalRows: 0 };
   const comResumo = await Promise.all(instancias.map(async (inst) => {
     const pessoaNome = inst.cadastro?.pessoa?.nome;
     if (!pessoaNome) {
-      return { ...inst, resumo: { totalValue: '0.00', totalRows: 0 } };
+      return { ...inst, resumoCru: resumoVazio, resumoModelo: resumoVazio };
     }
     const dInicio = inst.dataInicio.toISOString().slice(0, 10);
     const dFim = inst.dataFim.toISOString().slice(0, 10);
-    const { summary } = await buscarLinhasEResumo(
+    const { resumoCru, resumoModelo } = await buscarLinhasEResumos(
       usuarioId, pessoaNome, dInicio, dFim, inst.cadastro.modeloRelatorio
     );
-    return { ...inst, resumo: summary };
+    return { ...inst, resumoCru, resumoModelo };
   }));
 
   return comResumo;
@@ -210,7 +220,10 @@ async function obterTransacoesDaInstancia(id, usuarioId) {
   if (!instancia) throw new Error('Instância não encontrada.');
 
   const pessoaNome = instancia.cadastro?.pessoa?.nome;
-  if (!pessoaNome) return { rows: [], summary: aggregate([], 'default') };
+  if (!pessoaNome) {
+    const vazio = aggregate([], 'default');
+    return { rows: [], resumoCru: vazio, resumoModelo: vazio };
+  }
 
   const modeloDoc = await ModeloRelatorio.findOne({
     _id: instancia.cadastro.modeloRelatorio._id,
@@ -219,7 +232,7 @@ async function obterTransacoesDaInstancia(id, usuarioId) {
 
   const dInicio = instancia.dataInicio.toISOString().slice(0, 10);
   const dFim = instancia.dataFim.toISOString().slice(0, 10);
-  return buscarLinhasEResumo(usuarioId, pessoaNome, dInicio, dFim, modeloDoc);
+  return buscarLinhasEResumos(usuarioId, pessoaNome, dInicio, dFim, modeloDoc);
 }
 
 async function atualizarStatus(id, status, usuarioId) {
@@ -271,7 +284,7 @@ module.exports = {
   escapeRegex,
   modelRulesToEngineRules,
   periodoOverlapMatch,
-  buscarLinhasEResumo,
+  buscarLinhasEResumos,
   listarCadastros,
   criarCadastro,
   obterInstanciaPopulada,

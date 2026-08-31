@@ -3,6 +3,7 @@ import React from 'react';
 import { FaFileDownload, FaLink, FaChevronDown, FaChevronUp, FaCopy } from 'react-icons/fa';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
+import { extrairValorCru, extrairValorModelo, labelValorModelo } from '../../utils/fechamentoResumo';
 import './FechamentoInstanciaCard.css';
 
 const STATUS_LABEL = {
@@ -37,6 +38,9 @@ const FechamentoInstanciaCard = ({
   onAbrirLinkRecebimento
 }) => {
   const pessoa = instancia.cadastro?.pessoa;
+  const aggregationType = instancia.cadastro?.modeloRelatorio?.aggregation;
+  const valorCru = extrairValorCru(instancia.resumoCru);
+  const valorModelo = extrairValorModelo(instancia.resumoModelo, aggregationType);
   const statusAtual = instancia.status;
   const statusIndex = STATUS_ORDER.indexOf(statusAtual);
   const proximoStatusManual = statusAtual === 'aberto'
@@ -78,11 +82,18 @@ const FechamentoInstanciaCard = ({
 
       <div className="fechamento-card__totalrow">
         <span className="fechamento-card__txcount">
-          {instancia.resumo?.totalRows ?? 0} transações
+          {instancia.resumoModelo?.totalRows ?? 0} transações
         </span>
-        <span className="fechamento-card__total">
-          {formatMoeda(instancia.resumo?.totalValue)}
-        </span>
+        <div className="fechamento-card__totals">
+          <div className="fechamento-card__total-item">
+            <span className="fechamento-card__total-label">Cru</span>
+            <span className="fechamento-card__total-cru">{formatMoeda(valorCru)}</span>
+          </div>
+          <div className="fechamento-card__total-item">
+            <span className="fechamento-card__total-label">{labelValorModelo(aggregationType)}</span>
+            <span className="fechamento-card__total">{formatMoeda(valorModelo)}</span>
+          </div>
+        </div>
       </div>
 
       {expandida && (

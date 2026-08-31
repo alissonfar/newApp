@@ -13,13 +13,13 @@ export async function exportarFechamentosEmLote(instancias, categorias, tags, pe
 
   for (const instancia of instancias) {
     const pessoa = instancia.cadastro?.pessoa?.nome || 'pessoa';
-    const { rows, summary } = await obterTransacoesInstanciaFechamento(instancia._id);
+    const { rows, resumoModelo } = await obterTransacoesInstanciaFechamento(instancia._id);
     if (!rows || rows.length === 0) continue;
 
     const blob = await generateReportPdfBlob(
       rows,
       { dataInicio: periodo.dataInicio, dataFim: periodo.dataFim, selectedPessoas: [pessoa] },
-      summary,
+      resumoModelo,
       categorias,
       tags,
       instancia.cadastro?.modeloRelatorio?.aggregation || 'default'

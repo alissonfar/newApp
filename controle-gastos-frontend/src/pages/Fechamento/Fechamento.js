@@ -16,6 +16,7 @@ import { obterTransacoesInstanciaFechamento } from '../../api';
 import { useData } from '../../context/DataContext';
 import { exportDataToPDF } from '../../utils/export/exportPDF';
 import { exportarFechamentosEmLote } from '../../utils/export/exportFechamentoZip';
+import { extrairValorModelo } from '../../utils/fechamentoResumo';
 import { PERIODOS_RAPIDOS } from '../../utils/dateUtils';
 import './Fechamento.css';
 
@@ -53,24 +54,27 @@ const Fechamento = () => {
     selecionarTodas
   } = useFechamento(periodo);
 
-  const totalAReceber = instancias.reduce((s, i) => s + (parseFloat(i.resumo?.totalValue) || 0), 0);
+  const valorModeloDaInstancia = (i) => extrairValorModelo(i.resumoModelo, i.cadastro?.modeloRelatorio?.aggregation);
+
+  const totalAReceber = instancias.reduce((s, i) => s + valorModeloDaInstancia(i), 0);
   const totalRecebido = instancias
     .filter((i) => i.status === 'recebido')
-    .reduce((s, i) => s + (parseFloat(i.resumo?.totalValue) || 0), 0);
+    .reduce((s, i) => s + valorModeloDaInstancia(i), 0);
   const totalAguardando = instancias
     .filter((i) => i.status === 'aguardando_recebimento')
-    .reduce((s, i) => s + (parseFloat(i.resumo?.totalValue) || 0), 0);
+    .reduce((s, i) => s + valorModeloDaInstancia(i), 0);
 
   const handleGerarPDF = async (instancia) => {
     const detalheExistente = detalhes[instancia._id];
     const detalhe = detalheExistente || await obterTransacoesInstanciaFechamento(instancia._id);
     const rows = detalhe.rows || [];
+    const resumo = detalhe.resumoModelo || instancia.resumoModelo;
     const pessoa = instancia.cadastro?.pessoa?.nome || 'pessoa';
     const periodoLabel = `${periodo.dataInicio}_${periodo.dataFim}`;
     await exportDataToPDF(
       rows,
       { dataInicio: periodo.dataInicio, dataFim: periodo.dataFim, selectedPessoas: [pessoa] },
-      instancia.resumo,
+      resumo,
       categorias,
       tags,
       `fechamento-${pessoa}-${periodoLabel}.pdf`,

@@ -80,10 +80,35 @@
 
 .fechamento-card__totalrow {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
   padding-top: var(--cg-spacing-sm);
   border-top: 1px solid var(--cg-color-border);
+}
+
+.fechamento-card__totals {
+  display: flex;
+  gap: var(--cg-spacing-lg);
+}
+
+.fechamento-card__total-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.fechamento-card__total-label {
+  font-size: 0.6875rem;
+  color: var(--cg-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fechamento-card__total-cru {
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--cg-color-text-secondary);
 }
 
 .fechamento-card__total {
