@@ -62,16 +62,27 @@ export default function useFechamento({ dataInicio, dataFim }) {
     await carregar();
   }, [carregar]);
 
+  // duplicar/atualizarStatus são disparados direto pelos botões do card (sem modal/try-catch do
+  // lado do chamador) — capturam o próprio erro aqui pra nunca virar uma promise rejeitada sem
+  // tratamento (ex: "Duplicar" bloqueado por já existir instância no mesmo período).
   const duplicar = useCallback(async (id) => {
-    await duplicarInstanciaFechamento(id);
-    toast.success('Instância duplicada para o próximo período.');
-    await carregar();
+    try {
+      await duplicarInstanciaFechamento(id);
+      toast.success('Instância duplicada para o próximo período.');
+      await carregar();
+    } catch (err) {
+      toast.error(err.message || 'Erro ao duplicar instância.');
+    }
   }, [carregar]);
 
   const atualizarStatus = useCallback(async (id, status) => {
-    await atualizarStatusInstanciaFechamento(id, status);
-    toast.success('Status atualizado.');
-    await carregar();
+    try {
+      await atualizarStatusInstanciaFechamento(id, status);
+      toast.success('Status atualizado.');
+      await carregar();
+    } catch (err) {
+      toast.error(err.message || 'Erro ao atualizar status.');
+    }
   }, [carregar]);
 
   const linkarRecebimento = useCallback(async (id, settlementId) => {

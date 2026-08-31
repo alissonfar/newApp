@@ -118,6 +118,8 @@ export const getSingleDateRange = (period) => {
 export const PERIODOS_RAPIDOS = {
   MES_ATUAL: 'MES_ATUAL',
   MES_ANTERIOR: 'MES_ANTERIOR',
+  PROXIMO_MES: 'PROXIMO_MES',
+  PROXIMOS_30_DIAS: 'PROXIMOS_30_DIAS',
   ULTIMOS_7_DIAS: 'ULTIMOS_7_DIAS',
   ULTIMOS_15_DIAS: 'ULTIMOS_15_DIAS',
   ULTIMOS_30_DIAS: 'ULTIMOS_30_DIAS',
@@ -153,6 +155,17 @@ export const getDateRangeForPeriod = (period) => {
       end = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0);
       break;
     }
+    case PERIODOS_RAPIDOS.PROXIMO_MES: {
+      const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      start = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), 1);
+      end = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1, 0);
+      break;
+    }
+    case PERIODOS_RAPIDOS.PROXIMOS_30_DIAS:
+      start = new Date(now);
+      end = new Date(now);
+      end.setDate(end.getDate() + 30);
+      break;
     case PERIODOS_RAPIDOS.ULTIMOS_7_DIAS:
       end = new Date(now);
       start = new Date(now);

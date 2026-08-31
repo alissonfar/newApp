@@ -18,6 +18,8 @@ const PERIOD_LABELS = {
   [PERIODOS_RAPIDOS.ULTIMOS_12_MESES]: '1 ano',
   [PERIODOS_RAPIDOS.ESTE_ANO]: 'Este Ano',
   [PERIODOS_RAPIDOS.MES_ANTERIOR]: 'Mês Anterior',
+  [PERIODOS_RAPIDOS.PROXIMO_MES]: 'Próximo Mês',
+  [PERIODOS_RAPIDOS.PROXIMOS_30_DIAS]: 'Próximos 30 dias',
   [PERIODOS_RAPIDOS.PERSONALIZADO]: 'Personalizado'
 };
 
@@ -84,13 +86,20 @@ const PeriodQuickFilter = ({
     }
   };
 
+  // Quando `value` (o período efetivamente clicado, rastreado pelo caller) está preenchido,
+  // ele é a fonte de verdade — evita que 2 atalhos "acendam" juntos só porque seus intervalos
+  // calculados coincidem (ex: "Mês Atual" e "Últimos 30 dias" no fim do mês). Cai no cálculo por
+  // intervalo (comportamento anterior) só quando `value` está vazio/não corresponde a nenhum
+  // atalho visível — ex. logo após digitar uma data manual nos inputs de "Personalizado".
   const isActive = (period) => {
     if (period === PERIODOS_RAPIDOS.PERSONALIZADO) return false;
+    if (value && periods.includes(value)) return value === period;
     const range = getDateRangeForPeriod(period);
     return range && range.dataInicio === dataInicio && range.dataFim === dataFim;
   };
 
   const isDayActive = (period) => {
+    if (value && dayPeriods.includes(value)) return value === period;
     const range = getSingleDateRange(period);
     return range && range.dataInicio === dataInicio && range.dataFim === dataFim;
   };

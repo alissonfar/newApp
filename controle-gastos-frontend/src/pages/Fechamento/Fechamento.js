@@ -20,6 +20,16 @@ import { extrairValorModelo } from '../../utils/fechamentoResumo';
 import { PERIODOS_RAPIDOS } from '../../utils/dateUtils';
 import './Fechamento.css';
 
+const PERIODOS_FECHAMENTO = [
+  PERIODOS_RAPIDOS.MES_ATUAL,
+  PERIODOS_RAPIDOS.PROXIMO_MES,
+  PERIODOS_RAPIDOS.PROXIMOS_30_DIAS,
+  PERIODOS_RAPIDOS.ULTIMOS_7_DIAS,
+  PERIODOS_RAPIDOS.ULTIMOS_30_DIAS,
+  PERIODOS_RAPIDOS.ESTE_ANO,
+  PERIODOS_RAPIDOS.MES_ANTERIOR
+];
+
 function mesAtualISO() {
   const hoje = new Date();
   const inicio = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth(), 1));
@@ -111,6 +121,7 @@ const Fechamento = () => {
       <Card variant="glass" padding="md" className="fechamento-filterbar">
         <PeriodQuickFilter
           value={quickPeriod}
+          periods={PERIODOS_FECHAMENTO}
           dataInicio={periodo.dataInicio}
           dataFim={periodo.dataFim}
           onChange={setPeriodo}

@@ -203,6 +203,19 @@ async function duplicarInstancia(id, usuarioId) {
   novaDataFim.setUTCDate(novaDataFim.getUTCDate() - 1);
   novaDataFim.setUTCHours(23, 59, 59, 999);
 
+  // Evita duplicata acidental (ex: clique duplo no botão "Duplicar"): bloqueia só quando já existe
+  // uma instância para o MESMO cadastro com o MESMO período exato — períodos diferentes ou
+  // propositalmente sobrepostos continuam permitidos.
+  const jaExiste = await FechamentoInstancia.findOne({
+    usuario: usuarioId,
+    cadastro: original.cadastro,
+    dataInicio: novaDataInicio,
+    dataFim: novaDataFim
+  });
+  if (jaExiste) {
+    throw new Error('Já existe uma instância de Fechamento para essa pessoa nesse período.');
+  }
+
   const nova = new FechamentoInstancia({
     usuario: usuarioId,
     cadastro: original.cadastro,
