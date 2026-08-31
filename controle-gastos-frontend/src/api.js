@@ -765,3 +765,99 @@ export async function excluirDivisaoPreset(id) {
   return dados;
 }
 
+/* ----- Fechamento ----- */
+export async function listarCadastrosFechamento() {
+  const resposta = await fetch(`${API_BASE}/fechamento/cadastros`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao listar cadastros de Fechamento.`);
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function criarCadastroFechamento(dados) {
+  const resposta = await fetch(`${API_BASE}/fechamento/cadastros`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(dados)
+  });
+  const json = await resposta.json();
+  if (!resposta.ok) throw new Error(json?.erro || `Erro ${resposta.status} ao criar cadastro de Fechamento.`);
+  return json;
+}
+
+export async function listarInstanciasFechamento({ dataInicio, dataFim } = {}) {
+  const q = new URLSearchParams();
+  if (dataInicio) q.set('dataInicio', dataInicio);
+  if (dataFim) q.set('dataFim', dataFim);
+  const query = q.toString() ? `?${q.toString()}` : '';
+  const resposta = await fetch(`${API_BASE}/fechamento/instancias${query}`, {
+    headers: getHeaders(false)
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao listar instâncias de Fechamento.`);
+  return Array.isArray(dados) ? dados : [];
+}
+
+export async function criarInstanciaFechamento(dados) {
+  const resposta = await fetch(`${API_BASE}/fechamento/instancias`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(dados)
+  });
+  const json = await resposta.json();
+  if (!resposta.ok) throw new Error(json?.erro || `Erro ${resposta.status} ao criar instância de Fechamento.`);
+  return json;
+}
+
+export async function duplicarInstanciaFechamento(id) {
+  const resposta = await fetch(`${API_BASE}/fechamento/instancias/${id}/duplicar`, {
+    method: 'POST',
+    headers: getHeaders(false)
+  });
+  const json = await resposta.json();
+  if (!resposta.ok) throw new Error(json?.erro || `Erro ${resposta.status} ao duplicar instância.`);
+  return json;
+}
+
+export async function obterTransacoesInstanciaFechamento(id) {
+  const resposta = await fetch(`${API_BASE}/fechamento/instancias/${id}/transacoes`, {
+    headers: getHeaders(false)
+  });
+  const json = await resposta.json();
+  if (!resposta.ok) throw new Error(json?.erro || `Erro ${resposta.status} ao obter transações da instância.`);
+  return json;
+}
+
+export async function atualizarStatusInstanciaFechamento(id, status) {
+  const resposta = await fetch(`${API_BASE}/fechamento/instancias/${id}/status`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify({ status })
+  });
+  const json = await resposta.json();
+  if (!resposta.ok) throw new Error(json?.erro || `Erro ${resposta.status} ao atualizar status.`);
+  return json;
+}
+
+export async function linkarRecebimentoInstanciaFechamento(id, settlementId) {
+  const resposta = await fetch(`${API_BASE}/fechamento/instancias/${id}/linkar-recebimento`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ settlementId })
+  });
+  const json = await resposta.json();
+  if (!resposta.ok) throw new Error(json?.erro || `Erro ${resposta.status} ao linkar recebimento.`);
+  return json;
+}
+
+export async function excluirInstanciaFechamento(id) {
+  const resposta = await fetch(`${API_BASE}/fechamento/instancias/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(false)
+  });
+  const json = await resposta.json();
+  if (!resposta.ok) throw new Error(json?.erro || `Erro ${resposta.status} ao excluir instância.`);
+  return json;
+}
+
