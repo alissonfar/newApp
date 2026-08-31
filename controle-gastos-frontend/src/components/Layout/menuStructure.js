@@ -9,7 +9,7 @@
 import HomeIcon from '@mui/icons-material/Home';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import DescriptionIcon from '@mui/icons-material/Description';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import PaidIcon from '@mui/icons-material/Paid';
@@ -48,7 +48,7 @@ const relatoriosSection = {
   label: 'Relatórios & Insights',
   items: [
     { type: 'item', name: 'Relatórios', path: '/relatorio', icon: ShowChartIcon, key: 'relatorios' },
-    { type: 'item', name: 'Insights', path: '/insights', icon: LightbulbIcon, key: 'insights' },
+    { type: 'item', name: 'Fechamento', path: '/fechamento', icon: AssignmentTurnedInIcon, key: 'fechamento' },
     { type: 'item', name: 'Modelos de Relatório', path: '/modelos-relatorio', icon: DescriptionIcon, key: 'modelos-relatorio' },
   ],
 };

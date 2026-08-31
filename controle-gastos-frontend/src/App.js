@@ -13,7 +13,7 @@ import Relatorio from './pages/Relatorio/Relatorio';
 import NovaImportacaoPage from './pages/ImportacaoMassa/NovaImportacaoPage';
 import GerenciamentoImportacoesPage from './pages/ImportacaoMassa/GerenciamentoImportacoesPage';
 import DetalhesImportacaoPage from './pages/ImportacaoMassa/DetalhesImportacaoPage';
-import Insights from './pages/Insights/Insights';
+import Fechamento from './pages/Fechamento/Fechamento';
 import Tags from './pages/Tags/Tags';
 import TagsInativos from './pages/TagsInativos/TagsInativos';
 import ContasFixas from './pages/ContasFixas/ContasFixas';
@@ -131,11 +131,11 @@ function App() {
                 }
               />
               <Route
-                path="/insights"
+                path="/fechamento"
                 element={
                   <PrivateRoute>
                     <MainLayout>
-                      <Insights />
+                      <Fechamento />
                     </MainLayout>
                   </PrivateRoute>
                 }
