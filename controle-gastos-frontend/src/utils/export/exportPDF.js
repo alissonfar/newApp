@@ -1,22 +1,22 @@
 import { pdf } from '@react-pdf/renderer';
 import ReportDocument from '../../components/PDF/ReportDocument';
 
+export const sanitizeFilenamePart = (str) => {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 25);
+};
+
 /**
  * Gera nome de arquivo baseado nos filtros aplicados.
  * Formato: relatorio-{dataInicio}-{dataFim}-{pessoas}-{tags}.pdf
  */
 export const buildReportFilename = (filterDetails = {}, extension = 'pdf', categorias = [], tags = []) => {
-  const sanitize = (str) => {
-    if (!str || typeof str !== 'string') return '';
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9-_]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 25);
-  };
-
   const parts = ['relatorio'];
 
   const dataInicio = filterDetails.dataInicio || '';
@@ -32,7 +32,7 @@ export const buildReportFilename = (filterDetails = {}, extension = 'pdf', categ
   const pessoas = filterDetails.selectedPessoas ?? filterDetails.pessoas;
   const pessoasArr = Array.isArray(pessoas) ? pessoas : (pessoas ? [pessoas] : []);
   if (pessoasArr.length > 0) {
-    parts.push(pessoasArr.map(sanitize).filter(Boolean).join('-') || 'pessoas');
+    parts.push(pessoasArr.map(sanitizeFilenamePart).filter(Boolean).join('-') || 'pessoas');
   } else {
     parts.push('todas');
   }
@@ -44,7 +44,7 @@ export const buildReportFilename = (filterDetails = {}, extension = 'pdf', categ
       if (!Array.isArray(tagIds) || tagIds.length === 0) return;
       tagIds.forEach((tid) => {
         const tag = tags.find((t) => t._id === tid || t.nome === tid);
-        if (tag?.nome) tagParts.push(sanitize(tag.nome));
+        if (tag?.nome) tagParts.push(sanitizeFilenamePart(tag.nome));
       });
     });
     if (tagParts.length > 0) {
@@ -54,6 +54,26 @@ export const buildReportFilename = (filterDetails = {}, extension = 'pdf', categ
 
   const name = parts.join('-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'relatorio';
   return `${name}.${extension}`;
+};
+
+export const generateReportPdfBlob = async (
+  data,
+  filterDetails = {},
+  summaryInfo = {},
+  categorias = [],
+  tags = [],
+  templateUsed = 'simples'
+) => {
+  return pdf(
+    <ReportDocument
+      data={data}
+      filterDetails={filterDetails}
+      summaryInfo={summaryInfo}
+      categorias={categorias}
+      tags={tags}
+      templateUsed={templateUsed}
+    />
+  ).toBlob();
 };
 
 export const exportDataToPDF = async (
@@ -72,16 +92,7 @@ export const exportDataToPDF = async (
     }
 
     // Cria o documento PDF
-    const blob = await pdf(
-      <ReportDocument
-        data={data}
-        filterDetails={filterDetails}
-        summaryInfo={summaryInfo}
-        categorias={categorias}
-        tags={tags}
-        templateUsed={templateUsed}
-      />
-    ).toBlob();
+    const blob = await generateReportPdfBlob(data, filterDetails, summaryInfo, categorias, tags, templateUsed);
 
     // Cria um URL para o blob
     const url = URL.createObjectURL(blob);
@@ -100,4 +111,4 @@ export const exportDataToPDF = async (
     console.error('Erro ao gerar PDF:', error);
     throw error;
   }
-}; 
+};

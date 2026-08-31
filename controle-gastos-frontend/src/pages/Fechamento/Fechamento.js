@@ -15,6 +15,7 @@ import useFechamento from '../../hooks/useFechamento';
 import { obterTransacoesInstanciaFechamento } from '../../api';
 import { useData } from '../../context/DataContext';
 import { exportDataToPDF } from '../../utils/export/exportPDF';
+import { exportarFechamentosEmLote } from '../../utils/export/exportFechamentoZip';
 import { PERIODOS_RAPIDOS } from '../../utils/dateUtils';
 import './Fechamento.css';
 
@@ -78,10 +79,16 @@ const Fechamento = () => {
   };
 
   const handleExportarLote = async () => {
-    // TODO(task-13): esta função será substituída pela chamada real a
-    // `exportarFechamentosEmLote` de `utils/export/exportFechamentoZip.js`,
-    // criado numa task posterior deste mesmo plano de implementação.
-    toast.info('Exportação em lote ainda não implementada — chega na próxima etapa do plano.');
+    const selecionadasArr = instancias.filter((i) => selecionadas.has(i._id));
+    if (selecionadasArr.length === 0) return;
+    setExportandoLote(true);
+    try {
+      await exportarFechamentosEmLote(selecionadasArr, categorias, tags, periodo);
+    } catch (err) {
+      toast.error(err.message || 'Erro ao exportar em lote.');
+    } finally {
+      setExportandoLote(false);
+    }
   };
 
   return (
