@@ -59,7 +59,6 @@ const Fechamento = () => {
     duplicar,
     atualizarStatus,
     linkarRecebimento,
-    excluir,
     alternarSelecao,
     selecionarTodas
   } = useFechamento(periodo);
