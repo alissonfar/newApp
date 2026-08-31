@@ -1,0 +1,43 @@
+/* src/components/Fechamento/LinkarRecebimentoModal.css */
+.linkar-recebimento-modal {
+  width: min(480px, 90vw);
+}
+
+.linkar-recebimento-modal__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 var(--cg-spacing-base);
+  color: var(--cg-color-text-primary);
+}
+
+.linkar-recebimento-modal__empty {
+  color: var(--cg-color-text-muted);
+  font-size: 0.875rem;
+}
+
+.linkar-recebimento-modal__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cg-spacing-md);
+  padding: var(--cg-spacing-sm) 0;
+  border-top: 1px solid var(--cg-color-border);
+}
+
+.linkar-recebimento-modal__desc {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cg-color-text-primary);
+}
+
+.linkar-recebimento-modal__meta {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--cg-color-text-muted);
+}
+
+.linkar-recebimento-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--cg-spacing-base);
+}
