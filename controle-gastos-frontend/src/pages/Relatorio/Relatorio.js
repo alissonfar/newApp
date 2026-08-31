@@ -662,6 +662,7 @@ const Relatorio = () => {
           }}
           onApply={applyFilters}
           onClear={handleClearFilters}
+          onPeriodSelect={({ period }) => setQuickRange(period)}
         />
       ) : (
         <RelatorioFiltersPanel
@@ -671,6 +672,7 @@ const Relatorio = () => {
           reportTemplates={reportTemplates}
           selectedTemplate={selectedTemplate}
           quickRange={quickRange}
+          onPeriodSelect={({ period }) => setQuickRange(period)}
           exportAnchorEl={exportAnchorEl}
           onChange={(newDraft) => {
             if (newDraft && newDraft._selectedTemplateLocal) {

@@ -15,13 +15,15 @@ import Button from '../shared/Button';
  * @param {function} onChange - (newFilters) => void
  * @param {function} onApply - () => void
  * @param {function} onClear - () => void
+ * @param {function} onPeriodSelect - ({period}) => void, atualiza qual atalho está marcado como ativo
  */
 const RelatorioFiltersCompact = ({
   draftFilters,
   quickRange = '',
   onChange,
   onApply,
-  onClear
+  onClear,
+  onPeriodSelect
 }) => {
   const safe = draftFilters || {};
   return (
@@ -35,6 +37,7 @@ const RelatorioFiltersCompact = ({
             onChange={({ dataInicio, dataFim }) =>
               onChange?.({ ...safe, dataInicio, dataFim })
             }
+            onPeriodSelect={onPeriodSelect}
             showDayButtons
             showCustomInputs={false}
             compact

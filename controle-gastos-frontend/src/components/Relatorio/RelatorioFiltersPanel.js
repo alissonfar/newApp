@@ -40,6 +40,7 @@ import SegmentedControl from '../shared/SegmentedControl';
  * @param {function} onExportClose - () => void
  * @param {function} onExportNow - (format) => void
  * @param {string} exportFormat - 'pdf' | 'csv' (controlado pelo pai)
+ * @param {function} onPeriodSelect - ({period}) => void, atualiza qual atalho está marcado como ativo
  */
 const RelatorioFiltersPanel = ({
   draftFilters,
@@ -55,7 +56,8 @@ const RelatorioFiltersPanel = ({
   onCreate,
   onExportClick,
   onExportClose,
-  onExportNow
+  onExportNow,
+  onPeriodSelect
 }) => {
   const safeDraft = draftFilters || {};
   const setTipo = (value) => onChange?.({ ...safeDraft, selectedTipo: value });
@@ -73,6 +75,7 @@ const RelatorioFiltersPanel = ({
             onChange={({ dataInicio, dataFim }) =>
               onChange?.({ ...safeDraft, dataInicio, dataFim })
             }
+            onPeriodSelect={onPeriodSelect}
             showDayButtons
             showCustomInputs
           />
