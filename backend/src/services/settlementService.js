@@ -738,6 +738,29 @@ async function listar(usuarioId, opts = {}) {
   };
 }
 
+/**
+ * Devolve os nomes de pessoa por trás de um Settlement, lendo do lado certo:
+ * appliedTransactions[].transactionId.pagamentos[pagamentoIndex] — a fatia específica que foi
+ * quitada — nunca receivingTransactionId (que é sempre o próprio usuário, dinheiro que entrou).
+ * Requer que `settlement.appliedTransactions[].transactionId` esteja populado com `pagamentos`.
+ * Sem pagamentoIndex (settlements antigos criados via appliedTransactionIds): considera todos os
+ * pagadores daquela transação (fallback, pode incluir alguém a mais, nunca a menos que hoje).
+ */
+function pessoasDoSettlement(settlement) {
+  const nomes = new Set();
+  for (const at of settlement.appliedTransactions || []) {
+    const pagamentos = at.transactionId?.pagamentos || [];
+    if (at.pagamentoIndex != null && pagamentos[at.pagamentoIndex]) {
+      if (pagamentos[at.pagamentoIndex].pessoa) nomes.add(pagamentos[at.pagamentoIndex].pessoa);
+    } else {
+      pagamentos.forEach((p) => {
+        if (p.pessoa) nomes.add(p.pessoa);
+      });
+    }
+  }
+  return [...nomes];
+}
+
 module.exports = {
   criar,
   excluir,
@@ -745,5 +768,6 @@ module.exports = {
   listarPendentes,
   listar,
   aplicarTagEmPagamentos,
-  removerTagDePagamentos
+  removerTagDePagamentos,
+  pessoasDoSettlement
 };
