@@ -27,6 +27,9 @@
   position: relative;
   box-shadow: var(--sombra-card);
   border: 1px solid rgba(224, 231, 255, 0.2);
+  /* Recebe foco via script no mount (useModalBehavior) pra ativar o focus-trap desde o 1o Tab —
+     sem anel de foco visível ao redor da caixa inteira (não é um controle interativo comum). */
+  outline: none;
 }
 
 .modal-compacto-close {

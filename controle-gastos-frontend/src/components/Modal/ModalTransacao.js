@@ -15,6 +15,7 @@ const ModalTransacao = ({ onClose, children }) => {
         ref={modalRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
       >
         <button className="modal-close" onClick={onClose} aria-label="Fechar modal">
           X
