@@ -161,6 +161,34 @@ thead th, th, td {
   **Lição**: o padrão "fundo hardcoded + texto reativo" não aparece só em JSX inline (passo 4 do
   TL;DR) — vale a mesma checagem em qualquer arquivo `.css` do projeto.
 
+## Colisão de classe genérica entre páginas (CSS global, sem módulos)
+
+**Sintoma**: você corrige o token de cor certo (ex: `.input-group { background: var(--cg-color-surface-elevated); }`), mas o campo continua com a cor antiga — a mudança "não pega".
+
+**Causa real (achada em `/login` e `/registro`, 2026-09-05)**: o projeto não usa CSS modules — toda
+classe é global. `.form-group input` é um nome genérico reaproveitado por várias páginas
+(`Login.css`, `Registro.css`, **`Profile.css`**, `TagManagement.css`, etc.). Quando duas páginas
+diferentes definem a mesma classe com a mesma especificidade, **quem vence é só a ordem de import no
+bundle webpack** — não tem relação com qual página está sendo visitada. `Profile.css` definia
+`.form-group input { background-color: #f8f9fa; }` e `:focus { background-color: #fff; }` (cores
+antigas, não-reativas) e vencia silenciosamente sobre a regra correta de `Login.css`.
+
+**Diagnóstico**: no DevTools, aba "Computed" → clique na declaração de `background-color` → veja
+**qual seletor/arquivo** está definindo o valor vencedor (não assuma que é o arquivo da página atual).
+Ou via JS:
+```js
+Array.from(document.styleSheets).flatMap(s => {
+  try { return Array.from(s.cssRules); } catch(e) { return []; }
+}).filter(r => r.selectorText && document.querySelector(SEU_ELEMENTO).matches(r.selectorText))
+  .map(r => r.selectorText + ' -> ' + r.style.cssText);
+```
+
+**Fix**: não tente "vencer no chute" trocando a ordem de import (frágil, quebra de novo se alguém
+reordenar). Aumente a especificidade prefixando com a classe do container da própria página —
+ex: `.login-card .form-group input` em vez de `.form-group input`. Isso garante que a regra da
+página sempre ganhe, independente de ordem de bundle. Aplique o mesmo prefixo em qualquer variante
+(`:focus`, `::placeholder`, `.error`, etc.) que a classe genérica colidente também sobrescreva.
+
 ## Referência rápida aos ADRs
 
 - **ADR-006** — Estrutura de tokens
