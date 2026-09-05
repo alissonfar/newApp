@@ -102,8 +102,7 @@ const HistoricoRecebimentosPage = () => {
   };
 
   const pessoaRecebimento = (s) => {
-    const rec = s.receivingTransactionId;
-    const pessoas = (rec?.pagamentos || []).map((p) => p?.pessoa).filter(Boolean);
+    const pessoas = s.pessoas || [];
     return pessoas.length > 0 ? pessoas.join(', ') : '-';
   };
 
