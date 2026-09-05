@@ -1,0 +1,108 @@
+/* src/components/Fechamento/SettlementCandidateCard.css */
+.settlement-candidate-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cg-spacing-sm);
+  margin-bottom: var(--cg-spacing-base);
+}
+
+.settlement-candidate-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cg-spacing-md);
+}
+
+.settlement-candidate-card__pessoas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.settlement-candidate-card__pessoa-badge {
+  padding: 3px 10px;
+  border-radius: var(--cg-radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--cg-color-border);
+  color: var(--cg-color-text-secondary);
+}
+
+.settlement-candidate-card__pessoa-badge--atual {
+  background: var(--cg-color-primary-muted);
+  color: var(--cg-color-primary);
+}
+
+.settlement-candidate-card__valores {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.settlement-candidate-card__valor-principal {
+  font-size: 1.375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cg-color-text-primary);
+}
+
+.settlement-candidate-card__valor-sobra {
+  font-size: 0.75rem;
+  color: var(--cg-color-text-muted);
+}
+
+.settlement-candidate-card__desc {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cg-color-text-primary);
+}
+
+.settlement-candidate-card__meta {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--cg-color-text-muted);
+}
+
+.settlement-candidate-card__detail {
+  border-top: 1px solid var(--cg-color-border);
+  padding-top: var(--cg-spacing-sm);
+}
+
+.settlement-candidate-card__detail-empty {
+  color: var(--cg-color-text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.settlement-candidate-card__tx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.settlement-candidate-card__tx-table thead th {
+  text-align: left;
+  background: var(--cg-color-thead-bg);
+  color: var(--cg-color-text-muted);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  padding: 8px 10px;
+}
+
+.settlement-candidate-card__tx-table td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--cg-color-border);
+  color: var(--cg-color-text-primary);
+}
+
+.settlement-candidate-card__tag {
+  margin-top: var(--cg-spacing-sm);
+}
+
+.settlement-candidate-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
