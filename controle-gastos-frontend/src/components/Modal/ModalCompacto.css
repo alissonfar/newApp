@@ -1,0 +1,59 @@
+/* src/components/Modal/ModalCompacto.css */
+.modal-compacto-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-compacto-content {
+  background: var(--cor-fundo-card);
+  padding: 20px 24px;
+  border-radius: var(--borda-radius);
+  width: fit-content;
+  max-width: min(95vw, 900px);
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: var(--sombra-card);
+  border: 1px solid rgba(224, 231, 255, 0.2);
+}
+
+.modal-compacto-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--cor-primaria);
+  color: var(--cor-branca);
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  z-index: 1001;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.modal-compacto-close:hover {
+  background: var(--cor-secundaria);
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .modal-compacto-content {
+    width: 95vw;
+    max-width: 95vw;
+  }
+}
