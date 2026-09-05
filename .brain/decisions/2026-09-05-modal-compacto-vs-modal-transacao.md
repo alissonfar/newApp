@@ -8,7 +8,7 @@ related:
   - .brain/decisions/2026-08-07-modal-exige-card-glass-interno.md
 ---
 
-# ADR-022: `ModalCompacto` — segundo modal no design system, para conteúdo que não deve forçar 90% da tela
+# ADR-025: `ModalCompacto` — segundo modal no design system, para conteúdo que não deve forçar 90% da tela
 
 ## Contexto
 

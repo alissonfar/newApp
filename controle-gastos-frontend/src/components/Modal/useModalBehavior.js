@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 /**
  * Trava o scroll do body e confina o foco de Tab/Shift+Tab dentro do modal enquanto ele estiver
  * aberto. Extraído de ModalTransacao.js para reaproveitamento por qualquer modal do design system
- * (ver ADR-022).
+ * (ver ADR-025).
  */
 export default function useModalBehavior(modalRef) {
   useEffect(() => {

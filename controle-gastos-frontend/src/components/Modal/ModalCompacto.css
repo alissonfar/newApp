@@ -20,7 +20,10 @@
   width: fit-content;
   max-width: min(95vw, 900px);
   max-height: 85vh;
-  overflow-y: auto;
+  /* overflow: hidden (não auto) — mesmo padrão de ModalTransacao.css: só o Card interno do
+     consumidor deve rolar, evitando dois scrollbars aninhados quando o conteúdo tem seu próprio
+     max-height/overflow-y (ex: .linkar-recebimento-modal). */
+  overflow: hidden;
   position: relative;
   box-shadow: var(--sombra-card);
   border: 1px solid rgba(224, 231, 255, 0.2);
