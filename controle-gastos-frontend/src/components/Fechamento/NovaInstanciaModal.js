@@ -2,11 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { toast } from 'react-toastify';
-import ModalTransacao from '../Modal/ModalTransacao';
+import ModalCompacto from '../Modal/ModalCompacto';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import { listarPessoas, listarModelosRelatorio, listarCadastrosFechamento } from '../../api';
 import './NovaInstanciaModal.css';
+
+// react-select precisa de portal aqui: o menu abre para baixo, e o container do ModalCompacto tem
+// overflow: hidden (necessário para evitar scroll duplicado, ver commit d7fdcf39) — sem o portal, o
+// menu fica cortado na borda do modal quando o Select está perto do fim do conteúdo visível.
+const selectStyles = { menuPortal: (base) => ({ ...base, zIndex: 1100 }) };
 
 function mesAtualISO() {
   const hoje = new Date();
@@ -82,7 +87,7 @@ const NovaInstanciaModal = ({ onClose, onCriar }) => {
   };
 
   return (
-    <ModalTransacao onClose={onClose}>
+    <ModalCompacto onClose={onClose}>
       <Card variant="glass" padding="md" className="nova-instancia-modal">
         <h2 className="nova-instancia-modal__title">Nova Instância de Fechamento</h2>
 
@@ -94,6 +99,9 @@ const NovaInstanciaModal = ({ onClose, onCriar }) => {
             value={pessoaSelecionada}
             onChange={setPessoaSelecionada}
             placeholder="Buscar pessoa..."
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+            styles={selectStyles}
           />
         </div>
 
@@ -112,6 +120,9 @@ const NovaInstanciaModal = ({ onClose, onCriar }) => {
               value={modeloSelecionado}
               onChange={setModeloSelecionado}
               placeholder="Selecionar modelo..."
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              styles={selectStyles}
             />
           </div>
         )}
@@ -132,7 +143,7 @@ const NovaInstanciaModal = ({ onClose, onCriar }) => {
           <Button variant="primary" onClick={handleSalvar} loading={salvando}>Criar</Button>
         </div>
       </Card>
-    </ModalTransacao>
+    </ModalCompacto>
   );
 };
 
