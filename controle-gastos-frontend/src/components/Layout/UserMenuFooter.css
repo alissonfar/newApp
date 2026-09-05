@@ -77,24 +77,26 @@
 }
 
 /* === DROPDOWN DE PERFIL === */
+/* Fundo/borda/sombra vêm do Card variant="glass" (ver ADR-018) — reage ao tema via
+   var(--cg-color-surface), nunca mais hardcoded. Aqui só o posicionamento/layout. */
 .profile-dropdown {
   position: absolute;
   bottom: 100%;
   left: 0;
   right: 0;
-  background-color: #ffffff;
-  border: 1px solid var(--cg-color-border, #ddd);
   border-radius: 8px;
-  padding: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   margin-bottom: 8px;
   min-width: 200px;
   animation: profileSlideIn var(--cg-menu-transition);
   animation-fill-mode: forwards;
-  color: var(--cg-color-text-primary, #1e293b);
-  border-color: var(--cg-color-border, rgba(255, 255, 255, 0.1));
   transform-origin: bottom center;
+}
+
+/* Desativa o "lift" de hover do Card — dentro de um dropdown de menu, o pulo fica estranho
+   (mesma decisão do ADR-018 para Card usado dentro de modal). */
+.profile-dropdown.cg-card:hover {
+  transform: none;
 }
 
 @keyframes profileSlideIn {

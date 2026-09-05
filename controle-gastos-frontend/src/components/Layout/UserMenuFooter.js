@@ -17,6 +17,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import myLogo from '../../assets/logo.png';
 import ThemeToggle from '../shared/ThemeToggle';
+import Card from '../shared/Card';
 import './UserMenuFooter.css';
 
 const UserMenuFooter = ({
@@ -83,7 +84,7 @@ const UserMenuFooter = ({
 
       {/* === DROPDOWN DE PERFIL === */}
       {profileOpen && showUserInfo && (
-        <div className="profile-dropdown" role="menu">
+        <Card variant="glass" padding="sm" className="profile-dropdown" role="menu">
           <Link
             to="/profile"
             className="profile-link"
@@ -129,7 +130,7 @@ const UserMenuFooter = ({
             <LogoutIcon fontSize="small" />
             <span>Sair</span>
           </button>
-        </div>
+        </Card>
       )}
     </div>
   );
