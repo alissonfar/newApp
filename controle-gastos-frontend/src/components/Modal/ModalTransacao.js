@@ -1,47 +1,11 @@
 // src/components/Modal/ModalTransacao.js
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
+import useModalBehavior from './useModalBehavior';
 import './ModalTransacao.css';
 
 const ModalTransacao = ({ onClose, children }) => {
   const modalRef = useRef(null);
-
-  useEffect(() => {
-    // Trava scroll do body enquanto modal estiver aberto
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const handleKeyDown = (e) => {
-      // Confina Tab dentro do modal (focus trap)
-      if (e.key === 'Tab') {
-        if (!modalRef.current) return;
-
-        // Encontra todos os elementos focáveis dentro do modal
-        const focusableElements = modalRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        // Shift+Tab no primeiro elemento → volta para o último
-        if (e.shiftKey && document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement?.focus();
-        }
-        // Tab no último elemento → volta para o primeiro
-        else if (!e.shiftKey && document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement?.focus();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = prev;
-    };
-  }, []);
+  useModalBehavior(modalRef);
 
   return (
     <div className="modal-overlay">
