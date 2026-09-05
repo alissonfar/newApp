@@ -16,7 +16,15 @@ jest.mock('../../models/pessoa', () => jest.fn());
 jest.mock('../../models/modeloRelatorio', () => jest.fn());
 jest.mock('../../models/tag', () => jest.fn());
 jest.mock('../../models/transacao', () => jest.fn());
-jest.mock('../../models/settlement', () => jest.fn());
+const mockSettlementFindOne = jest.fn();
+jest.mock('../../models/settlement', () => {
+  const Mock = jest.fn();
+  Mock.findOne = (...args) => mockSettlementFindOne(...args);
+  return Mock;
+});
+jest.mock('../settlementService', () => ({
+  pessoasDoSettlement: jest.fn()
+}));
 jest.mock('../../utils/transacaoContabilizavel', () => ({
   addContabilizavelCondition: jest.fn()
 }));
@@ -33,8 +41,10 @@ const {
   modelRulesToEngineRules,
   periodoOverlapMatch,
   atualizarStatus,
-  duplicarInstancia
+  duplicarInstancia,
+  linkarRecebimento
 } = require('../fechamentoService');
+const { pessoasDoSettlement } = require('../settlementService');
 
 describe('fechamentoService.periodoOverlapMatch', () => {
   test('sem filtro (undefined, undefined) retorna {}', () => {
@@ -128,5 +138,68 @@ describe('fechamentoService.duplicarInstancia', () => {
     expect(construidoCom.dataInicio.toISOString()).toMatch(/^2026-09-01T00:00:00\.000Z/);
     expect(construidoCom.dataFim.toISOString()).toMatch(/^2026-09-30T23:59:59\.999Z/);
     expect(resultado).toBe(populatedResult);
+  });
+});
+
+describe('fechamentoService.linkarRecebimento', () => {
+  beforeEach(() => {
+    mockFechamentoInstanciaFindOne.mockReset();
+    mockSettlementFindOne.mockReset();
+    pessoasDoSettlement.mockReset();
+  });
+
+  function mockInstanciaEncontrada(nomePessoa) {
+    const instanciaMock = {
+      _id: 'instancia-1',
+      cadastro: { pessoa: { nome: nomePessoa } },
+      save: jest.fn().mockResolvedValue(true)
+    };
+    // 1a chamada a FechamentoInstancia.findOne — feita direto por linkarRecebimento
+    mockFechamentoInstanciaFindOne.mockReturnValueOnce({
+      populate: jest.fn().mockResolvedValue(instanciaMock)
+    });
+    return instanciaMock;
+  }
+
+  test('linka quando a pessoa aparece em pessoasDoSettlement (mesmo que não seja a única)', async () => {
+    const instanciaMock = mockInstanciaEncontrada('Cleia');
+    mockSettlementFindOne.mockReturnValue({
+      populate: jest.fn().mockResolvedValue({ _id: 'settlement-1' })
+    });
+    pessoasDoSettlement.mockReturnValue(['Cleia', 'Milena']);
+    // 2a chamada a FechamentoInstancia.findOne — feita dentro de obterInstanciaPopulada
+    mockFechamentoInstanciaFindOne.mockReturnValueOnce({
+      populate: jest.fn().mockResolvedValue({ status: 'recebido' })
+    });
+
+    const resultado = await linkarRecebimento('instancia-1', 'settlement-1', 'user-1');
+
+    expect(instanciaMock.save).toHaveBeenCalled();
+    expect(instanciaMock.status).toBe('recebido');
+    expect(instanciaMock.settlementId).toBe('settlement-1');
+    expect(resultado).toEqual({ status: 'recebido' });
+  });
+
+  test('rejeita quando a pessoa não aparece em pessoasDoSettlement', async () => {
+    mockInstanciaEncontrada('Cleia');
+    mockSettlementFindOne.mockReturnValue({
+      populate: jest.fn().mockResolvedValue({ _id: 'settlement-1' })
+    });
+    pessoasDoSettlement.mockReturnValue(['Milena']);
+
+    await expect(
+      linkarRecebimento('instancia-1', 'settlement-1', 'user-1')
+    ).rejects.toThrow('Esta conciliação não pertence a esta pessoa.');
+  });
+
+  test('lança erro quando settlement não é encontrado', async () => {
+    mockInstanciaEncontrada('Cleia');
+    mockSettlementFindOne.mockReturnValue({
+      populate: jest.fn().mockResolvedValue(null)
+    });
+
+    await expect(
+      linkarRecebimento('instancia-1', 'settlement-1', 'user-1')
+    ).rejects.toThrow('Conciliação (Settlement) não encontrada.');
   });
 });

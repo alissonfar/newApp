@@ -7,6 +7,7 @@ const ModeloRelatorio = require('../models/modeloRelatorio');
 const Tag = require('../models/tag');
 const Transacao = require('../models/transacao');
 const Settlement = require('../models/settlement');
+const { pessoasDoSettlement } = require('./settlementService');
 const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
 const { processWithRules } = require('../reportEngine/ruleEngine');
 const { aggregate } = require('../reportEngine/aggregator');
@@ -267,13 +268,14 @@ async function linkarRecebimento(id, settlementId, usuarioId) {
   if (!instancia) throw new Error('Instância não encontrada.');
 
   const settlement = await Settlement.findOne({ _id: settlementId, usuario: usuarioId })
-    .populate('receivingTransactionId', 'pagamentos');
+    .populate('appliedTransactions.transactionId', 'pagamentos');
   if (!settlement) throw new Error('Conciliação (Settlement) não encontrada.');
 
   const pessoaNome = (instancia.cadastro?.pessoa?.nome || '').toLowerCase();
-  const pagamentosRecebimento = settlement.receivingTransactionId?.pagamentos || [];
-  // pagamentos.pessoa é nome livre, não FK — valida por nome case-insensitive, mesmo padrão de buscarLinhasEResumo.
-  const bate = pagamentosRecebimento.some((p) => (p.pessoa || '').toLowerCase() === pessoaNome);
+  // A pessoa de um Settlement vem de appliedTransactions (os gastos quitados), nunca de
+  // receivingTransactionId (que é sempre o próprio usuário, dinheiro que entrou). Um settlement
+  // pode quitar dívidas de mais de uma pessoa ao mesmo tempo — basta aparecer em uma delas.
+  const bate = pessoasDoSettlement(settlement).some((nome) => nome.toLowerCase() === pessoaNome);
   if (!bate) {
     throw new Error('Esta conciliação não pertence a esta pessoa.');
   }
