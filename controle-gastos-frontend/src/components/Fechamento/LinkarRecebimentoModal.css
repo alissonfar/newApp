@@ -1,6 +1,8 @@
 /* src/components/Fechamento/LinkarRecebimentoModal.css */
 .linkar-recebimento-modal {
-  width: min(480px, 90vw);
+  width: min(680px, 92vw);
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .linkar-recebimento-modal__title {
@@ -13,27 +15,6 @@
 .linkar-recebimento-modal__empty {
   color: var(--cg-color-text-muted);
   font-size: 0.875rem;
-}
-
-.linkar-recebimento-modal__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--cg-spacing-md);
-  padding: var(--cg-spacing-sm) 0;
-  border-top: 1px solid var(--cg-color-border);
-}
-
-.linkar-recebimento-modal__desc {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--cg-color-text-primary);
-}
-
-.linkar-recebimento-modal__meta {
-  margin: 2px 0 0;
-  font-size: 0.75rem;
-  color: var(--cg-color-text-muted);
 }
 
 .linkar-recebimento-modal__actions {

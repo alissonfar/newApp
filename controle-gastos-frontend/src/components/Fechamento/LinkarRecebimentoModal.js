@@ -4,18 +4,15 @@ import { toast } from 'react-toastify';
 import ModalTransacao from '../Modal/ModalTransacao';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
+import SettlementCandidateCard from './SettlementCandidateCard';
 import { listarSettlements } from '../../api';
 import './LinkarRecebimentoModal.css';
-
-function formatMoeda(valor) {
-  const n = parseFloat(valor) || 0;
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
 
 const LinkarRecebimentoModal = ({ instancia, onClose, onLinkar }) => {
   const [settlements, setSettlements] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [linkando, setLinkando] = useState(null);
+  const [expandidoId, setExpandidoId] = useState(null);
 
   const pessoaNome = instancia.cadastro?.pessoa?.nome;
 
@@ -44,6 +41,10 @@ const LinkarRecebimentoModal = ({ instancia, onClose, onLinkar }) => {
     }
   };
 
+  const handleToggleExpandir = (settlementId) => {
+    setExpandidoId((atual) => (atual === settlementId ? null : settlementId));
+  };
+
   return (
     <ModalTransacao onClose={onClose}>
       <Card variant="glass" padding="md" className="linkar-recebimento-modal">
@@ -56,22 +57,15 @@ const LinkarRecebimentoModal = ({ instancia, onClose, onLinkar }) => {
           </p>
         )}
         {!carregando && settlements.map((s) => (
-          <div key={s._id || s.id} className="linkar-recebimento-modal__item">
-            <div>
-              <p className="linkar-recebimento-modal__desc">{s.receivingTransactionId?.descricao}</p>
-              <p className="linkar-recebimento-modal__meta">
-                {formatMoeda(s.totalApplied)} · {new Date(s.createdAt).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              size="sm"
-              loading={linkando === (s._id || s.id)}
-              onClick={() => handleLinkar(s._id || s.id)}
-            >
-              Linkar
-            </Button>
-          </div>
+          <SettlementCandidateCard
+            key={s._id || s.id}
+            settlement={s}
+            pessoaAtual={pessoaNome}
+            expandido={expandidoId === (s._id || s.id)}
+            onToggleExpandir={handleToggleExpandir}
+            onLinkar={handleLinkar}
+            linkando={linkando === (s._id || s.id)}
+          />
         ))}
 
         <div className="linkar-recebimento-modal__actions">
