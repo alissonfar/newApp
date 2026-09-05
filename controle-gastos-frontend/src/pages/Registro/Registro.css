@@ -1,9 +1,14 @@
 .registro-container {
+  /* Gradientes locais reativos ao tema — evita depender de --gradiente-primario/secundario
+     (App.css), que são fixos em azul claro e não mudam em [data-theme="dark"]. Definidos aqui
+     (não em tokens.css/App.css) para não afetar outros consumidores desses aliases legados. */
+  --registro-gradient-primary: linear-gradient(135deg, var(--cg-color-primary), var(--cg-color-primary-hover));
+  --registro-gradient-secondary: linear-gradient(135deg, var(--cg-color-primary-hover), var(--cg-color-primary));
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #F5F7FA 0%, #E3F2FD 100%);
+  background: var(--cg-gradient-body);
   padding: 20px;
 }
 
@@ -40,7 +45,7 @@
   transform: translateX(-50%);
   width: 60px;
   height: 3px;
-  background: var(--gradiente-primario);
+  background: var(--registro-gradient-primary);
   border-radius: 3px;
 }
 
@@ -62,15 +67,18 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: #FFFFFF;
-  border: 1px solid #E0E7FF;
+  /* Antes era background: #FFFFFF fixo — com o texto usando var(--cor-texto) (reativo), o
+     campo ficava com contraste ~1:1 no dark mode (texto quase-branco sobre fundo sempre branco).
+     Agora reage ao tema igual ao restante do design system. */
+  background: var(--cg-color-surface-elevated);
+  border: 1px solid var(--cg-color-border);
   border-radius: var(--borda-radius);
   transition: var(--transicao-padrao);
 }
 
 .input-group:focus-within {
   border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  box-shadow: 0 0 0 3px var(--cg-color-primary-muted);
 }
 
 .input-icon {
@@ -85,7 +93,12 @@
   color: var(--cor-primaria);
 }
 
-.form-group input {
+/* Especificidade elevada (.registro-card .form-group input, não só .form-group input): o
+   projeto não usa CSS modules, e .form-group é um nome genérico reaproveitado por outras páginas
+   (ex: Profile.css) com cores antigas hardcoded. Com a mesma especificidade, quem vence é só
+   ordem de import no bundle — prefixar com .registro-card garante que a regra desta página
+   sempre ganhe, independente de ordem de carregamento (mesmo problema encontrado em Login.css). */
+.registro-card .form-group input {
   width: 100%;
   padding: 12px 40px 12px 12px;
   border: none;
@@ -95,8 +108,14 @@
   background: transparent;
 }
 
-.form-group input::placeholder {
-  color: #A0AEC0;
+.registro-card .form-group input:focus {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.registro-card .form-group input::placeholder {
+  color: var(--cg-color-text-muted);
   font-family: var(--fonte-corpo);
 }
 
@@ -115,7 +134,7 @@
 
 .btn-submit {
   width: 100%;
-  background: var(--gradiente-primario);
+  background: var(--registro-gradient-primary);
   border: none;
   color: white;
   padding: 14px;
@@ -130,7 +149,7 @@
 }
 
 .btn-submit:hover:not(:disabled) {
-  background: var(--gradiente-secundario);
+  background: var(--registro-gradient-secondary);
   transform: translateY(-1px);
   box-shadow: var(--sombra-hover);
 }
