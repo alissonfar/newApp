@@ -65,6 +65,22 @@ Alisson de deixar pra uma rodada futura.
   dois arquivos CSS).
 - **Impacto em outras áreas:** nenhum model/service backend tocado — mudança 100% frontend.
 
+## Atualização — follow-up (2026-09-05)
+
+Dois ajustes feitos depois da decisão inicial, ainda no mesmo dia:
+
+- **Focus-trap não funcionava desde a abertura**: nenhum dos dois modais dava foco a si mesmo ao
+  montar — o foco ficava no botão que disparou a abertura, fora do modal, então o Tab eventualmente
+  escapava. Corrigido dando `tabIndex={-1}` ao container e chamando `modalRef.current?.focus()` no
+  mount, dentro do próprio `useModalBehavior` (commit `dd238313`). Ver
+  [`playbook: focus-trap em modal precisa de foco explícito no mount`](../playbooks/focus-trap-modal-precisa-foco-explicito.md).
+- **`NovaInstanciaModal` migrado pra `ModalCompacto`** (mesmo padrão do `LinkarRecebimentoModal`,
+  commit `ea6ae9eb`) — não estava no escopo original ("deliberadamente não migrado" na versão inicial
+  desta decisão), mas era um candidato natural (conteúdo estreito: Pessoa + período) e o Alisson pediu
+  o mesmo tratamento. Durante a migração, o `react-select` do campo Pessoa/Modelo ficou cortado pelo
+  `overflow: hidden` do `ModalCompacto` (necessário pra evitar scroll duplicado) — resolvido com
+  `menuPortalTarget={document.body}`, técnica documentada no playbook acima também.
+
 ## Referências
 
 - Spec completa: [`2026-09-05-modal-compacto-design.md`](../specs/2026-09-05-modal-compacto-design.md)
