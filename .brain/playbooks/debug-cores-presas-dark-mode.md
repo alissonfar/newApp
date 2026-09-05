@@ -148,6 +148,19 @@ thead th, th, td {
 }
 ```
 
+## Exemplos reais já corrigidos neste projeto
+
+- **`thead`/`td` em `/importacao/nova`** (2026-06-23) — cor presa de wrapper MUI/Tailwind, fix com
+  `!important` em `App.css [data-theme="dark"]`. Caso original deste playbook (ADR-012).
+- **Dropdown de perfil da sidebar (`UserMenuFooter.css`, 2026-09-05)** — variação do padrão "passo 4"
+  acima, mas em CSS externo (não inline): `.profile-dropdown { background-color: #ffffff; }`
+  hardcoded, enquanto o texto já usava `var(--cg-color-text-primary)` (reativo) — no dark mode esse
+  token vira quase-branco, ficando ilegível sobre o fundo sempre branco. Fix: em vez de trocar só o
+  valor do background, o dropdown passou a reaproveitar o componente `Card variant="glass"` (mesma
+  receita do ADR-018) — ganha fundo reativo + `backdrop-filter` de uma vez, sem inventar CSS novo.
+  **Lição**: o padrão "fundo hardcoded + texto reativo" não aparece só em JSX inline (passo 4 do
+  TL;DR) — vale a mesma checagem em qualquer arquivo `.css` do projeto.
+
 ## Referência rápida aos ADRs
 
 - **ADR-006** — Estrutura de tokens
