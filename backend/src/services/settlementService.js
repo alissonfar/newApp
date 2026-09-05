@@ -671,7 +671,8 @@ async function listarPendentes(usuarioId, filtros = {}) {
 
 /**
  * Lista settlements do usuário com filtros opcionais:
- *  - pessoa: filtra por pessoa no recebimento (pagamentos[].pessoa)
+ *  - pessoa: filtra por pessoa quitada (appliedTransactions[].transactionId.pagamentos[].pessoa) —
+ *    NUNCA por receivingTransactionId (que é sempre o próprio usuário, dinheiro que entrou)
  *  - tagId: filtra por tag aplicada
  *  - dataInicio / dataFim: filtra por createdAt
  *  - q: busca textual em descricao do recebimento
@@ -693,10 +694,12 @@ async function listar(usuarioId, opts = {}) {
     if (opts.dataFim) match.createdAt.$lte = new Date(opts.dataFim + 'T23:59:59.999Z');
   }
 
-  // Pré-filtrar IDs de Transacao que combinam com pessoa/q
+  // Pré-filtrar IDs de Transacao que combinam com pessoa/q. Pré-filtro grosseiro por transação
+  // (não pelo pagamentoIndex exato) — suficiente pra popular candidatos; validação fina de índice
+  // acontece à parte, em fechamentoService.linkarRecebimento.
   const transacaoFilter = { usuario: new mongoose.Types.ObjectId(usuarioId) };
   const needsTransacaoFilter = opts.pessoa || opts.q;
-  let allowedReceivingIds = null;
+  let allowedAppliedIds = null;
   if (needsTransacaoFilter) {
     if (opts.pessoa) {
       transacaoFilter['pagamentos.pessoa'] = new RegExp(
@@ -709,11 +712,11 @@ async function listar(usuarioId, opts = {}) {
       transacaoFilter.descricao = new RegExp(safe, 'i');
     }
     const matching = await Transacao.find(transacaoFilter).select('_id').lean();
-    allowedReceivingIds = matching.map((t) => t._id);
-    if (allowedReceivingIds.length === 0) {
+    allowedAppliedIds = matching.map((t) => t._id);
+    if (allowedAppliedIds.length === 0) {
       return { items: [], total: 0, page, totalPages: 0 };
     }
-    match.receivingTransactionId = { $in: allowedReceivingIds };
+    match['appliedTransactions.transactionId'] = { $in: allowedAppliedIds };
   }
 
   const [settlements, total] = await Promise.all([
@@ -724,14 +727,16 @@ async function listar(usuarioId, opts = {}) {
       .populate('receivingTransactionId', 'descricao valor data pagamentos')
       .populate('tagId', 'nome codigo cor icone')
       .populate('removeTagId', 'nome codigo cor icone')
-      .populate('appliedTransactions.transactionId', 'descricao valor data')
+      .populate('appliedTransactions.transactionId', 'descricao valor data pagamentos')
       .populate('leftoverTransactionId', 'descricao valor')
       .lean(),
     Settlement.countDocuments(match)
   ]);
 
+  const items = settlements.map((s) => ({ ...s, pessoas: pessoasDoSettlement(s) }));
+
   return {
-    items: settlements,
+    items,
     total,
     page,
     totalPages: Math.ceil(total / limit)

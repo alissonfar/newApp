@@ -76,3 +76,50 @@ describe('settlementService.pessoasDoSettlement', () => {
     expect(pessoasDoSettlement(settlement)).toEqual([]);
   });
 });
+
+describe('settlementService.listar', () => {
+  const mongoose = require('mongoose');
+  const Settlement = require('../../models/settlement');
+  const Transacao = require('../../models/transacao');
+  const { listar } = require('../settlementService');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('anexa pessoas: [...] em cada item, lendo appliedTransactions', async () => {
+    const usuarioId = new mongoose.Types.ObjectId().toString();
+    const settlementFake = {
+      _id: new mongoose.Types.ObjectId(),
+      appliedTransactions: [
+        {
+          pagamentoIndex: 0,
+          transactionId: { pagamentos: [{ pessoa: 'Cleia' }] }
+        }
+      ]
+    };
+
+    Transacao.find = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue([{ _id: settlementFake._id }])
+      })
+    });
+
+    const queryChain = {
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      populate: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue([settlementFake])
+    };
+    Settlement.find = jest.fn().mockReturnValue(queryChain);
+    Settlement.countDocuments = jest.fn().mockResolvedValue(1);
+
+    const resultado = await listar(usuarioId, { pessoa: 'Cleia' });
+
+    expect(resultado.items[0].pessoas).toEqual(['Cleia']);
+    expect(Settlement.find).toHaveBeenCalledWith(
+      expect.objectContaining({ 'appliedTransactions.transactionId': { $in: [settlementFake._id] } })
+    );
+  });
+});
