@@ -1,7 +1,7 @@
 // src/components/Fechamento/LinkarRecebimentoModal.js
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import ModalTransacao from '../Modal/ModalTransacao';
+import ModalCompacto from '../Modal/ModalCompacto';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import SettlementCandidateCard from './SettlementCandidateCard';
@@ -46,7 +46,7 @@ const LinkarRecebimentoModal = ({ instancia, onClose, onLinkar }) => {
   };
 
   return (
-    <ModalTransacao onClose={onClose}>
+    <ModalCompacto onClose={onClose}>
       <Card variant="glass" padding="md" className="linkar-recebimento-modal">
         <h2 className="linkar-recebimento-modal__title">Linkar Recebimento — {pessoaNome}</h2>
 
@@ -72,7 +72,7 @@ const LinkarRecebimentoModal = ({ instancia, onClose, onLinkar }) => {
           <Button variant="ghost" onClick={onClose}>Fechar</Button>
         </div>
       </Card>
-    </ModalTransacao>
+    </ModalCompacto>
   );
 };
 
