@@ -52,5 +52,5 @@ export default function useModalBehavior(modalRef) {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = prev;
     };
-  }, []);
+  }, [modalRef]);
 }
