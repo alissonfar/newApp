@@ -73,7 +73,7 @@ const EmprestimoDetalhePage = () => {
     }
     const result = await Swal.fire({
       title: 'Cancelar empréstimo?',
-      html: 'As transações vinculadas <strong>permanecem</strong> ativas, mas o empréstimo será marcado como cancelado.<br/>Esta ação não pode ser desfeita.',
+      html: 'O empréstimo será marcado como <strong>cancelado</strong>. Se houver transação de juros automáticos, ela será removida.<br/>Esta ação não pode ser desfeita.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
