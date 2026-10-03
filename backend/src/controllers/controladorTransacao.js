@@ -53,6 +53,55 @@ async function carregarEmprestimosPorId(pagamentos, usuarioId) {
 }
 
 /**
+ * Carrega TODOS os Empréstimos envolvidos em uma transação (TX-level +
+ * pagamento-level) em uma única query, retornando um Map `id → { tipoRetorno }`.
+ * Filtra por `usuarioId` (multi-tenant). Chamado no update para resolver o
+ * "empréstimo efetivo" (o que vale após o body ser aplicado).
+ *
+ * @param {Object} transacao Doc Mongoose com `emprestimoId` e `pagamentos`.
+ * @param {string} usuarioId ObjectId do usuário (multi-tenant).
+ * @returns {Promise<Map<string, { tipoRetorno: string }>>}
+ */
+async function carregarEmprestimosEnvolvidos(transacao, usuarioId) {
+  const ids = new Set();
+  if (transacao.emprestimoId) ids.add(String(transacao.emprestimoId));
+  for (const p of (transacao.pagamentos || [])) {
+    if (p && p.emprestimoId) ids.add(String(p.emprestimoId));
+  }
+  if (ids.size === 0) return new Map();
+  const emps = await Emprestimo.find({ _id: { $in: [...ids] }, usuario: usuarioId })
+    .select('tipoRetorno')
+    .lean();
+  return new Map(emps.map((e) => [String(e._id), e]));
+}
+
+/**
+ * Aplica a regra do ADR-026 (F5) a uma transação já montada (mas não salva):
+ * se o empréstimo efetivo (TX-level OU pagamento-level) for `sem_juros` E a
+ * transação for `gasto`, força `valorEsperadoRetorno = valor` em ambos os
+ * níveis. Roda DEPOIS do body ter sido interpretado — a regra sempre ganha.
+ *
+ * Mutante: altera `transacao.valorEsperadoRetorno` e
+ * `transacao.pagamentos[*].valorEsperadoRetorno` in-place.
+ *
+ * @param {Object} transacao Doc Mongoose com `valor`, `tipo`, `emprestimoId`
+ *                              e `pagamentos` finais.
+ * @param {string} usuarioId ObjectId do usuário (multi-tenant).
+ */
+async function aplicarRegraSemJurosNaTransacao(transacao, usuarioId) {
+  const empsPorId = await carregarEmprestimosEnvolvidos(transacao, usuarioId);
+
+  if (transacao.emprestimoId) {
+    const empTx = empsPorId.get(String(transacao.emprestimoId));
+    if (empTx && empTx.tipoRetorno === 'sem_juros' && transacao.tipo === 'gasto') {
+      transacao.valorEsperadoRetorno = transacao.valor;
+    }
+  }
+
+  aplicarSemJurosNosPagamentos(transacao.pagamentos, empsPorId);
+}
+
+/**
  * Valida a regra de exclusividade mútua entre `emprestimoId` no nível da
  * Transação e `emprestimoId` em `pagamentos[]` (design 2026-06-24).
  * Retorna a string de erro ou null se OK.
@@ -786,19 +835,15 @@ exports.atualizarTransacao = async (req, res) => {
         transacao.subconta = null;
       }
     }
-    // ADR-026 (F5): ver enforcing nos 2 ramos abaixo.
     if (req.body.emprestimoId !== undefined) {
       const emprestimoIdAntes = transacao.emprestimoId ? transacao.emprestimoId.toString() : null;
-      let emprestimoLegadoUpdate = null;
       if (req.body.emprestimoId) {
-        emprestimoLegadoUpdate = await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
+        await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
       }
       transacao.emprestimoId = req.body.emprestimoId || null;
       if (req.body.valorEsperadoRetorno !== undefined) {
         if (req.body.valorEsperadoRetorno === null) {
           transacao.valorEsperadoRetorno = null;
-        } else if (emprestimoLegadoUpdate && emprestimoLegadoUpdate.tipoRetorno === 'sem_juros' && transacao.tipo === 'gasto') {
-          transacao.valorEsperadoRetorno = transacao.valor;
         } else {
           const ver = Number(req.body.valorEsperadoRetorno);
           if (!isNaN(ver) && ver >= 0) {
@@ -813,6 +858,8 @@ exports.atualizarTransacao = async (req, res) => {
       if (erroExclusividade) {
         return res.status(400).json({ erro: erroExclusividade });
       }
+      // ADR-026 (F5): regra ganha sobre o body.
+      await aplicarRegraSemJurosNaTransacao(transacao, req.userId);
       await transacao.save();
       // Recalcula todos os empréstimos envolvidos: o que existia antes (se
       // mudou), o novo, e os dos pagamentos.
@@ -833,15 +880,13 @@ exports.atualizarTransacao = async (req, res) => {
           }
         }
       }
-      // ADR-026 (F5): pagamento-level — força `valorEsperadoRetorno = valor` em
-      // pagamentos cujo empréstimo é `sem_juros`.
-      const empsPorIdUpdate = await carregarEmprestimosPorId(transacao.pagamentos, req.userId);
-      aplicarSemJurosNosPagamentos(transacao.pagamentos, empsPorIdUpdate);
       // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
       const erroExclusividade = validarExclusividadeEmprestimo(transacao);
       if (erroExclusividade) {
         return res.status(400).json({ erro: erroExclusividade });
       }
+      // ADR-026 (F5): cobre update só de `valor` (empréstimo antigo fica reativo).
+      await aplicarRegraSemJurosNaTransacao(transacao, req.userId);
       await transacao.save();
       // Recalcula status dos empréstimos afetados (TX-level legado + pagamento-level).
       await recalcularEmprestimos(transacao, req.userId);
