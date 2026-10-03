@@ -262,6 +262,34 @@ describe('emprestimoQuitacao - recalcularJurosAuto (parâmetro = lucro)', () => 
     expect(savedInstance.observacao).toContain('Recebimentos: R$ 2127.50');
     expect(savedInstance.observacao).toContain('Lucro: R$ 200.00');
   });
+
+  test('criada em caminho 2: pessoa/tags vêm do pagamento vinculado, não do 1º pagamento', async () => {
+    const emprestimo = makeEmprestimo();
+    mockTransacaoFindOne.mockReturnValue({ session: () => Promise.resolve(null) });
+    mockTransacaoFind.mockReturnValue({
+      sort: () => ({
+        lean: () => Promise.resolve([{
+          _id: 'rec2',
+          data: new Date('2026-10-03'),
+          categoria: 'cat1',
+          categoriaNome: 'Cat',
+          pagamentos: [
+            { pessoa: 'Outro', valor: 100, tags: { x: 1 }, emprestimoId: null },
+            { pessoa: 'Estrela', valor: 500, tags: { a: 2 }, emprestimoId: emprestimo._id }
+          ]
+        }])
+      })
+    });
+    mockTransacaoAggregate.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    let savedInstance = null;
+    mockSaveInstance.mockImplementation(function () { savedInstance = this; return Promise.resolve({ _id: 'novoId' }); });
+
+    const resultado = await recalcularJurosAuto(emprestimo, 52.5);
+
+    expect(resultado.acao).toBe('criada');
+    expect(savedInstance.pagamentos[0].pessoa).toBe('Estrela');
+    expect(savedInstance.pagamentos[0].tags).toEqual({ a: 2 });
+  });
 });
 
 describe('emprestimoQuitacao - calcularTotaisRecebEDisbursed (com caminho 2)', () => {

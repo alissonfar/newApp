@@ -35,12 +35,27 @@ function montarObservacao({ pessoaNome, desembolso, totalReceb, lucro }) {
 
 async function buscarSnapshotUltimoRecebimento(emprestimoId) {
   const recebiveis = await Transacao.find({
-    emprestimoId,
     tipo: 'recebivel',
     status: 'ativo',
-    emprestimoEhJurosAuto: { $ne: true }
+    emprestimoEhJurosAuto: { $ne: true },
+    $or: [
+      { emprestimoId },
+      { 'pagamentos.emprestimoId': emprestimoId }
+    ]
   }).sort({ data: -1 }).lean();
   return recebiveis[0] || null;
+}
+
+/**
+ * Escolhe o pagamento de referência de um recebível: o que está vinculado a
+ * este empréstimo (caminho 2), ou o primeiro pagamento (caminho 1).
+ */
+function pagamentoReferencia(transacaoRecebivel, emprestimoId) {
+  const pags = Array.isArray(transacaoRecebivel?.pagamentos) ? transacaoRecebivel.pagamentos : [];
+  const vinculado = pags.find(
+    (p) => p && p.emprestimoId && String(p.emprestimoId) === String(emprestimoId)
+  );
+  return vinculado || pags[0] || null;
 }
 
 /**
@@ -108,6 +123,7 @@ async function recalcularJurosAuto(emprestimo, lucro, opcoes = {}) {
     }
     const { desembolso, recebimento } = await calcularTotaisRecebEDisbursed(emprestimoId, emprestimo.usuario);
     const pessoaNome = emprestimo.pessoaNomeSnapshot || 'empréstimo';
+    const ref = pagamentoReferencia(ultima, emprestimoId);
     const nova = new Transacao({
       _id: new mongoose.Types.ObjectId(),
       usuario: emprestimo.usuario,
@@ -118,7 +134,7 @@ async function recalcularJurosAuto(emprestimo, lucro, opcoes = {}) {
       observacao: montarObservacao({ pessoaNome, desembolso, totalReceb: recebimento, lucro: lucroArred }),
       emprestimoId,
       emprestimoEhJurosAuto: true,
-      pagamentos: [{ pessoa: ultima.pagamentos?.[0]?.pessoa || '', valor: lucroArred, tags: ultima.pagamentos?.[0]?.tags || {} }],
+      pagamentos: [{ pessoa: ref?.pessoa || '', valor: lucroArred, tags: ref?.tags || {} }],
       categoria: ultima.categoria || null,
       categoriaNome: ultima.categoriaNome || null,
       status: 'ativo'
