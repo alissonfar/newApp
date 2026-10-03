@@ -60,7 +60,9 @@ const EmprestimoDetalhePage = () => {
   };
 
   const handleCancelar = async () => {
-    const vinculosUsuario = movimentacoes.filter((m) => !m.emprestimoEhJurosAuto);
+    const vinculosUsuario = movimentacoes.filter(
+      (m) => !m.emprestimoEhJurosAuto && m.status !== 'estornado'
+    );
     if (vinculosUsuario.length > 0) {
       await Swal.fire({
         title: 'Desvincule os lançamentos antes',

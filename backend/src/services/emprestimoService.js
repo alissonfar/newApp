@@ -107,6 +107,9 @@ async function _agregarTotaisEmprestimo(emprestimoId, usuarioId) {
 
   // Esperado do pagamento (caminho 2): soma o valorEsperadoRetorno de CADA
   // pagamento vinculado (não mais 1x por TX — revisão 2026-10-03, ADR-026).
+  // Quando o pagamento não tem valorEsperadoRetorno próprio, usa o valor
+  // herdado da TX (fallback usado também por listarTransacoes na Movimentações
+  // table — ADR-026). Ainda soma PER-PAYMENT.
   const esperadoPagamentoAgg = await Transacao.aggregate([
     {
       $match: {
@@ -118,18 +121,19 @@ async function _agregarTotaisEmprestimo(emprestimoId, usuarioId) {
       }
     },
     { $unwind: '$pagamentos' },
+    { $match: { 'pagamentos.emprestimoId': objectId } },
     {
-      $match: {
-        'pagamentos.emprestimoId': objectId,
-        'pagamentos.valorEsperadoRetorno': { $ne: null, $gt: 0 }
+      $addFields: {
+        _esperadoEfetivo: {
+          $cond: [
+            { $ne: ['$pagamentos.valorEsperadoRetorno', null] },
+            '$pagamentos.valorEsperadoRetorno',
+            { $ifNull: ['$valorEsperadoRetorno', 0] }
+          ]
+        }
       }
     },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: '$pagamentos.valorEsperadoRetorno' }
-      }
-    }
+    { $group: { _id: null, total: { $sum: '$_esperadoEfetivo' } } }
   ]);
 
   let totalDesembolsadoC1 = 0;
