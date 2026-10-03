@@ -60,6 +60,17 @@ const EmprestimoDetalhePage = () => {
   };
 
   const handleCancelar = async () => {
+    const vinculosUsuario = movimentacoes.filter((m) => !m.emprestimoEhJurosAuto);
+    if (vinculosUsuario.length > 0) {
+      await Swal.fire({
+        title: 'Desvincule os lançamentos antes',
+        html: 'Este empréstimo ainda tem lançamentos vinculados. Use <em>"Excluir do empréstimo"</em> (ou estorne as transações) antes de cancelar.',
+        icon: 'info',
+        confirmButtonText: 'Entendi',
+        confirmButtonColor: '#2563eb'
+      });
+      return;
+    }
     const result = await Swal.fire({
       title: 'Cancelar empréstimo?',
       html: 'As transações vinculadas <strong>permanecem</strong> ativas, mas o empréstimo será marcado como cancelado.<br/>Esta ação não pode ser desfeita.',

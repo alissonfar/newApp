@@ -206,8 +206,27 @@ exports.cancelar = async (req, res) => {
     if (emprestimo.status === 'cancelado') {
       return res.status(400).json({ erro: 'Empréstimo já está cancelado.' });
     }
+    const vinculos = await Transacao.countDocuments({
+      usuario: req.userId,
+      status: 'ativo',
+      emprestimoEhJurosAuto: { $ne: true },
+      $or: [
+        { emprestimoId: emprestimo._id },
+        { 'pagamentos.emprestimoId': emprestimo._id }
+      ]
+    });
+    if (vinculos > 0) {
+      return res.status(400).json({
+        erro: 'Este empréstimo possui lançamentos vinculados. Desvincule-os (ou estorne-os) antes de cancelar.'
+      });
+    }
     emprestimo.status = 'cancelado';
     await emprestimo.save();
+    // Remove a TX de juros auto (do sistema, não bloqueia o cancelamento)
+    await Transacao.deleteMany({
+      emprestimoId: emprestimo._id,
+      emprestimoEhJurosAuto: true
+    });
     res.json({ mensagem: 'Empréstimo cancelado.', emprestimo: await service.obterEmprestimoComTotais(emprestimo) });
   } catch (error) {
     console.error('Erro ao cancelar empréstimo:', error);
