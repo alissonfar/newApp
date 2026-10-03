@@ -58,6 +58,15 @@ const EmprestimoFormFields = ({
     }
   };
 
+  // ADR-026 F5: sem_juros trava valor esperado = desembolso.
+  const emprestimoSelecionado = state.modo === 'vincular'
+    ? state.emprestimosPessoa?.find((e) => (e.id || e._id) === state.emprestimoId)
+    : null;
+  const tipoRetornoEfetivo = state.modo === 'vincular'
+    ? emprestimoSelecionado?.tipoRetorno
+    : state.novoTipoRetorno;
+  const semJuros = tipoRetornoEfetivo === 'sem_juros';
+
   return (
     <>
       <div className="emp-campo">
@@ -174,7 +183,11 @@ const EmprestimoFormFields = ({
                 <label>Tipo de retorno:</label>
                 <select
                   value={state.novoTipoRetorno}
-                  onChange={(e) => setters.setNovoTipoRetorno(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setters.setNovoTipoRetorno(v);
+                    if (v === 'sem_juros') setters.setNovoValorEsperado(String(valorTotal || ''));
+                  }}
                   tabIndex={ti(98)}
                 >
                   <option value="valor_fixo">Valor fixo (sem juros)</option>
@@ -206,13 +219,16 @@ const EmprestimoFormFields = ({
                 type="number"
                 step="0.01"
                 min="0"
-                value={state.novoValorEsperado}
+                value={semJuros ? String(valorTotal || '') : state.novoValorEsperado}
                 onChange={(e) => setters.setNovoValorEsperado(e.target.value)}
                 placeholder="0,00"
+                disabled={semJuros}
                 tabIndex={state.modo === 'vincular' ? ti(98) : ti(97)}
               />
               <small>
-                Sugestão: mesmo valor desta transação ({formatarMoedaBRL(valorTotal || 0)}). Você pode ajustar.
+                {semJuros
+                  ? 'Sem juros: o retorno esperado é o próprio valor emprestado.'
+                  : `Sugestão: mesmo valor desta transação (${formatarMoedaBRL(valorTotal || 0)}). Você pode ajustar.`}
               </small>
             </div>
           )}
