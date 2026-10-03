@@ -63,6 +63,7 @@ const {
   STATUS_EMPRESTIMO,
   TIPOS_RETORNO
 } = require('../emprestimoService');
+const { aplicarSemJurosNosPagamentos } = require('../../controllers/controladorTransacao');
 
 const USER_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa';
 const EMP_ID = new mongoose.Types.ObjectId();
@@ -547,5 +548,21 @@ describe('emprestimoService - caminho 2 (pagamento-level) — bug fix 2026-06-30
 
     const lucro = await calcularLucro(EMP_ID, USER_ID);
     expect(lucro).toBe(200);
+  });
+});
+
+describe('controladorTransacao.aplicarSemJurosNosPagamentos (ADR-026 / F5)', () => {
+  test('força valorEsperadoRetorno = valor quando o empréstimo é sem_juros', () => {
+    const pags = [{ valor: 300, emprestimoId: 'e1', valorEsperadoRetorno: 999 }];
+    const emps = new Map([['e1', { tipoRetorno: 'sem_juros' }]]);
+    aplicarSemJurosNosPagamentos(pags, emps);
+    expect(pags[0].valorEsperadoRetorno).toBe(300);
+  });
+
+  test('não mexe quando tipoRetorno é valor_fixo', () => {
+    const pags = [{ valor: 300, emprestimoId: 'e1', valorEsperadoRetorno: 999 }];
+    const emps = new Map([['e1', { tipoRetorno: 'valor_fixo' }]]);
+    aplicarSemJurosNosPagamentos(pags, emps);
+    expect(pags[0].valorEsperadoRetorno).toBe(999);
   });
 });
