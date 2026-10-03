@@ -105,10 +105,8 @@ async function _agregarTotaisEmprestimo(emprestimoId, usuarioId) {
     }
   ]);
 
-  // Esperado do pagamento (caminho 2): agrupa por TX (1x por TX) e soma
-  // pagamentos[].valorEsperadoRetorno. Assume que todos os pagamentos
-  // emprestados de uma mesma TX pro mesmo Empréstimo têm o mesmo valor
-  // esperado (coerente com o modelo de "complemento").
+  // Esperado do pagamento (caminho 2): soma o valorEsperadoRetorno de CADA
+  // pagamento vinculado (não mais 1x por TX — revisão 2026-10-03, ADR-026).
   const esperadoPagamentoAgg = await Transacao.aggregate([
     {
       $match: {
@@ -128,14 +126,8 @@ async function _agregarTotaisEmprestimo(emprestimoId, usuarioId) {
     },
     {
       $group: {
-        _id: '$_id',
-        valorEsperado: { $first: '$pagamentos.valorEsperadoRetorno' }
-      }
-    },
-    {
-      $group: {
         _id: null,
-        total: { $sum: '$valorEsperado' }
+        total: { $sum: '$pagamentos.valorEsperadoRetorno' }
       }
     }
   ]);

@@ -477,12 +477,27 @@ describe('emprestimoService.calcularTotais - pagamento-level (design 2026-06-24)
     mockTransacaoAggregate
       .mockResolvedValueOnce([])                       // txLevel vazio
       .mockResolvedValueOnce([{ _id: 'gasto', total: 900 }])  // pagamentoLevel: 500 + 400
-      .mockResolvedValueOnce([{ _id: null, total: 1000 }]);   // esperadoPagamento: 1x por TX
+      .mockResolvedValueOnce([{ _id: null, total: 1000 }]);   // esperadoPagamento: soma por pagamento (ADR-026)
 
     const totais = await calcularTotais(String(EMP_ID), USER_ID);
 
     expect(totais.totalDisbursed).toBe(900);
     expect(totais.totalEsperado).toBe(1000);
+  });
+
+  test('esperado do caminho 2 soma por pagamento (sem $first)', async () => {
+    mockTransacaoAggregate
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ _id: 'gasto', total: 1000 }])
+      .mockResolvedValueOnce([{ _id: null, total: 1200 }]);
+
+    const totais = await calcularTotais(String(EMP_ID), USER_ID);
+    expect(totais.totalEsperado).toBe(1200);
+
+    const pipelineEsperado = mockTransacaoAggregate.mock.calls[2][0];
+    const json = JSON.stringify(pipelineEsperado);
+    expect(json).toContain('$pagamentos.valorEsperadoRetorno');
+    expect(json).not.toContain('$first');
   });
 });
 
