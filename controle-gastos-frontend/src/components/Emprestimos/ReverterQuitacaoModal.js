@@ -27,23 +27,23 @@ export async function abrirModalReverterQuitacao({ emprestimo, transacaoJurosAut
   const pessoaNome = emprestimo.pessoaNomeSnapshot || 'a pessoa';
 
   const resultado = await Swal.fire({
-    title: 'Reverter quitação do empréstimo?',
+    title: 'Recalcular juros do empréstimo?',
     html: `
       <div style="text-align: left;">
-        <p>Esta operação irá:</p>
+        <p>O sistema vai:</p>
         <ul style="margin: 0.5em 0; padding-left: 1.5em;">
-          <li>Remover a transação de juros automáticos de <strong>${valorErradoTexto}</strong></li>
-          <li>Voltar o empréstimo com <strong>${pessoaNome}</strong> ao status <strong>ativo</strong></li>
-          <li>Recalcular e recriar a transação de juros com o valor correto</li>
+          <li>Remover a transação de juros automáticos atual (${valorErradoTexto})</li>
+          <li>Recalcular com os lançamentos vigentes de <strong>${pessoaNome}</strong></li>
+          <li>Recriar a transação de juros com o valor correto (se ainda houver lucro)</li>
         </ul>
         <p style="color: var(--cg-color-warning); margin-top: 1em;">
-          Esta operação não pode ser desfeita automaticamente.
+          Se o empréstimo não estiver mais quitado, a transação de juros não é recriada.
         </p>
       </div>
     `,
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'Reverter',
+    confirmButtonText: 'Recalcular',
     cancelButtonText: 'Cancelar',
     confirmButtonColor: 'var(--cg-color-error)',
     cancelButtonColor: 'var(--cg-color-text-secondary)',
@@ -66,7 +66,7 @@ export async function abrirModalReverterQuitacao({ emprestimo, transacaoJurosAut
   if (resultado.isConfirmed && resultado.value) {
     const novoLucro = resultado.value?.lucro ?? 0;
     toast.success(
-      `Quitação revertida. Sistema recalculou: nova TX de juros com R$ ${novoLucro.toFixed(2).replace('.', ',')}.`
+      `Juros recalculados. Nova TX de juros com R$ ${novoLucro.toFixed(2).replace('.', ',')}.`
     );
     if (typeof onConfirmado === 'function') {
       onConfirmado(resultado.value);

@@ -187,9 +187,9 @@ const EmprestimoDetalhePage = () => {
                     });
                   }}
                   className="emp-btn-secundario"
-                  title="Reverter a quitação e recalcular a TX de juros automáticos"
+                  title="Remove e recria a transação de juros automáticos com o valor recalculado"
                 >
-                  Reverter quitação
+                  Recalcular juros
                 </button>
               )}
               <button onClick={handleCancelar} className="emp-btn-perigo">
