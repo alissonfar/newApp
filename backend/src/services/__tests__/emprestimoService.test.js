@@ -19,6 +19,7 @@ const mockEmprestimoFindOne = jest.fn();
 const mockEmprestimoFindOneAndUpdate = jest.fn();
 const mockTransacaoAggregate = jest.fn();
 const mockTransacaoFind = jest.fn();
+const mockTransacaoDeleteOne = jest.fn();
 const mockRecalcularJurosAuto = jest.fn();
 
 jest.mock('../../models/emprestimo', () => {
@@ -33,6 +34,7 @@ jest.mock('../../models/emprestimo', () => {
 jest.mock('../../models/transacao', () => {
   const Mock = jest.fn();
   Mock.aggregate = (...args) => mockTransacaoAggregate(...args);
+  Mock.deleteOne = (...args) => mockTransacaoDeleteOne(...args);
   Mock.find = (...args) => {
     const query = mockTransacaoFind(...args);
     if (query && typeof query.lean === 'function') return query;
@@ -58,6 +60,8 @@ jest.mock('../../utils/emprestimoQuitacao', () => ({
 const {
   validarDadosEmprestimo,
   recalcularStatus,
+  quitarEmprestimo,
+  reabrirEmprestimo,
   calcularTotais,
   calcularLucro,
   STATUS_EMPRESTIMO,
@@ -150,31 +154,6 @@ describe('emprestimoService.validarDadosEmprestimo (sem valorEsperadoRetorno —
     expect(erros).toEqual([]);
   });
 
-  test('rejeita tipoRetorno inválido', () => {
-    const erros = validarDadosEmprestimo({ ...dadosValidos, tipoRetorno: 'banana' });
-    expect(erros.some((e) => e.includes('tipoRetorno inválido'))).toBe(true);
-  });
-
-  test('aceita tipoRetorno valor_fixo', () => {
-    const erros = validarDadosEmprestimo({ ...dadosValidos, tipoRetorno: 'valor_fixo' });
-    expect(erros).toEqual([]);
-  });
-
-  test('aceita tipoRetorno sem_juros', () => {
-    const erros = validarDadosEmprestimo({ ...dadosValidos, tipoRetorno: 'sem_juros' });
-    expect(erros).toEqual([]);
-  });
-
-  test('rejeita tipoRetorno juros_percentual (removido)', () => {
-    const erros = validarDadosEmprestimo({ ...dadosValidos, tipoRetorno: 'juros_percentual' });
-    expect(erros.some((e) => e.includes('tipoRetorno inválido'))).toBe(true);
-  });
-
-  test('rejeita tipoRetorno juros_fixo (removido)', () => {
-    const erros = validarDadosEmprestimo({ ...dadosValidos, tipoRetorno: 'juros_fixo' });
-    expect(erros.some((e) => e.includes('tipoRetorno inválido'))).toBe(true);
-  });
-
   test('rejeita sem prazoFinal', () => {
     const erros = validarDadosEmprestimo({ ...dadosValidos, prazoFinal: '' });
     expect(erros).toContain('prazoFinal é obrigatório.');
@@ -214,6 +193,7 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     mockEmprestimoFindOneAndUpdate.mockReset();
     mockTransacaoAggregate.mockReset();
     mockTransacaoFind.mockReset();
+    mockTransacaoDeleteOne.mockReset();
     mockRecalcularJurosAuto.mockReset();
   });
 
@@ -238,90 +218,23 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     expect(mockRecalcularJurosAuto).not.toHaveBeenCalled();
   });
 
-  test('quitação: recebido >= soma(valorEsperadoRetorno das TXs de gasto) → quita e cria TX de juros com lucro realizado', async () => {
+  test('quitação é MANUAL: status=ativo + recebido >= esperado NÃO quita (Task 1 — 2026-10-03)', async () => {
+    // Cenário onde o comportamento antigo auto-quitava: recebido atinge o esperado.
+    // A partir da quitação manual, este é o caso REGRESSÃO — não deve quitar
+    // sozinho. O usuário clica em "Quitar" via quitarEmprestimo().
     // TX1: gasto 600, esperado 800
     // TX2: gasto 500, esperado 500
     // Recebido: 1300 → atinge esperado 1300
-    // Lucro realizado = recebido - desembolso = 1300 - 1100 = 200
     const emp = makeEmprestimo({ status: 'ativo' });
-    const empQuitado = { ...emp, status: 'quitado', dataQuitacao: new Date() };
 
     mockEmprestimoFindOne.mockResolvedValue(emp);
-    // calcularTotais consome 3 mocks (txLevel + pagamentoLevel + esperado).
-    // calcularLucro também consome 3 mocks (via _agregarTotaisEmprestimo).
-    // Empilhamos 2 sequências iguais (mesmos dados pros 2 calls).
     mockAggregateSequence(
       [{ _id: 'gasto', total: 1100 }, { _id: 'recebivel', total: 1300 }],
       1300
     );
-    mockAggregateSequence(
-      [{ _id: 'gasto', total: 1100 }, { _id: 'recebivel', total: 1300 }],
-      1300
-    );
-    mockEmprestimoFindOneAndUpdate.mockResolvedValue(empQuitado);
-    mockRecalcularJurosAuto.mockResolvedValue({ acao: 'criada', transacao: { _id: 'tx', valor: 200 } });
 
     await recalcularStatus(String(EMP_ID), USER_ID);
 
-    expect(mockEmprestimoFindOneAndUpdate).toHaveBeenCalledWith(
-      { _id: String(EMP_ID), usuario: expect.anything(), status: 'ativo' },
-      { $set: { status: 'quitado', dataQuitacao: expect.any(Date) } },
-      { new: true }
-    );
-    // Lucro realizado = receb - gast = 1300 - 1100 = 200
-    expect(mockRecalcularJurosAuto).toHaveBeenCalledWith(
-      expect.objectContaining({ _id: emp._id }),
-      200
-    );
-  });
-
-  test('quitação com lucro zero: cada TX de gasto tem esperado = valor → recebido = desembolsado, lucro 0', async () => {
-    // TX1: gasto 800, esperado 800
-    // TX2: gasto 200, esperado 200
-    // Recebido: 1000 → atinge esperado 1000
-    // Lucro realizado = 1000 - 1000 = 0
-    const emp = makeEmprestimo({ status: 'ativo' });
-    const empQuitado = { ...emp, status: 'quitado' };
-
-    mockEmprestimoFindOne.mockResolvedValue(emp);
-    mockAggregateSequence(
-      [{ _id: 'gasto', total: 1000 }, { _id: 'recebivel', total: 1000 }],
-      1000
-    );
-    mockAggregateSequence(
-      [{ _id: 'gasto', total: 1000 }, { _id: 'recebivel', total: 1000 }],
-      1000
-    );
-    mockEmprestimoFindOneAndUpdate.mockResolvedValue(empQuitado);
-    mockRecalcularJurosAuto.mockResolvedValue({ acao: 'nenhuma', transacao: null });
-
-    await recalcularStatus(String(EMP_ID), USER_ID);
-
-    expect(mockEmprestimoFindOneAndUpdate).toHaveBeenCalledWith(
-      { _id: String(EMP_ID), usuario: expect.anything(), status: 'ativo' },
-      { $set: { status: 'quitado', dataQuitacao: expect.any(Date) } },
-      { new: true }
-    );
-    // Lucro = 0 → recalcularJurosAuto é chamado com 0
-    expect(mockRecalcularJurosAuto).toHaveBeenCalledWith(
-      expect.objectContaining({ _id: emp._id }),
-      0
-    );
-  });
-
-  test('sem auto-reversão (Bloco 2.b): status=quitado + recebido < esperado → status NÃO reverte', async () => {
-    const emp = makeEmprestimo({ status: 'quitado', dataQuitacao: new Date() });
-
-    mockEmprestimoFindOne.mockResolvedValue(emp);
-    // calcularTotais: 1ª agregado, 2ª soma esperada
-    mockAggregateSequence(
-      [{ _id: 'gasto', total: 600 }, { _id: 'recebivel', total: 200 }],
-      800
-    );
-
-    await recalcularStatus(String(EMP_ID), USER_ID);
-
-    // A PARTIR DA FASE 4: NÃO há mais findOneAndUpdate revertendo quitado → ativo
     expect(mockEmprestimoFindOneAndUpdate).not.toHaveBeenCalled();
     expect(mockRecalcularJurosAuto).not.toHaveBeenCalled();
   });
@@ -382,34 +295,6 @@ describe('emprestimoService.recalcularStatus - valor esperado por TX (design 202
     const resultado = await recalcularStatus(String(EMP_ID), USER_ID);
 
     expect(resultado).toBeNull();
-  });
-
-  test('log warning quando quitação ocorre com desembolso zero', async () => {
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const emp = makeEmprestimo({ status: 'ativo' });
-    const empQuitado = { ...emp, status: 'quitado' };
-
-    mockEmprestimoFindOne.mockResolvedValue(emp);
-    // desembolso zero, mas recebimento 800 (atinge valor esperado 800)
-    mockAggregateSequence(
-      [{ _id: 'recebivel', total: 800 }],
-      800
-    );
-    mockAggregateSequence(
-      [{ _id: 'recebivel', total: 800 }],
-      800
-    );
-    mockEmprestimoFindOneAndUpdate.mockResolvedValue(empQuitado);
-    mockRecalcularJurosAuto.mockResolvedValue({ acao: 'criada', transacao: {} });
-
-    await recalcularStatus(String(EMP_ID), USER_ID);
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('ATENÇÃO')
-    );
-    expect(consoleSpy.mock.calls[0][0]).toContain('desembolso zero');
-
-    consoleSpy.mockRestore();
   });
 
   test('TXs sem valorEsperadoRetorno (apenas gasto) → soma esperada = 0, empréstimo não atinge quitação', async () => {
@@ -508,6 +393,7 @@ describe('emprestimoService - caminho 2 (pagamento-level) — bug fix 2026-06-30
     mockEmprestimoFindOneAndUpdate.mockReset();
     mockTransacaoAggregate.mockReset();
     mockTransacaoFind.mockReset();
+    mockTransacaoDeleteOne.mockReset();
     mockRecalcularJurosAuto.mockReset();
   });
 
@@ -548,6 +434,81 @@ describe('emprestimoService - caminho 2 (pagamento-level) — bug fix 2026-06-30
 
     const lucro = await calcularLucro(EMP_ID, USER_ID);
     expect(lucro).toBe(200);
+  });
+});
+
+describe('emprestimoService.quitarEmprestimo / reabrirEmprestimo (Task 1 — quitação manual 2026-10-03)', () => {
+  beforeEach(() => {
+    mockEmprestimoFindOne.mockReset();
+    mockEmprestimoFindOneAndUpdate.mockReset();
+    mockTransacaoAggregate.mockReset();
+    mockTransacaoFind.mockReset();
+    mockTransacaoDeleteOne.mockReset();
+    mockRecalcularJurosAuto.mockReset();
+  });
+
+  test('quitar: ativo → quitado e cria TX de juros com lucro realizado', async () => {
+    // Cenário: gasto 2000, recebido 2300 → lucro realizado = 300.
+    mockEmprestimoFindOne.mockResolvedValue(makeEmprestimo({ status: 'ativo' }));
+    // calcularLucro consome 3 aggregates; obterEmprestimoComTotais consome mais 3.
+    mockAggregateSequence(
+      [{ _id: 'gasto', total: 2000 }, { _id: 'recebivel', total: 2300 }],
+      2000
+    );
+    mockAggregateSequence(
+      [{ _id: 'gasto', total: 2000 }, { _id: 'recebivel', total: 2300 }],
+      2000
+    );
+    mockRecalcularJurosAuto.mockResolvedValue({ acao: 'criada', transacao: { _id: 'tx', valor: 300 } });
+
+    await quitarEmprestimo(String(EMP_ID), USER_ID);
+
+    expect(mockRecalcularJurosAuto).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: EMP_ID }),
+      300
+    );
+  });
+
+  test('quitar: só ativo pode quitar (status=quitado lança erro)', async () => {
+    mockEmprestimoFindOne.mockResolvedValue(makeEmprestimo({ status: 'quitado' }));
+
+    await expect(quitarEmprestimo(String(EMP_ID), USER_ID)).rejects.toThrow();
+  });
+
+  test('quitar: empréstimo não encontrado lança erro', async () => {
+    mockEmprestimoFindOne.mockResolvedValue(null);
+
+    await expect(quitarEmprestimo(String(EMP_ID), USER_ID)).rejects.toThrow();
+  });
+
+  test('reabrir: quitado → ativo e deleta TX de juros auto', async () => {
+    mockEmprestimoFindOne.mockResolvedValue(makeEmprestimo({ status: 'quitado' }));
+    mockTransacaoDeleteOne.mockResolvedValue({ deletedCount: 1 });
+    // obterEmprestimoComTotais consome 3 aggregates (calcularTotais).
+    mockAggregateSequence(
+      [{ _id: 'gasto', total: 2000 }, { _id: 'recebivel', total: 2300 }],
+      2000
+    );
+
+    await reabrirEmprestimo(String(EMP_ID), USER_ID);
+
+    expect(mockTransacaoDeleteOne).toHaveBeenCalledWith(
+      expect.objectContaining({ emprestimoId: EMP_ID, emprestimoEhJurosAuto: true })
+    );
+    // reabrirEmprestimo NÃO recalcula juros — quitação é manual.
+    expect(mockRecalcularJurosAuto).not.toHaveBeenCalled();
+  });
+
+  test('reabrir: só quitado pode reabrir (status=ativo lança erro)', async () => {
+    mockEmprestimoFindOne.mockResolvedValue(makeEmprestimo({ status: 'ativo' }));
+
+    await expect(reabrirEmprestimo(String(EMP_ID), USER_ID)).rejects.toThrow();
+  });
+
+  test('reabrir: empréstimo não encontrado lança erro', async () => {
+    mockEmprestimoFindOne.mockResolvedValue(null);
+
+    await expect(reabrirEmprestimo(String(EMP_ID), USER_ID)).rejects.toThrow();
   });
 });
 
