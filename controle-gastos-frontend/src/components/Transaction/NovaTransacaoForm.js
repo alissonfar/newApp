@@ -132,6 +132,18 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
       return;
     }
 
+    // Guard contra race do dropdown: bloqueia submit se a lista de empréstimos
+    // da pessoa ainda está carregando (sem isso, o <select> fica vazio e o
+    // user salva sem empréstimo mesmo querendo vincular).
+    if (
+      emprestimoForm.state.ativo
+      && emprestimoForm.state.modo === 'vincular'
+      && emprestimoForm.state.loadingEmprestimos
+    ) {
+      toast.warning('Aguarde o carregamento dos empréstimos.');
+      return;
+    }
+
     const empError = emprestimoForm.validar();
     if (empError) {
       toast.error(empError);

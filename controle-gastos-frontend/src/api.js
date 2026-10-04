@@ -713,14 +713,18 @@ export async function obterTransacoesEmprestimo(id) {
   return dados;
 }
 
-export async function reverterQuitacaoEmprestimo(id) {
-  const resposta = await fetch(`${API_BASE}/emprestimos/${id}/reverter-quitacao`, {
-    method: 'POST',
-    headers: getHeaders()
-  });
-  const dados = await resposta.json();
-  if (!resposta.ok) throw new Error(dados?.erro || `Erro ${resposta.status} ao reverter quitação.`);
-  return dados;
+export async function quitarEmprestimo(id) {
+  const r = await fetch(`${API_BASE}/emprestimos/${id}/quitar`, { method: 'POST', headers: getHeaders() });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d?.erro || `Erro ${r.status} ao quitar empréstimo.`);
+  return d;
+}
+
+export async function reabrirEmprestimo(id) {
+  const r = await fetch(`${API_BASE}/emprestimos/${id}/reabrir`, { method: 'POST', headers: getHeaders() });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d?.erro || `Erro ${r.status} ao reabrir empréstimo.`);
+  return d;
 }
 
 /* ----- Divisões Pré-Configuradas ----- */

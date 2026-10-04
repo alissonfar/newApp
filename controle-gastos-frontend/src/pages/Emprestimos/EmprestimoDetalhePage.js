@@ -8,7 +8,9 @@ import {
   atualizarEmprestimo,
   cancelarEmprestimo,
   obterTransacoesEmprestimo,
-  atualizarTransacao
+  atualizarTransacao,
+  quitarEmprestimo,
+  reabrirEmprestimo
 } from '../../api';
 import {
   formatarMoedaBRL,
@@ -18,7 +20,6 @@ import {
 } from '../../utils/emprestimoFormat';
 import { useBreadcrumbTrailing } from '../../context/BreadcrumbContext';
 import EmprestimoForm from '../../components/Emprestimos/EmprestimoForm';
-import { abrirModalReverterQuitacao } from '../../components/Emprestimos/ReverterQuitacaoModal';
 import PageHeader from '../../components/shared/PageHeader';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import './EmprestimoDetalhePage.css';
@@ -89,6 +90,48 @@ const EmprestimoDetalhePage = () => {
       load();
     } catch (err) {
       toast.error(err.message || 'Erro ao cancelar.');
+    }
+  };
+
+  const handleQuitar = async () => {
+    const result = await Swal.fire({
+      title: 'Quitar empréstimo?',
+      html: `O empréstimo com <strong>${emprestimo?.pessoaNomeSnapshot || 'a pessoa'}</strong> será marcado como <strong>quitado</strong> e uma transação de receita (juros) será criada automaticamente.<br/>Esta ação não pode ser desfeita diretamente — você poderá <em>reabrir</em> depois se precisar ajustar.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, quitar',
+      cancelButtonText: 'Voltar'
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await quitarEmprestimo(id);
+      toast.success('Empréstimo quitado.');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Erro ao quitar empréstimo.');
+    }
+  };
+
+  const handleReabrir = async () => {
+    const result = await Swal.fire({
+      title: 'Reabrir empréstimo?',
+      html: `O empréstimo voltará ao status <strong>ativo</strong> e a transação de lucro (<em>juros</em>) será <strong>removida</strong>.<br/>Esta ação não pode ser desfeita diretamente — você poderá <em>quitar</em> de novo depois.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, reabrir',
+      cancelButtonText: 'Voltar'
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await reabrirEmprestimo(id);
+      toast.success('Empréstimo reaberto. Transação de lucro removida.');
+      load();
+    } catch (err) {
+      toast.error(err.message || 'Erro ao reabrir empréstimo.');
     }
   };
 
@@ -177,20 +220,22 @@ const EmprestimoDetalhePage = () => {
               <button onClick={() => setEditOpen(!editOpen)} className="emp-btn-secundario">
                 {editOpen ? 'Fechar edição' : 'Editar'}
               </button>
+              {emprestimo.status === 'ativo' && (
+                <button
+                  onClick={handleQuitar}
+                  className="emp-btn-secundario"
+                  title="Marca o empréstimo como quitado e gera a transação de receita (juros)"
+                >
+                  Quitar empréstimo
+                </button>
+              )}
               {emprestimo.status === 'quitado' && (
                 <button
-                  onClick={() => {
-                    const txJurosAuto = movimentacoes.find(m => m.emprestimoEhJurosAuto);
-                    abrirModalReverterQuitacao({
-                      emprestimo,
-                      transacaoJurosAuto: txJurosAuto,
-                      onConfirmado: () => load()
-                    });
-                  }}
+                  onClick={handleReabrir}
                   className="emp-btn-secundario"
-                  title="Remove e recria a transação de juros automáticos com o valor recalculado"
+                  title="Reabre o empréstimo e remove a transação de lucro (juros) atual"
                 >
-                  Recalcular juros
+                  Reabrir empréstimo
                 </button>
               )}
               <button onClick={handleCancelar} className="emp-btn-perigo">

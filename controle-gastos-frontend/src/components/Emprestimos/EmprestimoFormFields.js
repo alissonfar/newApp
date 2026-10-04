@@ -157,6 +157,7 @@ const EmprestimoFormFields = ({
                 <select
                   value={state.emprestimoId}
                   onChange={(e) => setters.setEmprestimoId(e.target.value)}
+                  disabled={state.loadingEmprestimos}
                   tabIndex={ti(97)}
                 >
                   <option value="">Selecione...</option>
