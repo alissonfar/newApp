@@ -192,8 +192,8 @@ const EmprestimoDetalhePage = () => {
     </div>
   );
 
-  const status = labelStatus(emprestimo.status, emprestimo.isQuitadoCalculado);
-  const diasAtraso = emprestimo.status === 'ativo' && !emprestimo.isQuitadoCalculado
+  const status = labelStatus(emprestimo.status);
+  const diasAtraso = emprestimo.status === 'ativo'
     ? calcularDiasAtraso(emprestimo.prazoFinal)
     : 0;
 

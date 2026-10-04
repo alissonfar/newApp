@@ -22,8 +22,8 @@ export function calcularDiasAtraso(prazoFinal) {
   return diff > 0 ? diff : 0;
 }
 
-export function labelStatus(status, isQuitadoCalculado) {
+export function labelStatus(status) {
   if (status === 'cancelado') return { text: 'Cancelado', cls: 'emp-status-cancelado' };
-  if (status === 'quitado' || isQuitadoCalculado) return { text: 'Quitado', cls: 'emp-status-quitado' };
+  if (status === 'quitado') return { text: 'Quitado', cls: 'emp-status-quitado' };
   return { text: 'Ativo', cls: 'emp-status-ativo' };
 }

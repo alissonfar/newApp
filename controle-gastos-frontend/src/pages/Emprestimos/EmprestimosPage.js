@@ -106,7 +106,7 @@ const EmprestimosPage = () => {
       ) : (
         <div className="emprestimos-lista">
           {emprestimos.map((e) => {
-            const status = labelStatus(e.status, e.isQuitadoCalculado);
+            const status = labelStatus(e.status);
             return (
               <Link key={e._id} to={`/emprestimos/${e._id}`} className="emprestimo-card">
                 <div className="emprestimo-card-header">

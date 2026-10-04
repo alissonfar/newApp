@@ -376,7 +376,9 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
    *  - empAtivo + pessoaId obrigatório
    *  - modo 'vincular' + emprestimoId obrigatório
    *  - modo 'criar' + novoPrazoFinal obrigatório
-   *  - tipoTransacao === 'gasto' + novoValorEsperado ≥ 0 obrigatório
+   *  - tipoTransacao === 'gasto' + novoValorEsperado OPCIONAL (se preenchido,
+   *    precisa ser numérico ≥ 0; em branco, o backend usa o valor do pagamento
+   *    como default, espelhando o comportamento do TX-level legado).
    */
   const validarEmprestimos = useCallback((tipoTransacao) => {
     for (let i = 0; i < pagamentos.length; i++) {
@@ -388,10 +390,10 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
       } else {
         if (!p.empNovoPrazoFinal) return `Pagamento ${i + 1}: informe o prazo final do novo empréstimo.`;
       }
-      if (tipoTransacao === 'gasto') {
+      if (tipoTransacao === 'gasto' && p.empNovoValorEsperado !== '' && p.empNovoValorEsperado != null) {
         const v = parseFloat(p.empNovoValorEsperado);
-        if (p.empNovoValorEsperado === '' || isNaN(v) || v < 0) {
-          return `Pagamento ${i + 1}: informe o valor esperado de retorno (≥ 0).`;
+        if (isNaN(v) || v < 0) {
+          return `Pagamento ${i + 1}: valor esperado de retorno deve ser numérico e ≥ 0.`;
         }
       }
     }

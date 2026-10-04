@@ -609,9 +609,36 @@ class ImportacaoController {
                         const valorPagamento = (base.valor != null && base.valor !== undefined)
                             ? parseFloat(base.valor)
                             : valor;
-                        return { pessoa: base.pessoa || 'Importação Automática', valor: valorPagamento, tags: base.tags || {} };
+                        const pag = { pessoa: base.pessoa || 'Importação Automática', valor: valorPagamento, tags: base.tags || {} };
+                        if (base.emprestimoId) {
+                            pag.emprestimoId = base.emprestimoId;
+                        }
+                        // Default de valorEsperadoRetorno por pagamento
+                        // (espelha controladorTransacao.js): gasto com pagamento-
+                        // level vinculado e sem valor explícito usa o próprio valor.
+                        if (ti.tipo === 'gasto' && pag.emprestimoId
+                          && (base.valorEsperadoRetorno === undefined || base.valorEsperadoRetorno === null)) {
+                            pag.valorEsperadoRetorno = Number(valorPagamento) || 0;
+                        } else if (base.valorEsperadoRetorno !== undefined && base.valorEsperadoRetorno !== null) {
+                            const ver = Number(base.valorEsperadoRetorno);
+                            if (!isNaN(ver) && ver >= 0) pag.valorEsperadoRetorno = ver;
+                        }
+                        return pag;
                     })
                     : [{ pessoa: 'Importação Automática', valor, tags: {} }];
+                // Default TX-level (espelha controladorTransacao.js): sem o valor
+                // explícito, usa o valor da transação. Evita que o agregado de
+                // Empréstimo caia pra 0 e divirja do fluxo normal de criação.
+                let valorEsperadoRetornoTx = null;
+                if (ti.tipo === 'gasto' && ti.emprestimoId) {
+                    const raw = ti.emprestimoConfig ? ti.emprestimoConfig.valorEsperadoRetorno : null;
+                    if (raw === undefined || raw === null) {
+                        valorEsperadoRetornoTx = valor;
+                    } else {
+                        const ver = Number(raw);
+                        if (!isNaN(ver) && ver >= 0) valorEsperadoRetornoTx = ver;
+                    }
+                }
                 const obj = {
                     tipo: ti.tipo,
                     descricao: ti.descricao,
@@ -623,14 +650,7 @@ class ImportacaoController {
                     usuario: ti.usuario,
                     subconta: ti.subconta || null,
                     emprestimoId: ti.emprestimoId || null,
-                    // valorEsperadoRetorno agora vive na Transação. Lê do
-                    // `emprestimoConfig` da TI (caso o usuário tenha preenchido
-                    // na revisão). Apenas se for gasto com empréstimo vinculado.
-                    valorEsperadoRetorno: (ti.tipo === 'gasto' && ti.emprestimoId
-                      && ti.emprestimoConfig && ti.emprestimoConfig.valorEsperadoRetorno != null
-                      && Number(ti.emprestimoConfig.valorEsperadoRetorno) >= 0)
-                      ? Number(ti.emprestimoConfig.valorEsperadoRetorno)
-                      : null,
+                    valorEsperadoRetorno: valorEsperadoRetornoTx,
                     deduplicationKey: dedupKeyOverride != null ? dedupKeyOverride : (ti.deduplicationKey || null),
                     isInstallment: !!installmentGroupId,
                     installmentGroupId: installmentGroupId || null,
