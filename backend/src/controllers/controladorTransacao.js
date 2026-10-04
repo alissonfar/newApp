@@ -783,7 +783,8 @@ exports.atualizarTransacao = async (req, res) => {
       return res.status(400).json({ erro: erroExclusividade });
     }
     await transacao.save();
-    if (emprestimoIdAntes) {
+    const emprestimoIdAtual = transacao.emprestimoId ? String(transacao.emprestimoId) : null;
+    if (emprestimoIdAntes && emprestimoIdAntes !== emprestimoIdAtual) {
       await emprestimoService.recalcularStatus(emprestimoIdAntes, req.userId);
     }
     await recalcularEmprestimos(transacao, req.userId);
