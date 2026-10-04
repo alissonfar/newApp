@@ -21,10 +21,10 @@ Dinheiro que **saiu do seu bolso** pra emprestar. Modelado como uma Transação 
 Dinheiro que **entrou** na sua conta como parte da devolução. Modelado como uma Transação de **recebível** vinculada ao Empréstimo.
 
 ### TX de juros auto
-Transação **gerada automaticamente pelo sistema** na quitação do Empréstimo (quando `totalReceived >= totalEsperado`). Tem flag `emprestimoEhJurosAuto: true` e representa o lucro realizado do Empréstimo. Aparece como receita normal nos relatórios.
+Transação **gerada pelo sistema na quitação** (ação manual "Quitar"). Tem flag `emprestimoEhJurosAuto: true` e representa o lucro realizado (`recebido − desembolsado`). É **removida ao reabrir**. Aparece como receita normal nos relatórios.
 
 ### Quitação (Settlement)
-Status `quitado` do Empréstimo, atingido automaticamente quando `totalReceived >= totalEsperado`. **Não há auto-reversão** `quitado → ativo`. Existe a ação **"Recalcular juros"** (na tela de detalhe): remove e recria a TX de juros automáticos com o valor recalculado — ela **não desfaz** a quitação (sev. `totalRecebido ≥ totalEsperado`, o empréstimo volta a `quitado` na hora). Antes se chamava "Reverter quitação". (ADR-026)
+Status `quitado` do Empréstimo. **A quitação é MANUAL** (ADR 2026-10-03): o sistema **não quita sozinho** ao atingir o esperado. Você clica **"Quitar empréstimo"** na tela de detalhe para encerrar; aí o lucro realizado vira a TX `Lucro - {pessoa}`. A ação **"Reabrir empréstimo"** volta para `ativo` e remove a TX de lucro. Receber abaixo ou acima do esperado nunca trava o lançamento.
 
 ### Cancelamento
 Status `cancelado` do Empréstimo. **Bloqueado enquanto houver lançamentos do usuário vinculados** (desembolso/recebimento em qualquer caminho) — é preciso desvincular ou estornar antes (ADR-026; substitui o *soft cancel* de TXs órfãs). A **TX de juros auto** (do sistema, imutável) não bloqueia e é **removida** junto com o cancelamento.
@@ -32,10 +32,7 @@ Status `cancelado` do Empréstimo. **Bloqueado enquanto houver lançamentos do u
 ## Conceitos de valor
 
 ### Valor esperado (`valorEsperadoRetorno`)
-**Quanto eu espero receber de volta** desta transação como um todo. Mora no schema `Transacao` (1 pagamento) ou `Pagamento` (2+ pagamentos). Em empréstimos `valor_fixo`, é a entrada do usuário. Em empréstimos **`sem_juros`**, é **forçado pelo backend** a ser igual ao valor desembolsado (lucro sempre 0) — o frontend trava o campo. (ADR-026)
-
-### Tipo de retorno (`tipoRetorno`)
-`valor_fixo` (esperado digitado pelo usuário) ou `sem_juros` (esperado = desembolso; lucro 0). Enforçado no backend em `controladorTransacao.js` (criar/editar, ambos os caminhos). (ADR-026)
+**Quanto eu espero receber de volta** desta transação. Mora no schema `Transacao` (1 pagamento) ou `Pagamento` (2+ pagamentos). É **opcional**: se ficar em branco, o backend usa o valor do próprio lançamento como default. O lucro é sempre `esperado − desembolsado`.
 
 ### Total esperado do Empréstimo
 Soma do `valorEsperadoRetorno` de todas as TXs (caminho 1) **e de cada pagamento vinculado** (caminho 2, **soma por pagamento**, não 1× por TX). Calculado em `calcularTotais` no `emprestimoService.js` — bate com o total da tabela "Movimentações". (ADR-026)
