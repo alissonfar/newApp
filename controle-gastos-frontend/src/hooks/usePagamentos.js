@@ -4,7 +4,6 @@ const empFieldsPadrao = () => ({
   empAtivo: false,
   empPessoaId: '',
   empModo: 'vincular',
-  empNovoTipoRetorno: 'valor_fixo',
   empNovoPrazoFinal: '',
   empNovoValorEsperado: '',
   empEmprestimosPessoa: [],
@@ -47,7 +46,6 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
         empAtivo: !!p.emprestimoId,
         empPessoaId: p.emprestimoPessoaId || '',
         empModo: p.emprestimoModo || 'vincular',
-        empNovoTipoRetorno: p.emprestimoTipoRetorno || 'valor_fixo',
         empNovoPrazoFinal: p.emprestimoPrazoFinal || '',
         empNovoValorEsperado: p.emprestimoValorEsperado != null ? String(p.emprestimoValorEsperado) : '',
         fixed: false
@@ -73,7 +71,6 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
           empAtivo: !!p.emprestimoId,
           empPessoaId: p.emprestimoPessoaId || '',
           empModo: p.emprestimoModo || 'vincular',
-          empNovoTipoRetorno: p.emprestimoTipoRetorno || 'valor_fixo',
           empNovoPrazoFinal: p.emprestimoPrazoFinal || '',
           empNovoValorEsperado: p.emprestimoValorEsperado != null ? String(p.emprestimoValorEsperado) : '',
           fixed: false
@@ -250,7 +247,7 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
    * da suíte E o `emprestimoId` final do payload.
    *
    * `field` é SEM prefixo `emp` (ex: 'pessoaId', 'modo', 'emprestimoId',
-   * 'novoTipoRetorno', 'novoPrazoFinal', 'novoValorEsperado', 'ativo').
+   * 'novoPrazoFinal', 'novoValorEsperado', 'ativo').
    * A função prefixa internamente para casar com o state do pagamento.
    */
   const onPagamentoEmprestimoFieldChange = useCallback((index, field, value) => {
@@ -263,7 +260,6 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
         : field === 'pessoaId' ? 'empPessoaId'
         : field === 'modo' ? 'empModo'
         : field === 'emprestimoId' ? 'emprestimoId' // já é o do payload
-        : field === 'novoTipoRetorno' ? 'empNovoTipoRetorno'
         : field === 'novoPrazoFinal' ? 'empNovoPrazoFinal'
         : field === 'novoValorEsperado' ? 'empNovoValorEsperado'
         : field;
@@ -277,7 +273,6 @@ export default function usePagamentos({ transacao, proprietarioPadrao, valorTota
         next.emprestimoId = null;
       } else if (field === 'modo' && value === 'vincular') {
         // Voltou para vincular → limpa campos de "criar"
-        next.empNovoTipoRetorno = 'valor_fixo';
         next.empNovoPrazoFinal = '';
       } else if (field === 'modo' && value === 'criar') {
         // Mudou para criar → limpa o empréstimo vinculado (vai ser

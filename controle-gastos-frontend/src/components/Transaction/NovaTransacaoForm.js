@@ -160,7 +160,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           // valor esperado desta TX específica vai no payload de criarTransacao.
           const novoEmp = await criarEmprestimo({
             pessoaId: emprestimoForm.state.pessoaId,
-            tipoRetorno: emprestimoForm.state.novoTipoRetorno,
             prazoFinal: emprestimoForm.state.novoPrazoFinal
           });
           emprestimoIdParaTransacao = novoEmp._id || novoEmp.id;
@@ -194,7 +193,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           if (pag.empModo === 'criar' && !pagamentosPayload[i]?.emprestimoId) {
             const novoEmp = await criarEmprestimo({
               pessoaId: pag.empPessoaId,
-              tipoRetorno: pag.empNovoTipoRetorno,
               prazoFinal: pag.empNovoPrazoFinal
             });
             const novoId = novoEmp._id || novoEmp.id;
@@ -216,7 +214,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           if (pag.empModo === 'criar' && !pagamentosPayload[i]?.emprestimoId) {
             const novoEmp = await criarEmprestimo({
               pessoaId: pag.empPessoaId,
-              tipoRetorno: pag.empNovoTipoRetorno,
               prazoFinal: pag.empNovoPrazoFinal
             });
             const novoId = novoEmp._id || novoEmp.id;
@@ -289,7 +286,6 @@ const NovaTransacaoForm = ({ onSuccess, onClose, transacao, proprietarioPadrao =
           empAtivo: false,
           empPessoaId: '',
           empModo: 'vincular',
-          empNovoTipoRetorno: 'valor_fixo',
           empNovoPrazoFinal: '',
           empNovoValorEsperado: '',
           empEmprestimosPessoa: [],

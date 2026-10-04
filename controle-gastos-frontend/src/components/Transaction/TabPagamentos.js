@@ -306,7 +306,6 @@ const TabPagamentos = ({
                         pessoaId: pag.empPessoaId,
                         modo: pag.empModo,
                         emprestimoId: pag.emprestimoId || '',
-                        novoTipoRetorno: pag.empNovoTipoRetorno,
                         novoPrazoFinal: pag.empNovoPrazoFinal,
                         novoValorEsperado: pag.empNovoValorEsperado,
                         pessoas,
@@ -318,7 +317,6 @@ const TabPagamentos = ({
                         setPessoaId: (v) => onPagamentoEmprestimoFieldChange(index, 'pessoaId', v),
                         setModo: (v) => onPagamentoEmprestimoFieldChange(index, 'modo', v),
                         setEmprestimoId: (v) => onPagamentoEmprestimoFieldChange(index, 'emprestimoId', v),
-                        setNovoTipoRetorno: (v) => onPagamentoEmprestimoFieldChange(index, 'novoTipoRetorno', v),
                         setNovoPrazoFinal: (v) => onPagamentoEmprestimoFieldChange(index, 'novoPrazoFinal', v),
                         setNovoValorEsperado: (v) => onPagamentoEmprestimoFieldChange(index, 'novoValorEsperado', v)
                       }}

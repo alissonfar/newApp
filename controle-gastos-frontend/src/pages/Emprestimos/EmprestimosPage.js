@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { listarEmprestimos } from '../../api';
-import { formatarMoedaBRL, formatarDataBR, labelTipoRetorno, labelStatus } from '../../utils/emprestimoFormat';
+import { formatarMoedaBRL, formatarDataBR, labelStatus } from '../../utils/emprestimoFormat';
 import PageHeader from '../../components/shared/PageHeader';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import './EmprestimosPage.css';
@@ -129,10 +129,6 @@ const EmprestimosPage = () => {
                   <div className="emp-info-row">
                     <span>Prazo:</span>
                     <span>{formatarDataBR(e.prazoFinal)}</span>
-                  </div>
-                  <div className="emp-info-row">
-                    <span>Tipo:</span>
-                    <span>{labelTipoRetorno(e.tipoRetorno)}</span>
                   </div>
                 </div>
                 {e.status !== 'cancelado' && (

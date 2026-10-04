@@ -98,7 +98,6 @@ const EditarTransacaoItem = ({ transacao, onSave, onClose, index }) => {
         valorEsperadoRetorno: st.novoValorEsperado !== '' && st.novoValorEsperado != null
           ? Number(st.novoValorEsperado)
           : null,
-        tipoRetorno: st.novoTipoRetorno,
         prazoFinal: st.novoPrazoFinal || null,
         observacao: null,
         empEmprestimoIdExistente: null

@@ -13,7 +13,6 @@ import {
 import {
   formatarMoedaBRL,
   formatarDataBR,
-  labelTipoRetorno,
   labelStatus,
   calcularDiasAtraso
 } from '../../utils/emprestimoFormat';
@@ -227,10 +226,6 @@ const EmprestimoDetalhePage = () => {
         <div className="emp-detalhe-info">
           <span className="emp-detalhe-label">Prazo final</span>
           <span className="emp-detalhe-valor">{formatarDataBR(emprestimo.prazoFinal)}</span>
-        </div>
-        <div className="emp-detalhe-info">
-          <span className="emp-detalhe-label">Tipo de retorno</span>
-          <span className="emp-detalhe-valor">{labelTipoRetorno(emprestimo.tipoRetorno)}</span>
         </div>
         {emprestimo.dataQuitacao && (
           <div className="emp-detalhe-info">

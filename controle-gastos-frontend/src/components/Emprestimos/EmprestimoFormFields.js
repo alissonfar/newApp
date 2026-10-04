@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { criarPessoa } from '../../api';
-import { formatarMoedaBRL, labelTipoRetorno } from '../../utils/emprestimoFormat';
+import { formatarMoedaBRL } from '../../utils/emprestimoFormat';
 import { formatDateBR } from '../../utils/dateUtils';
 
 const EmprestimoFormFields = ({
@@ -29,8 +29,8 @@ const EmprestimoFormFields = ({
   // tabIndex derivado do base, replicando o padrão do EmprestimoSecao legado:
   // 90 pessoa-select, 91 botão +Nova, 92-94 inputs nova pessoa,
   // 95 radio vincular, 96 radio criar, 97 select empréstimo (vincular)
-  // OU input valor esperado (criar), 98 select tipo retorno / valor esperado
-  // (vincular), 99 input prazo final.
+  // OU input valor esperado (criar), 98 input valor esperado (vincular),
+  // 99 input prazo final (criar).
   // Quando `tabIndexBase` é fornecido (caso pagamento), soma-se a base.
   const ti = (n) => tabIndexBase != null ? tabIndexBase + (n - 90) : n;
 
@@ -57,15 +57,6 @@ const EmprestimoFormFields = ({
       setSalvandoPessoa(false);
     }
   };
-
-  // ADR-026 F5: sem_juros trava valor esperado = desembolso.
-  const emprestimoSelecionado = state.modo === 'vincular'
-    ? state.emprestimosPessoa?.find((e) => (e.id || e._id) === state.emprestimoId)
-    : null;
-  const tipoRetornoEfetivo = state.modo === 'vincular'
-    ? emprestimoSelecionado?.tipoRetorno
-    : state.novoTipoRetorno;
-  const semJuros = tipoRetornoEfetivo === 'sem_juros';
 
   return (
     <>
@@ -171,7 +162,7 @@ const EmprestimoFormFields = ({
                   <option value="">Selecione...</option>
                   {state.emprestimosPessoa.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {formatarMoedaBRL(emp.totalEsperado || 0)} — {labelTipoRetorno(emp.tipoRetorno)} (prazo {emp.prazoFinal ? formatDateBR(emp.prazoFinal) : '—'})
+                      {formatarMoedaBRL(emp.totalEsperado || 0)} (prazo {emp.prazoFinal ? formatDateBR(emp.prazoFinal) : '—'})
                     </option>
                   ))}
                 </select>
@@ -179,22 +170,6 @@ const EmprestimoFormFields = ({
             </div>
           ) : (
             <div className="emp-campos-novo">
-              <div className="emp-campo">
-                <label>Tipo de retorno:</label>
-                <select
-                  value={state.novoTipoRetorno}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setters.setNovoTipoRetorno(v);
-                    if (v === 'sem_juros') setters.setNovoValorEsperado(String(valorTotal || ''));
-                  }}
-                  tabIndex={ti(98)}
-                >
-                  <option value="valor_fixo">Valor fixo (sem juros)</option>
-                  <option value="sem_juros">Sem juros — devolver o que emprestou</option>
-                </select>
-                <small>Para empréstimos com juros, crie o empréstimo primeiro na tela de Empréstimos.</small>
-              </div>
               <div className="emp-campo">
                 <label>Prazo final:</label>
                 <input
@@ -211,7 +186,9 @@ const EmprestimoFormFields = ({
               cada TX de gasto tem seu próprio valorEsperadoRetorno
               (saiu do schema Empréstimo). Por isso o campo aparece em
               AMBOS os modos (vincular e criar), mas só para gastos
-              (em recebimentos, valor esperado não faz sentido). */}
+              (em recebimentos, valor esperado não faz sentido).
+              Campo opcional: se vazio, o backend usa o valor do lançamento
+              como esperado (default). */}
           {tipoTransacao === 'gasto' && (
             <div className="emp-campo">
               <label>Valor esperado de retorno:</label>
@@ -219,16 +196,13 @@ const EmprestimoFormFields = ({
                 type="number"
                 step="0.01"
                 min="0"
-                value={semJuros ? String(valorTotal || '') : state.novoValorEsperado}
+                value={state.novoValorEsperado}
                 onChange={(e) => setters.setNovoValorEsperado(e.target.value)}
                 placeholder="0,00"
-                disabled={semJuros}
                 tabIndex={state.modo === 'vincular' ? ti(98) : ti(97)}
               />
               <small>
-                {semJuros
-                  ? 'Sem juros: o retorno esperado é o próprio valor emprestado.'
-                  : `Sugestão: mesmo valor desta transação (${formatarMoedaBRL(valorTotal || 0)}). Você pode ajustar.`}
+                Deixe em branco para usar o valor do lançamento.
               </small>
             </div>
           )}

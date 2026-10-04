@@ -22,14 +22,6 @@ export function calcularDiasAtraso(prazoFinal) {
   return diff > 0 ? diff : 0;
 }
 
-export function labelTipoRetorno(tipo) {
-  const map = {
-    valor_fixo: 'Valor fixo',
-    sem_juros: 'Sem juros'
-  };
-  return map[tipo] || tipo;
-}
-
 export function labelStatus(status, isQuitadoCalculado) {
   if (status === 'cancelado') return { text: 'Cancelado', cls: 'emp-status-cancelado' };
   if (status === 'quitado' || isQuitadoCalculado) return { text: 'Quitado', cls: 'emp-status-quitado' };
