@@ -31,14 +31,11 @@ function chaveAgrupamentoEmprestimo(cfg) {
   const prazo = cfg.prazoFinal instanceof Date
     ? cfg.prazoFinal.getTime()
     : (cfg.prazoFinal ? new Date(cfg.prazoFinal).getTime() : 0);
-  // A partir do design 2026-06-24, `valorEsperadoRetorno` foi MOVIDO da chave
-  // de agrupamento: ele agora mora na Transação (cada gasto tem o seu). Se
-  // incluíssemos aqui, TIs com mesmo pessoa+tipo+prazo mas valores esperados
-  // diferentes virariam Empréstimos separados. Removemos para agrupar apenas
-  // pelo que é estável no Empréstimo (pessoa, tipo de retorno, prazo).
+  // A chave agrupa TIs em Empréstimos. Histórico:
+  //   - 2026-06-24: `valorEsperadoRetorno` saiu da chave (migrou pra Transação).
+  //   - 2026-10-03: `tipoRetorno` saiu da chave (campo removido do schema).
   return [
     pessoa,
-    cfg.tipoRetorno || 'valor_fixo',
     prazo
   ].join('|');
 }
@@ -85,7 +82,6 @@ async function criarEmprestimosParaImportacao(transacoesImportadas, usuarioId) {
       // valorEsperadoRetorno removido do payload do Empréstimo — agora vive
       // na Transação (cada gasto carrega o seu próprio). É persistido na TX
       // mais adiante, via `montarTransacao`.
-      tipoRetorno: cfg.tipoRetorno || 'valor_fixo',
       prazoFinal: cfg.prazoFinal || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       observacao: cfg.observacao || `Criado a partir de importação em ${new Date().toISOString().split('T')[0]}`,
       status: 'ativo'
@@ -602,7 +598,7 @@ class ImportacaoController {
 
             // Fase 2.x — Criar Empréstimos a partir de emprestimoConfig preenchido na revisão
             // 1) Coletar todas as ti com criarEmprestimo: true e sem empEmprestimoIdExistente
-            // 2) Agrupar por chave natural (pessoa + direcao + valorEsperado + tipoRetorno + ...)
+            // 2) Agrupar por chave natural (pessoa + prazo)
             // 3) Para cada grupo, criar 1 Empréstimo e setar emprestimoId nas ti correspondentes
             await criarEmprestimosParaImportacao(transacoesImportadas, req.userId);
 

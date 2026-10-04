@@ -64,8 +64,7 @@ const {
   reabrirEmprestimo,
   calcularTotais,
   calcularLucro,
-  STATUS_EMPRESTIMO,
-  TIPOS_RETORNO
+  STATUS_EMPRESTIMO
 } = require('../emprestimoService');
 
 const USER_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa';
@@ -134,7 +133,6 @@ describe('emprestimoService.validarDadosEmprestimo (sem valorEsperadoRetorno —
   // valida esse campo aqui.
   const dadosValidos = {
     pessoaId: 'pessoa-123',
-    tipoRetorno: 'valor_fixo',
     prazoFinal: '2026-12-31'
   };
 
@@ -164,7 +162,6 @@ describe('emprestimoService.validarDadosEmprestimo (sem valorEsperadoRetorno —
 
   test('em modo parcial: não exige pessoaId ausente', () => {
     const dadosSemPessoa = {
-      tipoRetorno: 'valor_fixo',
       prazoFinal: '2026-06-30'
     };
     expect(validarDadosEmprestimo(dadosSemPessoa, { parcial: true })).toEqual([]);
@@ -174,15 +171,6 @@ describe('emprestimoService.validarDadosEmprestimo (sem valorEsperadoRetorno —
 describe('emprestimoService - constantes exportadas', () => {
   test('STATUS_EMPRESTIMO contém ativo, quitado, cancelado', () => {
     expect(STATUS_EMPRESTIMO).toEqual(expect.arrayContaining(['ativo', 'quitado', 'cancelado']));
-  });
-
-  test('TIPOS_RETORNO contém apenas valor_fixo e sem_juros', () => {
-    expect(TIPOS_RETORNO).toEqual(['valor_fixo', 'sem_juros']);
-  });
-
-  test('TIPOS_RETORNO NÃO contém juros_* (removidos)', () => {
-    expect(TIPOS_RETORNO).not.toContain('juros_percentual');
-    expect(TIPOS_RETORNO).not.toContain('juros_fixo');
   });
 });
 

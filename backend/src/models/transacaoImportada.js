@@ -11,7 +11,6 @@ const EmprestimoConfigSchema = new mongoose.Schema({
   pessoaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pessoa', default: null },
   pessoaNomeSnapshot: { type: String, default: null },
   valorEsperadoRetorno: { type: Number, default: null, min: 0 },
-  tipoRetorno: { type: String, enum: ['valor_fixo', 'sem_juros'], default: 'valor_fixo' },
   prazoFinal: { type: Date, default: null },
   observacao: { type: String, default: null },
   empEmprestimoIdExistente: { type: mongoose.Schema.Types.ObjectId, ref: 'Emprestimo', default: null }

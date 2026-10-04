@@ -1,7 +1,7 @@
 // src/services/emprestimoService.js
 const mongoose = require('mongoose');
 const Transacao = require('../models/transacao');
-const { TIPOS_RETORNO, STATUS_EMPRESTIMO } = require('../models/emprestimo');
+const { STATUS_EMPRESTIMO } = require('../models/emprestimo');
 
 /**
  * Valida os dados de criação/edição de um Empréstimo.
@@ -246,61 +246,6 @@ async function recalcularStatus(emprestimoId, usuarioId) {
 }
 
 /**
- * Reverte a quitação de um Empréstimo (LEGADO — substituído por
- * `reabrirEmprestimo` na próxima task; mantido aqui só porque o
- * controller / rota `/:id/reverter-quitacao` ainda o referencia).
- *
- * Comportamento:
- *  1. Deleta a TX de juros automáticos (se existir)
- *  2. Volta o Empréstimo para status 'ativo' e limpa dataQuitacao
- *  3. Dispara recalcularStatus() — que agora é no-op para 'ativo' (a
- *     quitação é MANUAL desde 2026-10-03). A TX de juros NÃO é
- *     recriada aqui; só volta a existir via quitarEmprestimo().
- *
- * @param {string|ObjectId} emprestimoId
- * @param {string|ObjectId} usuarioId
- * @returns {Promise<Object>} Empréstimo detalhado (via obterEmprestimoComTotais)
- * @throws {Error} se Empréstimo não encontrado ou não está 'quitado'
- */
-async function reverterQuitacao(emprestimoId, usuarioId) {
-  const Emprestimo = require('../models/emprestimo');
-
-  const objectId = typeof emprestimoId === 'string'
-    ? new mongoose.Types.ObjectId(emprestimoId)
-    : emprestimoId;
-  const usuarioObjId = typeof usuarioId === 'string'
-    ? new mongoose.Types.ObjectId(usuarioId)
-    : usuarioId;
-
-  const emprestimo = await Emprestimo.findOne({ _id: objectId, usuario: usuarioObjId });
-  if (!emprestimo) {
-    throw new Error('Empréstimo não encontrado.');
-  }
-  if (emprestimo.status !== 'quitado') {
-    throw new Error('Apenas empréstimos quitados podem ter a quitação revertida.');
-  }
-
-  // 1. Deleta TX de juros auto (idempotente — 0 docs se já não existir)
-  await Transacao.deleteOne({
-    emprestimoId: emprestimo._id,
-    emprestimoEhJurosAuto: true,
-    status: 'ativo'
-  });
-
-  // 2. Volta Empréstimo pra ativo
-  emprestimo.status = 'ativo';
-  emprestimo.dataQuitacao = null;
-  await emprestimo.save();
-
-  // 3. Recalcula status (pode recriar TX de juros auto se ainda estiver quitado)
-  await recalcularStatus(emprestimo._id, usuarioObjId);
-
-  // 4. Retorna Empréstimo detalhado
-  const atualizado = await Emprestimo.findOne({ _id: emprestimo._id, usuario: usuarioObjId });
-  return await obterEmprestimoComTotais(atualizado);
-}
-
-/**
  * Quita manualmente um Empréstimo (status: ativo → quitado).
  *
  * Regras:
@@ -391,7 +336,6 @@ async function validarEmprestimoParaTransacao(emprestimoId, usuarioId) {
 module.exports = {
   validarDadosEmprestimo,
   STATUS_EMPRESTIMO,
-  TIPOS_RETORNO,
   _agregarTotaisEmprestimo,    // <-- NOVO
   calcularTotais,
   obterEmprestimoComTotais,
@@ -399,6 +343,5 @@ module.exports = {
   recalcularStatus,
   quitarEmprestimo,            // <-- NOVO (Task 1 — quitação manual)
   reabrirEmprestimo,           // <-- NOVO (Task 1 — quitação manual)
-  validarEmprestimoParaTransacao,
-  reverterQuitacao             // <-- NOVO (Task 6)
+  validarEmprestimoParaTransacao
 };

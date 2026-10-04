@@ -13,6 +13,7 @@
 | 007-limpar-ledger-pluggy.js | Limpa LedgerPatrimonial corrompido por sync Pluggy + reseta saldoAtual das subcontas afetadas |
 | 008-emprestimo-simplificacao.js | Normaliza Empréstimos e TIs: `tipoRetorno: juros_*` → `valor_fixo`, `direcao: recebido` → `concedido`, remove `taxaJurosPercentual`/`valorJurosFixo`. Idempotente. |
 | 009-emprestimo-limpeza.js | Limpa Empréstimos (delete) e desvincula TXs (`emprestimoId=null`) e TIs (`emprestimoConfig.ativo=false`). Prepara terreno para mover `valorEsperadoRetorno` do Emprestimo para a Transacao. Idempotente. |
+| 010-emprestimo-remove-tipo-retorno.js | Remove o campo `tipoRetorno` (e a constante `TIPOS_RETORNO` do schema Emprestimo) dos Empréstimos. Idempotente — `$unset` em docs que ainda têm o campo. |
 
 ---
 
