@@ -246,19 +246,16 @@ async function recalcularStatus(emprestimoId, usuarioId) {
 }
 
 /**
- * Reverte a quitação de um Empréstimo:
+ * Reverte a quitação de um Empréstimo (LEGADO — substituído por
+ * `reabrirEmprestimo` na próxima task; mantido aqui só porque o
+ * controller / rota `/:id/reverter-quitacao` ainda o referencia).
+ *
+ * Comportamento:
  *  1. Deleta a TX de juros automáticos (se existir)
  *  2. Volta o Empréstimo para status 'ativo' e limpa dataQuitacao
- *  3. Dispara recalcularStatus() — sistema detecta que ainda está quitado
- *     (totalReceived >= totalEsperado) e recria a TX de juros com o valor
- *     correto (calculado agora com caminho 2 enxergado)
- *
- * Edge cases:
- *  - Se a TX de juros auto já foi deletada manualmente antes, o deleteOne
- *    é no-op (0 docs removidos). O recalcularStatus recria a TX normalmente.
- *  - Se o usuário desvinculou TXs de desembolso depois da quitação, o
- *    recalcularStatus pode detectar que NÃO está mais quitado. Empréstimo
- *    fica 'ativo' e a TX de juros auto NÃO é recriada.
+ *  3. Dispara recalcularStatus() — que agora é no-op para 'ativo' (a
+ *     quitação é MANUAL desde 2026-10-03). A TX de juros NÃO é
+ *     recriada aqui; só volta a existir via quitarEmprestimo().
  *
  * @param {string|ObjectId} emprestimoId
  * @param {string|ObjectId} usuarioId
@@ -267,7 +264,6 @@ async function recalcularStatus(emprestimoId, usuarioId) {
  */
 async function reverterQuitacao(emprestimoId, usuarioId) {
   const Emprestimo = require('../models/emprestimo');
-  const { recalcularJurosAuto } = require('../utils/emprestimoQuitacao');
 
   const objectId = typeof emprestimoId === 'string'
     ? new mongoose.Types.ObjectId(emprestimoId)

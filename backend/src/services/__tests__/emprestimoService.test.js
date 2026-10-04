@@ -449,7 +449,8 @@ describe('emprestimoService.quitarEmprestimo / reabrirEmprestimo (Task 1 — qui
 
   test('quitar: ativo → quitado e cria TX de juros com lucro realizado', async () => {
     // Cenário: gasto 2000, recebido 2300 → lucro realizado = 300.
-    mockEmprestimoFindOne.mockResolvedValue(makeEmprestimo({ status: 'ativo' }));
+    const emp = makeEmprestimo({ status: 'ativo' });
+    mockEmprestimoFindOne.mockResolvedValue(emp);
     // calcularLucro consome 3 aggregates; obterEmprestimoComTotais consome mais 3.
     mockAggregateSequence(
       [{ _id: 'gasto', total: 2000 }, { _id: 'recebivel', total: 2300 }],
@@ -462,6 +463,10 @@ describe('emprestimoService.quitarEmprestimo / reabrirEmprestimo (Task 1 — qui
     mockRecalcularJurosAuto.mockResolvedValue({ acao: 'criada', transacao: { _id: 'tx', valor: 300 } });
 
     await quitarEmprestimo(String(EMP_ID), USER_ID);
+
+    expect(emp.status).toBe('quitado');
+    expect(emp.dataQuitacao).toBeTruthy();
+    expect(emp.save).toHaveBeenCalled();
 
     expect(mockRecalcularJurosAuto).toHaveBeenCalledWith(
       expect.objectContaining({ _id: EMP_ID }),
@@ -482,7 +487,8 @@ describe('emprestimoService.quitarEmprestimo / reabrirEmprestimo (Task 1 — qui
   });
 
   test('reabrir: quitado → ativo e deleta TX de juros auto', async () => {
-    mockEmprestimoFindOne.mockResolvedValue(makeEmprestimo({ status: 'quitado' }));
+    const emp = makeEmprestimo({ status: 'quitado', dataQuitacao: new Date() });
+    mockEmprestimoFindOne.mockResolvedValue(emp);
     mockTransacaoDeleteOne.mockResolvedValue({ deletedCount: 1 });
     // obterEmprestimoComTotais consome 3 aggregates (calcularTotais).
     mockAggregateSequence(
@@ -492,8 +498,11 @@ describe('emprestimoService.quitarEmprestimo / reabrirEmprestimo (Task 1 — qui
 
     await reabrirEmprestimo(String(EMP_ID), USER_ID);
 
+    expect(emp.status).toBe('ativo');
+    expect(emp.dataQuitacao).toBeNull();
+    expect(emp.save).toHaveBeenCalled();
     expect(mockTransacaoDeleteOne).toHaveBeenCalledWith(
-      expect.objectContaining({ emprestimoId: EMP_ID, emprestimoEhJurosAuto: true })
+      { emprestimoId: EMP_ID, emprestimoEhJurosAuto: true }
     );
     // reabrirEmprestimo NÃO recalcula juros — quitação é manual.
     expect(mockRecalcularJurosAuto).not.toHaveBeenCalled();
