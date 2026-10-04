@@ -531,8 +531,13 @@ exports.criarTransacao = async (req, res) => {
         await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
         novaTransacao.emprestimoId = req.body.emprestimoId;
         if (tipo === 'gasto') {
-          const ver = Number(req.body.valorEsperadoRetorno);
-          novaTransacao.valorEsperadoRetorno = (!isNaN(ver) && ver >= 0) ? ver : valorFinal;
+          const raw = req.body.valorEsperadoRetorno;
+          if (raw === undefined || raw === null) {
+            novaTransacao.valorEsperadoRetorno = valorFinal;
+          } else {
+            const ver = Number(raw);
+            if (!isNaN(ver) && ver >= 0) novaTransacao.valorEsperadoRetorno = ver;
+          }
         }
       } else if (req.body.valorEsperadoRetorno !== undefined && req.body.valorEsperadoRetorno !== null) {
         const ver = Number(req.body.valorEsperadoRetorno);
@@ -656,8 +661,13 @@ exports.criarTransacao = async (req, res) => {
         transacoesParaInserir.forEach((t) => {
           t.emprestimoId = req.body.emprestimoId;
           if (tipo === 'gasto') {
-            const ver = Number(req.body.valorEsperadoRetorno);
-            t.valorEsperadoRetorno = (!isNaN(ver) && ver >= 0) ? ver : t.valor;
+            const raw = req.body.valorEsperadoRetorno;
+            if (raw === undefined || raw === null) {
+              t.valorEsperadoRetorno = t.valor;
+            } else {
+              const ver = Number(raw);
+              if (!isNaN(ver) && ver >= 0) t.valorEsperadoRetorno = ver;
+            }
           }
         });
       } else if (req.body.valorEsperadoRetorno !== undefined && req.body.valorEsperadoRetorno !== null) {
@@ -735,72 +745,48 @@ exports.atualizarTransacao = async (req, res) => {
         transacao.subconta = null;
       }
     }
+    const emprestimoIdAntes = req.body.emprestimoId !== undefined && transacao.emprestimoId
+      ? String(transacao.emprestimoId)
+      : null;
     if (req.body.emprestimoId !== undefined) {
-      const emprestimoIdAntes = transacao.emprestimoId ? transacao.emprestimoId.toString() : null;
       if (req.body.emprestimoId) {
         await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
       }
       transacao.emprestimoId = req.body.emprestimoId || null;
-      if (req.body.valorEsperadoRetorno !== undefined) {
-        if (req.body.valorEsperadoRetorno === null) {
-          transacao.valorEsperadoRetorno = null;
-        } else {
-          const ver = Number(req.body.valorEsperadoRetorno);
-          if (!isNaN(ver) && ver >= 0) {
-            transacao.valorEsperadoRetorno = ver;
-          } else if (ver < 0) {
-            return res.status(400).json({ erro: 'valorEsperadoRetorno não pode ser negativo.' });
-          }
+    }
+    if (req.body.valorEsperadoRetorno !== undefined) {
+      if (req.body.valorEsperadoRetorno === null) {
+        transacao.valorEsperadoRetorno = null;
+      } else {
+        const ver = Number(req.body.valorEsperadoRetorno);
+        if (!isNaN(ver) && ver >= 0) {
+          transacao.valorEsperadoRetorno = ver;
+        } else if (ver < 0) {
+          return res.status(400).json({ erro: 'valorEsperadoRetorno não pode ser negativo.' });
         }
       }
-      // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
-      const erroExclusividade = validarExclusividadeEmprestimo(transacao);
-      if (erroExclusividade) {
-        return res.status(400).json({ erro: erroExclusividade });
-      }
-      await transacao.save();
-      if (emprestimoIdAntes) {
-        await emprestimoService.recalcularStatus(emprestimoIdAntes, req.userId);
-      }
-      await recalcularEmprestimos(transacao, req.userId);
-    } else {
-      if (req.body.valorEsperadoRetorno !== undefined) {
-        if (req.body.valorEsperadoRetorno === null) {
-          transacao.valorEsperadoRetorno = null;
-        } else {
-          const ver = Number(req.body.valorEsperadoRetorno);
-          if (!isNaN(ver) && ver >= 0) {
-            transacao.valorEsperadoRetorno = ver;
-          } else if (ver < 0) {
-            return res.status(400).json({ erro: 'valorEsperadoRetorno não pode ser negativo.' });
-          }
-        }
-      }
-      // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
-      const erroExclusividade = validarExclusividadeEmprestimo(transacao);
-      if (erroExclusividade) {
-        return res.status(400).json({ erro: erroExclusividade });
-      }
-      await transacao.save();
-      await recalcularEmprestimos(transacao, req.userId);
     }
     if ((req.body.valorEsperadoRetorno === undefined || req.body.valorEsperadoRetorno === null)
         && transacao.emprestimoId && transacao.tipo === 'gasto') {
       transacao.valorEsperadoRetorno = transacao.valor;
-      await transacao.save();
     }
     if (transacao.tipo === 'gasto' && Array.isArray(transacao.pagamentos)) {
-      let pagamentoAlterado = false;
       for (const p of transacao.pagamentos) {
         if (p && p.emprestimoId && (p.valorEsperadoRetorno === undefined || p.valorEsperadoRetorno === null)) {
           p.valorEsperadoRetorno = Number(p.valor) || 0;
-          pagamentoAlterado = true;
         }
       }
-      if (pagamentoAlterado) {
-        await transacao.save();
-      }
     }
+    // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
+    const erroExclusividade = validarExclusividadeEmprestimo(transacao);
+    if (erroExclusividade) {
+      return res.status(400).json({ erro: erroExclusividade });
+    }
+    await transacao.save();
+    if (emprestimoIdAntes) {
+      await emprestimoService.recalcularStatus(emprestimoIdAntes, req.userId);
+    }
+    await recalcularEmprestimos(transacao, req.userId);
     res.json(transacao);
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao atualizar transação.', detalhe: error.message });
