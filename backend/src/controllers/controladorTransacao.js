@@ -1,105 +1,11 @@
 // src/controllers/controladorTransacao.js
 const Transacao = require('../models/transacao');
 const Subconta = require('../models/subconta');
-const Emprestimo = require('../models/emprestimo');
 const mongoose = require('mongoose');
 const { addContabilizavelCondition } = require('../utils/transacaoContabilizavel');
 const { buildPagamentosTagFilterStage } = require('../utils/pagamentosTagFilter');
 const transacaoService = require('../services/transacaoService');
 const emprestimoService = require('../services/emprestimoService');
-
-/**
- * Para cada pagamento vinculado a um Empréstimo com `tipoRetorno === 'sem_juros'`,
- * força `valorEsperadoRetorno = valor` (lucro sempre 0). É o enforcement do ADR-026
- * (F5): "Sem juros" trava o esperado igual ao desembolso.
- *
- * Mutante: altera `pagamentos` in-place. Não faz query ao DB — recebe um Map já
- * carregado de fora (por `carregarEmprestimosPorId`).
- *
- * @param {Array} pagamentos Lista de pagamentos da Transação.
- * @param {Map<string, Object>} emprestimosPorId Mapa id → { tipoRetorno }
- */
-function aplicarSemJurosNosPagamentos(pagamentos, emprestimosPorId) {
-  if (!Array.isArray(pagamentos)) return;
-  for (const p of pagamentos) {
-    if (!p || !p.emprestimoId) continue;
-    const emp = emprestimosPorId.get(String(p.emprestimoId));
-    if (emp && emp.tipoRetorno === 'sem_juros') {
-      p.valorEsperadoRetorno = Number(p.valor) || 0;
-    }
-  }
-}
-
-/**
- * Carrega os Empréstimos referenciados em uma lista de pagamentos, retornando
- * um Map `id → { tipoRetorno }` para uso em `aplicarSemJurosNosPagamentos`.
- *
- * Filtra por `usuarioId` (multi-tenant) — se um pagamento tiver um id que não
- * pertence ao usuário, o Empréstimo simplesmente não entra no Map.
- *
- * @param {Array} pagamentos Lista de pagamentos (pode estar vazia).
- * @param {string} usuarioId ObjectId do usuário (multi-tenant).
- * @returns {Promise<Map<string, { tipoRetorno: string }>>}
- */
-async function carregarEmprestimosPorId(pagamentos, usuarioId) {
-  const ids = [...new Set(
-    (pagamentos || []).filter((p) => p && p.emprestimoId).map((p) => String(p.emprestimoId))
-  )];
-  if (ids.length === 0) return new Map();
-  const emps = await Emprestimo.find({ _id: { $in: ids }, usuario: usuarioId })
-    .select('tipoRetorno')
-    .lean();
-  return new Map(emps.map((e) => [String(e._id), e]));
-}
-
-/**
- * Carrega TODOS os Empréstimos envolvidos em uma transação (TX-level +
- * pagamento-level) em uma única query, retornando um Map `id → { tipoRetorno }`.
- * Filtra por `usuarioId` (multi-tenant). Chamado no update para resolver o
- * "empréstimo efetivo" (o que vale após o body ser aplicado).
- *
- * @param {Object} transacao Doc Mongoose com `emprestimoId` e `pagamentos`.
- * @param {string} usuarioId ObjectId do usuário (multi-tenant).
- * @returns {Promise<Map<string, { tipoRetorno: string }>>}
- */
-async function carregarEmprestimosEnvolvidos(transacao, usuarioId) {
-  const ids = new Set();
-  if (transacao.emprestimoId) ids.add(String(transacao.emprestimoId));
-  for (const p of (transacao.pagamentos || [])) {
-    if (p && p.emprestimoId) ids.add(String(p.emprestimoId));
-  }
-  if (ids.size === 0) return new Map();
-  const emps = await Emprestimo.find({ _id: { $in: [...ids] }, usuario: usuarioId })
-    .select('tipoRetorno')
-    .lean();
-  return new Map(emps.map((e) => [String(e._id), e]));
-}
-
-/**
- * Aplica a regra do ADR-026 (F5) a uma transação já montada (mas não salva):
- * se o empréstimo efetivo (TX-level OU pagamento-level) for `sem_juros` E a
- * transação for `gasto`, força `valorEsperadoRetorno = valor` em ambos os
- * níveis. Roda DEPOIS do body ter sido interpretado — a regra sempre ganha.
- *
- * Mutante: altera `transacao.valorEsperadoRetorno` e
- * `transacao.pagamentos[*].valorEsperadoRetorno` in-place.
- *
- * @param {Object} transacao Doc Mongoose com `valor`, `tipo`, `emprestimoId`
- *                              e `pagamentos` finais.
- * @param {string} usuarioId ObjectId do usuário (multi-tenant).
- */
-async function aplicarRegraSemJurosNaTransacao(transacao, usuarioId) {
-  const empsPorId = await carregarEmprestimosEnvolvidos(transacao, usuarioId);
-
-  if (transacao.emprestimoId) {
-    const empTx = empsPorId.get(String(transacao.emprestimoId));
-    if (empTx && empTx.tipoRetorno === 'sem_juros' && transacao.tipo === 'gasto') {
-      transacao.valorEsperadoRetorno = transacao.valor;
-    }
-  }
-
-  aplicarSemJurosNosPagamentos(transacao.pagamentos, empsPorId);
-}
 
 /**
  * Valida a regra de exclusividade mútua entre `emprestimoId` no nível da
@@ -621,31 +527,26 @@ exports.criarTransacao = async (req, res) => {
         usuario: req.userId,
         subconta: subcontaId
       });
-      // ADR-026 (F5): em empréstimo `sem_juros`, `valorEsperadoRetorno` da TX
-      // é forçado igual ao `valor` (lucro sempre 0). Para outros tipos, segue o
-      // que o cliente mandar (campo livre).
-      let emprestimoLegado = null;
       if (req.body.emprestimoId) {
-        emprestimoLegado = await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
+        await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
         novaTransacao.emprestimoId = req.body.emprestimoId;
-      }
-      if (emprestimoLegado && emprestimoLegado.tipoRetorno === 'sem_juros' && tipo === 'gasto') {
-        novaTransacao.valorEsperadoRetorno = valorFinal;
+        if (tipo === 'gasto') {
+          const ver = Number(req.body.valorEsperadoRetorno);
+          novaTransacao.valorEsperadoRetorno = (!isNaN(ver) && ver >= 0) ? ver : valorFinal;
+        }
       } else if (req.body.valorEsperadoRetorno !== undefined && req.body.valorEsperadoRetorno !== null) {
-        // valorEsperadoRetorno é persistido na Transação (não no Empréstimo).
-        // Apenas faz sentido para gastos com emprestimoId vinculado; o service
-        // de Empréstimos ignora o campo para outros tipos.
         const ver = Number(req.body.valorEsperadoRetorno);
         if (!isNaN(ver) && ver >= 0) {
           novaTransacao.valorEsperadoRetorno = ver;
         }
       }
-      // ADR-026 (F5): força `valorEsperadoRetorno = valor` em pagamentos cujo
-      // empréstimo é `sem_juros`. Aplica-se também quando o empréstimo está no
-      // TX-level acima (não se sobrepõe: o TX-level já tem `valorEsperadoRetorno`
-      // e o pagamento-level pode coexistir no novo modelo pagamento-level).
-      const empsPorId = await carregarEmprestimosPorId(novaTransacao.pagamentos, req.userId);
-      aplicarSemJurosNosPagamentos(novaTransacao.pagamentos, empsPorId);
+      if (tipo === 'gasto' && Array.isArray(novaTransacao.pagamentos)) {
+        for (const p of novaTransacao.pagamentos) {
+          if (p && p.emprestimoId && (p.valorEsperadoRetorno === undefined || p.valorEsperadoRetorno === null)) {
+            p.valorEsperadoRetorno = Number(p.valor) || 0;
+          }
+        }
+      }
       // Regra de exclusividade mútua: TX-level E pagamento-level não coexistem.
       const erroExclusividade = validarExclusividadeEmprestimo(novaTransacao);
       if (erroExclusividade) {
@@ -750,33 +651,32 @@ exports.criarTransacao = async (req, res) => {
         });
       }
 
-      // ADR-026 (F5): carrega o empréstimo legado 1x e, se for `sem_juros` + gasto,
-      // força `valorEsperadoRetorno = valor` em cada TX parcela (lucro sempre 0).
-      let emprestimoLegadoParcelado = null;
       if (req.body.emprestimoId) {
-        emprestimoLegadoParcelado = await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
-        transacoesParaInserir.forEach((t) => { t.emprestimoId = req.body.emprestimoId; });
-      }
-      if (emprestimoLegadoParcelado && emprestimoLegadoParcelado.tipoRetorno === 'sem_juros' && tipo === 'gasto') {
-        transacoesParaInserir.forEach((t) => { t.valorEsperadoRetorno = t.valor; });
+        await emprestimoService.validarEmprestimoParaTransacao(req.body.emprestimoId, req.userId);
+        transacoesParaInserir.forEach((t) => {
+          t.emprestimoId = req.body.emprestimoId;
+          if (tipo === 'gasto') {
+            const ver = Number(req.body.valorEsperadoRetorno);
+            t.valorEsperadoRetorno = (!isNaN(ver) && ver >= 0) ? ver : t.valor;
+          }
+        });
       } else if (req.body.valorEsperadoRetorno !== undefined && req.body.valorEsperadoRetorno !== null) {
-        // valorEsperadoRetorno na Transação: replica em todas as parcelas para
-        // que cada uma carregue sua própria expectativa. (No modelo atual, todas
-        // as parcelas de um mesmo parcelamento normalmente têm o mesmo valor
-        // esperado — manter consistência.)
         const ver = Number(req.body.valorEsperadoRetorno);
         if (!isNaN(ver) && ver >= 0) {
           transacoesParaInserir.forEach((t) => { t.valorEsperadoRetorno = ver; });
         }
       }
-      // ADR-026 (F5): força `valorEsperadoRetorno = valor` em pagamentos cujo
-      // empréstimo é `sem_juros`. Carrega os empréstimos referenciados nos
-      // pagamentos de TODAS as parcelas (uma query só) e aplica em cada TX.
-      const todosPagamentosParcelas = transacoesParaInserir.flatMap((t) => t.pagamentos || []);
-      const empsPorIdParcelado = await carregarEmprestimosPorId(todosPagamentosParcelas, req.userId);
-      transacoesParaInserir.forEach((t) => aplicarSemJurosNosPagamentos(t.pagamentos, empsPorIdParcelado));
-      // Regra de exclusividade mútua (valida a 1ª TX — todas as parcelas
-      // compartilham a mesma estrutura).
+      if (tipo === 'gasto') {
+        for (const t of transacoesParaInserir) {
+          if (Array.isArray(t.pagamentos)) {
+            for (const p of t.pagamentos) {
+              if (p && p.emprestimoId && (p.valorEsperadoRetorno === undefined || p.valorEsperadoRetorno === null)) {
+                p.valorEsperadoRetorno = Number(p.valor) || 0;
+              }
+            }
+          }
+        }
+      }
       if (transacoesParaInserir.length > 0) {
         const erroExclusividade = validarExclusividadeEmprestimo(transacoesParaInserir[0]);
         if (erroExclusividade) {
@@ -858,11 +758,7 @@ exports.atualizarTransacao = async (req, res) => {
       if (erroExclusividade) {
         return res.status(400).json({ erro: erroExclusividade });
       }
-      // ADR-026 (F5): regra ganha sobre o body.
-      await aplicarRegraSemJurosNaTransacao(transacao, req.userId);
       await transacao.save();
-      // Recalcula todos os empréstimos envolvidos: o que existia antes (se
-      // mudou), o novo, e os dos pagamentos.
       if (emprestimoIdAntes) {
         await emprestimoService.recalcularStatus(emprestimoIdAntes, req.userId);
       }
@@ -885,11 +781,25 @@ exports.atualizarTransacao = async (req, res) => {
       if (erroExclusividade) {
         return res.status(400).json({ erro: erroExclusividade });
       }
-      // ADR-026 (F5): cobre update só de `valor` (empréstimo antigo fica reativo).
-      await aplicarRegraSemJurosNaTransacao(transacao, req.userId);
       await transacao.save();
-      // Recalcula status dos empréstimos afetados (TX-level legado + pagamento-level).
       await recalcularEmprestimos(transacao, req.userId);
+    }
+    if ((req.body.valorEsperadoRetorno === undefined || req.body.valorEsperadoRetorno === null)
+        && transacao.emprestimoId && transacao.tipo === 'gasto') {
+      transacao.valorEsperadoRetorno = transacao.valor;
+      await transacao.save();
+    }
+    if (transacao.tipo === 'gasto' && Array.isArray(transacao.pagamentos)) {
+      let pagamentoAlterado = false;
+      for (const p of transacao.pagamentos) {
+        if (p && p.emprestimoId && (p.valorEsperadoRetorno === undefined || p.valorEsperadoRetorno === null)) {
+          p.valorEsperadoRetorno = Number(p.valor) || 0;
+          pagamentoAlterado = true;
+        }
+      }
+      if (pagamentoAlterado) {
+        await transacao.save();
+      }
     }
     res.json(transacao);
   } catch (error) {
@@ -1095,5 +1005,3 @@ exports.registrarTransacoesEmMassa = async (req, res) => {
     });
   }
 };
-
-exports.aplicarSemJurosNosPagamentos = aplicarSemJurosNosPagamentos;
