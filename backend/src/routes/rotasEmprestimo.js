@@ -12,6 +12,7 @@ router.get('/:id/transacoes', emprestimoController.listarTransacoes);
 router.post('/', emprestimoController.criar);
 router.put('/:id', emprestimoController.atualizar);
 router.post('/:id/cancelar', emprestimoController.cancelar);
-router.post('/:id/reverter-quitacao', emprestimoController.reverterQuitacao);
+router.post('/:id/quitar', emprestimoController.quitar);
+router.post('/:id/reabrir', emprestimoController.reabrir);
 
 module.exports = router;

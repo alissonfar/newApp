@@ -113,7 +113,6 @@ exports.criar = async (req, res) => {
       pessoaContatoSnapshot: pessoa.contato || null,
       // valorEsperadoRetorno não é mais campo do Empréstimo — vive na Transação
       // (cada gasto vinculado carrega o seu próprio valorEsperadoRetorno).
-      tipoRetorno: req.body.tipoRetorno || 'valor_fixo',
       prazoFinal: req.body.prazoFinal,
       observacao: req.body.observacao || null,
       status: 'ativo'
@@ -166,12 +165,6 @@ exports.atualizar = async (req, res) => {
         erro: 'valorEsperadoRetorno não é mais campo do Empréstimo. Use o campo valorEsperadoRetorno da Transação ao criar/vincular uma despesa de Empréstimo.'
       });
     }
-    if (req.body.tipoRetorno !== undefined) {
-      if (!service.TIPOS_RETORNO.includes(req.body.tipoRetorno)) {
-        return res.status(400).json({ erro: 'tipoRetorno inválido.' });
-      }
-      emprestimo.tipoRetorno = req.body.tipoRetorno;
-    }
     if (req.body.prazoFinal !== undefined) {
       emprestimo.prazoFinal = req.body.prazoFinal;
     }
@@ -181,7 +174,6 @@ exports.atualizar = async (req, res) => {
 
     const erros = service.validarDadosEmprestimo({
       pessoaId: emprestimo.pessoaId,
-      tipoRetorno: emprestimo.tipoRetorno,
       prazoFinal: emprestimo.prazoFinal
     }, { parcial: false });
     if (erros.length) return res.status(400).json({ erro: erros.join(' ') });
@@ -234,18 +226,26 @@ exports.cancelar = async (req, res) => {
   }
 };
 
-exports.reverterQuitacao = async (req, res) => {
+exports.quitar = async (req, res) => {
+  const oid = toObjectId(req.params.id);
+  if (!oid) return res.status(400).json({ erro: 'id inválido.' });
   try {
-    const oid = toObjectId(req.params.id);
-    if (!oid) return res.status(400).json({ erro: 'id inválido.' });
-
-    const detalhado = await service.reverterQuitacao(oid, req.userId);
-    res.json(detalhado);
+    res.json(await service.quitarEmprestimo(oid, req.userId));
   } catch (error) {
-    console.error('Erro ao reverter quitação:', error);
-    let status = 500;
-    if (error.message.includes('não encontrado')) status = 404;
-    else if (error.message.includes('Apenas empréstimos quitados')) status = 400;
+    const status = error.message.includes('não encontrado') ? 404
+      : error.message.includes('Apenas empréstimos ativos') ? 400 : 500;
+    res.status(status).json({ erro: error.message });
+  }
+};
+
+exports.reabrir = async (req, res) => {
+  const oid = toObjectId(req.params.id);
+  if (!oid) return res.status(400).json({ erro: 'id inválido.' });
+  try {
+    res.json(await service.reabrirEmprestimo(oid, req.userId));
+  } catch (error) {
+    const status = error.message.includes('não encontrado') ? 404
+      : error.message.includes('Apenas empréstimos quitados') ? 400 : 500;
     res.status(status).json({ erro: error.message });
   }
 };
